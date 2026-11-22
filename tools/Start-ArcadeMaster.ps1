@@ -106,6 +106,19 @@ try { $h = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-Manifest
 Write-Log ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', '))
 if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-Host ("{0} (background) exit {1}" -f $x.name, $x.p.ExitCode) }; Write-Host ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', ')); return }
 
+# Stream Deck: tools\streamdeck\amdeck.py drives the deck (themes, switches, in-game keys) when one is plugged in
+# and Python + the streamdeck package are present. It exits on its own if no deck is found or Elgato's app owns it,
+# and its named mutex (Global\ArcadeMasterStreamDeck) keeps a single copy - so no process scan here (~0.1-1 s of WMI)
+$deck = Join-Path $PSScriptRoot 'streamdeck\amdeck.py'
+$pyw = (Get-Command pythonw.exe -ErrorAction SilentlyContinue).Source
+if ($pyw -and (Test-Path $deck)) {
+  try { Start-Process $pyw -ArgumentList @("`"$deck`"", '--retrofe', "`"$Root`"", '--manifest', "`"$ManifestDir`"") -WindowStyle Hidden; Write-Log 'Stream Deck controller started' } catch { Write-Log "Stream Deck controller failed: $($_.Exception.Message)" }
+}
+
+# <ManifestDir>\restart.request: written by the Stream Deck (or any tool) before it closes RetroFE on purpose,
+# so the watchdog restarts it without counting a crash. The file holds the reason.
+$restartFlag = Join-Path $ManifestDir 'restart.request'
+Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
 $crashes = New-Object System.Collections.Generic.List[datetime]
 $snapshotDone = $false; $lkgRestored = $false
 while ($true) {
@@ -118,6 +131,10 @@ while ($true) {
   }
   $p.WaitForExit()
   $code = $p.ExitCode
+  if (Test-Path -LiteralPath $restartFlag) {
+    $why = (Get-Content -LiteralPath $restartFlag -Raw -ErrorAction SilentlyContinue); Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
+    Write-Log "restart requested ($("$why".Trim())) - RetroFE exit $code"; continue
+  }
   $crashed = ($code -ne 0) -or (Select-String -Path (Join-Path $Root 'log.txt') -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue)
   if (-not $crashed) { Write-Log "RetroFE exited cleanly ($code)"; break }
   $now = Get-Date; $crashes.Add($now); $recent = @($crashes | Where-Object { ($now - $_).TotalSeconds -le $CrashWindowSec })

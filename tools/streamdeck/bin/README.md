@@ -1,0 +1,1 @@
+﻿hidapi.dll (x64) from https://github.com/libusb/hidapi release hidapi-0.16.0 (hidapi-win.zip), used under its BSD license (hidapi-LICENSE-bsd.txt). Loaded by amdeck.py through the 'streamdeck' Python package.

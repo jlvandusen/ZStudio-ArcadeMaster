@@ -11,7 +11,8 @@ param(
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
-  [int]$AutoCloseSec = 15
+  [int]$AutoCloseSec = 15,
+  [string]$Choice                    # Themes: apply this theme without asking (Stream Deck, scripts)
 )
 $ErrorActionPreference = 'Continue'
 $t = $PSScriptRoot
@@ -195,11 +196,14 @@ switch ($Tool) {
     $list = @($list | Where-Object { Test-Path (Join-Path $RetroFE "layouts\$($_.name)\layout.xml") })
     $cur = Get-Setting 'layout'; $mode = $null; $mf = Join-Path $ManifestDir 'cabinet-mode.json'; if (Test-Path $mf) { $mode = ((Get-Content $mf -Raw | ConvertFrom-Json).effective -split '\+')[0] }
     Banner "THEMES - now: $cur$(if ($mode) { " (cabinet mode: $mode)" })"
-    if (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not $list) { $list | ForEach-Object { Write-Host ("  {0,-20} coverage {1}%" -f $_.name, $_.score) }; break }
+    if (-not $Choice -and (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not $list)) { $list | ForEach-Object { Write-Host ("  {0,-20} coverage {1}%" -f $_.name, $_.score) }; break }
+    $chosen = $null
+    if ($Choice) { $chosen = $Choice } else {
     $opts = @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
     Emit @{ type = 'choice'; title = "PICK A THEME$(if ($mode) { " FOR $($mode.ToUpper()) MODE" })"; prompt = 'Applied after the frontend restarts'; options = $opts; selected = 0 }
-    $deadline = (Get-Date).AddSeconds(180); $chosen = $null
+    $deadline = (Get-Date).AddSeconds(180)
     while ((Get-Date) -lt $deadline) { if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) { $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue; if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break } }; Start-Sleep -Milliseconds 100 }
+    }
     if ($chosen -and ($list | Where-Object { $_.name -eq $chosen })) {
       Set-Setting 'layout' $chosen
       if ($mode) { Set-Setting "cabinetTheme.$mode" $chosen }   # this mode keeps the theme across boots (Set-CabinetMode)
