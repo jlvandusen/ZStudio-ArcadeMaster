@@ -19,7 +19,11 @@ $ErrorActionPreference = 'Stop'
 function Get-Setting([string]$key) { $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern "^\s*$([regex]::Escape($key))\s*=\s*(.*)$" -ErrorAction SilentlyContinue | Select-Object -Last 1; if ($m) { $m.Matches[0].Groups[1].Value.Trim() } }
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
 $setting = if ($Type) { $Type } else { Get-Setting 'cabinetType' }
-$ct = Resolve-AmCabinetType $setting $cab (Get-Setting 'cabinetTitle') (Get-Setting 'cabinetTagline')
+$follow = (Get-Setting 'cabinetFollowHardware') -notmatch '^(no|false|0)$'
+$eff = if ($Type) { @{ id = $Type; switched = $false } } else { Get-AmEffectiveCabinetType $setting $cab $follow }
+# a custom title belongs to the configured type - not shown when the cabinet switched to another mode
+$ct = Resolve-AmCabinetType $eff.id $cab $(if ($eff.switched) { '' } else { Get-Setting 'cabinetTitle' }) $(if ($eff.switched) { '' } else { Get-Setting 'cabinetTagline' })
+if ($eff.switched) { $ct.auto = $false }
 if (-not $OutDir) { $OutDir = Join-Path $RetroFE "layouts\$Layout\images\intro" }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 $c1 = [AmPal]::Hex($ct.color); $c2 = [AmPal]::Hex($ct.color2)

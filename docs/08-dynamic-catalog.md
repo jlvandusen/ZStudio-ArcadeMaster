@@ -201,3 +201,32 @@ cabinetTagline = ...      # optional custom tagline
 - `New-Item -Force` on an existing registry key recreates it and wipes all its values. Use `Confirm-Key`.
 - A controller without a hat reports POV 0 ("up"), so check `JOYCAPS_HASPOV`.
 - A failed joystick read must keep the last state, or held buttons look like fresh presses.
+## Cabinet mode follows the hardware (2026-11-22)
+
+`tools/Set-CabinetMode.ps1` runs at every boot, before the intro.
+
+| Situation | Result |
+|---|---|
+| `cabinetType = auto` (default) | the mode is what's plugged in: wheel → racing, flight stick → flight, both → racing+flight, gun → light gun |
+| `cabinetType = racing` + `cabinetFollowHardware = yes` | stays racing while a wheel is connected; wheel gone and flight stick connected → flight cab |
+| a configured hybrid loses one part | drops that part, e.g. racing+lightgun with no gun → racing |
+
+**What the boot does with the mode:**
+- The **main menu shows only the plugged-in modes' collections** (Racing / Flight / Lightgun / Arcade). Settings, Tools, GAMES and the rest always stay. Hidden entries are kept in `manifest\main-menu-full.txt` and come back with their controller. `cabinetShowAllModes = yes` shows everything.
+- The mode's collection moves to the top of the menu, and `cabinetTheme.<mode> = <layout>` switches the theme per mode.
+- The boot intro shows the effective type. A custom `cabinetTitle` is only used while the configured type is active.
+- The decision is recorded in `manifest\cabinet-mode.json`.
+
+**Main menu:** choices run along the bottom in a carousel that the wheel steers, under a dashboard (speedometer / steering wheel / tachometer). `enterOnCollection = no`: scrolling only highlights, and SELECT opens. This RetroFE build defaults to entering a collection as soon as it is highlighted.
+
+## Themes: CoinOPS / Core import (first part of docs/10)
+
+`tools/Import-RetroFETheme.ps1 -Source <coinops root> -Layout <name> | -All`:
+- Copies the layout to `CO-<name>`; the source is never touched.
+- Fixes `monitor=` on second-screen layouts.
+- Carries in our boot intro and Tools screen; the theme's own splash is kept as `splash.original.xml`.
+- **Makes main-menu art for our items** by compositing our neon logo onto the theme's own frame.
+- Scores the artwork coverage on this cabinet and takes a real RetroFE preview screenshot.
+- Registers the theme in `manifest\themes.json`. Layouts already inside the install are registered in place, unchanged.
+
+Tested with DRIVE from E: → `CO-DRIVE`, 51% coverage (gaps: bezel, gallery, option art). ArcadeMaster is 74%.

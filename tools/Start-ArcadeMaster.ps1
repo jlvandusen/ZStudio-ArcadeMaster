@@ -65,7 +65,10 @@ if (-not $NoShuffle) {
 }
 
 # boot intro: render the cabinet-type title card (settings.conf cabinetType, auto = detected hardware)
-try { Invoke-Tool 'New-CabinetIntro.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout) | Out-Null } catch { Write-Log "intro failed: $($_.Exception.Message)" }
+# cabinet mode follows the hardware (racing stays racing with a wheel; flight stick instead -> flight cab ...)
+try { $mode = Invoke-Tool 'Set-CabinetMode.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log (($mode -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "cabinet mode failed: $($_.Exception.Message)" }
+$active = ((Select-String -Path (Join-Path $Root 'settings.conf') -Pattern '^\s*layout\s*=\s*(.+)$' | Select-Object -Last 1).Matches[0].Groups[1].Value).Trim()
+try { Invoke-Tool 'New-CabinetIntro.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $active) | Out-Null } catch { Write-Log "intro failed: $($_.Exception.Message)" }
 
 # Tools list art shows live state (devices, switches, game counts, backdrops) - refresh it every boot
 if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) {

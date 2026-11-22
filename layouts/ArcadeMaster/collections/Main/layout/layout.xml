@@ -79,40 +79,42 @@
     </onIdle>
   </image>
 
-  <!-- selection glow behind the centre logo -->
-  <image src="../../../images/fx_glow.png" x="center" y="420" xOrigin="center" yOrigin="center" width="1300" height="420" alpha=".35" layer="11">
+  <!-- dark band along the bottom for the choices -->
+  <image src="../../../images/ui_menu_band.png" x="0" y="680" width="1920" height="400" layer="10"/>
+
+  <!-- selection glow behind the centre choice -->
+  <image src="../../../images/fx_glow.png" x="center" y="912" xOrigin="center" yOrigin="center" width="900" height="300" alpha=".35" layer="11">
     <onMenuScroll><set duration=".06"><animate type="alpha" to=".8"/></set></onMenuScroll>
     <onMenuIdle><set duration=".5"><animate type="alpha" to=".35" algorithm="easeOutCubic"/></set></onMenuIdle>
   </image>
 
-  <!-- collections: big neon logos, carousel -->
-  <menu type="custom" mode="layout" imageType="logo" scrollTime=".18" scrollAcceleration=".04" orientation="vertical">
-    <itemDefaults x="center" y="420" xOrigin="center" yOrigin="center" width="900" height="220" alpha="0" layer="12" fontColor="ffffff" fontSize="96" loadFontSize="96"/>
-    <item yOffset="-440" width="420" height="103" alpha="0"/>
-    <item yOffset="-300" width="540" height="132" alpha=".35"/>
-    <item yOffset="-170" width="680" height="166" alpha=".6"/>
-    <item selected="true" width="900" height="220" alpha="1">
+  <!-- collections: neon logos in a row along the bottom - the wheel steers it left / right -->
+  <menu type="custom" mode="layout" imageType="logo" scrollTime=".18" scrollAcceleration=".04" orientation="horizontal">
+    <itemDefaults x="center" y="912" xOrigin="center" yOrigin="center" width="600" height="120" alpha="0" layer="12" fontColor="ffffff" fontSize="72" loadFontSize="72"/>
+    <item xOffset="-1260" width="300" height="60" alpha="0"/>
+    <item xOffset="-910" width="340" height="68" alpha=".3"/>
+    <item xOffset="-530" width="420" height="84" alpha=".6"/>
+    <item selected="true" width="600" height="120" alpha="1">
       <onIdle>
-        <set duration=".9"><animate type="width" to="940" algorithm="easeInOutSine"/><animate type="height" to="230" algorithm="easeInOutSine"/></set>
-        <set duration=".9"><animate type="width" to="900" algorithm="easeInOutSine"/><animate type="height" to="220" algorithm="easeInOutSine"/></set>
+        <set duration=".9"><animate type="width" to="630" algorithm="easeInOutSine"/><animate type="height" to="126" algorithm="easeInOutSine"/></set>
+        <set duration=".9"><animate type="width" to="600" algorithm="easeInOutSine"/><animate type="height" to="120" algorithm="easeInOutSine"/></set>
       </onIdle>
     </item>
-    <item yOffset="170" width="680" height="166" alpha=".6"/>
-    <item yOffset="300" width="540" height="132" alpha=".35"/>
-    <item yOffset="440" width="420" height="103" alpha="0"/>
+    <item xOffset="530" width="420" height="84" alpha=".6"/>
+    <item xOffset="910" width="340" height="68" alpha=".3"/>
+    <item xOffset="1260" width="300" height="60" alpha="0"/>
   </menu>
-
   <!-- instrument cluster (theme slots of the highlighted collection: wheel+gauges / yoke+horizon / crosshair+targets) -->
-  <reloadableImage type="am_gauge_under" mode="layout" x="430" y="900" xOrigin="center" yOrigin="center" width="230" height="230" layer="13">
+  <reloadableImage type="am_gauge_under" mode="layout" x="560" y="500" xOrigin="center" yOrigin="center" width="230" height="230" layer="13">
     <onMenuScroll><set duration=".35"><animate type="angle" to="28" algorithm="easeOutCubic"/></set></onMenuScroll>
     <onMenuIdle>
-      <set duration="1.6"><animate type="angle" to="-14" algorithm="easeInOutSine"/><animate type="y" to="888" algorithm="easeInOutSine"/></set>
-      <set duration="2.2"><animate type="angle" to="9" algorithm="easeInOutSine"/><animate type="y" to="910" algorithm="easeInOutSine"/></set>
-      <set duration="1.6"><animate type="angle" to="0" algorithm="easeInOutSine"/><animate type="y" to="900" algorithm="easeInOutSine"/></set>
+      <set duration="1.6"><animate type="angle" to="-14" algorithm="easeInOutSine"/><animate type="y" to="488" algorithm="easeInOutSine"/></set>
+      <set duration="2.2"><animate type="angle" to="9" algorithm="easeInOutSine"/><animate type="y" to="510" algorithm="easeInOutSine"/></set>
+      <set duration="1.6"><animate type="angle" to="0" algorithm="easeInOutSine"/><animate type="y" to="500" algorithm="easeInOutSine"/></set>
     </onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="am_gauge_face" mode="layout" x="430" y="900" xOrigin="center" yOrigin="center" width="250" height="250" layer="14"/>
-  <reloadableImage type="am_gauge_over" mode="layout" x="430" y="900" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
+  <reloadableImage type="am_gauge_face" mode="layout" x="560" y="500" xOrigin="center" yOrigin="center" width="250" height="250" layer="14"/>
+  <reloadableImage type="am_gauge_over" mode="layout" x="560" y="500" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
     <onMenuScroll><set duration=".16"><animate type="angle" to="112" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".55"><animate type="angle" to="-70" algorithm="easeOutCubic"/></set>
@@ -121,7 +123,7 @@
       <set duration="1.6"><animate type="angle" to="-100" algorithm="easeInOutSine"/></set>
     </onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="am_spinner" mode="layout" x="center" y="895" xOrigin="center" yOrigin="center" width="300" height="300" layer="15">
+  <reloadableImage type="am_spinner" mode="layout" x="center" y="480" xOrigin="center" yOrigin="center" width="380" height="380" layer="15">
     <onMenuScroll><set duration=".12"><animate type="angle" to="42" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".45"><animate type="angle" to="-9" algorithm="easeOutCubic"/></set>
@@ -133,8 +135,8 @@
       <set duration="1"><animate type="nop"/></set>
     </onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="am_gauge2_face" mode="layout" x="1490" y="900" xOrigin="center" yOrigin="center" width="250" height="250" layer="14"/>
-  <reloadableImage type="am_gauge2_over" mode="layout" x="1490" y="900" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
+  <reloadableImage type="am_gauge2_face" mode="layout" x="1360" y="500" xOrigin="center" yOrigin="center" width="250" height="250" layer="14"/>
+  <reloadableImage type="am_gauge2_over" mode="layout" x="1360" y="500" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
     <onMenuScroll><set duration=".1"><animate type="angle" to="128" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".3"><animate type="angle" to="-20" algorithm="easeOutCubic"/></set>

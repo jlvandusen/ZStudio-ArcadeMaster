@@ -21,7 +21,7 @@ function Get-AmAutoCabinetType($cab) {
   $k = $cab.capabilities; $parts = @()
   $wheel = [bool]$k.wheel; $gun = [int]$k.lightguns -gt 0; $stick = [bool]$k.flightStick
   if ($wheel -and ($k.hShifter -or $k.clutch) -and $stick) { $parts += 'simulation' }
-  elseif ($wheel) { $parts += 'racing' }
+  elseif ($wheel) { $parts += 'racing'; if ($stick) { $parts += 'flight' } }
   elseif ($stick) { $parts += 'flight' }
   if ($gun) { $parts += 'lightgun' }
   if (-not $parts) { $parts += $(if ([int]$k.players -ge 3) { 'pedestal' } elseif ($k.trackball) { 'multicade' } else { 'standup' }) }
@@ -52,3 +52,33 @@ function Resolve-AmCabinetType([string]$setting, $cab, [string]$customTitle, [st
 function Get-AmCabinetChoices {
   @('auto') + @($script:AmCabinetTypes.Keys) + @('racing+lightgun', 'racing+flight', 'standup+lightgun')
 }
+
+# ---------------------------------------------------------------- hardware-following cabinet mode
+# What each type needs physically. A configured type whose hardware is present stays; one whose hardware is gone is
+# dropped and the cabinet follows what IS plugged in (a flight stick instead of the wheel -> flight cab).
+$script:AmTypeNeeds = @{
+  racing = { param($k) [bool]$k.wheel }
+  simulation = { param($k) [bool]$k.wheel }
+  flight = { param($k) [bool]$k.flightStick }
+  lightgun = { param($k) [int]$k.lightguns -gt 0 }
+  standup = { param($k) $true }; multicade = { param($k) $true }; pedestal = { param($k) $true }
+}
+# -> @{ id; configured; switched; reason }
+function Get-AmEffectiveCabinetType([string]$setting, $cab, [bool]$follow = $true) {
+  $configured = if (-not $setting) { 'auto' } else { $setting.ToLower() -replace '\s', '' }
+  if ($configured -eq 'auto' -or -not $cab) { $id = Get-AmAutoCabinetType $cab; return @{ id = $id; configured = $configured; switched = $false; reason = 'auto: detected hardware' } }
+  if (-not $follow) { return @{ id = $configured; configured = $configured; switched = $false; reason = 'fixed (cabinetFollowHardware = no)' } }
+  $k = $cab.capabilities
+  $parts = @($configured -split '\+' | Where-Object { $script:AmCabinetTypes.Contains($_) })
+  $keep = @($parts | Where-Object { & $script:AmTypeNeeds[$_] $k })
+  $missing = @($parts | Where-Object { $keep -notcontains $_ })
+  if (-not $missing) { return @{ id = ($parts -join '+'); configured = $configured; switched = $false; reason = 'configured type - its controls are connected' } }
+  $id = if ($keep) { $keep -join '+' } else { Get-AmAutoCabinetType $cab }
+  return @{ id = $id; configured = $configured; switched = $true; reason = "$($missing -join ' + ') controls not connected -> $id (from what is plugged in)" }
+}
+# collection that should open first for a type (first one that exists)
+function Get-AmTypeCollection([string]$id) { @{ racing = 'Racing'; simulation = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup = 'Arcade'; multicade = 'GAMES'; pedestal = 'Arcade' }[($id -split '\+')[0]] }
+# main-menu collections that belong to each mode (everything else in the menu - Settings, Tools, GAMES... - always stays)
+$script:AmModeCollections = @{ racing = @('Racing'); simulation = @('Racing', 'Flight'); flight = @('Flight'); lightgun = @('Lightgun'); standup = @('Arcade'); pedestal = @('Arcade'); multicade = @('Racing', 'Flight', 'Lightgun', 'Arcade') }
+function Get-AmModeCollectionsFor([string]$id) { @($id -split '\+' | ForEach-Object { $script:AmModeCollections[$_] } | Select-Object -Unique) }
+function Get-AmAllModeCollections { @($script:AmModeCollections.Values | ForEach-Object { $_ } | Select-Object -Unique) }
