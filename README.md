@@ -13,7 +13,8 @@ A deployable arcade-cabinet system from **The Real Z Studios**. It covers racing
 | Boot launcher (shuffle + crash-restart watchdog) | `tools/Start-ArcadeMaster.ps1` |
 | RetroFE touch / wheel / trackball / spinner / lightgun input | patch 0002, `retrofe/controls/*.conf` profiles, `docs/07-input-extensions.md` (verified with real Windows touch injection) |
 | Duplicate scan of all game trees | done: **155.5 GB reclaimable across 46 games**, see `reports/dupes/clusters.md` |
-| Single package (one game store, all frontends) | design in `docs/04-package-architecture.md`; manifest builder + consolidation next |
+| Dynamic catalog: `games.json` from TeknoParrot/RetroFE/LaunchBox, generated Racing/Flight/Arcade collections + PC games | working: `Build-Manifest.ps1`, `New-RetroFECollections.ps1`, see `docs/08-dynamic-catalog.md` |
+| Single package (one game store, all frontends) | design in `docs/04-package-architecture.md`; base+overlay consolidation next |
 | Wheel / lightgun master input mapping | built, see `tools/wheelmap/` and `docs/06-input-mapping.md`. The wizard needs one run on the real wheel. |
 
 ## Layout
