@@ -26,3 +26,4 @@ layouts/ArcadeMaster/collections/*/system_artwork/
 .vscode/
 Thumbs.db
 desktop.ini
+!tools/streamdeck/bin/hidapi.dll

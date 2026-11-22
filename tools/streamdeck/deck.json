@@ -1,0 +1,49 @@
+{
+  "//": "ArcadeMaster Stream Deck layout (tools/streamdeck/amdeck.py, docs/12-stream-deck.md). Keys are numbered 0-14 row by row on a 15-key deck (5 x 3). Actions: page:<name> | themes (theme picker) | theme:<layout> | tool:<Invoke-CabinetTool name> | restart | keys:<K1+K2,...> (scancodes sent to the game) | volume:up|down|mute | brightness. 'restart': true after a tool restarts RetroFE so the change shows. The 'ingame' page shows by itself while any process in gameProcesses runs, and the deck returns to the menu page when the game ends.",
+  "brightness": [30, 60, 100],
+  "fps": 12,
+  "//anim": "Per key: \"anim\": \"pulse\" makes the frame breathe; \"image\": \"art/<file>.png\" (animated PNG or GIF, path relative to this folder, or absolute) replaces the label. Every key flashes on press and shows a spinner while its job runs.",
+  "gameProcesses": [
+    "mame.exe", "mame64.exe", "retroarch.exe", "TeknoParrotUi.exe", "OpenParrotLoader.exe", "OpenParrotLoader64.exe",
+    "BudgieLoader.exe", "Dolphin.exe", "Cemu.exe", "Supermodel.exe", "emulator_multicpu.exe", "EMULATOR.EXE",
+    "pcsx2.exe", "pcsx2-qt.exe", "pcsx2-qtx64.exe", "rpcs3.exe", "PPSSPPWindows64.exe", "redream.exe", "xemu.exe",
+    "yuzu.exe", "citra-qt.exe", "xenia_canary.exe", "flycast.exe", "demul.exe"
+  ],
+  "pages": {
+    "home": {
+      "0":  { "label": ["", ""], "image": "logo", "action": "page:home", "status": "theme" },
+      "1":  { "label": ["THEMES", ">"], "color": "#ff2bd6", "action": "themes", "anim": "pulse" },
+      "2":  { "label": ["2ND", "SCREEN"], "color": "#2ec8ff", "action": "tool:ToggleSecondScreen", "restart": true },
+      "3":  { "label": ["SHUFFLE", "ART"], "color": "#ffcc00", "action": "tool:ShuffleBackgrounds", "restart": true },
+      "4":  { "label": ["RESTART", "MENU"], "color": "#ff8a00", "action": "restart" },
+      "5":  { "label": ["VOL", "-"], "color": "#9aa4b2", "action": "volume:down" },
+      "6":  { "label": ["VOL", "+"], "color": "#9aa4b2", "action": "volume:up" },
+      "7":  { "label": ["MUTE", ""], "color": "#9aa4b2", "action": "volume:mute" },
+      "8":  { "label": ["DECK", "LIGHT"], "color": "#9aa4b2", "action": "brightness" },
+      "9":  { "label": ["IN-GAME", "KEYS >"], "color": "#3ddc84", "action": "page:ingame" },
+      "10": { "label": ["DETECT", "PADS"], "color": "#2ec8ff", "action": "tool:DetectControllers" },
+      "11": { "label": ["REBUILD", "MENUS"], "color": "#2ec8ff", "action": "tool:RebuildMenus", "restart": true },
+      "12": { "label": ["SYSTEM", "HEALTH"], "color": "#3ddc84", "action": "tool:SystemHealth" },
+      "13": { "label": ["PERF", "LOG"], "color": "#9aa4b2", "action": "tool:TogglePerfLog", "restart": true },
+      "14": { "label": ["", ""], "action": "" }
+    },
+    "ingame": {
+      "//": "MAME default keys (coin 5-8, start 1-4, pause P, exit Esc, service 9, test F2, save Shift+F7, load F7). Most CoinOPS/TeknoParrot profiles follow them. Change here if the I-PAC panel is programmed differently.",
+      "0":  { "label": ["COIN", "P1"], "color": "#ffcc00", "action": "keys:5" },
+      "1":  { "label": ["COIN", "P2"], "color": "#ffcc00", "action": "keys:6" },
+      "2":  { "label": ["COIN", "P3"], "color": "#ffcc00", "action": "keys:7" },
+      "3":  { "label": ["COIN", "P4"], "color": "#ffcc00", "action": "keys:8" },
+      "4":  { "label": ["PAUSE", ""], "color": "#4aa8ff", "action": "keys:P" },
+      "5":  { "label": ["START", "P1"], "color": "#3ddc84", "action": "keys:1" },
+      "6":  { "label": ["START", "P2"], "color": "#3ddc84", "action": "keys:2" },
+      "7":  { "label": ["START", "P3"], "color": "#3ddc84", "action": "keys:3" },
+      "8":  { "label": ["START", "P4"], "color": "#3ddc84", "action": "keys:4" },
+      "9":  { "label": ["SAVE", "STATE"], "color": "#9aa4b2", "action": "keys:SHIFT+F7" },
+      "10": { "label": ["EXIT", "GAME"], "color": "#ff4d4d", "action": "keys:ESC", "anim": "pulse" },
+      "11": { "label": ["SERVICE", ""], "color": "#9aa4b2", "action": "keys:9" },
+      "12": { "label": ["TEST", "MENU"], "color": "#9aa4b2", "action": "keys:F2" },
+      "13": { "label": ["LOAD", "STATE"], "color": "#9aa4b2", "action": "keys:F7" },
+      "14": { "label": ["MENU", "<"], "color": "#ff2bd6", "action": "page:home" }
+    }
+  }
+}

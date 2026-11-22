@@ -11,8 +11,11 @@ param([string]$InstallTo)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot
 $csc = @(Get-ChildItem 'D:\VS', 'C:\Program Files\Microsoft Visual Studio', 'C:\Program Files (x86)\Microsoft Visual Studio' -Recurse -Filter csc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\Roslyn\\csc\.exe$' } | Select-Object -First 1)
-if (-not $csc) { throw 'Roslyn csc.exe not found (install Visual Studio Build Tools)' }
 $fw = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
+# no Visual Studio (e.g. a cabinet): the C# 5 compiler that ships with .NET Framework 4.x builds the launcher as well
+if (-not $csc) { $csc = @(Get-Item (Join-Path $fw 'csc.exe') -ErrorAction SilentlyContinue) }
+if (-not $csc) { throw 'no C# compiler: neither Roslyn (Visual Studio Build Tools) nor the .NET Framework csc.exe was found' }
+Write-Host "compiler: $($csc[0].FullName)"
 $refs = 'System.dll', 'System.Core.dll', 'System.Drawing.dll', 'System.Windows.Forms.dll', 'System.Web.Extensions.dll', 'Microsoft.CSharp.dll' | ForEach-Object { "/reference:$(Join-Path $fw $_)" }
 $dist = Join-Path $repo 'dist'; New-Item -ItemType Directory -Force $dist | Out-Null
 
