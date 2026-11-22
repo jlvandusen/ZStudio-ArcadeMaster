@@ -63,5 +63,17 @@
 - `tools/Find-Duplicates.ps1` is read-only and writes to `reports/dupes/`.
 - The first run stalled after enumeration: PowerShell 5.1's `Group-Object` spent more than 45 minutes on 1.27 M items. I replaced it with Dictionary grouping and resumed with `-ReuseFileList`.
 
+### RetroFE crash fixes (source patches, `retrofe/patches/0001-arcademaster-crash-fixes.patch`)
+- **Root cause of the remaining crashes:** after a scroll in an **empty collection**, `RetroFE::run` did `nextPageItem_ = getSelectedItem(); nextPageItem_->leaf` (null dereference, `RetroFE.cpp` ~1400, plus 2 similar sites). Found via symbolised crash log and disassembly (`cmp byte ptr [rax+2E8h]` on the null item). Guarded all 3 sites.
+- `Page::getPlaylistName()` and `next/prevPlaylist()` dereferenced `playlists.end()` for collections with no playlists. Guarded.
+- Crash handler now logs `module+RVA symbol (file:line)` through dbghelp (needs `retrofe.pdb` next to the exe; builds now use `/Zi` + `/DEBUG`).
+- Crash handler no longer shows a modal SDL message box (those were the crash popups on screen). Opt back in with env `RETROFE_CRASH_DIALOG=1`.
+- DRIVE's `GAMES`/`SETTINGS` merged collections lacked `settings.conf`. CoinOPS then merges nothing ("Could not import any collection settings"). An empty file fixes it, and the test copy now has one.
+- CoinOPS builds a **new page per collection**, so layouts must not rely on `menuIndex="1"` for the game list. The ArcadeMaster layout uses `layout.xml` (game list) + `collections/Main/layout/layout.xml` (main menu).
+
+### ArcadeMaster layout (installed in the `DRIVE-coinops` test copy, `layout = ArcadeMaster`; DRIVE settings kept in `settings.conf.drive-layout.bak`)
+- The Real Z Studios boot banner (logo pulled from the SkyLancers LFS object `data/ui/studio_logo.png`).
+- Verified on screen: splash, main menu, racing game list, scroll animations, and the flight theme.
+
 ### Environment note
 - C: dropped to 0 MB free during the session. My only writes there were Git and a failed WinGet download (deleted). The rest was Windows Update and Edge payloads, about 3.6 GB of zips in Downloads, and MSI installs from another process.
