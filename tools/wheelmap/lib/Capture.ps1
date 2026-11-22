@@ -33,11 +33,20 @@ function Close-WMDevices($open) { foreach ($o in $open) { try { $o.Dev.Dispose()
 function Read-WMAll($open) { $r = @(); foreach ($o in $open) { $r += , $o.Dev.Read() }; return $r }
 
 function Get-WMConsoleKey {
+    # ArcadeMaster tool screen: on-screen buttons drop a key (S/R/B/Q/Enter) into AM_WIZ_KEYFILE
+    $kf = $env:AM_WIZ_KEYFILE
+    if ($kf -and (Test-Path -LiteralPath $kf)) {
+        $k = ''; try { $k = (Get-Content -LiteralPath $kf -Raw).Trim(); Remove-Item -LiteralPath $kf -Force } catch { }
+        if ($k) { return [pscustomobject]@{ Key = $k } }
+    }
     try {
         if ([Console]::KeyAvailable) { return [Console]::ReadKey($true) }
     } catch { }
     return $null
 }
+
+# structured progress for the ArcadeMaster tool screen (only when it hosts us)
+function Send-WMEvent([hashtable]$o) { if ($env:AM_VISUAL -eq '1') { [Console]::Out.WriteLine('@AM ' + (ConvertTo-Json $o -Compress -Depth 5)) } }
 
 function Get-WMBaseline($open, [int]$ms = 250) {
     $n = 0; $sum = @(); $btn = @(); $pov = @()
@@ -116,7 +125,8 @@ function Wait-WMAxis($open, $base, [string]$kind) {
             if ($now - $lastPrint -gt 200) {
                 $lastPrint = $now
                 $pn = $open[$k].Info.ProductName; if ($pn.Length -gt 28) { $pn = $pn.Substring(0, 28) }
-                Write-Host -NoNewline ("`r    strongest: {0,-28} {1,-10} value {2,5}  travel {3,5}      " -f $pn, [WheelMap.DI]::AxisNames[$a], $v, $range)
+                if ($env:AM_VISUAL -eq '1') { Send-WMEvent @{ type = 'wiz-axis'; device = $pn; axis = [WheelMap.DI]::AxisNames[$a]; value = $v; travel = $range; need = $(if ($kind -eq 'axis-pedal') { $need } else { 2 * $need }) } }
+                else { Write-Host -NoNewline ("`r    strongest: {0,-28} {1,-10} value {2,5}  travel {3,5}      " -f $pn, [WheelMap.DI]::AxisNames[$a], $v, $range) }
             }
             if ($forced -and -not $done) { Write-Host ''; Write-Host '    not enough movement yet - keep going (S to skip)' -ForegroundColor DarkYellow; $forced = $false }
         }
@@ -222,6 +232,7 @@ function Invoke-WMCapture {
     Write-Host ''
     Write-Host 'Devices in this capture:' -ForegroundColor Cyan
     foreach ($o in $open) { Write-Host ("  #{0} {1}  [{2}, guessed role: {3}]  {4}" -f $o.Info.EnumIndex, $o.Info.ProductName, $o.Info.TypeName, $o.Role, $o.Info.InstanceGuid) }
+    Send-WMEvent @{ type = 'wiz-devices'; devices = @($open | ForEach-Object { @{ name = $_.Info.ProductName; role = "$($_.Role)" } }) }
     Write-Host ''
     Write-Host 'Keys: S = skip   R = redo   B = back   Q = quit and save   Enter = accept axis now' -ForegroundColor DarkGray
     Write-Host 'Keep THIS window focused for the wizard keys; the devices are read in the background.' -ForegroundColor DarkGray
@@ -250,6 +261,7 @@ function Invoke-WMCapture {
             Write-Host ("[{0}/{1}] {2}" -f ($i + 1), $steps.Count, $s.control) -ForegroundColor Yellow -NoNewline
             Write-Host ("  {0}" -f $s.prompt)
             if ($s.Contains('hint')) { Write-Host ("        suggestion: {0}" -f $s.hint) -ForegroundColor DarkGray }
+            Send-WMEvent @{ type = 'wiz-step'; index = $i + 1; total = $steps.Count; control = $s.control; prompt = $s.prompt; hint = $(if ($s.Contains('hint')) { $s.hint } else { '' }); kind = "$kind" }
             Start-Sleep -Milliseconds 400
             $base = Get-WMBaseline $open
             $res = $null
@@ -269,6 +281,7 @@ function Invoke-WMCapture {
             if ($res -is [string]) {
                 if ($res -eq 'skip') {
                     Write-Host '    skipped'; $prof.controls[$s.control] = [ordered]@{ type = 'none' }
+                    Send-WMEvent @{ type = 'wiz-result'; control = $s.control; value = 'SKIPPED'; ok = $false }
                     if ($s.Contains('group')) { $skipGroup = $s.group }
                     $i++; continue
                 }
@@ -320,6 +333,8 @@ function Invoke-WMCapture {
                 }
             }
             $prof.controls[$s.control] = $entry
+            $what = switch ($entry.type) { 'axis' { "$($entry.axis)$(if ($entry.Contains('direction')) { $entry.direction })" } 'button' { "BUTTON $($entry.button)" } 'pov' { "HAT $($entry.dir)" } 'key' { "KEY $($entry.name)" } default { $entry.type } }
+            Send-WMEvent @{ type = 'wiz-result'; control = $s.control; value = "$what"; ok = $true }
             $i++
         }
     } finally {

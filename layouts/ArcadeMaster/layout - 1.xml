@@ -6,7 +6,7 @@
     bottom : touch bar  BACK | PREV | START | NEXT | RANDOM   (row 3 of 3, columns 1..5 of 5)
   Enable with settings.conf: numScreens = 2, screenNum1 = <display index>, fullscreen1 = yes
 -->
-<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
+<layout monitor="1" width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
   <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
   <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>

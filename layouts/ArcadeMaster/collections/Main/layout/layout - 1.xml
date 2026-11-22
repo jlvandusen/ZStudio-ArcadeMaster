@@ -2,7 +2,7 @@
   ArcadeMaster - SECOND SCREEN, MAIN MENU: the highlighted collection (Racing / Flight / Arcade / Lightgun)
   over random fanart from its games, plus the touch bar (BACK | PREV | START = open | NEXT | RANDOM).
 -->
-<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
+<layout monitor="1" width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
   <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
   <reloadableImage type="am_bg1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>

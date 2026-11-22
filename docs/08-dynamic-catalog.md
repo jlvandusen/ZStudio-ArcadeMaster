@@ -122,25 +122,30 @@ DirectInput instance GUIDs change when a device moves USB port or Windows re-enu
 2. `New-RetroFECollections.ps1 -RetroFE <root>`
 3. `Set-LayoutThemes.ps1 -LayoutDir <root>\layouts\ArcadeMaster -CollectionsDir <root>\collections -Shuffle` (also run at every boot by `Start-ArcadeMaster.ps1`)
 
-## TOOLS menu (maintenance from the cabinet controls)
+## TOOLS menu (maintenance from the cabinet controls, all visual)
 
-`tools/New-CabinetToolsCollection.ps1 -RetroFE <root>` adds a **Tools** entry to the main menu. It has eight items, each a `.bat` with a neon logo:
+`tools/New-CabinetToolsCollection.ps1 -RetroFE <root>` adds a **Tools** entry to the main menu. It has its own layout, `layouts/ArcadeMaster/collections/Tools/layout/layout.xml`: the list on the left, a large preview card on the right, and the tool's backdrop behind.
 
-| Item | Runs |
-|---|---|
-| Wheel Setup | `wheelmap\WheelMap.ps1 -Capture`, then device detection |
-| Detect Controllers | `Get-CabinetDevices.ps1` + a dry-run ID check |
-| Repair Controller IDs | `Update-ControllerIds.ps1 -Apply` |
-| Rebuild Game Menus | devices → catalog → controls → collections → backdrops |
-| Force Feedback On-Off | toggles `ffb` in `settings.conf` |
-| Second Screen On-Off | `Set-RetroFEScreens.ps1` / `-Single` |
-| Shuffle Backgrounds | `Set-LayoutThemes.ps1 -Shuffle -BackgroundsOnly` |
-| Performance Log On-Off | toggles `perfLog` |
+| Item | Runs | Tool page shows |
+|---|---|---|
+| Wheel Setup | `wheelmap\WheelMap.ps1 -Capture` | the prompt for each control, a movement meter, captured controls, and the LIVE wheel angle, pedal travel and button lights. Touch buttons: SKIP / REDO / BACK / ACCEPT / FINISH (FINISH saves). Esc cancels without saving. |
+| Detect Controllers | `Get-CabinetDevices.ps1` plus a dry-run ID check | capability tiles (players, modes, displays, restrictor), a card per device (icon, role, FFB / axes / buttons), and profiles needing repair |
+| Repair Controller IDs | `Update-ControllerIds.ps1 -Apply` | device cards and profiles repaired |
+| Rebuild Game Menus | devices → catalog → controls → collections → backdrops | an animated checklist, then Racing / Flight / Arcade / Lightgun game counts |
+| Force Feedback, Second Screen, Performance Log | toggle `ffb` / `numScreens` / `perfLog` | a large animated ON/OFF switch (Second Screen also draws the connected displays) |
+| Shuffle Backgrounds | `Set-LayoutThemes.ps1 -Shuffle -BackgroundsOnly` | the new main-menu backdrops as thumbnails |
 
-How a launch works:
+How it fits together:
 
-- The `AM_TOOLS` launcher runs `wscript RunHidden.vbs <item>.bat`. No console window opens; from a GUI process, a console would open as a desktop-sized Windows Terminal with unreadable text.
-- The `.bat` starts **`Show-ToolScreen.ps1`**. This is a borderless, topmost window covering the display that RetroFE's `screenNum0` points at, with text sized from the screen height. It streams the tool's output live: section titles in cyan, errors in red, warnings in amber.
-- Once the tool is done, any key, tap, mouse click or joystick/wheel button returns to the arcade. Otherwise the window closes after 15 s. While the tool runs, these inputs are ignored, because Wheel Setup needs them.
-- The launcher has `reboot = yes`, so RetroFE restarts and the new settings take effect.
+- **List art:** `tools/New-ToolsArt.ps1` draws it from the cabinet's current state:
+  - logos, with a live ON/OFF switch on the toggles
+  - preview cards ("NOW": devices plugged in, game counts, current backdrops, switch state, whether the wheel profile was captured or only guessed)
+  - backdrops
+
+  It runs after every tool and at boot (`Start-ArcadeMaster.ps1`), so the menu never shows stale state.
+- **Tool page:** `tools/Show-ToolScreen.ps1` is a borderless, topmost window on the display that `screenNum0` points at. Everything is scaled to that display's resolution. It runs `Invoke-CabinetTool.ps1` hidden and draws the `@AM {json}` events the tool emits (`AM_VISUAL=1`). WheelMap emits `wiz-*` events and reads the on-screen buttons from `AM_WIZ_KEYFILE`. Shared drawing (icons, cards, switches, checks, bars, live joystick reads through winmm) lives in `tools/lib/AmVisual.ps1`.
+- **Returning:** once the tool is done, a key, tap or **short press-and-release** of any controller button returns to the arcade. Otherwise the page closes itself after 15 s. Held buttons never close it; an H-shifter sitting in gear reports one. Chattering buttons are ignored. The close reason is logged to `%TEMP%\am-toolscreen.log`, and paint errors to `%TEMP%\am-toolscreen-errors.txt`.
+- **Launching:** the `AM_TOOLS` launcher runs `wscript RunHidden.vbs <item>.bat`, so no console window opens. It has `reboot = yes`, so RetroFE restarts and the new settings take effect.
 - Generated items are marked `ARCADEMASTER-TOOLS.txt`, so `Build-Manifest` skips them. `-Remove` deletes the collection.
+
+**Second-screen layouts:** `layout - 1.xml` (root and Main) must declare `<layout monitor="1" ...>`. Without it, RetroFE draws the pedestal layout (touch bar, title, PLAYERS/MAKER) over the main screen on a single-display cabinet. With it, RetroFE skips the layout when monitor 1 doesn't exist.
