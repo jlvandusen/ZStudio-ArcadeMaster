@@ -98,6 +98,53 @@ The second-screen layouts were previewed on screen 0 with real data, e.g. Ballis
 
 **Not verified** (needs the pedestal hardware): a real second display, Windows digitizer-to-display mapping, and the layout at the pedestal screen's actual resolution. If that screen isn't 16:9, add a ratio-specific file such as `layout 16x10 - 1.xml`.
 
+## Force feedback in the frontend (patch 0004)
+
+The wheel is part of the UI. Opt in with `settings.conf`:
+
+```
+ffb = yes
+ffbDevice = G29        # name substring; default = first wheel-like FFB device
+ffbStrength = 75       # overall gain %
+ffbCenter = 35         # centring spring while browsing (0 = off)
+ffbDamper = 12         # light resistance (0 = off)
+ffbTick = 45           # detent per item scrolled, pushed in the scroll direction
+ffbTickMs = 35
+ffbThunk = 60          # "gear change" when a collection opens
+ffbSelect = 55         # rumble on select
+ffbLaunch = 85         # rumble when a game starts
+```
+
+| Moment | Feel |
+|---|---|
+| browsing | centring spring + damper. If the device refuses a spring, its autocentre is used. |
+| each item scrolled | short constant-force tick left/right (rate-limited to one per tick length on fast scrolls) |
+| entering a collection | heavier thunk |
+| select | short sine rumble |
+| game launch | rumble, then the device is **released**. DirectInput FFB is exclusive, so the game (TeknoParrot FFB plugin, emulators) gets the wheel to itself. It's re-acquired when the game exits. |
+
+Robustness:
+- FFB is opened **from the joystick RetroFE already has open**. A second independent DirectInput open fails with "Resetting device".
+- Only effects the device reports are created.
+- All requests are flags executed on the main thread once per frame (scrolling can run on worker threads).
+- Forces stop at exit.
+
+Verified on this cabinet's **Logitech G29** (2026-11-22):
+- opened via the shared joystick handle
+- spring, damper, ticks and rumble created
+- a test launch showed *released* before the program ran and *re-acquired* when it exited
+- frame timing unchanged with FFB running
+
+## Performance telemetry (patch 0004)
+
+`perfLog = N` logs every N seconds: `frames | frame ms p50 / p95 / p99 / max | hitches (> 2x target)`.
+
+This cabinet, CoinOPS build + ArcadeMaster layout, while scrolling and opening collections with FFB on:
+
+`300 frames in 5.0s | p50 16.67 p95 16.67-16.80 p99 16.8-17.1 max ≤ 17.3 | hitches 0`
+
+That's a locked 60 fps with no dropped frames.
+
 ## Next
 
 1. **Tap-to-pick:** tap a visible game in the list to scroll to it, and tap it again to launch. This needs hit-testing in `ScrollingList`; the same code gives lightgun aim-to-select.

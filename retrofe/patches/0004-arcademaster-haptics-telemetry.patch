@@ -1,0 +1,402 @@
+diff --git a/RetroFE/Source/CMakeLists.txt b/RetroFE/Source/CMakeLists.txt
+index e9c4fddd..95648753 100644
+--- a/RetroFE/Source/CMakeLists.txt
++++ b/RetroFE/Source/CMakeLists.txt
+@@ -218,7 +218,8 @@ set(RETROFE_HEADERS
+ 	"${RETROFE_DIR}/Source/Control/MouseAxisHandler.h"
+ 	"${RETROFE_DIR}/Source/Control/TouchDragHandler.h"
+ 	"${RETROFE_DIR}/Source/Control/PointerInput.h"
+-	"${RETROFE_DIR}/Source/Control/GestureHandler.h"
++	"${RETROFE_DIR}/Source/Control/GestureHandler.h"
++	"${RETROFE_DIR}/Source/Control/Haptics.h"
+     "${RETROFE_DIR}/Source/Control/Restrictor/Restrictor.h"
+     "${RETROFE_DIR}/Source/Control/Restrictor/RestrictorManager.h"
+     "${RETROFE_DIR}/Source/Control/Restrictor/ServoStikRestrictor.h"
+@@ -300,7 +301,8 @@ set(RETROFE_SOURCES
+ 	"${RETROFE_DIR}/Source/Control/MouseButtonHandler.cpp"
+     "${RETROFE_DIR}/Source/Control/MouseAxisHandler.cpp"
+ 	"${RETROFE_DIR}/Source/Control/TouchDragHandler.cpp"
+-	"${RETROFE_DIR}/Source/Control/PointerInput.cpp"
++	"${RETROFE_DIR}/Source/Control/PointerInput.cpp"
++	"${RETROFE_DIR}/Source/Control/Haptics.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/Restrictor.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/RestrictorManager.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/ServoStikRestrictor.cpp"
+diff --git a/RetroFE/Source/Control/Haptics.cpp b/RetroFE/Source/Control/Haptics.cpp
+new file mode 100644
+index 00000000..7ec32ab6
+--- /dev/null
++++ b/RetroFE/Source/Control/Haptics.cpp
+@@ -0,0 +1,163 @@
++/* This file is part of RetroFE (ArcadeMaster extension: force feedback in the frontend). GPLv3 or later. */
++#include "Haptics.h"
++#include "../Database/Configuration.h"
++#include "../Utility/Log.h"
++#include "../Utility/Utils.h"
++#include <algorithm>
++
++Haptics& Haptics::instance() { static Haptics h; return h; }
++
++static int pctToLevel(int pct) { return std::clamp(pct, 0, 100) * 32767 / 100; }
++
++void Haptics::initialize(Configuration& config) {
++    config.getProperty("ffb", enabled_);
++    if (!enabled_) { LOG_INFO("Haptics", "frontend force feedback disabled (settings: ffb = yes to enable)"); return; }
++    config.getProperty("ffbDevice", deviceMatch_);
++    config.getProperty("ffbStrength", strength_);
++    config.getProperty("ffbCenter", center_);
++    config.getProperty("ffbDamper", damper_);
++    config.getProperty("ffbTick", tick_);
++    config.getProperty("ffbTickMs", tickMs_);
++    config.getProperty("ffbThunk", thunkPct_);
++    config.getProperty("ffbSelect", selectPct_);
++    config.getProperty("ffbLaunch", launchPct_);
++    if (SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC) != 0) {
++        LOG_WARNING("Haptics", std::string("SDL haptic init failed: ") + SDL_GetError());
++        enabled_ = false; return;
++    }
++    open();
++}
++
++bool Haptics::open() {
++    if (!enabled_ || haptic_) return haptic_ != nullptr;
++    const int n = SDL_NumHaptics();
++    int pick = -1;
++    const std::string want = Utils::toLower(deviceMatch_);
++    for (int i = 0; i < n; ++i) {
++        const char* nm = SDL_HapticName(i);
++        const std::string name = Utils::toLower(nm ? nm : "");
++        LOG_INFO("Haptics", "FFB device " + std::to_string(i) + ": " + (nm ? nm : "?"));
++        if (!want.empty()) { if (name.find(want) != std::string::npos) { pick = i; break; } }
++        else if (pick < 0 || name.find("wheel") != std::string::npos || name.find("racing") != std::string::npos) pick = i;
++    }
++    if (pick < 0) { LOG_WARNING("Haptics", "no matching force-feedback device (ffbDevice = '" + deviceMatch_ + "')"); return false; }
++
++    // Prefer opening FFB *from the joystick RetroFE already has open*: on Windows the input layer holds the
++    // device through DirectInput, and a second independent open cannot reset/acquire it ("Resetting device").
++    const std::string pickName = Utils::toLower(SDL_HapticName(pick) ? SDL_HapticName(pick) : "");
++    for (int j = 0; j < SDL_NumJoysticks() && !haptic_; ++j) {
++        const char* jn = SDL_JoystickNameForIndex(j);
++        const std::string jname = Utils::toLower(jn ? jn : "");
++        const bool match = !want.empty() ? jname.find(want) != std::string::npos
++                                         : (!pickName.empty() && (jname.find(pickName) != std::string::npos || pickName.find(jname) != std::string::npos));
++        if (!match) continue;
++        SDL_Joystick* joy = SDL_JoystickFromInstanceID(SDL_JoystickGetDeviceInstanceID(j));
++        bool openedHere = false;
++        if (!joy) { joy = SDL_JoystickOpen(j); openedHere = joy != nullptr; }
++        if (joy && SDL_JoystickIsHaptic(joy) == 1) {
++            haptic_ = SDL_HapticOpenFromJoystick(joy);
++            if (haptic_) LOG_INFO("Haptics", std::string("opened FFB from joystick '") + (jn ? jn : "?") + "'");
++            else LOG_WARNING("Haptics", std::string("SDL_HapticOpenFromJoystick failed: ") + SDL_GetError());
++        }
++        if (!haptic_ && openedHere) SDL_JoystickClose(joy);
++    }
++    if (!haptic_) {
++        haptic_ = SDL_HapticOpen(pick);
++        if (!haptic_) { LOG_WARNING("Haptics", std::string("SDL_HapticOpen failed: ") + SDL_GetError()); return false; }
++    }
++    caps_ = SDL_HapticQuery(haptic_);
++    if (caps_ & SDL_HAPTIC_GAIN) SDL_HapticSetGain(haptic_, std::clamp(strength_, 0, 100));
++
++    // browsing feel: our own spring (+ damper); if the device has no spring, use its autocentre instead
++    if ((caps_ & SDL_HAPTIC_SPRING) && center_ > 0) { effSpring_ = makeCondition(SDL_HAPTIC_SPRING, center_); if (caps_ & SDL_HAPTIC_AUTOCENTER) SDL_HapticSetAutocenter(haptic_, 0); }
++    else if (caps_ & SDL_HAPTIC_AUTOCENTER) SDL_HapticSetAutocenter(haptic_, std::clamp(center_, 0, 100));
++    if (effSpring_ < 0 && center_ > 0 && (caps_ & SDL_HAPTIC_AUTOCENTER)) {          // spring refused: device autocentre instead
++        SDL_HapticSetAutocenter(haptic_, std::clamp(center_, 0, 100));
++        LOG_INFO("Haptics", "using the device's autocentre (" + std::to_string(center_) + "%) for the centring feel");
++    }
++    if ((caps_ & SDL_HAPTIC_DAMPER) && damper_ > 0) effDamper_ = makeCondition(SDL_HAPTIC_DAMPER, damper_);
++    if (caps_ & SDL_HAPTIC_CONSTANT) {
++        effTickFwd_ = makeConstant(1, tick_, static_cast<Uint16>(tickMs_));
++        effTickBack_ = makeConstant(-1, tick_, static_cast<Uint16>(tickMs_));
++        effThunk_ = makeConstant(1, thunkPct_, 90);
++    }
++    if (caps_ & SDL_HAPTIC_SINE) {
++        effSelect_ = makeSine(selectPct_, 40, 160, 60);
++        effLaunch_ = makeSine(launchPct_, 28, 450, 250);
++    }
++    run(effSpring_); run(effDamper_);
++    LOG_INFO("Haptics", std::string("force feedback on '") + SDL_HapticName(pick) + "': spring=" + std::to_string(effSpring_ >= 0) +
++             " damper=" + std::to_string(effDamper_ >= 0) + " ticks=" + std::to_string(effTickFwd_ >= 0) + " rumble=" + std::to_string(effSelect_ >= 0));
++    return true;
++}
++
++void Haptics::close() {
++    if (!haptic_) return;
++    SDL_HapticStopAll(haptic_);
++    SDL_HapticClose(haptic_);                       // destroys the effects and releases the DirectInput device
++    haptic_ = nullptr;
++    effSpring_ = effDamper_ = effTickFwd_ = effTickBack_ = effThunk_ = effSelect_ = effLaunch_ = -1;
++}
++
++int Haptics::makeCondition(Uint16 type, int coeffPct) {
++    SDL_HapticEffect e; SDL_memset(&e, 0, sizeof(e));
++    e.type = type; e.condition.type = type;
++    e.condition.length = SDL_HAPTIC_INFINITY;
++    // DirectInput builds one condition block per FFB axis and needs a valid direction even for springs;
++    // steering wheels have a single FFB axis, so only axis 0 carries the coefficients.
++    e.condition.direction.type = SDL_HAPTIC_CARTESIAN; e.condition.direction.dir[0] = 1;
++    e.condition.right_sat[0] = e.condition.left_sat[0] = 0xFFFF;
++    e.condition.right_coeff[0] = e.condition.left_coeff[0] = static_cast<Sint16>(pctToLevel(coeffPct));
++    const int id = SDL_HapticNewEffect(haptic_, &e);
++    if (id < 0) LOG_WARNING("Haptics", std::string("condition effect failed: ") + SDL_GetError());
++    return id;
++}
++
++int Haptics::makeConstant(int dirX, int levelPct, Uint16 ms) {
++    SDL_HapticEffect e; SDL_memset(&e, 0, sizeof(e));
++    e.type = SDL_HAPTIC_CONSTANT;
++    e.constant.direction.type = SDL_HAPTIC_CARTESIAN; e.constant.direction.dir[0] = dirX;
++    e.constant.length = ms; e.constant.level = static_cast<Sint16>(pctToLevel(levelPct));
++    e.constant.attack_length = 5; e.constant.fade_length = static_cast<Uint16>(ms / 2);
++    const int id = SDL_HapticNewEffect(haptic_, &e);
++    if (id < 0) LOG_WARNING("Haptics", std::string("constant effect failed: ") + SDL_GetError());
++    return id;
++}
++
++int Haptics::makeSine(int magnitudePct, Uint16 periodMs, Uint16 ms, Uint16 fadeMs) {
++    SDL_HapticEffect e; SDL_memset(&e, 0, sizeof(e));
++    e.type = SDL_HAPTIC_SINE;
++    e.periodic.direction.type = SDL_HAPTIC_CARTESIAN; e.periodic.direction.dir[0] = 1;
++    e.periodic.period = periodMs; e.periodic.magnitude = static_cast<Sint16>(pctToLevel(magnitudePct));
++    e.periodic.length = ms; e.periodic.fade_length = fadeMs;
++    const int id = SDL_HapticNewEffect(haptic_, &e);
++    if (id < 0) LOG_WARNING("Haptics", std::string("sine effect failed: ") + SDL_GetError());
++    return id;
++}
++
++void Haptics::pump() {
++    if (!haptic_) { tickFwd_ = tickBack_ = thunk_ = select_ = false; return; }
++    const Uint32 now = SDL_GetTicks();
++    if (thunk_.exchange(false)) run(effThunk_);
++    if (select_.exchange(false)) run(effSelect_);
++    const bool f = tickFwd_.exchange(false), b = tickBack_.exchange(false);
++    if ((f || b) && now - lastTickMs_ >= static_cast<Uint32>(std::max(20, tickMs_))) {   // fast scrolls: one detent per tick length
++        run(f ? effTickFwd_ : effTickBack_);
++        lastTickMs_ = now;
++    }
++}
++
++void Haptics::launchPulseAndRelease() {
++    if (!haptic_) return;
++    run(effLaunch_);
++    SDL_Delay(effLaunch_ >= 0 ? 350 : 0);           // let the rumble be felt, then give the device to the game
++    close();
++    LOG_INFO("Haptics", "force-feedback device released for the game");
++}
++
++void Haptics::reacquire() {
++    if (!enabled_ || haptic_) return;
++    if (open()) LOG_INFO("Haptics", "force-feedback device re-acquired");
++}
++
++void Haptics::shutdown() { close(); }
+diff --git a/RetroFE/Source/Control/Haptics.h b/RetroFE/Source/Control/Haptics.h
+new file mode 100644
+index 00000000..61fd36a0
+--- /dev/null
++++ b/RetroFE/Source/Control/Haptics.h
+@@ -0,0 +1,57 @@
++/* This file is part of RetroFE (ArcadeMaster extension: force feedback in the frontend). GPLv3 or later. */
++#pragma once
++#include <SDL.h>
++#include <atomic>
++#include <string>
++
++class Configuration;
++
++// Force feedback for the frontend itself (steering wheels / FFB joysticks via SDL haptics = DirectInput on Windows).
++//
++//   browsing : soft centring spring + light damper, so the wheel feels "alive" instead of limp
++//   scroll   : a short detent tick per item, pushed in the scroll direction
++//   enter    : a heavier "gear change" thunk when a collection opens
++//   select   : a short rumble
++//   launch   : a rumble, then the device is RELEASED - DirectInput FFB is exclusive, so a game
++//              (TeknoParrot FFB plugin, emulators) must get the wheel to itself - and re-acquired on return
++//
++// Thread-safe by design: request*() only set atomic flags (Page::scroll may run on worker threads);
++// pump() executes them on the main thread once per frame.
++//
++// settings.conf (all optional; ffb defaults to off):
++//   ffb = yes | ffbDevice = G29 (name substring; default: first wheel-like FFB device)
++//   ffbStrength = 75 (overall gain %) | ffbCenter = 35 | ffbDamper = 12 | ffbTick = 45 | ffbTickMs = 35
++//   ffbThunk = 60 | ffbSelect = 55 | ffbLaunch = 85
++class Haptics {
++public:
++    static Haptics& instance();
++    void initialize(Configuration& config);
++    void pump();                                    // main thread, once per frame
++    void requestTick(bool forward) { (forward ? tickFwd_ : tickBack_).store(true); }
++    void requestThunk() { thunk_.store(true); }
++    void requestSelect() { select_.store(true); }
++    void launchPulseAndRelease();                   // main thread: rumble, then hand the device to the game
++    void reacquire();                               // main thread: after the game exits
++    void shutdown();
++    bool active() const { return haptic_ != nullptr; }
++
++private:
++    Haptics() = default;
++    bool open();
++    void close();
++    int  makeConstant(int dirX, int levelPct, Uint16 ms);
++    int  makeSine(int magnitudePct, Uint16 periodMs, Uint16 ms, Uint16 fadeMs);
++    int  makeCondition(Uint16 type, int coeffPct);
++    void run(int id) { if (haptic_ && id >= 0) SDL_HapticRunEffect(haptic_, id, 1); }
++
++    bool enabled_ = false;
++    std::string deviceMatch_;
++    int strength_ = 75, center_ = 35, damper_ = 12, tick_ = 45, tickMs_ = 35, thunkPct_ = 60, selectPct_ = 55, launchPct_ = 85;
++
++    SDL_Haptic* haptic_ = nullptr;
++    unsigned int caps_ = 0;
++    int effSpring_ = -1, effDamper_ = -1, effTickFwd_ = -1, effTickBack_ = -1, effThunk_ = -1, effSelect_ = -1, effLaunch_ = -1;
++    Uint32 lastTickMs_ = 0;
++
++    std::atomic<bool> tickFwd_{ false }, tickBack_{ false }, thunk_{ false }, select_{ false };
++};
+diff --git a/RetroFE/Source/Graphics/Page.cpp b/RetroFE/Source/Graphics/Page.cpp
+index b3b2b523..70741626 100644
+--- a/RetroFE/Source/Graphics/Page.cpp
++++ b/RetroFE/Source/Graphics/Page.cpp
+@@ -15,6 +15,7 @@
+  */
+ 
+ #include "Page.h"
++#include "../Control/Haptics.h"   // ArcadeMaster
+ #include "ComponentItemBinding.h"
+ #include "Component/Component.h"
+ #include "../Collection/CollectionInfo.h"
+@@ -1897,6 +1898,7 @@ void Page::initializeFonts() const {
+ 
+ 
+ void Page::playSelect() {
++	Haptics::instance().requestSelect();   // ArcadeMaster
+ 	if (selectSoundChunk_) {
+ 		selectSoundChunk_->play();
+ 	}
+@@ -2078,6 +2080,7 @@ void Page::scroll(bool forward, bool playlist) {
+ 	}
+ 
+ 	pendingScrollSelect_ = true;
++	Haptics::instance().requestTick(forward);   // ArcadeMaster: detent per item
+ 
+ 	if (highlightSoundChunk_) {
+ 		highlightSoundChunk_->play();
+diff --git a/RetroFE/Source/Main.cpp b/RetroFE/Source/Main.cpp
+index b32ecd56..b47cd832 100644
+--- a/RetroFE/Source/Main.cpp
++++ b/RetroFE/Source/Main.cpp
+@@ -15,6 +15,7 @@
+  */
+ 
+ #include "Video/GStreamerVideo.h"
++#include "Control/Haptics.h"
+ #include "Video/GlibLoop.h"
+ #include "Database/Configuration.h"
+ #include "Database/DB.h"
+@@ -367,6 +368,7 @@ int main(int argc, char** argv)
+         LOG_ERROR("EXCEPTION", e.what());
+     }
+ 
++    Haptics::instance().shutdown();   // ArcadeMaster: stop all forces before exit
+     ThreadPool::getInstance().shutdown();
+     GlibLoop::instance().stop();
+     gst_deinit();
+diff --git a/RetroFE/Source/RetroFE.cpp b/RetroFE/Source/RetroFE.cpp
+index 218c4f1b..9bfa2f2a 100644
+--- a/RetroFE/Source/RetroFE.cpp
++++ b/RetroFE/Source/RetroFE.cpp
+@@ -1,4 +1,4 @@
+-﻿/* This file is part of RetroFE.
++/* This file is part of RetroFE.
+  *
+  * RetroFE is free software: you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -20,6 +20,7 @@
+ #include "Collection/Item.h"
+ #include "Collection/MenuParser.h"
+ #include "Control/Restrictor/RestrictorManager.h"
++#include "Control/Haptics.h"   // ArcadeMaster: frontend force feedback
+ #include "Control/UserInput.h"
+ #include "Database/Configuration.h"
+ #include "Database/GlobalOpts.h"
+@@ -463,6 +464,7 @@ void RetroFE::initializeMusicPlayer() {
+ 
+ // Launch a game/program
+ void RetroFE::launchEnter() {
++	Haptics::instance().launchPulseAndRelease();   // ArcadeMaster: rumble, then give the wheel's FFB to the game
+ 	currentPage_->setIsLaunched(true);
+ 	SDL_SetWindowGrab(SDL::getWindow(0), SDL_FALSE);
+ 
+@@ -505,6 +507,7 @@ void RetroFE::launchExit(bool userInitiated) {
+ 
+ 	currentPage_->setIsLaunched(false);
+ 	VideoPool::shuttingDown_ = false;
++	Haptics::instance().reacquire();   // ArcadeMaster: frontend FFB back after the game
+ 
+ 	bool unloadSDL = false;
+ 	config_.getProperty(OPTION_UNLOADSDL, unloadSDL);
+@@ -724,6 +727,30 @@ void RetroFE::preparePageForFirstRender(Page* page, int maxPasses) {
+ }
+ 
+ // Run RetroFE
++// ---------------------------------------------------------------------------
++// ArcadeMaster: frame-time telemetry. settings.conf "perfLog = N" logs every N seconds:
++//   frames, p50 / p95 / p99 / max frame time and hitches (> 2x target frame time).
++// ---------------------------------------------------------------------------
++static int g_perfLogSec = 0;
++static void perfSample(double frameMs, double targetMs, double nowMs) {
++	if (g_perfLogSec <= 0) return;
++	static std::vector<float> samples;
++	static double windowStart = 0.0;
++	if (windowStart == 0.0) windowStart = nowMs;
++	if (frameMs > 0.0 && frameMs < 5000.0) samples.push_back(static_cast<float>(frameMs));
++	if (nowMs - windowStart < g_perfLogSec * 1000.0 || samples.size() < 10) return;
++	std::vector<float> s(samples);
++	std::sort(s.begin(), s.end());
++	auto pct = [&](double p) { return s[std::min(s.size() - 1, static_cast<size_t>(p * (s.size() - 1)))]; };
++	const size_t hitches = static_cast<size_t>(std::count_if(s.begin(), s.end(), [&](float v) { return v > 2.0 * targetMs; }));
++	char buf[256];
++	snprintf(buf, sizeof(buf), "%zu frames in %.1fs | frame ms p50 %.2f  p95 %.2f  p99 %.2f  max %.2f | hitches(>%.1fms) %zu",
++		s.size(), (nowMs - windowStart) / 1000.0, pct(0.50), pct(0.95), pct(0.99), s.back(), 2.0 * targetMs, hitches);
++	LOG_INFO("Perf", buf);
++	samples.clear();
++	windowStart = nowMs;
++}
++
+ bool RetroFE::run() {
+ #ifdef WIN32    
+ 	bool highPriority = false;
+@@ -809,6 +836,8 @@ bool RetroFE::run() {
+ 		LOG_ERROR("RetroFE", "Could not initialize user controls on the main thread");
+ 		return false;
+ 	}
++	Haptics::instance().initialize(config_);   // ArcadeMaster: frontend force feedback (ffb = yes)
++	config_.getProperty("perfLog", g_perfLogSec);   // ArcadeMaster: frame-time telemetry interval (s)
+ 
+ 	// =================================================================
+ 	// PHASE 3: CONTEXT PROPERTY CONVERSION ZONE (Eliminates the Data Race)
+@@ -1079,6 +1108,7 @@ bool RetroFE::run() {
+ 		SDL_Event e;
+ 		while (SDL_PollEvent(&e)) input_.update(e);
+ 		input_.updateKeystate(); // once per frame, AFTER consuming events, BEFORE processUserInput()
++		Haptics::instance().pump(); // ArcadeMaster: execute queued FFB effects on the main thread
+ 
+ 		if (initialized.load() && mp) {
+ 			mp->pump();
+@@ -1116,6 +1146,7 @@ bool RetroFE::run() {
+ 
+ 		float rawDt = static_cast<float>((frameNowMs - lastFrameTimePointMs_) / 1000.0);
+ 		lastFrameTimePointMs_ = frameNowMs;
++		perfSample(rawDt * 1000.0, fpsTime, frameNowMs);   // ArcadeMaster: frame-time telemetry (perfLog = N seconds)
+ 
+ 		timerDt = std::clamp(rawDt, 0.0f, MAX_TIMER_DT);
+ 
+@@ -2007,6 +2038,7 @@ bool RetroFE::run() {
+ 			case RETROFE_NEXT_PAGE_MENU_ENTER:
+ 			if (currentPage_ && currentPage_->isIdle())
+ 			{
++				Haptics::instance().requestThunk();   // ArcadeMaster: "gear change" when a collection opens
+ 				inputClear = false;
+ 				config_.getProperty(OPTION_COLLECTIONINPUTCLEAR, inputClear);
+ 				if (inputClear)
