@@ -297,6 +297,25 @@ $c = New-Canvas 1920 1080; $g = $c.G                                            
 $mb = New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new(0, 0)), ([Drawing.Point]::new(0, 1081)), (C '000000' 0), (C '000000' 0)
 $cb = New-Object Drawing.Drawing2D.ColorBlend 5; $cb.Colors = @((C '000000' 90), (C '000000' 185), (C '000000' 185), (C '000000' 60), (C '000000' 215)); $cb.Positions = [float[]]@(0, 0.22, 0.62, 0.74, 1); $mb.InterpolationColors = $cb
 $g.FillRectangle($mb, 0, 0, 1920, 1080); Save-Canvas $c 'fx_scrim_main.png'
+# touch button bar for the second (pedestal/marquee) screen: 5 equal cells = touch1Column1..5of5Row3of3
+$labels = @(@('BACK', '9aa3b2', 'back'), @('PREV', '2ec8ff', 'left'), @('START', 'ff2fa0', 'play'), @('NEXT', '2ec8ff', 'right'), @('RANDOM', 'ffb000', 'dice'))
+$c = New-Canvas 1920 360; $g = $c.G; $cw = 384
+for ($i = 0; $i -lt 5; $i++) {
+  $x = $i * $cw; $col = $labels[$i][1]; $rr = RoundRect ($x + 18) 22 ($cw - 36) 316 36
+  $g.FillPath((New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new(0, 22)), ([Drawing.Point]::new(0, 340)), (C '1d2028' 235), (C '07080a' 240)), $rr)
+  foreach ($w in 14, 8) { $g.DrawPath((Pen $col $w ([int](40 + (14 - $w) * 14))), $rr) }; $g.DrawPath((Pen 'ffffff' 2 140), $rr)
+  $cx = $x + $cw / 2; $cy = 140; $ip = Pen $col 14
+  switch ($labels[$i][2]) {
+    'back'  { $g.DrawArc($ip, $cx - 50, $cy - 50, 100, 100, 200, 250); $g.FillPolygon((Brush $col), [Drawing.PointF[]]@([Drawing.PointF]::new($cx - 70, $cy - 30), [Drawing.PointF]::new($cx - 30, $cy - 30), [Drawing.PointF]::new($cx - 52, $cy + 6))) }
+    'left'  { $g.FillPolygon((Brush $col), [Drawing.PointF[]]@([Drawing.PointF]::new($cx + 45, $cy - 60), [Drawing.PointF]::new($cx + 45, $cy + 60), [Drawing.PointF]::new($cx - 60, $cy))) }
+    'right' { $g.FillPolygon((Brush $col), [Drawing.PointF[]]@([Drawing.PointF]::new($cx - 45, $cy - 60), [Drawing.PointF]::new($cx - 45, $cy + 60), [Drawing.PointF]::new($cx + 60, $cy))) }
+    'play'  { $g.FillEllipse((Brush $col 60), $cx - 70, $cy - 70, 140, 140); $g.FillPolygon((Brush 'ffffff'), [Drawing.PointF[]]@([Drawing.PointF]::new($cx - 28, $cy - 42), [Drawing.PointF]::new($cx - 28, $cy + 42), [Drawing.PointF]::new($cx + 44, $cy))) }
+    'dice'  { $rd = RoundRect ($cx - 52) ($cy - 52) 104 104 18; $g.DrawPath($ip, $rd); foreach ($p in @(@(-24, -24), @(24, 24), @(0, 0), @(24, -24), @(-24, 24))) { $g.FillEllipse((Brush $col), $cx + $p[0] - 9, $cy + $p[1] - 9, 18, 18) } }
+  }
+  Text-Center $g $labels[$i][0] (Font 52 'Bold') (Brush 'ffffff') $cx 270
+}
+Save-Canvas $c 'ui_touchbar.png'
+
 # neon 16:9 frame for the video snap (1120x650 outer, 1040x585 window)
 $c = New-Canvas 1120 650; $g = $c.G; $rr = RoundRect 20 20 1080 610 26
 foreach ($w in 26, 16, 8) { $g.DrawPath((Pen 'ff2fa0' $w ([int](30 + (26 - $w) * 6))), $rr) }

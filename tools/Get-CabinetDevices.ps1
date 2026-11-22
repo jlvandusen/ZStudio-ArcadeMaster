@@ -60,6 +60,10 @@ $cap = [ordered]@{
 # keyboard encoders (Ultimarc I-PAC = VID D209 keyboard device) mean a stand-up control panel
 $encoders = @(Get-PnpDevice -PresentOnly -Class Keyboard -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209' })
 $cap['controlPanel'] = $encoders.Count -gt 0
+# displays + touch digitizers (pedestal / marquee touchscreens become RetroFE screen 1)
+Add-Type -AssemblyName System.Windows.Forms
+$cap['displays'] = @([Windows.Forms.Screen]::AllScreens | ForEach-Object { [ordered]@{ name = $_.DeviceName; primary = $_.Primary; width = $_.Bounds.Width; height = $_.Bounds.Height; x = $_.Bounds.X; y = $_.Bounds.Y } })
+$cap['touchScreens'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)touch ?screen|touch digitizer' -and $_.Status -eq 'OK' }).Count
 # joystick restrictors RetroFE can drive per game (joyways metadata): Ultimarc ServoStik (D209:1700); TOS GRS is probed by RetroFE itself
 $cap['restrictor'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209&PID_170[0-9]' }).Count -gt 0
 $sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' }).Count
@@ -88,4 +92,4 @@ New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 [ordered]@{ machine = $env:COMPUTERNAME; detected = (Get-Date).ToString('s'); capabilities = $cap; devices = $devices; rawMice = $mice } |
   ConvertTo-Json -Depth 6 | Set-Content $Out -Encoding UTF8
 Write-Host "cabinet capabilities -> $Out"
-$cap.GetEnumerator() | ForEach-Object { Write-Host ("  {0,-15} {1}" -f $_.Key, ($_.Value -join ',')) }
+$cap.GetEnumerator() | ForEach-Object { $v = if ($_.Key -eq 'displays') { "$(@($_.Value).Count): " + ((@($_.Value) | ForEach-Object { "$($_.width)x$($_.height)$(if ($_.primary) { '*' })" }) -join ', ') } else { $_.Value -join ',' }; Write-Host ("  {0,-15} {1}" -f $_.Key, $v) }

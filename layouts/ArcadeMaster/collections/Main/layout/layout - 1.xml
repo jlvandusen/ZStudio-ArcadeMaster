@@ -1,0 +1,38 @@
+<!--
+  ArcadeMaster - SECOND SCREEN, MAIN MENU: the highlighted collection (Racing / Flight / Arcade / Lightgun)
+  over random fanart from its games, plus the touch bar (BACK | PREV | START = open | NEXT | RANDOM).
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
+  <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="am_bg1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration=".5"><animate type="alpha" from="0" to=".7" algorithm="easeOutCubic"/></set>
+      <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/></set>
+      <set duration="18"><animate type="width" to="1920" algorithm="linear"/><animate type="height" to="1080" algorithm="linear"/></set>
+    </onIdle>
+  </reloadableImage>
+  <image src="../../../images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" layer="2"/>
+
+  <!-- highlighted collection: big neon logo, with its instrument as an emblem -->
+  <reloadableImage type="logo" mode="layout" x="960" y="300" xOrigin="center" yOrigin="center" width="1300" height="318" layer="5">
+    <onMenuScroll><set duration=".08"><animate type="width" to="1400"/><animate type="height" to="342"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".25"><animate type="width" to="1300" algorithm="easeOutCubic"/><animate type="height" to="318" algorithm="easeOutCubic"/></set>
+      <set duration="1.2"><animate type="width" to="1340" algorithm="easeInOutSine"/><animate type="height" to="328" algorithm="easeInOutSine"/></set>
+      <set duration="1.2"><animate type="width" to="1300" algorithm="easeInOutSine"/><animate type="height" to="318" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+  <reloadableImage type="am_spinner" mode="layout" x="960" y="575" xOrigin="center" yOrigin="center" width="220" height="220" layer="5">
+    <onMenuScroll><set duration=".12"><animate type="angle" to="40" algorithm="easeOutQuadratic"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".4"><animate type="angle" to="-8" algorithm="easeOutCubic"/></set>
+      <set duration="1.4"><animate type="angle" to="-26" algorithm="easeInOutSine"/></set>
+      <set duration="1.2"><animate type="angle" to="30" algorithm="easeInOutSine"/></set>
+      <set duration="1.4"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+
+  <image src="../../../images/ui_touchbar.png" x="0" y="720" width="1920" height="360" layer="7"/>
+  <image src="../../../images/studio_realz.png" x="1870" y="20" xOrigin="right" width="110" height="110" alpha=".85" layer="8"/>
+</layout>

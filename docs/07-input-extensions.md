@@ -65,6 +65,39 @@ They can be combined by copying lines: every action accepts any mix of inputs.
 
 Not verified: a physical touchscreen, a physical trackball/spinner, or lightguns.
 
+## Second screen: pedestal / marquee touchscreen (patch 0003)
+
+A second display, e.g. on a 4-player pedestal with a USB touch panel, becomes **RetroFE screen 1**. It's both an output (marquee banner, game header) and an input (touch buttons).
+
+| Piece | What |
+|---|---|
+| `tools/Get-CabinetDevices.ps1` | records `displays` (resolution, primary) and `touchScreens` in `cabinet.json` |
+| `tools/Set-RetroFEScreens.ps1` | `numScreens = 2`; screen 0 = primary display, screen 1 = the other display at its native resolution. Backs up `settings.conf`; `-Single` reverts. |
+| `layouts/ArcadeMaster/layout - 1.xml` | game lists: the selected game's **logo as a marquee over its own fanart**, title, **PLAYERS / CONTROLS / YEAR / MAKER** header (from the catalog metadata), touch bar |
+| `layouts/ArcadeMaster/collections/Main/layout/layout - 1.xml` | main menu: the highlighted collection's neon logo + emblem over its games' fanart, touch bar |
+| `retrofe/controls/controls-pedestal-4p.conf` | I-PAC panel (P1 navigates, any Start selects) + the touch bar on screen 1 |
+
+**Per-screen touch tokens:** `touch<N><gesture>` only reacts to touches on RetroFE screen N, e.g. `touch1Tap`, `touch1SwipeUp`, `touch1LongPress`. Plain `touchTap` reacts to any screen. RetroFE resolves the screen from the window under the finger, so Windows must map the USB digitizer to the right display **once**: *Control Panel → Tablet PC Settings → Setup*, or `MultiDigiMon.exe -touch`.
+
+**Touch buttons (region taps):** `touch[N]Column<c>of<n>[Row<r>of<m>]` fires when a tap lands in that cell of a column/row grid. The second-screen layout's bar is the bottom third, split in five:
+
+| Cell | Button | Action |
+|---|---|---|
+| `touch1Column1of5Row3of3` | BACK | back |
+| `touch1Column2of5Row3of3` | PREV | up |
+| `touch1Column3of5Row3of3` | START | select |
+| `touch1Column4of5Row3of3` | NEXT | down |
+| `touch1Column5of5Row3of3` | RANDOM | random |
+
+Verified with injected touches (screen 0 standing in on this single-display machine):
+- A screen-0 tap did **not** fire a `touch1Tap` binding.
+- `touch0Column4of5Row3of3` scrolled.
+- `touch0Column5of5Row3of3` did a random jump.
+
+The second-screen layouts were previewed on screen 0 with real data, e.g. Ballistics: logo, fanart, *PLAYERS 1 · CONTROLS wheel · YEAR 2009 · MAKER TrioTech*.
+
+**Not verified** (needs the pedestal hardware): a real second display, Windows digitizer-to-display mapping, and the layout at the pedestal screen's actual resolution. If that screen isn't 16:9, add a ratio-specific file such as `layout 16x10 - 1.xml`.
+
 ## Next
 
 1. **Tap-to-pick:** tap a visible game in the list to scroll to it, and tap it again to launch. This needs hit-testing in `ScrollingList`; the same code gives lightgun aim-to-select.

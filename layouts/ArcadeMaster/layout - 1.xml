@@ -1,0 +1,58 @@
+<!--
+  ArcadeMaster - SECOND SCREEN (RetroFE monitor 1): pedestal / marquee touchscreen, game lists.
+  Three bands that match the touch grid (controls.conf: touch1Column<n>of5Row3of3):
+    top    : the selected game's logo over its own fanart (marquee banner)
+    middle : title + players / controls / year / maker header
+    bottom : touch bar  BACK | PREV | START | NEXT | RANDOM   (row 3 of 3, columns 1..5 of 5)
+  Enable with settings.conf: numScreens = 2, screenNum1 = <display index>, fullscreen1 = yes
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
+  <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".4"><animate type="alpha" from="0" to=".75" algorithm="easeOutCubic"/></set>
+      <set duration="16"><animate type="width" to="2080" algorithm="easeInOutSine"/><animate type="height" to="1170" algorithm="easeInOutSine"/></set>
+      <set duration="16"><animate type="width" to="1920" algorithm="easeInOutSine"/><animate type="height" to="1080" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+  <image src="images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" layer="2"/>
+
+  <!-- top band: marquee-style logo -->
+  <reloadableImage type="logo" x="960" y="175" xOrigin="center" yOrigin="center" width="1100" maxHeight="300" alpha="0" layer="5">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" from="980" to="1100" algorithm="easeOutCubic"/></set>
+      <set duration="2"><animate type="width" to="1140" algorithm="easeInOutSine"/></set>
+      <set duration="2"><animate type="width" to="1100" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+
+  <!-- middle band: header -->
+  <reloadableText type="title" menuScrollReload="true" x="960" y="430" xOrigin="center" yOrigin="center" fontSize="72" loadFontSize="72" fontColor="ffffff" layer="6"/>
+  <text value="PLAYERS" x="300" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText type="numberPlayers" menuScrollReload="true" x="300" y="600" xOrigin="center" yOrigin="center" fontSize="58" loadFontSize="58" fontColor="2ec8ff" layer="6"/>
+  <text value="CONTROLS" x="760" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText type="ctrlType" menuScrollReload="true" x="760" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ff2fa0" layer="6"/>
+  <text value="YEAR" x="1180" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText type="year" menuScrollReload="true" x="1180" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ffb000" layer="6"/>
+  <text value="MAKER" x="1600" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="1600" y="600" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="ffffff" layer="6"/>
+
+  <!-- bottom band: touch buttons (row 3 of 3) -->
+  <image src="images/ui_touchbar.png" x="0" y="720" width="1920" height="360" layer="7">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to=".8"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+  </image>
+  <image src="images/studio_realz.png" x="1870" y="20" xOrigin="right" width="110" height="110" alpha=".85" layer="8"/>
+
+  <!-- launch: flash + logo punch -->
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="9">
+    <onGameEnter><set duration=".5"><animate type="alpha" to=".85"/></set></onGameEnter>
+    <onGameExit><set duration=".5"><animate type="alpha" to="0"/></set></onGameExit>
+  </image>
+  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="900" maxHeight="500" alpha="0" layer="10">
+    <onGameEnter><set duration=".4"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" from="700" to="1300" algorithm="easeOutCubic"/></set></onGameEnter>
+    <onGameExit><set duration=".2"><animate type="alpha" to="0"/></set></onGameExit>
+  </reloadableImage>
+</layout>
