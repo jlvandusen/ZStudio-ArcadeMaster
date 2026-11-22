@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Generates genre collections (Racing / Flight / Lightgun / Arcade) + the main menu for RetroFE from games.json.
   Nothing existing is edited: new collections are merged views (.sub files) over the existing per-emulator
@@ -6,7 +6,7 @@
     - games whose usable variant lives in an existing RetroFE collection -> <Category>\<SourceCollection>.sub
     - TeknoParrot games that only exist in another TeknoParrot install (e.g. LaunchBox's) -> a generated
       collection per install (include.txt + launcher + media copied in RetroFE naming)
-    - Main\menu.txt = categories (+ Settings); a previous menu.txt is backed up
+    - Main\menu.txt = categories (+ Tools); a previous menu.txt is backed up
   Generated folders carry ARCADEMASTER-GENERATED.txt; re-running regenerates them, -Remove deletes them.
 #>
 param(
@@ -16,7 +16,7 @@ param(
   [string]$Cabinet = 'D:\ArcadeMaster\manifest\cabinet.json',
   [string[]]$Modes,                              # cabinet modes to show (default: cabinet.json capabilities.modes); racing/flight/lightgun/standup
   [switch]$RebuildDatabase,                      # write players/ctrltype/buttons/joyways metadata and rebuild RetroFE's meta.db
-  [string[]]$ExtraMenu = @('SETTINGS', 'Tools'),          # existing collections to keep on the main menu
+  [string[]]$ExtraMenu = @('Tools'),   # SETTINGS (old DRIVE controller switcher) retired - it overwrote the wheel mappings          # existing collections to keep on the main menu
   [switch]$IncludeMultiVariants = $true,         # list e.g. Daytona 3 multicab as its own entry
   [switch]$IncludeUnsupported,                   # also list games this cabinet cannot play (fit.level = unsupported)
   [switch]$Remove
