@@ -1,0 +1,873 @@
+﻿{
+    "_help":  "Edit \u0027tags\u0027 per game. Cabinet types: racing, flight, lightgun, standup (shown as Arcade). Any other words are free tags (linked, kids, favorite...). Remove \"auto\": true once you have checked an entry; auto entries may be re-derived by Build-Manifest.ps1.",
+    "games":  {
+                  "abc":  {
+                              "title":  "After Burner Climax",
+                              "tags":  [
+                                           "flight"
+                                       ],
+                              "auto":  true
+                          },
+                  "ArcticThunder":  {
+                                        "title":  "Arctic Thunder",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "Ballistics":  {
+                                     "title":  "Ballistics",
+                                     "tags":  [
+                                                  "racing"
+                                              ],
+                                     "auto":  true
+                                 },
+                  "Batman":  {
+                                 "title":  "Batman",
+                                 "tags":  [
+                                              "racing"
+                                          ],
+                                 "auto":  true
+                             },
+                  "BattleGear4Tuned":  {
+                                           "title":  "Battle Gear 4 Tuned",
+                                           "tags":  [
+                                                        "racing"
+                                                    ],
+                                           "auto":  true
+                                       },
+                  "BlazingAngels":  {
+                                        "title":  "Blazing Angels: Squadrons of WWII",
+                                        "tags":  [
+                                                     "flight"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "Cars":  {
+                               "title":  "Cars",
+                               "tags":  [
+                                            "racing"
+                                        ],
+                               "auto":  true
+                           },
+                  "CC":  {
+                             "title":  "Chaos Code",
+                             "tags":  [
+                                          "standup"
+                                      ],
+                             "auto":  true
+                         },
+                  "ChaseHQ2":  {
+                                   "title":  "Chase H.Q. 2",
+                                   "tags":  [
+                                                "racing"
+                                            ],
+                                   "auto":  true
+                               },
+                  "CrazyRide":  {
+                                    "title":  "Crazy Ride",
+                                    "tags":  [
+                                                 "racing"
+                                             ],
+                                    "auto":  true
+                                },
+                  "D1GP":  {
+                               "title":  "D1GP Arcade",
+                               "tags":  [
+                                            "racing"
+                                        ],
+                               "auto":  true
+                           },
+                  "Daytona3":  {
+                                   "title":  "Daytona Championship USA",
+                                   "tags":  [
+                                                "racing"
+                                            ],
+                                   "auto":  true
+                               },
+                  "Daytona3Multi":  {
+                                        "title":  "Daytona3Multi",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "Daytona3Single":  {
+                                         "title":  "Daytona3Single",
+                                         "tags":  [
+                                                      "racing"
+                                                  ],
+                                         "auto":  true
+                                     },
+                  "DeadHeat":  {
+                                   "title":  "Dead Heat",
+                                   "tags":  [
+                                                "racing"
+                                            ],
+                                   "auto":  true
+                               },
+                  "DeadHeatRiders":  {
+                                         "title":  "Dead Heat Riders",
+                                         "tags":  [
+                                                      "racing"
+                                                  ],
+                                         "auto":  true
+                                     },
+                  "DirtyDrivin":  {
+                                      "title":  "Dirty Drivin\u0027",
+                                      "tags":  [
+                                                   "racing"
+                                               ],
+                                      "auto":  true
+                                  },
+                  "FNF":  {
+                              "title":  "The Fast and the Furious",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "FNFDrift":  {
+                                   "title":  "The Fast and the Furious Drift",
+                                   "tags":  [
+                                                "racing"
+                                            ],
+                                   "auto":  true
+                               },
+                  "FNFSB":  {
+                                "title":  "The Fast and the Furious: Super Bikes",
+                                "tags":  [
+                                             "racing"
+                                         ],
+                                "auto":  true
+                            },
+                  "FNFSB2":  {
+                                 "title":  "Super Bikes 2",
+                                 "tags":  [
+                                              "racing"
+                                          ],
+                                 "auto":  true
+                             },
+                  "FNFSC":  {
+                                "title":  "The Fast and the Furious SuperCars",
+                                "tags":  [
+                                             "racing"
+                                         ],
+                                "auto":  true
+                            },
+                  "FR":  {
+                             "title":  "Ford Racing: Full Blown",
+                             "tags":  [
+                                          "racing"
+                                      ],
+                             "auto":  true
+                         },
+                  "GaelcoChampionshipTuningRace":  {
+                                                       "title":  "Gaelco Championship Tuning Race",
+                                                       "tags":  [
+                                                                    "racing"
+                                                                ],
+                                                       "auto":  true
+                                                   },
+                  "GHA":  {
+                              "title":  "Guitar Hero Arcade",
+                              "tags":  [
+                                           "standup"
+                                       ],
+                              "auto":  true
+                          },
+                  "GRID":  {
+                               "title":  "GRID",
+                               "tags":  [
+                                            "racing"
+                                        ],
+                               "auto":  true
+                           },
+                  "GtiClub3":  {
+                                   "title":  "GTI Club: Supermini Festa!",
+                                   "tags":  [
+                                                "racing"
+                                            ],
+                                   "auto":  true
+                               },
+                  "H2Overdrive":  {
+                                      "title":  "H2Overdrive",
+                                      "tags":  [
+                                                   "racing"
+                                               ],
+                                      "auto":  true
+                                  },
+                  "ID4Exp":  {
+                                 "title":  "Initial D: Arcade Stage 4 (Export)",
+                                 "tags":  [
+                                              "racing"
+                                          ],
+                                 "auto":  true
+                             },
+                  "ID5":  {
+                              "title":  "Initial D: Arcade Stage 5 (Export)",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "ID6":  {
+                              "title":  "Initial D: Arcade Stage 6 Double Ace",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "ID7":  {
+                              "title":  "Initial D: Arcade Stage 7 Double Ace Cross",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "ID8":  {
+                              "title":  "Initial D: Arcade Stage 8 Infinity",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "IDTA":  {
+                               "title":  "Initial D: The Arcade (Season 3)",
+                               "tags":  [
+                                            "racing"
+                                        ],
+                               "auto":  true
+                           },
+                  "IDZ":  {
+                              "title":  "Initial D: Arcade Stage Zero",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "KODrive":  {
+                                  "title":  "K.O. Drive (Prototype)",
+                                  "tags":  [
+                                               "racing"
+                                           ],
+                                  "auto":  true
+                              },
+                  "lb:American Truck Simulator":  {
+                                                      "title":  "American Truck Simulator",
+                                                      "tags":  [
+                                                                   "racing"
+                                                               ],
+                                                      "auto":  true
+                                                  },
+                  "lb:Blur":  {
+                                  "title":  "Blur",
+                                  "tags":  [
+                                               "racing"
+                                           ],
+                                  "auto":  true
+                              },
+                  "lb:Burnout Paradise Remastered":  {
+                                                         "title":  "Burnout Paradise Remastered",
+                                                         "tags":  [
+                                                                      "racing"
+                                                                  ],
+                                                         "auto":  true
+                                                     },
+                  "lb:Crazy Taxi 3: High Roller":  {
+                                                       "title":  "Crazy Taxi 3: High Roller",
+                                                       "tags":  [
+                                                                    "racing"
+                                                                ],
+                                                       "auto":  true
+                                                   },
+                  "lb:Heliborne":  {
+                                       "title":  "Heliborne",
+                                       "tags":  [
+                                                    "flight"
+                                                ],
+                                       "auto":  true
+                                   },
+                  "lb:Juiced":  {
+                                    "title":  "Juiced",
+                                    "tags":  [
+                                                 "racing"
+                                             ],
+                                    "auto":  true
+                                },
+                  "lb:NASCAR Heat 5":  {
+                                           "title":  "NASCAR Heat 5",
+                                           "tags":  [
+                                                        "racing"
+                                                    ],
+                                           "auto":  true
+                                       },
+                  "lb:Need for Speed: Most Wanted":  {
+                                                         "title":  "Need for Speed: Most Wanted",
+                                                         "tags":  [
+                                                                      "racing"
+                                                                  ],
+                                                         "auto":  true
+                                                     },
+                  "lb:Need for Speed: Most Wanted 2012":  {
+                                                              "title":  "Need for Speed: Most Wanted 2012",
+                                                              "tags":  [
+                                                                           "racing"
+                                                                       ],
+                                                              "auto":  true
+                                                          },
+                  "lb:Project CARS":  {
+                                          "title":  "Project CARS",
+                                          "tags":  [
+                                                       "racing"
+                                                   ],
+                                          "auto":  true
+                                      },
+                  "lb:Ridge Racer Unbounded":  {
+                                                   "title":  "Ridge Racer Unbounded",
+                                                   "tags":  [
+                                                                "racing"
+                                                            ],
+                                                   "auto":  true
+                                               },
+                  "lb:Road Fighters 3D":  {
+                                              "title":  "Road Fighters 3D",
+                                              "tags":  [
+                                                           "racing"
+                                                       ],
+                                              "auto":  true
+                                          },
+                  "lb:Split/Second":  {
+                                          "title":  "Split/Second",
+                                          "tags":  [
+                                                       "racing"
+                                                   ],
+                                          "auto":  true
+                                      },
+                  "lb:V-Rally 4":  {
+                                       "title":  "V-Rally 4",
+                                       "tags":  [
+                                                    "racing"
+                                                ],
+                                       "auto":  true
+                                   },
+                  "lb:Wreckfest":  {
+                                       "title":  "Wreckfest",
+                                       "tags":  [
+                                                    "racing"
+                                                ],
+                                       "auto":  true
+                                   },
+                  "MAME:calspeed":  {
+                                        "title":  "California Speed (Version 2.1a Apr 17 1998, GUTS 1.25 Apr 17 1998 / MAIN Apr 17 1998)",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "MAME:crusnusa":  {
+                                        "title":  "Cruis\u0027n USA (rev L4.1)",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "MAME:crusnwld":  {
+                                        "title":  "Cruis\u0027n World (rev L2.5)",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "MAME:offroadc":  {
+                                        "title":  "Off Road Challenge (v1.63)",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "MAME:orunners":  {
+                                        "title":  "OutRunners (World)",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "MAME:outrun":  {
+                                      "title":  "Out Run (sitdown/upright, Rev B)",
+                                      "tags":  [
+                                                   "racing"
+                                               ],
+                                      "auto":  true
+                                  },
+                  "MAME:sf2049se":  {
+                                        "title":  "San Francisco Rush 2049 Special Edition",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "MAME:sfrushrk":  {
+                                        "title":  "San Francisco Rush The Rock - Alcatraz Edition",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "MAME:vr":  {
+                                  "title":  "Virtua Racing",
+                                  "tags":  [
+                                               "racing"
+                                           ],
+                                  "auto":  true
+                              },
+                  "MKDX":  {
+                               "title":  "Mario Kart: Arcade GP DX",
+                               "tags":  [
+                                            "racing"
+                                        ],
+                               "auto":  true
+                           },
+                  "MS":  {
+                             "title":  "MachStorm",
+                             "tags":  [
+                                          "flight"
+                                      ],
+                             "auto":  true
+                         },
+                  "NicktoonsNitro":  {
+                                         "title":  "Nicktoons Nitro Racing",
+                                         "tags":  [
+                                                      "racing"
+                                                  ],
+                                         "auto":  true
+                                     },
+                  "Nintendo Gamecube:Auto Modellista (USA)":  {
+                                                                  "title":  "Auto Modellista (USA)",
+                                                                  "tags":  [
+                                                                               "racing"
+                                                                           ],
+                                                                  "auto":  true
+                                                              },
+                  "Nintendo Gamecube:F-Zero GX (USA)":  {
+                                                            "title":  "F-Zero GX (USA)",
+                                                            "tags":  [
+                                                                         "racing"
+                                                                     ],
+                                                            "auto":  true
+                                                        },
+                  "Nintendo Gamecube:Mario Kart - Double Dash!! (USA)":  {
+                                                                             "title":  "Mario Kart Double Dash!! (USA)",
+                                                                             "tags":  [
+                                                                                          "racing"
+                                                                                      ],
+                                                                             "auto":  true
+                                                                         },
+                  "Nintendo Wii U:Mario Kart 8 (USA)":  {
+                                                            "title":  "Mario Kart 8 (USA)",
+                                                            "tags":  [
+                                                                         "racing"
+                                                                     ],
+                                                            "auto":  true
+                                                        },
+                  "Nintendo Wii:Mario Kart Wii (USA) (En,Fr,Es)":  {
+                                                                       "title":  "Mario Kart Wii (USA) (En,Fr,Es)",
+                                                                       "tags":  [
+                                                                                    "racing"
+                                                                                ],
+                                                                       "auto":  true
+                                                                   },
+                  "NitroplusBlasterz":  {
+                                            "title":  "Nitro+ Blasterz: Heroines Infinite Duel",
+                                            "tags":  [
+                                                         "standup"
+                                                     ],
+                                            "auto":  true
+                                        },
+                  "or2spdlx":  {
+                                   "title":  "OutRun 2 SP SDX",
+                                   "tags":  [
+                                                "racing"
+                                            ],
+                                   "auto":  true
+                               },
+                  "PC Games:DiRT 3 Complete Edition":  {
+                                                           "title":  "DiRT 3 Complete Edition",
+                                                           "tags":  [
+                                                                        "racing"
+                                                                    ],
+                                                           "auto":  true
+                                                       },
+                  "PC Games:DiRT 4":  {
+                                          "title":  "DiRT 4",
+                                          "tags":  [
+                                                       "racing"
+                                                   ],
+                                          "auto":  true
+                                      },
+                  "PC Games:DiRT 5":  {
+                                          "title":  "DiRT 5",
+                                          "tags":  [
+                                                       "racing"
+                                                   ],
+                                          "auto":  true
+                                      },
+                  "PC Games:DiRT Showdown":  {
+                                                 "title":  "DiRT Showdown",
+                                                 "tags":  [
+                                                              "racing"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "PC Games:GRID":  {
+                                        "title":  "GRID",
+                                        "tags":  [
+                                                     "racing"
+                                                 ],
+                                        "auto":  true
+                                    },
+                  "PC Games:GRID 2":  {
+                                          "title":  "GRID 2",
+                                          "tags":  [
+                                                       "racing"
+                                                   ],
+                                          "auto":  true
+                                      },
+                  "PC Games:GRID Autosport":  {
+                                                  "title":  "GRID Autosport",
+                                                  "tags":  [
+                                                               "racing"
+                                                           ],
+                                                  "auto":  true
+                                              },
+                  "PC Games:Race Driver GRID":  {
+                                                    "title":  "GRID Race Driver",
+                                                    "tags":  [
+                                                                 "racing"
+                                                             ],
+                                                    "auto":  true
+                                                },
+                  "R-Tuned":  {
+                                  "title":  "R-Tuned : Ultimate Street Racing",
+                                  "tags":  [
+                                               "racing"
+                                           ],
+                                  "auto":  true
+                              },
+                  "Sega Model 2:daytona":  {
+                                               "title":  "Daytona USA",
+                                               "tags":  [
+                                                            "racing"
+                                                        ],
+                                               "auto":  true
+                                           },
+                  "Sega Model 2:indy500d":  {
+                                                "title":  "Indy 500 Deluxe",
+                                                "tags":  [
+                                                             "racing"
+                                                         ],
+                                                "auto":  true
+                                            },
+                  "Sega Model 2:overrev":  {
+                                               "title":  "Over Rev",
+                                               "tags":  [
+                                                            "racing"
+                                                        ],
+                                               "auto":  true
+                                           },
+                  "Sega Model 2:sgt24h":  {
+                                              "title":  "Super GT 24h",
+                                              "tags":  [
+                                                           "racing"
+                                                       ],
+                                              "auto":  true
+                                          },
+                  "Sega Model 2:srallyc":  {
+                                               "title":  "Sega Rally Championship",
+                                               "tags":  [
+                                                            "racing"
+                                                        ],
+                                               "auto":  true
+                                           },
+                  "Sega Model 2:stcc":  {
+                                            "title":  "Sega Touring Car Championship",
+                                            "tags":  [
+                                                         "racing"
+                                                     ],
+                                            "auto":  true
+                                        },
+                  "Sega Model 3:dayto2pe":  {
+                                                "title":  "Daytona USA 2: Power Edition",
+                                                "tags":  [
+                                                             "racing"
+                                                         ],
+                                                "auto":  true
+                                            },
+                  "Sega Model 3:daytona2":  {
+                                                "title":  "Daytona USA 2: Battle on the Edge",
+                                                "tags":  [
+                                                             "racing"
+                                                         ],
+                                                "auto":  true
+                                            },
+                  "Sega Model 3:dirtdvls":  {
+                                                "title":  "Dirt Devils",
+                                                "tags":  [
+                                                             "racing"
+                                                         ],
+                                                "auto":  true
+                                            },
+                  "Sega Model 3:dirtdvlsau":  {
+                                                  "title":  "dirtdvlsau",
+                                                  "tags":  [
+                                                               "racing"
+                                                           ],
+                                                  "auto":  true
+                                              },
+                  "Sega Model 3:dirtdvlsg":  {
+                                                 "title":  "NA",
+                                                 "tags":  [
+                                                              "racing"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "Sega Model 3:dirtdvlsj":  {
+                                                 "title":  "NA",
+                                                 "tags":  [
+                                                              "racing"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "Sega Model 3:dirtdvlsu":  {
+                                                 "title":  "dirtdvlsu",
+                                                 "tags":  [
+                                                              "racing"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "Sega Model 3:eca":  {
+                                           "title":  "Emergency Call Ambulance",
+                                           "tags":  [
+                                                        "racing"
+                                                    ],
+                                           "auto":  true
+                                       },
+                  "Sega Model 3:ecaj":  {
+                                            "title":  "NA",
+                                            "tags":  [
+                                                         "racing"
+                                                     ],
+                                            "auto":  true
+                                        },
+                  "Sega Model 3:ecap":  {
+                                            "title":  "NA",
+                                            "tags":  [
+                                                         "racing"
+                                                     ],
+                                            "auto":  true
+                                        },
+                  "Sega Model 3:ecau":  {
+                                            "title":  "Emergency Call Ambulance",
+                                            "tags":  [
+                                                         "racing"
+                                                     ],
+                                            "auto":  true
+                                        },
+                  "Sega Model 3:getbass":  {
+                                               "title":  "getbass",
+                                               "tags":  [
+                                                            "racing"
+                                                        ],
+                                               "auto":  true
+                                           },
+                  "Sega Model 3:getbassdx":  {
+                                                 "title":  "Get Bass: Sega Bass Fishing",
+                                                 "tags":  [
+                                                              "standup"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "Sega Model 3:getbassur":  {
+                                                 "title":  "getbassur",
+                                                 "tags":  [
+                                                              "racing"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "Sega Model 3:lemans24":  {
+                                                "title":  "Le Mans 24",
+                                                "tags":  [
+                                                             "racing"
+                                                         ],
+                                                "auto":  true
+                                            },
+                  "Sega Model 3:scud":  {
+                                            "title":  "Scud Race",
+                                            "tags":  [
+                                                         "racing"
+                                                     ],
+                                            "auto":  true
+                                        },
+                  "Sega Model 3:scudau":  {
+                                              "title":  "scudau",
+                                              "tags":  [
+                                                           "racing"
+                                                       ],
+                                              "auto":  true
+                                          },
+                  "Sega Model 3:scuddx":  {
+                                              "title":  "scuddx",
+                                              "tags":  [
+                                                           "racing"
+                                                       ],
+                                              "auto":  true
+                                          },
+                  "Sega Model 3:scudplus":  {
+                                                "title":  "NA",
+                                                "tags":  [
+                                                             "racing"
+                                                         ],
+                                                "auto":  true
+                                            },
+                  "Sega Model 3:scudplusa":  {
+                                                 "title":  "NA",
+                                                 "tags":  [
+                                                              "racing"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "Sega Model 3:srally2":  {
+                                               "title":  "Sega Rally 2",
+                                               "tags":  [
+                                                            "racing"
+                                                        ],
+                                               "auto":  true
+                                           },
+                  "Sega Model 3:srally2dx":  {
+                                                 "title":  "srally2dx",
+                                                 "tags":  [
+                                                              "racing"
+                                                          ],
+                                                 "auto":  true
+                                             },
+                  "Sega Triforce:F-Zero AX":  {
+                                                  "title":  "F-Zero AX",
+                                                  "tags":  [
+                                                               "racing"
+                                                           ],
+                                                  "auto":  true
+                                              },
+                  "Sega Triforce:Mario Kart Arcade GP":  {
+                                                             "title":  "Mario Kart Arcade GP",
+                                                             "tags":  [
+                                                                          "racing"
+                                                                      ],
+                                                             "auto":  true
+                                                         },
+                  "Sega Triforce:Mario Kart Arcade GP 2":  {
+                                                               "title":  "Mario Kart Arcade GP 2",
+                                                               "tags":  [
+                                                                            "racing"
+                                                                        ],
+                                                               "auto":  true
+                                                           },
+                  "segartv":  {
+                                  "title":  "SEGA Race TV",
+                                  "tags":  [
+                                               "racing"
+                                           ],
+                                  "auto":  true
+                              },
+                  "SnoCross":  {
+                                   "title":  "Winter X Games SnoCross",
+                                   "tags":  [
+                                                "racing"
+                                            ],
+                                   "auto":  true
+                               },
+                  "SR3":  {
+                              "title":  "SEGA Rally 3",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "SRC":  {
+                              "title":  "SEGA Racing Classic",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "SRG":  {
+                              "title":  "Storm Racer G",
+                              "tags":  [
+                                           "racing"
+                                       ],
+                              "auto":  true
+                          },
+                  "SSASR":  {
+                                "title":  "Sonic \u0026 SEGA All-Stars Racing",
+                                "tags":  [
+                                             "racing"
+                                         ],
+                                "auto":  true
+                            },
+                  "StarWars":  {
+                                   "title":  "STAR WARS: Battle Pod",
+                                   "tags":  [
+                                                "flight"
+                                            ],
+                                   "auto":  true
+                               },
+                  "SWDC":  {
+                               "title":  "Sega World Drivers Championship",
+                               "tags":  [
+                                            "racing"
+                                        ],
+                               "auto":  true
+                           },
+                  "UDX":  {
+                              "title":  "Under Defeat HD+",
+                              "tags":  [
+                                           "flight"
+                                       ],
+                              "auto":  true
+                          },
+                  "VirtuaRLimit":  {
+                                       "title":  "Valve Limit R",
+                                       "tags":  [
+                                                    "racing"
+                                                ],
+                                       "auto":  true
+                                   },
+                  "WackyRaces":  {
+                                     "title":  "Wacky Races",
+                                     "tags":  [
+                                                  "racing"
+                                              ],
+                                     "auto":  true
+                                 },
+                  "WastelandRacers":  {
+                                          "title":  "Wasteland Racers 2071",
+                                          "tags":  [
+                                                       "racing"
+                                                   ],
+                                          "auto":  true
+                                      },
+                  "WMMT5":  {
+                                "title":  "Wangan Midnight Maximum Tune 5",
+                                "tags":  [
+                                             "racing"
+                                         ],
+                                "auto":  true
+                            },
+                  "WMMT6R":  {
+                                 "title":  "Wangan Midnight Maximum Tune 6R",
+                                 "tags":  [
+                                              "racing"
+                                          ],
+                                 "auto":  true
+                             }
+              }
+}

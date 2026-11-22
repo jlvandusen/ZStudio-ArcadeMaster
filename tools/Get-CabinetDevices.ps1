@@ -5,7 +5,12 @@
   which games are playable here. Uses tools\wheelmap (DirectInput/XInput/RawInput) - read-only.
 .OUTPUTS D:\ArcadeMaster\manifest\cabinet.json (default)
 #>
-param([string]$Out = 'D:\ArcadeMaster\manifest\cabinet.json')
+param(
+  [string]$Out = 'D:\ArcadeMaster\manifest\cabinet.json',
+  [string]$History = 'D:\ArcadeMaster\manifest\device-history.json',   # every DirectInput GUID each physical device ever had
+  [int]$Players = 0,                     # override: player stations (keyboard encoders like I-PAC can't be counted)
+  [string[]]$Modes                       # override: racing, flight, standup, lightgun (default: derived from hardware)
+)
 $ErrorActionPreference = 'Stop'
 $text = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'wheelmap\WheelMap.ps1') -Detect 2>&1 | Out-String
 
@@ -52,6 +57,33 @@ $cap = [ordered]@{
   keyboard     = $true
   mice         = $mice.Count
 }
+# keyboard encoders (Ultimarc I-PAC = VID D209 keyboard device) mean a stand-up control panel
+$encoders = @(Get-PnpDevice -PresentOnly -Class Keyboard -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209' })
+$cap['controlPanel'] = $encoders.Count -gt 0
+# joystick restrictors RetroFE can drive per game (joyways metadata): Ultimarc ServoStik (D209:1700); TOS GRS is probed by RetroFE itself
+$cap['restrictor'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209&PID_170[0-9]' }).Count -gt 0
+$sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' }).Count
+$cap['players'] = if ($Players -gt 0) { $Players } else { [Math]::Max(1, [Math]::Max($sticks + $cap.gamepads, [Math]::Max($cap.lightguns, $(if ($cap.controlPanel) { 2 } else { 1 })))) }
+$cap['modes'] = if ($Modes) { $Modes } else {
+  @(if ($cap.wheel) { 'racing' }; if ($cap.flightStick -or $cap.wheel) { 'flight' }; if ($cap.lightguns -gt 0) { 'lightgun' }; if ($cap.controlPanel -or $sticks -gt 0 -or $cap.gamepads -gt 0) { 'standup' })
+}
+
+# device-ID history: DirectInput instance GUIDs change when a device moves USB port / Windows re-enumerates.
+# Keyed by VID/PID + name (+ order among identical devices) so profiles can be re-pointed later (Update-ControllerIds).
+$hist = if (Test-Path $History) { Get-Content $History -Raw | ConvertFrom-Json } else { [pscustomobject]@{ devices = @() } }
+$hlist = New-Object System.Collections.Generic.List[object]; foreach ($h in @($hist.devices)) { $hlist.Add($h) }
+$seenKey = @{}
+foreach ($d in $devices) {
+  $base = "$($d.id)|$($d.name)"; $seenKey[$base] = [int]$seenKey[$base] + 1; $key = "$base|#$($seenKey[$base])"
+  $h = $hlist | Where-Object { $_.key -eq $key } | Select-Object -First 1
+  if (-not $h) { $h = [pscustomobject]@{ key = $key; id = $d.id; name = $d.name; type = $d.type; role = $d.role; guids = @(); firstSeen = (Get-Date).ToString('s'); lastSeen = $null }; $hlist.Add($h) }
+  if (@($h.guids) -notcontains $d.guid) { $h.guids = @($h.guids) + $d.guid }
+  $h.lastSeen = (Get-Date).ToString('s'); $h.type = $d.type; $h.role = $d.role
+  $d['historyKey'] = $key
+}
+New-Item -ItemType Directory -Force (Split-Path $History) | Out-Null
+[pscustomobject]@{ devices = $hlist } | ConvertTo-Json -Depth 5 | Set-Content $History -Encoding UTF8
+
 New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 [ordered]@{ machine = $env:COMPUTERNAME; detected = (Get-Date).ToString('s'); capabilities = $cap; devices = $devices; rawMice = $mice } |
   ConvertTo-Json -Depth 6 | Set-Content $Out -Encoding UTF8

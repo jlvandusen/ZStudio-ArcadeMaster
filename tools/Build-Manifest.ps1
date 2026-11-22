@@ -20,8 +20,12 @@ param(
   [string[]]$LaunchBoxPlatforms = @('Arcade Racing', 'Arcade Flight'),
   [string]$Out = 'D:\ArcadeMaster\manifest\games.json',
   # category for frontend items that carry no genre at all (the DRIVE collection is a racing set)
-  [string]$DefaultCategory = 'racing'
+  [string]$DefaultCategory = 'racing',
+  # owner-curated tags (authoritative). Seeded with auto tags; entries with "auto": true may be re-derived.
+  [string]$Tags = (Join-Path $PSScriptRoot '..\catalog\tags.json'),
+  [switch]$NoSeedTags
 )
+$CabinetTypes = @('racing', 'flight', 'lightgun', 'standup')
 $ErrorActionPreference = 'Stop'
 
 function Get-Category([string]$genre, [string]$platform) {
@@ -29,7 +33,7 @@ function Get-Category([string]$genre, [string]$platform) {
   if ($g -match 'flight|flying|aircraft|plane|air combat') { return 'flight' }
   if ($g -match 'racing|racer|driving|race\b') { return 'racing' }
   if ($g -match 'shooter|shooting|light ?gun|gun\b') { return 'lightgun' }
-  if ($g.Trim()) { return 'arcade' }
+  if ($g.Trim()) { return 'standup' }
   return $null
 }
 function Find-Media([string]$col, [string]$item) {
@@ -41,7 +45,7 @@ function Find-Media([string]$col, [string]$item) {
   $m
 }
 function Resolve-GamePath([string]$tp, [string]$p) { if (-not $p) { return $null }; if ([IO.Path]::IsPathRooted($p)) { return $p }; [IO.Path]::GetFullPath((Join-Path $tp $p)) }
-function New-Game([string]$id) { [ordered]@{ id = $id; title = $id; year = $null; platform = $null; genre = $null; category = $null; wheelRotation = $null; variants = [ordered]@{}; media = [ordered]@{}; sources = @() } }
+function New-Game([string]$id) { [ordered]@{ id = $id; title = $id; year = $null; platform = $null; genre = $null; category = $null; tags = @(); wheelRotation = $null; variants = [ordered]@{}; media = [ordered]@{}; sources = @() } }
 
 $games = [ordered]@{}
 
@@ -149,6 +153,29 @@ foreach ($g in $games.Values) {
     if (-not $g.category) { $g.category = $DefaultCategory }
   }
 }
+# ---------------- owner tags: authoritative category + free tags; seed new games with their auto tag
+$tagDoc = if (Test-Path $Tags) { Get-Content $Tags -Raw | ConvertFrom-Json } else { [pscustomobject]@{ _help = ''; games = [pscustomobject]@{} } }
+$tagDoc._help = "Edit 'tags' per game. Cabinet types: racing, flight, lightgun, standup (shown as Arcade). Any other words are free tags (linked, kids, favorite...). Remove `"auto`": true once you have checked an entry; auto entries may be re-derived by Build-Manifest.ps1."
+$seeded = 0
+foreach ($g in $games.Values) {
+  $e = $tagDoc.games.PSObject.Properties[$g.id]
+  if ($e) {
+    if ($e.Value.auto -and -not ($e.Value.tags -contains $g.category)) { $e.Value.tags = @($g.category) }   # auto entry: keep in sync
+    $g.tags = @($e.Value.tags)
+    $ct = @($e.Value.tags | Where-Object { $CabinetTypes -contains $_ })
+    if ($ct) { $g.category = $ct[0] }                                                   # owner's tag wins
+  } else {
+    $g.tags = @($g.category)
+    if (-not $NoSeedTags) { $tagDoc.games | Add-Member -NotePropertyName $g.id -NotePropertyValue ([pscustomobject]@{ title = $g.title; tags = @($g.category); auto = $true }); $seeded++ }
+  }
+}
+if (-not $NoSeedTags) {
+  New-Item -ItemType Directory -Force (Split-Path $Tags) | Out-Null
+  $sorted = [ordered]@{}; foreach ($p in $tagDoc.games.PSObject.Properties | Sort-Object Name) { $sorted[$p.Name] = $p.Value }
+  [ordered]@{ _help = $tagDoc._help; games = $sorted } | ConvertTo-Json -Depth 5 | Set-Content $Tags -Encoding UTF8
+  if ($seeded) { Write-Host "tags: seeded $seeded new games into $Tags (edit, then remove ""auto"": true)" }
+}
+
 $list = @($games.Values | Sort-Object { $_.category }, { $_.title })
 New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 [ordered]@{ generated = (Get-Date).ToString('s'); machine = $env:COMPUTERNAME; retrofe = $RetroFE; games = $list } |

@@ -20,7 +20,7 @@ $ErrorActionPreference = 'Stop'
 $m = Get-Content $Manifest -Raw | ConvertFrom-Json
 $cab = (Get-Content $Cabinet -Raw | ConvertFrom-Json).capabilities
 
-function New-Controls { [ordered]@{ wheel = $false; pedals = $false; shifter = $null; handbrake = $false; flightStick = $false; throttle = $false; lightgun = $false; gunPlayers = 0; trackball = $false; spinner = $false; analogStick = $false; gamepad = $false; buttons = 0; players = 1; extras = @(); source = $null } }
+function New-Controls { [ordered]@{ wheel = $false; pedals = $false; shifter = $null; handbrake = $false; flightStick = $false; throttle = $false; lightgun = $false; gunPlayers = 0; trackball = $false; spinner = $false; analogStick = $false; gamepad = $false; joystick = $false; ways = $null; buttons = 0; players = 1; ctrltype = ''; extras = @(); source = $null } }
 
 # ---------- TeknoParrot GameProfile -> controls
 function Get-TPControls([string]$profilePath) {
@@ -46,7 +46,9 @@ function Get-TPControls([string]$profilePath) {
   $pl = @($maps | Where-Object { $_ -match '^(JvsTwo)?P(\d)' } | ForEach-Object { [int]([regex]::Match($_, 'P(\d)').Groups[1].Value) })
   if ($pl) { $c.players = ($pl | Measure-Object -Maximum).Maximum }
   $c.extras = @(foreach ($x in @(@('view', 'view'), @('boost|nitro|turbo', 'boost'), @('horn', 'horn'), @('reload', 'reload'), @('missile|lock', 'weapons'), @('kick|punch|block', 'fighting'))) { if ($all -match $x[0]) { $x[1] } })
-  $c.gamepad = -not ($c.wheel -or $c.lightgun -or $c.flightStick -or $c.trackball)
+  $c.joystick = (@($maps | Where-Object { $_ -match '^P1Button(Up|Down|Left|Right)$' }).Count -ge 4) -and -not ($c.wheel -or $c.flightStick)
+  if ($c.joystick) { $c.ways = 8 }
+  $c.gamepad = -not ($c.wheel -or $c.lightgun -or $c.flightStick -or $c.trackball -or $c.joystick)
   $emu = [regex]::Match($t, '<EmulatorType>([^<]+)</EmulatorType>').Groups[1].Value
   return @{ Controls = $c; Backend = $emu }
 }
@@ -68,7 +70,7 @@ if ($sets.Count -and (Test-Path $Mame)) {
           switch ($ctl.type) {
             'paddle' { $c.wheel = $true } 'pedal' { $c.pedals = $true } 'lightgun' { $c.lightgun = $true; $c.gunPlayers = [Math]::Max(1, [int]$in.players) }
             'stick' { $c.analogStick = $true } 'trackball' { $c.trackball = $true } 'dial' { $c.spinner = $true }
-            'joy' { $c.gamepad = $true } 'doublejoy' { $c.gamepad = $true } 'positional' { $c.wheel = $true }
+            'joy' { $c.joystick = $true; if ($ctl.ways -match '(\d)') { $c.ways = [int]$Matches[1] } } 'doublejoy' { $c.joystick = $true; if ($ctl.ways -match '(\d)') { $c.ways = [int]$Matches[1] } } 'positional' { $c.wheel = $true }
           }
           if ($ctl.buttons) { $c.buttons = [Math]::Max($c.buttons, [int]$ctl.buttons) }
         }
@@ -142,6 +144,9 @@ foreach ($g in $m.games) {
   if ($status -and $status -ne 'good') { $notes.Add("emulation status: $status") }
   if ($g.wheelRotation) { $notes.Add("set wheel rotation to $($g.wheelRotation) deg") }
 
+  $ctl.ctrltype = if ($ctl.wheel) { 'wheel' } elseif ($ctl.flightStick) { 'flight stick' } elseif ($ctl.lightgun) { 'lightgun' } elseif ($ctl.trackball) { 'trackball' } elseif ($ctl.spinner) { 'spinner' } elseif ($ctl.joystick) { "joystick $(if ($ctl.ways) { "$($ctl.ways)-way" })".Trim() } else { 'gamepad' }
+  if ($ctl.players -gt [Math]::Max(1, [int]$cab.players)) { $notes.Add("supports $($ctl.players) players; this cabinet has $([Math]::Max(1, [int]$cab.players)) station(s)") }
+  if ($ctl.ways -eq 4 -and -not $cab.restrictor) { $notes.Add('4-way game: a restrictor (ServoStik / TOS GRS) switches automatically via joyways metadata') }
   $g | Add-Member -Force -NotePropertyName controls -NotePropertyValue $ctl
   $g | Add-Member -Force -NotePropertyName preferred -NotePropertyValue ([ordered]@{ variant = $pref; emulator = $emu; backend = $backend; reason = $reason })
   $g | Add-Member -Force -NotePropertyName fit -NotePropertyValue ([ordered]@{ cabinet = $env:COMPUTERNAME; level = $fit; notes = @($notes) })
@@ -180,5 +185,5 @@ if ($Report) {
 $vis = @($m.games | Where-Object { -not $_.hidden })
 Write-Host ("controls added to {0} games ({1} hidden duplicates) -> {2}" -f $m.games.Count, ($m.games.Count - $vis.Count), $Manifest)
 $vis | Group-Object { $_.fit.level } | ForEach-Object { Write-Host ("  fit {0,-12} {1}" -f $_.Name, $_.Count) }
-$vis | Group-Object { (@(if ($_.controls.wheel) { 'wheel' }; if ($_.controls.pedals) { 'pedals' }; if ($_.controls.shifter) { "shift:$($_.controls.shifter)" }; if ($_.controls.handbrake) { 'handbrake' }; if ($_.controls.flightStick) { 'flightstick' }; if ($_.controls.lightgun) { 'lightgun' }; if ($_.controls.trackball) { 'trackball' }; if ($_.controls.gamepad -and -not $_.controls.wheel) { 'gamepad' }) -join '+') } |
+$vis | Group-Object { (@(if ($_.controls.wheel) { 'wheel' }; if ($_.controls.pedals) { 'pedals' }; if ($_.controls.shifter) { "shift:$($_.controls.shifter)" }; if ($_.controls.handbrake) { 'handbrake' }; if ($_.controls.flightStick) { 'flightstick' }; if ($_.controls.lightgun) { 'lightgun' }; if ($_.controls.trackball) { 'trackball' }; if ($_.controls.joystick) { "joystick$($_.controls.ways)" }; if ($_.controls.gamepad -and -not $_.controls.wheel) { 'gamepad' }) -join '+') } |
   Sort-Object Count -Descending | ForEach-Object { Write-Host ("  {0,3}  {1}" -f $_.Count, $_.Name) }

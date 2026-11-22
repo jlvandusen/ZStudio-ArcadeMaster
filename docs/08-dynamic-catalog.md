@@ -77,6 +77,45 @@ This machine: 124 games, 118 native + 6 mapped (flight games on the wheel).
 
 Preferred emulators: TeknoParrot 47, Supermodel 22, PC native 15, MAME 9, m2emulator 6, Dolphin 4, Dolphin Triforce 3, Cemu 1.
 
+## Tags and cabinet modes (racing cab / flight cab / stand-up / lightgun, or switching)
+
+- **`catalog/tags.json`** (in this repo) is the owner's list and is **authoritative**. Per game: `"tags": ["racing"]` / `["flight"]` / `["standup"]` / `["lightgun"]`, plus any free tags (`linked`, `kids`, `favorite` ...).
+  - Seeded with every game's auto-detected type and `"auto": true`. Edit an entry and delete `"auto"` to lock it.
+  - New games are added automatically; locked entries are never overwritten.
+- **Cabinet modes** (`cabinet.json → capabilities.modes`) are derived from hardware: wheel → racing (+ flight via wheel mapping), stick/HOTAS → flight, gun → lightgun, control panel (I-PAC) / sticks / pads → standup. They can be overridden with `Get-CabinetDevices.ps1 -Modes ...`.
+- `New-RetroFECollections.ps1` only builds the collections for the cabinet's modes (or `-Modes racing,flight,standup`). One cabinet with several modes gets one main-menu entry per mode, which is the mode switch. Each gets its theme (wheel / yoke / crosshair / stick).
+- Stand-up arcade is the `standup` type, shown as **Arcade**.
+
+## Players, joystick ways, restrictors
+
+- `controls.players` (TeknoParrot P1–P4 mappings, MAME `input players`), `controls.joystick` + `controls.ways` (MAME `ways` 2/4/8; digital TeknoParrot sticks = 8), `controls.ctrltype`.
+- `cabinet.json → players` counts stations: sticks + pads, guns, or 2 for a control panel. Override with `-Players 4` for 4-player encoders. The fit notes flag games that support more players than the cabinet has.
+- `New-RetroFECollections.ps1 -RebuildDatabase` writes `players`, `ctrltype`, `buttons`, `joyways` into RetroFE's metadata and rebuilds `meta.db`. **RetroFE then switches a ServoStik / TOS GRS restrictor to 4- or 8-way per game at launch** (CoinOPS `RestrictorGuard`) and restores 8-way after.
+- `cabinet.json → restrictor` reports a ServoStik.
+
+## Controller IDs that change
+
+DirectInput instance GUIDs change when a device moves USB port or Windows re-enumerates, and every saved binding breaks.
+
+- `Get-CabinetDevices.ps1` keeps **`device-history.json`**: every GUID each physical device (VID/PID + name + order) has ever had.
+- `Update-ControllerIds.ps1` re-points every TeknoParrot binding using its own device-type label (`Driving…`, `Supplemental…`, `Keyboard…`):
+  - Keyboard binds → the fixed SysKeyboard GUID.
+  - Correct binds are left alone.
+  - A GUID known from history → that device's current GUID.
+  - Otherwise → the single connected device of that type.
+  - Ambiguous or absent devices are reported and left alone.
+  - Dry run by default; `-Apply` makes `.ids-<ts>.bak` backups. It's idempotent.
+- First run on this machine (applied): 270 bindings in 39 files.
+  - 244 → current G29, from 3 stale wheel IDs, mostly in the LaunchBox TeknoParrot.
+  - 24 keyboard binds repaired (the old UpdateGuid script had pointed them at the wheel).
+  - 2 handbrake binds → handbrake.
+  - Left alone: an absent old joystick (4) and an unlabelled device (10).
+- **`Start-ArcadeMaster.ps1`** does this at every boot:
+  - waits up to 30 s for the wheel if it was there last boot, and logs a warning if it never appears
+  - re-points IDs if they moved
+  - regenerates the menus if the cabinet modes changed (e.g. a gamepad added → Arcade appears)
+  - then shuffles the backdrops and starts RetroFE under the crash watchdog
+
 ## Order of operations on a cabinet
 
 1. `Get-CabinetDevices.ps1`, `Build-Manifest.ps1`, `Add-GameControls.ps1`
