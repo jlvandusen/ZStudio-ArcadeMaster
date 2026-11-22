@@ -12,9 +12,12 @@ They coordinate on the NAS board, **`Z:\ArcadeMaster\board`**. Read `BOARD.md` t
 1. Run `hostname`.
 2. `powershell -ExecutionPolicy Bypass -File tools\Board.ps1 beat -Doing "joined; claiming open jobs" -Can "<what this machine has>"`
 3. Run `tools\Board.ps1 list`. Jobs for your machine are listed first. Claim one (`claim -Id`), do it, then finish with `done -Id -Report`.
-4. Results go into the repo (commit + push). The board only carries jobs and reports.
+4. Results go into the repo through a **pull request**: make a branch, commit, push the branch, `gh pr create`, then merge the PR once it is tested (`gh pr merge --merge`). Never push straight to main. The board only carries jobs and reports.
+5. Once per clone: `git config core.hooksPath tools/git-hooks`. Its commit-msg hook removes any "Co-Authored-By" line.
 
 **Rules:**
+- Commits and PRs are James's alone: never add a Co-Authored-By line or any tool credit.
+- Write commit messages, PR descriptions, board posts and docs in plain everyday words. Say what changed on the cabinet, not code names. Commit with `git commit -F <file>`, because PowerShell 5.1 breaks `-m` text that contains quotes.
 - Audit jobs are read-only.
 - Never delete game data. Variants such as Daytona standalone / multicab are kept.
 - Test Windows system switches only with `AM_SYSTEM_DRYRUN=1` (see docs/08).
