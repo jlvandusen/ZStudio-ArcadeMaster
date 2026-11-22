@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -162,6 +162,29 @@ switch ($Tool) {
     $out = Join-Path $RetroFE 'layouts\ArcadeMaster\images\intro'
     Run 'New-CabinetIntro.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null
     Emit @{ type = 'intro'; dir = $out; setting = (Get-Setting 'cabinetType') }
+  }  'SystemSettings' {
+    $sys = Join-Path $t 'Set-CabinetSystem.ps1'
+    $stateOf = { $j = (& powershell -NoProfile -ExecutionPolicy Bypass -File $sys -List -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String); @($j | ConvertFrom-Json | ForEach-Object { $_ }) }
+    Banner 'CABINET SYSTEM SETTINGS'
+    if (-not ($visual -and $env:AM_WIZ_KEYFILE)) { & $stateOf | ForEach-Object { Write-Host ("  {0,-24} {1}" -f $_.label, $(if ($_.on) { 'ON' } else { 'off' })) }; break }
+    $items = & $stateOf
+    Emit @{ type = 'settings'; items = @($items | ForEach-Object { @{ id = $_.id; label = $_.label; detail = $_.detail; on = [bool]$_.on } }); message = 'Pick a switch and press a button to flip it' }
+    $deadline = (Get-Date).AddSeconds(300)
+    while ((Get-Date) -lt $deadline) {
+      Start-Sleep -Milliseconds 100
+      if (-not (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE)) { continue }
+      $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue
+      if ($k -eq 'CHOICE:done') { break }
+      if ($k -notlike 'TOGGLE:*') { continue }
+      $id = $k.Substring(7); $deadline = (Get-Date).AddSeconds(300)
+      $cur = $items | Where-Object { $_.id -eq $id } | Select-Object -First 1
+      if ($id -eq 'autoLogin' -and -not $cur.on) { Emit @{ type = 'yield'; message = 'Finish the Windows sign-in box, then the arcade comes back' } }
+      $out = (& powershell -NoProfile -ExecutionPolicy Bypass -File $sys -Set "$id=toggle" -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String).Trim()
+      Write-Host $out
+      $items = & $stateOf
+      $msg = ($out -split "`r?`n" | Where-Object { $_ -match '->' } | Select-Object -Last 1) -replace '^\S+\s+->\s+', ''
+      Emit @{ type = 'settings'; items = @($items | ForEach-Object { @{ id = $_.id; label = $_.label; detail = $_.detail; on = [bool]$_.on } }); message = "$($cur.label): $msg"; resume = $true }
+    }
   }  'TogglePerfLog' {
     $on = [int]("0" + (Get-Setting 'perfLog')) -gt 0
     Set-Setting 'perfLog' $(if ($on) { '0' } else { '10' })

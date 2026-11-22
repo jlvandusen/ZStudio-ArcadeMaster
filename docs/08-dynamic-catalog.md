@@ -180,3 +180,24 @@ cabinetTagline = ...      # optional custom tagline
   - otherwise: 3+ players → pedestal, trackball → multicade, else stand-up
 - **Rendering:** `tools/New-CabinetIntro.ps1` draws `images/intro/*.png`. Definitions live in `tools/lib/CabinetTypes.ps1`. `Start-ArcadeMaster.ps1` re-renders it every boot.
 - **Tools → Cabinet Type** is a visual picker. Turn the wheel or a joystick (or use the hat or arrow keys) to move, press a button or Enter to confirm, or tap a card. It saves `cabinetType`, re-renders the intro and plays a preview of the new title card.
+## System settings (Tools → System Settings)
+
+`tools/Set-CabinetSystem.ps1` holds reversible cabinet switches. Previous Windows values are saved under `HKCU\Software\ArcadeMaster\Saved` and restored when a switch is turned off.
+
+| Switch | Effect |
+|---|---|
+| Auto login | Status comes from Winlogon. ON opens Sysinternals Autologon if present, otherwise netplwiz; the password is typed into Windows and never stored by us. OFF clears `AutoAdminLogon`, which needs admin. |
+| Start arcade at logon | Startup shortcut to `Start-ArcadeMaster.ps1` (hidden console) |
+| Quiet startup | OneDrive / Teams / Edge etc. stop auto-launching; G HUB, JoyToKey and gun / DolphinBar tools stay |
+| No Windows pop-ups | Xbox Game Bar overlay and notification toasts off |
+| Game bezels / overlays | MAME `use_bezels/overlays/backdrops/cpanels/marquees` (MAME's default is on) |
+| Screen always on | display and sleep timeouts off on AC power |
+
+**Using it:**
+- The page is a list of switches: turn the wheel or stick, use the arrows, or tap to pick a row. **Every switch needs a confirming second press**, and the row turns red with "PRESS AGAIN…". A Windows dialog (auto login) pushes the page out of the way until the dialog is closed.
+- `AM_SYSTEM_DRYRUN=1` runs everything against a temp file; use it to test the UI without touching Windows.
+
+**Lessons recorded from building it:**
+- `New-Item -Force` on an existing registry key recreates it and wipes all its values. Use `Confirm-Key`.
+- A controller without a hat reports POV 0 ("up"), so check `JOYCAPS_HASPOV`.
+- A failed joystick read must keep the last state, or held buttons look like fresh presses.

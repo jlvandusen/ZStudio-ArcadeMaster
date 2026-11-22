@@ -35,6 +35,7 @@ $meta = @{
   ToggleFfb          = @{ icon = 'ffb'; color = 'ff2fa0'; what = 'Centre spring, detent ticks and a thunk on select while you browse. Released when a game starts.'; toggle = 'ffb' }
   ToggleSecondScreen = @{ icon = 'screen2'; color = '9be7ff'; what = 'Marquee banner, game header and touch buttons on the pedestal / second screen.'; toggle = 'screens' }
   ShuffleBackgrounds = @{ icon = 'shuffle'; color = '7b5cff'; what = 'Deal a fresh random set of game backdrops for the main menu.' }
+  SystemSettings     = @{ icon = 'buttons'; color = 'ffb000'; what = 'Auto login, start the arcade at logon, quiet startup, no Windows pop-ups, game bezels, screen always on.' }
   CabinetType        = @{ icon = 'cabinet'; color = '2ec8ff'; what = 'Tell the arcade what it is - racing, flight, light gun, stand-up, multicade, or a combo. Shown in the boot intro.' }
   TogglePerfLog      = @{ icon = 'perf'; color = '9aa3b2'; what = 'Write frame times, p99 and hitches to log.txt every 10 seconds.'; toggle = 'perf' }
 }
@@ -91,6 +92,15 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
         try { $img = [Drawing.Image]::FromFile($b.FullName); $tr = RectF $x $r.Y $tw $th; $st = $g.Save(); $g.SetClip([AmDraw]::Round($tr, 10)); $g.DrawImage($img, $tr); $g.Restore($st); $img.Dispose()
               $g.DrawPath((New-Object Drawing.Pen ([AmPal]::Violet), 3), [AmDraw]::Round($tr, 10)) } catch { }
         $x += $tw + 15
+      }
+    }
+    'SystemSettings' {
+      $st = @(); try { $st = @((& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-CabinetSystem.ps1') -List -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String) | ConvertFrom-Json | ForEach-Object { $_ }) } catch { }   # PS 5.1 returns a JSON array as ONE object - unroll
+      $x = $r.X; $y = $r.Y; $i = 0
+      foreach ($s in $st) {
+        $cx = $r.X + ($i % 3) * 316; $cy = $r.Y + [Math]::Floor($i / 3) * 62
+        [AmDraw]::Toggle($g, (RectF $cx ($cy + 8) 84 40), [bool]$s.on, [AmPal]::Green, $null)
+        [AmDraw]::Text($g, "$($s.label)", (PxFont 'Segoe UI Semibold' 19), $(if ($s.on) { [AmPal]::Text } else { [AmPal]::Dim }), (RectF ($cx + 94) $cy 220 56), 'Near', 'Center'); $i++
       }
     }
     'CabinetType' {

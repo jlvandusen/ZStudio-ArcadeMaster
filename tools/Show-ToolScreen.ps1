@@ -42,8 +42,8 @@ public class AmFeed {
 '@
 [void][AmWin]::SetProcessDPIAware()
 
-$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet' }[$Tool]
-$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan }[$Tool]
+$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons' }[$Tool]
+$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan; SystemSettings = [AmPal]::Amber }[$Tool]
 if (-not $Title) { $Title = ($Tool -creplace '(?<=[a-z])(?=[A-Z])', ' ').ToUpper() }
 if ($Screen -lt 0) {
   $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*screenNum0\s*=\s*(\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
@@ -67,7 +67,7 @@ $pad = $SW * 0.04
 $M = @{
   log = New-Object Collections.Generic.List[string]; devices = $null; tiles = $null; stats = $null; toggle = $null; displays = $null
   steps = [ordered]@{}; images = $null; imagesTitle = ''; imagesAt = $null; thumbs = @{}
-  wiz = $null; wizEnd = $null; done = $false; exit = 0; closeAt = $null; started = Get-Date; lastButtons = [AmJoyLive]::AnyButtons(); prevButtons = [long]0; lastPoll = [long]0; noisy = [long]0; flips = @{}; downAt = @{}; doneAt = $null
+  wiz = $null; wizEnd = $null; done = $false; exit = 0; closeAt = $null; started = Get-Date; lastButtons = [AmJoyLive]::AnyButtons(); prevButtons = [long]0; lastPoll = [long]0; rawPrev = [long]-1; stable = [long]0; noisy = [long]0; flips = @{}; downAt = @{}; doneAt = $null
   joy = $null; joyAt = [datetime]::MinValue; rest = @{}; buttons = @(); events = 0
 }
 
@@ -102,6 +102,12 @@ function On-Event($e) {
     'wiz-step' { if ($M.wiz) { $M.wiz.step = $e; $M.wiz.axis = $null; $M.wiz.stepAt = Get-Date } }
     'wiz-axis' { if ($M.wiz) { $M.wiz.axis = $e } }
     'wiz-result' { if ($M.wiz) { [void]$M.wiz.results.Add($e) } }
+    'settings' {
+      $idx = if ($M.settings) { $M.settings.idx } else { 0 }
+      $M.settings = @{ items = @($e.items); idx = $idx; message = "$($e.message)"; busy = $false; at = Get-Date; armed = $null; armedAt = [datetime]::MinValue; rest = @{}; moveAt = [datetime]::MinValue; dir = 0; done = $false }
+      if ($M.yielded) { $M.yielded = $false; $form.WindowState = 'Normal'; $form.Bounds = $SB; $form.TopMost = $true; $form.Activate() }
+    }
+    'yield' { $M.yielded = $true; if ($M.settings) { $M.settings.message = "$($e.message)" }; $form.TopMost = $false; $form.WindowState = 'Minimized' }
     'choice' { $M.choice = @{ opts = @($e.options); idx = [int]$e.selected; title = $e.title; prompt = $e.prompt; confirmed = $false; at = Get-Date; rest = @{}; moveAt = [datetime]::MinValue; dir = 0 } }
     'intro' {
       $M.intro = @{ at = Get-Date; setting = $e.setting; img = @{} }
@@ -357,6 +363,39 @@ function Paint-Intro($g, [float]$y, [float]$h) {
   $g.Restore($st); $g.DrawPath((New-Object Drawing.Pen ([AmPal]::A([AmPal]::Cyan, 200)), 3), [AmDraw]::Round($box, $SH * 0.012))
   [AmDraw]::Text($g, ("BOOT INTRO PREVIEW   -   cabinetType = {0}" -f $M.intro.setting), $fnt.chip, [AmPal]::Dim, (Rect $px ($y + $ph + $SH * 0.008) $pw ($SH * 0.03)), 'Center', 'Center')
 }
+function Get-SettingRects([float]$y, [float]$h) {
+  $n = @($M.settings.items).Count + 1; $rh = [Math]::Min($SH * 0.085, ($h - $SH * 0.07) / $n)
+  for ($i = 0; $i -lt $n; $i++) { Rect $pad ($y + $SH * 0.06 + $i * $rh) ($SW - 2 * $pad) ($rh * 0.88) }
+}
+function Paint-Settings($g, [float]$y, [float]$h) {
+  $st = $M.settings; $items = @($st.items)
+  [AmDraw]::Text($g, "$($st.message)", $fnt.textB, $(if ($st.busy) { [AmPal]::Amber } else { [AmPal]::Dim }), (Rect $pad $y ($SW - 2 * $pad) ($SH * 0.05)), 'Near', 'Center')
+  $rects = @(Get-SettingRects $y $h)
+  for ($i = 0; $i -lt $rects.Count; $i++) {
+    $r = $rects[$i]; $sel = $i -eq $st.idx
+    if ($i -eq $items.Count) {
+      [AmDraw]::Card($g, $r, $(if ($sel) { [AmPal]::Green } else { [AmPal]::Faint }), $r.Height * 0.3, $sel)
+      [AmDraw]::Text($g, 'DONE', $fnt.btn, $(if ($sel) { [AmPal]::Green } else { [AmPal]::Dim }), $r, 'Center', 'Center'); continue
+    }
+    $it = $items[$i]
+    [AmDraw]::Card($g, $r, $(if ($st.armed -eq $it.id) { [AmPal]::Red } elseif ($sel) { [AmPal]::Amber } else { [AmPal]::Faint }), $r.Height * 0.2, $sel)
+    [AmDraw]::Text($g, "$($it.label)", $fnt.textB, $(if ($sel) { [AmPal]::Text } else { [AmPal]::Dim }), (Rect ($r.X + $r.Height * 0.3) $r.Y ($r.Width * 0.38) $r.Height), 'Near', 'Center')
+    [AmDraw]::Text($g, "$($it.detail)", $fnt.small, [AmPal]::Dim, (Rect ($r.X + $r.Width * 0.38) $r.Y ($r.Width * 0.44) $r.Height), 'Near', 'Center')
+    $tw = $r.Height * 1.9; $tr = Rect ($r.Right - $tw - $r.Height * 0.25) ($r.Y + $r.Height * 0.15) $tw ($r.Height * 0.7)
+    if ($sel -and $st.busy) { [AmDraw]::Check($g, (Rect ($tr.X + ($tw - $tr.Height) / 2) $tr.Y $tr.Height $tr.Height), 1, [float](((Get-Date) - $st.at).TotalMilliseconds / 3 % 360)) }
+    else { [AmDraw]::Toggle($g, $tr, [bool]$it.on, [AmPal]::Green, $fnt.label) }
+  }
+}
+function Activate-Setting {
+  $st = $M.settings; if (-not $st -or $st.busy -or $st.done) { return }
+  if (((Get-Date) - $st.at).TotalMilliseconds -lt 700) { return }   # ignore presses that arrive while the list (re)loads
+  if ($st.idx -ge @($st.items).Count) { $st.done = $true; Send-WizKey 'CHOICE:done'; return }
+  # every system switch needs a confirming second press on the same row within 4 s
+  $it = $st.items[$st.idx]
+  if ($st.armed -ne $it.id -or ((Get-Date) - $st.armedAt).TotalSeconds -gt 4) { $st.armed = $it.id; $st.armedAt = Get-Date; $st.message = ("PRESS AGAIN TO TURN {0} {1}" -f $it.label, $(if ($it.on) { 'OFF' } else { 'ON' })); return }
+  $st.armed = $null
+  $st.busy = $true; $st.at = Get-Date; $st.message = "switching $($st.items[$st.idx].label) ..."; Send-WizKey ('TOGGLE:' + $st.items[$st.idx].id)
+}
 function Paint-Log($g, [float]$y, [float]$h) {
   $lh = $fnt.mono.GetHeight($g); $n = [Math]::Max(1, [int]($h / $lh)); $lines = @($M.log | Select-Object -Last $n); $i = 0
   foreach ($l in $lines) {
@@ -371,6 +410,9 @@ function Get-ButtonRects {
 }
 function Paint-Footer($g) {
   $now = Get-Date
+  if ($M.settings -and -not $M.settings.done -and -not $M.done) {
+    [AmDraw]::Text($g, "TURN THE WHEEL / STICK OR TAP TO PICK   -   PRESS A BUTTON TO SWITCH   -   DONE WHEN FINISHED", $fnt.foot, [AmPal]::Amber, (Rect $pad ($SH * 0.875) ($SW - 2 * $pad) ($SH * 0.075)), 'Center', 'Center'); return
+  }
   if ($M.choice -and -not $M.choice.confirmed -and -not $M.done) {
     [AmDraw]::Text($g, "TURN THE WHEEL / JOYSTICK OR TAP TO CHOOSE   -   PRESS A BUTTON TO CONFIRM", $fnt.foot, [AmPal]::Amber, (Rect $pad ($SH * 0.875) ($SW - 2 * $pad) ($SH * 0.075)), 'Center', 'Center'); return
   }
@@ -402,6 +444,7 @@ function Paint-All($g) {
   Paint-Header $g
   $y = $SH * 0.2; $h = $SH * 0.65
   if ($M.intro) { Paint-Intro $g $y $h }
+  elseif ($M.settings -and -not $M.done) { Paint-Settings $g $y $h }
   elseif ($M.choice) { Paint-Choice $g $y $h }
   elseif ($M.wiz) { Paint-Wizard $g $y $h }
   elseif ($M.toggle) { Paint-Toggle $g $y $h }
@@ -453,7 +496,8 @@ $timer.Add_Tick({
     } elseif (($now - $M.started).TotalSeconds -gt $TimeoutSec) { try { $proc.Kill() } catch { }; $M.log.Add("!ERR stopped after $TimeoutSec s") }
   }
   # joystick buttons: track chatter all the time (the G29 reports phantom presses on some buttons)
-  $btn = [AmJoyLive]::AnyButtons(); $flip = $btn -bxor $M.prevButtons
+  $raw = [AmJoyLive]::AnyButtons(); if ($raw -eq $M.rawPrev) { $M.stable = $raw }; $M.rawPrev = $raw
+  $btn = [long]$M.stable; $flip = $btn -bxor $M.prevButtons
   if ($flip) { for ($b = 0; $b -lt 32; $b++) { if ($flip -band ([long]1 -shl $b)) {
     $q = $M.flips[$b]; if (-not $q) { $q = New-Object Collections.Generic.Queue[datetime]; $M.flips[$b] = $q }
     $q.Enqueue($now); while ($q.Count -and ($now - $q.Peek()).TotalSeconds -gt 2) { [void]$q.Dequeue() }
@@ -461,6 +505,19 @@ $timer.Add_Tick({
   $M.prevButtons = $btn
   # remember when each button went down
   for ($b = 0; $b -lt 32; $b++) { $bit = [long]1 -shl $b; if (($btn -band $bit) -and -not ($M.lastPoll -band $bit)) { $M.downAt[$b] = $now } }
+  if ($M.settings -and -not $M.settings.done -and -not $M.done -and -not $M.yielded) {
+    $c = $M.settings; $n = @($c.items).Count + 1; $dir = 0
+    foreach ($d in @(Get-LiveJoys)) {
+      $k = "$($d.Id)"; if (-not $c.rest.ContainsKey($k)) { $c.rest[$k] = $d.Axis[0] }
+      if ([Math]::Abs($c.rest[$k]) -lt 0.5) { $dx = $d.Axis[0] - $c.rest[$k]; if ($dx -gt 0.15) { $dir = 1 } elseif ($dx -lt -0.15) { $dir = -1 } }
+      if ($d.Pov -ge 0) { if ($d.Pov -ge 13500 -and $d.Pov -le 22500) { $dir = 1 } elseif ($d.Pov -le 4500 -or $d.Pov -ge 31500) { $dir = -1 } }
+    }
+    if ($dir -ne 0 -and ($dir -ne $c.dir -or ($now - $c.moveAt).TotalMilliseconds -gt 450)) { $c.idx = [Math]::Max(0, [Math]::Min($n - 1, $c.idx + $dir)); $c.moveAt = $now }
+    $c.dir = $dir
+    $released = $M.lastPoll -band (-bnot $btn) -band (-bnot $M.noisy)
+    for ($b = 0; $b -lt 32 -and $released; $b++) { $bit = [long]1 -shl $b
+      if (($released -band $bit) -and $M.downAt[$b] -and $M.downAt[$b] -ge $c.at -and ($now - $M.downAt[$b]).TotalSeconds -lt 1.5) { Activate-Setting; break } }
+  }
   if ($M.choice -and -not $M.choice.confirmed -and -not $M.done) {
     $c = $M.choice
     # move: any centring axis 0 (wheel / stick X) or a hat, relative to where it rested when the picker opened
@@ -489,12 +546,15 @@ $timer.Add_Tick({
 })
 $form.Add_KeyDown({ param($s, $e)
   if ($M.done) { Close-Screen "key $($e.KeyCode)"; return }
+  if ($M.settings -and -not $M.settings.done) { $st = $M.settings; $n = @($st.items).Count + 1
+    switch ($e.KeyCode) { 'Down' { $st.idx = [Math]::Min($n - 1, $st.idx + 1) } 'Up' { $st.idx = [Math]::Max(0, $st.idx - 1) } 'Return' { Activate-Setting } 'Space' { Activate-Setting } 'Escape' { $st.idx = $n - 1; Activate-Setting } }; return }
   if ($M.choice -and -not $M.choice.confirmed) { $c = $M.choice; $n = $c.opts.Count
     switch ($e.KeyCode) { 'Right' { $c.idx = ($c.idx + 1) % $n } 'Left' { $c.idx = ($c.idx - 1 + $n) % $n } 'Down' { $c.idx = [Math]::Min($n - 1, $c.idx + 4) } 'Up' { $c.idx = [Math]::Max(0, $c.idx - 4) } 'Return' { Confirm-Choice } 'Escape' { Close-Screen 'cancelled (Esc)' } }; return }
   if ($M.wiz -and -not $M.wizEnd) { switch ($e.KeyCode) { 'S' { Send-WizKey 'S' } 'R' { Send-WizKey 'R' } 'B' { Send-WizKey 'B' } 'Q' { Send-WizKey 'Q' } 'Return' { Send-WizKey 'Enter' } 'Escape' { $M.cancelled = $true; Close-Screen 'cancelled (Esc)' } } }
 })
 $form.Add_MouseDown({ param($s, $e)
   if ($M.done) { Close-Screen 'tap/click'; return }
+  if ($M.settings -and -not $M.settings.done) { $rects = @(Get-SettingRects ($SH * 0.2) ($SH * 0.65)); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { $M.settings.idx = $i; Activate-Setting } }; return }
   if ($M.choice -and -not $M.choice.confirmed) { $rects = @(Get-ChoiceRects ($SH * 0.2) ($SH * 0.65)); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { $M.choice.idx = $i; Confirm-Choice } }; return }
   if ($M.wiz -and -not $M.wizEnd) { $rects = @(Get-ButtonRects); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { Send-WizKey $wizButtons[$i].key } } }
 })

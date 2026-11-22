@@ -253,24 +253,31 @@ public static class AmJoyLive {
     [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string szRegKey; [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szOEMVxD; }
   [DllImport("winmm.dll")] static extern int joyGetPosEx(int id, ref JOYINFOEX info);
   [DllImport("winmm.dll", CharSet = CharSet.Unicode)] static extern int joyGetDevCapsW(IntPtr id, ref JOYCAPS caps, int size);
-  public class Dev { public int Id; public string Name; public int Axes; public int Buttons; public float[] Axis = new float[6]; public uint ButtonBits; public int Pov = -1; public bool Ok; }
+  public class Dev { public int Id; public string Name; public int Axes; public int Buttons; public bool HasPov; public float[] Axis = new float[6]; public uint ButtonBits; public int Pov = -1; public bool Ok; }
   public static Dev[] List() {
     var l = new System.Collections.Generic.List<Dev>();
     for (int i = 0; i < 16; i++) {
       var c = new JOYCAPS(); if (joyGetDevCapsW((IntPtr)i, ref c, Marshal.SizeOf(c)) != 0) continue;
-      var d = new Dev { Id = i, Name = c.szPname, Axes = c.wNumAxes, Buttons = c.wNumButtons }; if (Read(d)) l.Add(d);
+      var d = new Dev { Id = i, Name = c.szPname, Axes = c.wNumAxes, Buttons = c.wNumButtons, HasPov = (c.wCaps & 0x10) != 0 }; if (Read(d)) l.Add(d);
     }
     return l.ToArray();
   }
   // axes normalised to -1..1
   public static bool Read(Dev d) {
     var j = new JOYINFOEX(); j.dwSize = Marshal.SizeOf(j); j.dwFlags = 0xFF;
-    d.Ok = joyGetPosEx(d.Id, ref j) == 0; if (!d.Ok) return false;
+    bool ok = joyGetPosEx(d.Id, ref j) == 0; if (!ok) return d.Ok;   // keep the last good state on a failed read (no phantom release/press)
+    d.Ok = true;
     int[] v = { j.dwXpos, j.dwYpos, j.dwZpos, j.dwRpos, j.dwUpos, j.dwVpos };
     for (int k = 0; k < 6; k++) d.Axis[k] = (v[k] - 32767.5f) / 32767.5f;
-    d.ButtonBits = (uint)j.dwButtons; d.Pov = j.dwPOV == 0xFFFF ? -1 : j.dwPOV; return true;
+    d.ButtonBits = (uint)j.dwButtons; d.Pov = (d.HasPov && j.dwPOV != 0xFFFF && j.dwPOV <= 35900) ? j.dwPOV : -1; return true;   // devices without a hat report 0 = "up"
   }
-  public static long AnyButtons() { long all = 0; foreach (var d in List()) all |= d.ButtonBits; return all; }
+  // cached device list (re-enumerated every 3 s); a failed read keeps that device's previous buttons
+  static Dev[] cache; static DateTime cacheAt = DateTime.MinValue;
+  public static long AnyButtons() {
+    if (cache == null || (DateTime.Now - cacheAt).TotalSeconds > 3) { var fresh = List(); if (cache != null) foreach (var f in fresh) foreach (var o in cache) if (o.Id == f.Id && !f.Ok) f.ButtonBits = o.ButtonBits; cache = fresh; cacheAt = DateTime.Now; }
+    else foreach (var d in cache) Read(d);
+    long all = 0; foreach (var d in cache) all |= d.ButtonBits; return all;
+  }
 }
 '@
 }
