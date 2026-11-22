@@ -24,6 +24,7 @@ if ($Remove) {
 
 $items = [ordered]@{
   '0 System Settings'        = @('SystemSettings', 'ffb000')
+  '00 System Health'         = @('SystemHealth', '3ddc84')
   '1 Wheel Setup'            = @('WheelSetup', 'ff2fa0')
   '2 Detect Controllers'     = @('DetectControllers', '2ec8ff')
   '3 Repair Controller IDs'  = @('RepairIds', '2ec8ff')

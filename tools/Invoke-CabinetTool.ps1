@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -58,7 +58,7 @@ function Emit-Collections {
   foreach ($n in 'Racing', 'Flight', 'Arcade', 'Lightgun') {
     $d = Join-Path $RetroFE "collections\$n"; if (-not (Test-Path $d)) { continue }
     $cnt = 0; Get-ChildItem $d -Filter *.sub -File | ForEach-Object { $cnt += @(Get-Content $_.FullName | Where-Object { $_.Trim() }).Count }
-    $tiles += @{ label = $n.ToUpper(); value = "$cnt"; icon = @{ Racing = 'wheel'; Flight = 'joystick'; Arcade = 'gamepad'; Lightgun = 'gun' }[$n] }
+    $tiles += @{ label = $n.ToUpper(); suffix = ' GAMES'; value = "$cnt"; icon = @{ Racing = 'wheel'; Flight = 'joystick'; Arcade = 'gamepad'; Lightgun = 'gun' }[$n] }
   }
   if ($tiles) { Emit @{ type = 'tiles'; tiles = $tiles } }
 }
@@ -185,7 +185,11 @@ switch ($Tool) {
       $msg = ($out -split "`r?`n" | Where-Object { $_ -match '->' } | Select-Object -Last 1) -replace '^\S+\s+->\s+', ''
       Emit @{ type = 'settings'; items = @($items | ForEach-Object { @{ id = $_.id; label = $_.label; detail = $_.detail; on = [bool]$_.on } }); message = "$($cur.label): $msg"; resume = $true }
     }
-  }  'TogglePerfLog' {
+  }  'SystemHealth' {
+    Banner 'SYSTEM HEALTH'
+    Run 'Repair-ArcadeHealth.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null
+  }
+  'TogglePerfLog' {
     $on = [int]("0" + (Get-Setting 'perfLog')) -gt 0
     Set-Setting 'perfLog' $(if ($on) { '0' } else { '10' })
     Banner ("PERFORMANCE LOG: " + $(if ($on) { 'OFF' } else { 'ON (every 10 s, see log.txt [Perf] lines)' }))

@@ -230,3 +230,26 @@ cabinetTagline = ...      # optional custom tagline
 - Registers the theme in `manifest\themes.json`. Layouts already inside the install are registered in place, unchanged.
 
 Tested with DRIVE from E: → `CO-DRIVE`, 51% coverage (gaps: bezel, gallery, option art). ArcadeMaster is 74%.
+## Self-healing (Repair-ArcadeHealth.ps1)
+
+At every boot, before RetroFE starts, and from **Tools → System Health** (a visual checklist), nine checks report OK, FIXED or WARN:
+
+| Check | What it covers |
+|---|---|
+| runtime | retrofe.exe and core DLLs present, else restored from the last-known-good copy |
+| settings | layout installed, start collection exists, `numScreens` ≤ connected displays, `enterOnCollection = no` |
+| controls | controls.conf present |
+| screens | second-screen layouts declare `monitor=` |
+| menu | main-menu entries point at real collections |
+| launchers | report only; emulators are never touched |
+| logs | log rotation above 20 MB, crash folders capped at 10 |
+| disk | free space |
+| art | intro and Tools art (regenerated when missing) |
+
+Fixes are conservative and backed up. Results go to `manifest\health.json`; `-NoFix` reports without changing anything.
+
+**Watchdog:**
+- After RetroFE has run 3 minutes without a crash, the configs are saved as last-known-good in `manifest\lkg\`, keeping 3 copies plus the core runtime files.
+- **3 crashes within 2 minutes:** the last-known-good configs are restored once (the current files are kept as `*.before-lkg`) and RetroFE is retried. It gives up only after that.
+
+Tested by breaking settings.conf (missing theme, 2 screens on a 1-display cabinet); both were repaired.

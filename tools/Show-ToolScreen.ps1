@@ -42,8 +42,8 @@ public class AmFeed {
 '@
 [void][AmWin]::SetProcessDPIAware()
 
-$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons' }[$Tool]
-$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan; SystemSettings = [AmPal]::Amber }[$Tool]
+$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons'; SystemHealth = 'repair' }[$Tool]
+$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan; SystemSettings = [AmPal]::Amber; SystemHealth = [AmPal]::Green }[$Tool]
 if (-not $Title) { $Title = ($Tool -creplace '(?<=[a-z])(?=[A-Z])', ' ').ToUpper() }
 if ($Screen -lt 0) {
   $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*screenNum0\s*=\s*(\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
@@ -215,7 +215,7 @@ function Paint-Steps($g, [float]$y, [float]$h) {
     if ($st -eq 1) { [AmDraw]::Card($g, $r, [AmPal]::Cyan, $rowH * 0.2, $true) }
     [AmDraw]::Check($g, (Rect ($r.X + $rowH * 0.18) ($r.Y + $rowH * 0.16) ($rowH * 0.54) ($rowH * 0.54)), $st, $phase)
     $c = switch ($st) { 0 { [AmPal]::Dim } 1 { [AmPal]::Text } 2 { [AmPal]::Text } 3 { [AmPal]::Red } }
-    [AmDraw]::Text($g, "$($s.label)", $fnt.textB, $c, (Rect ($r.X + $rowH * 0.95) $r.Y ($r.Width - $rowH) $r.Height), 'Near', 'Center')
+    $sf = Fit-Font $g "$($s.label)" @($fnt.textB, $fnt.label, $fnt.chip) ($r.Width - $rowH * 1.1); [AmDraw]::Text($g, "$($s.label)", $sf, $c, (Rect ($r.X + $rowH * 0.95) $r.Y ($r.Width - $rowH) $r.Height), 'Near', 'Center')
     $i++
   }
   if ($hasTiles) {
@@ -225,7 +225,7 @@ function Paint-Steps($g, [float]$y, [float]$h) {
       [AmDraw]::Card($g, $r, [AmPal]::Amber, $th * 0.12, $true)
       [AmDraw]::Icon($g, $t.icon, (Rect ($r.X + $th * 0.15) ($r.Y + $th * 0.2) ($th * 0.6) ($th * 0.6)), [AmPal]::Amber, 0)
       [AmDraw]::Text($g, "$($t.value)", $fnt.tileV, [AmPal]::Text, (Rect ($r.X + $th * 0.9) ($r.Y + $th * 0.05) ($tw - $th) ($th * 0.6)), 'Near', 'Center')
-      [AmDraw]::Text($g, "$($t.label) GAMES", $fnt.chip, [AmPal]::Dim, (Rect ($r.X + $th * 0.9) ($r.Y + $th * 0.62) ($tw - $th) ($th * 0.3)), 'Near', 'Near')
+      [AmDraw]::Text($g, "$($t.label)$($t.suffix)", $fnt.chip, [AmPal]::Dim, (Rect ($r.X + $th * 0.9) ($r.Y + $th * 0.62) ($tw - $th) ($th * 0.3)), 'Near', 'Near')
     }
   }
 }

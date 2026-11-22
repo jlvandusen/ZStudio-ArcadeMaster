@@ -78,10 +78,19 @@ if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) {
 $jtk = Join-Path $Root 'JoyToKey\JoyToKey.exe'
 if ((Test-Path $jtk) -and -not (Get-Process JoyToKey -ErrorAction SilentlyContinue)) { Start-Process $jtk -WorkingDirectory (Split-Path $jtk) -WindowStyle Minimized; Write-Log 'JoyToKey started' }
 
+# self-healing: check (and conservatively repair) the install before every boot
+try { $h = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log ((($h -split "`r?`n") | Where-Object { $_ -match 'FIXED|WARN|health:' } | ForEach-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "health check failed: $($_.Exception.Message)" }
+
 $crashes = New-Object System.Collections.Generic.List[datetime]
+$snapshotDone = $false; $lkgRestored = $false
 while ($true) {
   Write-Log 'starting RetroFE'
   $p = Start-Process $exe -WorkingDirectory (Split-Path $exe) -PassThru
+  # stable for 3 minutes -> remember this configuration as last-known-good (once per boot)
+  if (-not $snapshotDone -and -not $p.WaitForExit(180000)) {
+    try { Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Snapshot', '-NoFix') | Out-Null; Write-Log 'stable 3 min - last-known-good configs saved' } catch { }
+    $snapshotDone = $true
+  }
   $p.WaitForExit()
   $code = $p.ExitCode
   $crashed = ($code -ne 0) -or (Select-String -Path (Join-Path $Root 'log.txt') -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue)
@@ -90,6 +99,12 @@ while ($true) {
   $keep = Join-Path $Root ("crash-{0:yyyyMMdd-HHmmss}" -f $now); New-Item -ItemType Directory $keep | Out-Null
   foreach ($f in 'log.txt', 'retrofe_crash.dmp') { $src = Join-Path $Root $f; if (Test-Path $src) { Copy-Item $src $keep } }
   Write-Log "RetroFE crashed (exit $code) - evidence in $keep"
+  # crash loop: put the last-known-good configs back once and try again before giving up
+  if ($recent.Count -ge 3 -and -not $lkgRestored) {
+    $lkgRestored = $true; $crashes.Clear()
+    $r = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-RestoreLkg'); Write-Log "crash loop - $($r.Trim())"
+    continue
+  }
   if ($recent.Count -ge $MaxCrashes) { Write-Log "$MaxCrashes crashes in $CrashWindowSec s - giving up"; break }
   Start-Sleep -Seconds 2
 }

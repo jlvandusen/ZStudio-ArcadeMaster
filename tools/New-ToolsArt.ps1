@@ -35,6 +35,7 @@ $meta = @{
   ToggleFfb          = @{ icon = 'ffb'; color = 'ff2fa0'; what = 'Centre spring, detent ticks and a thunk on select while you browse. Released when a game starts.'; toggle = 'ffb' }
   ToggleSecondScreen = @{ icon = 'screen2'; color = '9be7ff'; what = 'Marquee banner, game header and touch buttons on the pedestal / second screen.'; toggle = 'screens' }
   ShuffleBackgrounds = @{ icon = 'shuffle'; color = '7b5cff'; what = 'Deal a fresh random set of game backdrops for the main menu.' }
+  SystemHealth       = @{ icon = 'repair'; color = '3ddc84'; what = 'Check and repair the install: runtime, settings, controls, screens, menus, launchers, logs, disk, art.' }
   SystemSettings     = @{ icon = 'buttons'; color = 'ffb000'; what = 'Auto login, start the arcade at logon, quiet startup, no Windows pop-ups, game bezels, screen always on.' }
   CabinetType        = @{ icon = 'cabinet'; color = '2ec8ff'; what = 'Tell the arcade what it is - racing, flight, light gun, stand-up, multicade, or a combo. Shown in the boot intro.' }
   TogglePerfLog      = @{ icon = 'perf'; color = '9aa3b2'; what = 'Write frame times, p99 and hitches to log.txt every 10 seconds.'; toggle = 'perf' }
@@ -94,6 +95,16 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
         $x += $tw + 15
       }
     }
+    'SystemHealth' {
+      $hf = Join-Path $ManifestDir 'health.json'
+      if (Test-Path $hf) { $hj = Get-Content $hf -Raw | ConvertFrom-Json; $x = $r.X
+        foreach ($tile in @(@('OK', $hj.ok, [AmPal]::Green), @('FIXED', $hj.fixed, [AmPal]::Cyan), @('NEEDS A LOOK', $hj.warn, $(if ($hj.warn) { [AmPal]::Amber } else { [AmPal]::Dim })))) {
+          $cr = RectF $x $r.Y 230 $r.Height; [AmDraw]::Card($g, $cr, $tile[2], 14, $false)
+          [AmDraw]::Text($g, "$($tile[1])", $val, $tile[2], (RectF ($x + 16) ($r.Y + 8) 200 60), 'Near', 'Center'); [AmDraw]::Text($g, $tile[0], (PxFont 'Segoe UI Semibold' 18), [AmPal]::Dim, (RectF ($x + 18) ($r.Y + 70) 200 30), 'Near', 'Center'); $x += 246 }
+        [AmDraw]::Text($g, ("checked " + ([datetime]$hj.at).ToString('MMM d, HH:mm')), $small, [AmPal]::Dim, (RectF $x $r.Y ($r.Right - $x) $r.Height), 'Near', 'Center') }
+      else { [AmDraw]::Text($g, 'Not checked yet - runs at every boot', $small, [AmPal]::Dim, $r, 'Near', 'Near') }
+    }
+
     'SystemSettings' {
       $st = @(); try { $st = @((& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-CabinetSystem.ps1') -List -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String) | ConvertFrom-Json | ForEach-Object { $_ }) } catch { }   # PS 5.1 returns a JSON array as ONE object - unroll
       $x = $r.X; $y = $r.Y; $i = 0
