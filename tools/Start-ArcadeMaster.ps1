@@ -84,7 +84,12 @@ try { $h = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-Manifest
 # Stream Deck: tools\streamdeck\amdeck.py drives the deck (themes, switches, in-game keys) when one is plugged in
 # and Python + the streamdeck package are present. It exits on its own if no deck is found or Elgato's app owns it.
 $deck = Join-Path $PSScriptRoot 'streamdeck\amdeck.py'
-$pyw = (Get-Command pythonw.exe -ErrorAction SilentlyContinue).Source
+$pyw = (Get-Command pythonw.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source   # not the Store stub
+if ($pyw -and (Test-Path $deck)) {   # first boot on a cabinet: install the deck's Python packages once
+  $py = Join-Path (Split-Path $pyw) 'python.exe'
+  & $py -c "import StreamDeck, PIL" 2>$null
+  if ($LASTEXITCODE) { $o = & $py -m pip install --user --quiet -r (Join-Path $PSScriptRoot 'streamdeck\requirements.txt') 2>&1 | Out-String; Write-Log "Stream Deck packages installed (exit $LASTEXITCODE) $($o.Trim())" }
+}
 if ($pyw -and (Test-Path $deck) -and -not (Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match 'amdeck\.py' })) {
   try { Start-Process $pyw -ArgumentList @("`"$deck`"", '--retrofe', "`"$Root`"", '--manifest', "`"$ManifestDir`"") -WindowStyle Hidden; Write-Log 'Stream Deck controller started' } catch { Write-Log "Stream Deck controller failed: $($_.Exception.Message)" }
 }

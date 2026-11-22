@@ -17,10 +17,29 @@ ArcadeMaster drives an Elgato Stream Deck directly over USB with `tools\streamde
 - A key shows `... WAIT` while its job runs. Other presses are ignored until it finishes.
 
 **In-game page:** this appears by itself while any emulator in `gameProcesses` runs, and the menu page comes back when the game ends.
-- Keys: COIN P1–P4, START P1–P4, PAUSE, SAVE/LOAD STATE, EXIT GAME, SERVICE, TEST MENU.
+- Keys: COIN 1P–4P, 1P–4P START, PAUSE, the running game's logo, EXIT, SAVE / LOAD state, SERVICE, MENU <.
 - They are sent as keyboard **scancodes**, so DirectInput and raw-input games see them.
 - They use MAME's default keys (coin 5–8, start 1–4, P, Esc, 9, F2, Shift+F7/F7). If the panel is wired differently, change them in `deck.json`.
 - A tool change that needs a restart while a game is running waits until the game ends.
+
+## Automatic behaviour
+
+- **The running game's logo.** When a game starts, `amdeck.py` reads RetroFE's last launch from `log.txt`. CoinOPS launches LEDBlinky with `"<rom>" "<collection>"`, TeknoParrot uses `--profile=<game>.xml`, and other launches fall back to the last argument. The deck then shows `collections\<collection>\medium_artwork\logo\<rom>.png` on the in-game page with a light sweep. Without a logo, the key shows the rom name.
+- **Live ON/OFF.** Keys with a `"state"` rule (2ND SCREEN: `numScreens` 2 or more; PERF: `perfLog` > 0) redraw whenever `settings.conf` changes, whatever changed it.
+- **`deck.json` reloads itself** within a second of being saved.
+- **Idle dimming.** The deck dims to `idleBrightness` after `idleDimMinutes` without a press (never during a game). The first press only wakes it.
+- **Elgato's app.** If its app is running, `amdeck.py` waits and takes the deck over as soon as the app closes.
+- **First boot.** `Start-ArcadeMaster.ps1` installs the Python packages if they're missing (it skips the Microsoft Store `python` placeholder).
+
+## Performance
+
+- **Rendering.** Every key's frames are drawn and converted to the deck's format once, then cached. The other pages are pre-rendered in the background at start, so a page switch is a lookup. Only keys whose frame changed are written to the deck.
+- **Game check.** Once a second, using the Windows process snapshot (about 7 ms), not `tasklist`.
+- **`settings.conf`** is re-read only when its modification time changes.
+
+## Key art
+
+`tools\streamdeck\New-DeckArt.py` draws the whole set in code (Pillow only) into `tools\streamdeck\art\`: animated PNGs, 72 px, neon on black, in player colours (P1 red, P2 blue, P3 green, P4 yellow). Re-run it after changing the style. `--preview <png>` writes a contact sheet. A key whose art file is missing shows its text label.
 
 ## Animated keys
 
