@@ -1,0 +1,407 @@
+diff --git a/RetroFE/Source/CMakeLists.txt b/RetroFE/Source/CMakeLists.txt
+index df2fa7d..e9c4fdd 100644
+--- a/RetroFE/Source/CMakeLists.txt
++++ b/RetroFE/Source/CMakeLists.txt
+@@ -216,7 +216,9 @@ set(RETROFE_HEADERS
+ 	"${RETROFE_DIR}/Source/Control/KeyboardHandler.h"
+ 	"${RETROFE_DIR}/Source/Control/MouseButtonHandler.h"
+ 	"${RETROFE_DIR}/Source/Control/MouseAxisHandler.h"
+-	"${RETROFE_DIR}/Source/Control/TouchDragHandler.h"
++	"${RETROFE_DIR}/Source/Control/TouchDragHandler.h"
++	"${RETROFE_DIR}/Source/Control/PointerInput.h"
++	"${RETROFE_DIR}/Source/Control/GestureHandler.h"
+     "${RETROFE_DIR}/Source/Control/Restrictor/Restrictor.h"
+     "${RETROFE_DIR}/Source/Control/Restrictor/RestrictorManager.h"
+     "${RETROFE_DIR}/Source/Control/Restrictor/ServoStikRestrictor.h"
+@@ -297,7 +299,8 @@ set(RETROFE_SOURCES
+ 	"${RETROFE_DIR}/Source/Control/KeyboardHandler.cpp"
+ 	"${RETROFE_DIR}/Source/Control/MouseButtonHandler.cpp"
+     "${RETROFE_DIR}/Source/Control/MouseAxisHandler.cpp"
+-	"${RETROFE_DIR}/Source/Control/TouchDragHandler.cpp"
++	"${RETROFE_DIR}/Source/Control/TouchDragHandler.cpp"
++	"${RETROFE_DIR}/Source/Control/PointerInput.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/Restrictor.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/RestrictorManager.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/ServoStikRestrictor.cpp"
+diff --git a/RetroFE/Source/Control/GestureHandler.h b/RetroFE/Source/Control/GestureHandler.h
+new file mode 100644
+index 0000000..d1fd631
+--- /dev/null
++++ b/RetroFE/Source/Control/GestureHandler.h
+@@ -0,0 +1,18 @@
++/* This file is part of RetroFE (ArcadeMaster extension). GPLv3 or later. */
++#pragma once
++#include "InputHandler.h"
++#include "PointerInput.h"
++
++// Binds one PointerInput gesture (touchTap, touchSwipeUp, mouseWheelDown, mouseAxisX+, ...) to a RetroFE action.
++// The shared recogniser does all the work; this just reports its state for the current frame.
++class GestureHandler : public InputHandler {
++public:
++    GestureHandler(PointerInput& pointer, PointerInput::Gesture gesture) : pointer_(pointer), gesture_(gesture) {}
++    bool update(SDL_Event& /*e*/) override { return false; }   // events are fed to PointerInput by UserInput
++    bool pressed() override { return pointer_.active(gesture_); }
++    void reset() override {}
++    void updateKeystate() override {}
++private:
++    PointerInput& pointer_;
++    PointerInput::Gesture gesture_;
++};
+diff --git a/RetroFE/Source/Control/MouseButtonHandler.cpp b/RetroFE/Source/Control/MouseButtonHandler.cpp
+index 059f97c..c61c08d 100644
+--- a/RetroFE/Source/Control/MouseButtonHandler.cpp
++++ b/RetroFE/Source/Control/MouseButtonHandler.cpp
+@@ -14,6 +14,9 @@ void MouseButtonHandler::reset()
+ bool MouseButtonHandler::update(SDL_Event &e)
+ {
+     if(e.type != SDL_MOUSEBUTTONUP && e.type != SDL_MOUSEBUTTONDOWN) return false;
++    // ArcadeMaster: SDL also synthesises mouse clicks from touches; those are handled as touch gestures
++    // (PointerInput), so ignoring them here stops a single tap from firing two actions.
++    if(e.button.which == SDL_TOUCH_MOUSEID) return false;
+ 
+     if(e.button.button == button_) {
+         pressed_ = (e.type == SDL_MOUSEBUTTONDOWN) ? true : false;
+diff --git a/RetroFE/Source/Control/PointerInput.cpp b/RetroFE/Source/Control/PointerInput.cpp
+new file mode 100644
+index 0000000..6fbf8cd
+--- /dev/null
++++ b/RetroFE/Source/Control/PointerInput.cpp
+@@ -0,0 +1,167 @@
++/* This file is part of RetroFE (ArcadeMaster extension: touch / trackball / spinner / wheel input).
++ *
++ * RetroFE is free software: you can redistribute it and/or modify it under the terms of the
++ * GNU General Public License as published by the Free Software Foundation, either version 3
++ * of the License, or (at your option) any later version.
++ */
++#include "PointerInput.h"
++#include "../Database/Configuration.h"
++#include "../Utility/Log.h"
++#include <cmath>
++#include <utility>
++
++PointerInput::PointerInput(Configuration& config) : config_(config) { loadConfig(); }
++
++void PointerInput::loadConfig() {
++    int i = 0; float f = 0.f;
++    if (config_.getProperty("controls.touchPulseMs", i) && i > 0)        pulseMs_ = static_cast<Uint32>(i);
++    if (config_.getProperty("controls.touchTapMaxMs", i) && i > 0)       tapMaxMs_ = static_cast<Uint32>(i);
++    if (config_.getProperty("controls.touchDoubleTapMs", i) && i > 0)    doubleTapMs_ = static_cast<Uint32>(i);
++    if (config_.getProperty("controls.touchLongPressMs", i) && i > 0)    longPressMs_ = static_cast<Uint32>(i);
++    if (config_.getProperty("controls.touchSwipeMaxMs", i) && i > 0)     swipeMaxMs_ = static_cast<Uint32>(i);
++    if (config_.getProperty("controls.touchMoveTolerance", f) && f > 0)  moveTolerance_ = f;   // fraction of screen
++    if (config_.getProperty("controls.touchSwipeMinDistance", f) && f > 0) swipeMinDist_ = f;  // fraction of screen
++    if (config_.getProperty("controls.touchDragDeadzone", f) && f > 0)   dragDeadzone_ = f;    // fraction of screen
++    if (config_.getProperty("controls.mouseAxisStep", f) && f > 0)       axisStep_ = f;        // pixels (counts) per step
++    if (config_.getProperty("controls.mouseAxisHoldMs", i) && i > 0)     axisHoldMs_ = static_cast<Uint32>(i);
++}
++
++const char* PointerInput::name(Gesture g) {
++    static const char* n[GestureCount] = { "Tap", "DoubleTap", "LongPress", "TwoFingerTap", "SwipeUp", "SwipeDown", "SwipeLeft", "SwipeRight",
++        "DragUp", "DragDown", "DragLeft", "DragRight", "TapLeft", "TapRight", "TapTop", "TapBottom", "TapCenter",
++        "WheelUp", "WheelDown", "WheelLeft", "WheelRight", "AxisX-", "AxisX+", "AxisY-", "AxisY+" };
++    return (g >= 0 && g < GestureCount) ? n[g] : "?";
++}
++
++void PointerInput::pulse(Gesture g, Uint32 now) {
++    pulseUntil_[g] = now + pulseMs_;
++    LOG_DEBUG("Pointer", std::string("gesture ") + name(g));
++}
++
++void PointerInput::reset() {
++    active_.fill(false);
++    pulseUntil_.fill(0);
++    fingers_.clear();
++    maxFingersThisTouch_ = 0;
++    longPressFired_ = false;
++    axisAccX_ = axisAccY_ = 0.f;
++}
++
++void PointerInput::feed(const SDL_Event& e) {
++    const Uint32 now = SDL_GetTicks();
++    if (e.type == SDL_FINGERDOWN || e.type == SDL_FINGERUP)
++        LOG_DEBUG("Pointer", (e.type == SDL_FINGERDOWN ? "finger down " : "finger up ") << e.tfinger.fingerId << " @ " << e.tfinger.x << "," << e.tfinger.y);
++    else if (e.type == SDL_MOUSEWHEEL)
++        LOG_DEBUG("Pointer", "wheel " << e.wheel.x << "," << e.wheel.y << " which=" << e.wheel.which);
++    switch (e.type) {
++    case SDL_FINGERDOWN: {
++        if (fingers_.empty()) { maxFingersThisTouch_ = 0; longPressFired_ = false; }
++        fingers_[e.tfinger.fingerId] = Finger{ e.tfinger.x, e.tfinger.y, e.tfinger.x, e.tfinger.y, now, false };
++        if (static_cast<int>(fingers_.size()) > maxFingersThisTouch_) maxFingersThisTouch_ = static_cast<int>(fingers_.size());
++        break;
++    }
++    case SDL_FINGERMOTION: {
++        auto it = fingers_.find(e.tfinger.fingerId);
++        if (it == fingers_.end()) break;
++        Finger& f = it->second;
++        f.x = e.tfinger.x; f.y = e.tfinger.y;
++        if (std::fabs(f.x - f.x0) > moveTolerance_ || std::fabs(f.y - f.y0) > moveTolerance_) f.moved = true;
++        break;
++    }
++    case SDL_FINGERUP: {
++        auto it = fingers_.find(e.tfinger.fingerId);
++        if (it == fingers_.end()) break;
++        const Finger f = it->second;
++        fingers_.erase(it);
++        const Uint32 dt = now - f.t0;
++        const float dx = e.tfinger.x - f.x0, dy = e.tfinger.y - f.y0;
++
++        if (maxFingersThisTouch_ >= 2) {
++            // two-finger tap: fires once when the last finger of a short, still, multi-finger touch lifts
++            if (fingers_.empty() && dt <= tapMaxMs_ + 150 && !f.moved) pulse(TwoFingerTap, now);
++            break;
++        }
++        if (longPressFired_) break;                                        // the press already did its job
++
++        if (!f.moved && dt <= tapMaxMs_) {
++            pulse(Tap, now);
++            if (f.x0 < 1.f / 3) pulse(TapLeft, now); else if (f.x0 > 2.f / 3) pulse(TapRight, now);
++            if (f.y0 < 1.f / 3) pulse(TapTop, now);  else if (f.y0 > 2.f / 3) pulse(TapBottom, now);
++            if (f.x0 >= 1.f / 3 && f.x0 <= 2.f / 3 && f.y0 >= 1.f / 3 && f.y0 <= 2.f / 3) pulse(TapCenter, now);
++            if (now - lastTapTime_ <= doubleTapMs_ &&
++                std::fabs(f.x0 - lastTapX_) < moveTolerance_ * 2 && std::fabs(f.y0 - lastTapY_) < moveTolerance_ * 2) {
++                pulse(DoubleTap, now);
++                lastTapTime_ = 0;                                          // a triple tap is not two doubles
++            } else {
++                lastTapTime_ = now; lastTapX_ = f.x0; lastTapY_ = f.y0;
++            }
++        }
++        else if (dt <= swipeMaxMs_ && (std::fabs(dx) >= swipeMinDist_ || std::fabs(dy) >= swipeMinDist_)) {
++            if (std::fabs(dy) >= std::fabs(dx)) pulse(dy < 0 ? SwipeUp : SwipeDown, now);
++            else                                pulse(dx < 0 ? SwipeLeft : SwipeRight, now);
++        }
++        break;
++    }
++    case SDL_MOUSEWHEEL: {
++        if (e.wheel.which == SDL_TOUCH_MOUSEID) break;
++        int y = e.wheel.y, x = e.wheel.x;
++        if (e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) { y = -y; x = -x; }
++        if (y > 0) pulse(WheelUp, now);   else if (y < 0) pulse(WheelDown, now);
++        if (x > 0) pulse(WheelRight, now); else if (x < 0) pulse(WheelLeft, now);
++        break;
++    }
++    case SDL_MOUSEMOTION: {
++        if (e.motion.which == SDL_TOUCH_MOUSEID) break;                    // touch already handled as fingers
++        axisAccX_ += static_cast<float>(e.motion.xrel);
++        axisAccY_ += static_cast<float>(e.motion.yrel);
++        // each full step re-arms a short hold: a nudge = one tap, a spin = held key (RetroFE accelerates)
++        while (axisAccX_ >= axisStep_)  { hold(AxisXPlus, now, axisHoldMs_);  axisAccX_ -= axisStep_; }
++        while (axisAccX_ <= -axisStep_) { hold(AxisXMinus, now, axisHoldMs_); axisAccX_ += axisStep_; }
++        while (axisAccY_ >= axisStep_)  { hold(AxisYPlus, now, axisHoldMs_);  axisAccY_ -= axisStep_; }
++        while (axisAccY_ <= -axisStep_) { hold(AxisYMinus, now, axisHoldMs_); axisAccY_ += axisStep_; }
++        break;
++    }
++    default: break;
++    }
++}
++
++void PointerInput::tick() {
++    const Uint32 now = SDL_GetTicks();
++
++    // long press: one still finger held past the threshold
++    if (fingers_.size() == 1 && maxFingersThisTouch_ == 1 && !longPressFired_) {
++        const Finger& f = fingers_.begin()->second;
++        if (!f.moved && now - f.t0 >= longPressMs_) { pulse(LongPress, now); longPressFired_ = true; }
++    }
++
++    // drag: one finger held away from where it started -> behave like a held direction key
++    bool dragU = false, dragD = false, dragL = false, dragR = false;
++    if (fingers_.size() == 1 && maxFingersThisTouch_ == 1 && !longPressFired_) {
++        const Finger& f = fingers_.begin()->second;
++        const float dx = f.x - f.x0, dy = f.y - f.y0;
++        if (std::fabs(dy) >= std::fabs(dx)) { if (dy <= -dragDeadzone_) dragU = true; else if (dy >= dragDeadzone_) dragD = true; }
++        else                                { if (dx <= -dragDeadzone_) dragL = true; else if (dx >= dragDeadzone_) dragR = true; }
++    }
++
++    // slowly bleed off sub-step trackball motion so tiny drifts never add up to a phantom step
++    axisAccX_ *= 0.9f; axisAccY_ *= 0.9f;
++
++    for (int g = 0; g < GestureCount; ++g) active_[g] = now < pulseUntil_[g];
++    active_[DragUp] = dragU; active_[DragDown] = dragD; active_[DragLeft] = dragL; active_[DragRight] = dragR;
++}
++
++bool PointerInput::parse(const std::string& s, Gesture& out) {
++    static const std::pair<const char*, Gesture> names[] = {
++        {"touchtap", Tap}, {"touchdoubletap", DoubleTap}, {"touchlongpress", LongPress}, {"touchtwofingertap", TwoFingerTap},
++        {"touchswipeup", SwipeUp}, {"touchswipedown", SwipeDown}, {"touchswipeleft", SwipeLeft}, {"touchswiperight", SwipeRight},
++        {"touchdragup", DragUp}, {"touchdragdown", DragDown}, {"touchdragleft", DragLeft}, {"touchdragright", DragRight},
++        {"touchtapleft", TapLeft}, {"touchtapright", TapRight}, {"touchtaptop", TapTop}, {"touchtapbottom", TapBottom}, {"touchtapcenter", TapCenter},
++        {"mousewheelup", WheelUp}, {"mousewheeldown", WheelDown}, {"mousewheelleft", WheelLeft}, {"mousewheelright", WheelRight},
++        {"mouseaxisx-", AxisXMinus}, {"mouseaxisx+", AxisXPlus}, {"mouseaxisy-", AxisYMinus}, {"mouseaxisy+", AxisYPlus},
++        {"mousex-", AxisXMinus}, {"mousex+", AxisXPlus}, {"mousey-", AxisYMinus}, {"mousey+", AxisYPlus},
++        {"spinnerleft", AxisXMinus}, {"spinnerright", AxisXPlus},
++        {"trackballleft", AxisXMinus}, {"trackballright", AxisXPlus}, {"trackballup", AxisYMinus}, {"trackballdown", AxisYPlus},
++    };
++    for (const auto& n : names) { if (s == n.first) { out = n.second; return true; } }
++    return false;
++}
+diff --git a/RetroFE/Source/Control/PointerInput.h b/RetroFE/Source/Control/PointerInput.h
+new file mode 100644
+index 0000000..87aa05c
+--- /dev/null
++++ b/RetroFE/Source/Control/PointerInput.h
+@@ -0,0 +1,76 @@
++/* This file is part of RetroFE (ArcadeMaster extension: touch / trackball / spinner / wheel input).
++ *
++ * RetroFE is free software: you can redistribute it and/or modify it under the terms of the
++ * GNU General Public License as published by the Free Software Foundation, either version 3
++ * of the License, or (at your option) any later version.
++ */
++#pragma once
++#include <SDL.h>
++#include <array>
++#include <map>
++#include <string>
++
++class Configuration;
++
++// One shared recogniser for pointer-style input. UserInput feeds it every SDL event and ticks it
++// once per frame; GestureHandler instances (one per controls.conf token) just query it.
++//
++//   touch:  tap, double tap, long press, two-finger tap, swipe (fling) x4, drag (held scroll) x4,
++//           zone taps (left/right/top/bottom/center thirds of the screen)
++//   mouse:  wheel x4, relative axis x4 (trackballs, spinners: nudge = one step, spin = held scroll)
++//
++// Discrete gestures become a short "key tap" pulse (pulseMs) so RetroFE's state machine can't miss them;
++// continuous ones (drag, axis) behave like a held key, so RetroFE's own scroll acceleration applies.
++class PointerInput {
++public:
++    enum Gesture {
++        Tap, DoubleTap, LongPress, TwoFingerTap,
++        SwipeUp, SwipeDown, SwipeLeft, SwipeRight,
++        DragUp, DragDown, DragLeft, DragRight,
++        TapLeft, TapRight, TapTop, TapBottom, TapCenter,
++        WheelUp, WheelDown, WheelLeft, WheelRight,
++        AxisXMinus, AxisXPlus, AxisYMinus, AxisYPlus,
++        GestureCount
++    };
++
++    explicit PointerInput(Configuration& config);
++    void loadConfig();                 // controls.touch* / controls.mouseAxis* tunables
++    void feed(const SDL_Event& e);     // every SDL event
++    void tick();                       // once per frame, before handlers are polled
++    bool active(Gesture g) const { return active_[g]; }
++    void reset();
++
++    // "touchSwipeUp" -> SwipeUp, "mouseAxisX+" -> AxisXPlus ... returns false if unknown
++    static bool parse(const std::string& lowered, Gesture& out);
++
++private:
++    void pulse(Gesture g, Uint32 now);
++    static const char* name(Gesture g);
++    void hold(Gesture g, Uint32 now, Uint32 ms) { if (now + ms > pulseUntil_[g]) pulseUntil_[g] = now + ms; }
++
++    struct Finger { float x0, y0, x, y; Uint32 t0; bool moved; };
++
++    Configuration& config_;
++    std::array<bool, GestureCount> active_{};
++    std::array<Uint32, GestureCount> pulseUntil_{};
++
++    std::map<SDL_FingerID, Finger> fingers_;
++    int  maxFingersThisTouch_ = 0;
++    bool longPressFired_ = false;
++    Uint32 lastTapTime_ = 0;
++    float lastTapX_ = -1.f, lastTapY_ = -1.f;
++
++    float axisAccX_ = 0.f, axisAccY_ = 0.f;
++
++    // tunables (normalised screen units for touch, pixels for mouse axes)
++    Uint32 pulseMs_ = 90;
++    Uint32 tapMaxMs_ = 300;
++    Uint32 doubleTapMs_ = 350;
++    Uint32 longPressMs_ = 650;
++    Uint32 swipeMaxMs_ = 450;
++    float  moveTolerance_ = 0.03f;
++    float  swipeMinDist_ = 0.12f;
++    float  dragDeadzone_ = 0.05f;
++    float  axisStep_ = 30.f;
++    Uint32 axisHoldMs_ = 120;
++};
+diff --git a/RetroFE/Source/Control/UserInput.cpp b/RetroFE/Source/Control/UserInput.cpp
+index 2844c47..99a545b 100644
+--- a/RetroFE/Source/Control/UserInput.cpp
++++ b/RetroFE/Source/Control/UserInput.cpp
+@@ -26,9 +26,10 @@
+ #include "JoyHatHandler.h"
+ #include "KeyboardHandler.h"
+ #include "MouseButtonHandler.h"
++#include "GestureHandler.h"
+ 
+ UserInput::UserInput(Configuration &c)
+-    : config_(c)
++    : config_(c), pointer_(std::make_unique<PointerInput>(c))
+ {
+     for(unsigned int i = 0; i < KeyCodeMax; ++i) {
+         currentKeyState_[i] = false;
+@@ -54,6 +55,7 @@ bool UserInput::initialize()
+ {
+     sdlGameController_ = false;
+     config_.getProperty(OPTION_SDLGAMECONTROLLER, sdlGameController_);
++    pointer_->loadConfig();
+ 
+     if (sdlGameController_) {
+         LOG_INFO("Input", "SDL GameController mode enabled");
+@@ -201,8 +203,15 @@ bool UserInput::HandleInputMapping(const std::string& token, KeyCode_E key, cons
+     }
+     else {
+         std::string tokenLowered = Utils::toLower(token);
++        PointerInput::Gesture gesture;
+ 
+-        if (tokenLowered.find("mouse") == 0) {
++        if (PointerInput::parse(tokenLowered, gesture)) {
++            // ArcadeMaster: touchTap, touchSwipeUp, touchDragDown, mouseWheelUp, mouseAxisX+, spinnerLeft, ...
++            keyHandlers_.push_back(std::pair<InputHandler*, KeyCode_E>(new GestureHandler(*pointer_, gesture), key));
++            LOG_INFO("Input", "Binding pointer gesture " + token + " to " + configKey);
++            found = true;
++        }
++        else if (tokenLowered.find("mouse") == 0) {
+             std::string mousedesc = Utils::replace(Utils::toLower(token), "mouse", "");
+             if (mousedesc.find("button") == 0) {
+                 int button = 0;
+@@ -449,6 +458,7 @@ bool UserInput::MapKeyCombo(const std::string& keyDescription, KeyCode_E key1, K
+ 
+ void UserInput::resetStates()
+ {
++    pointer_->reset();
+     for (unsigned int i = 0; i < keyHandlers_.size(); ++i) {
+         if (keyHandlers_[i].first) {
+             keyHandlers_[i].first->reset();
+@@ -460,6 +470,8 @@ void UserInput::resetStates()
+ 
+ 
+ bool UserInput::update(SDL_Event& e) {
++    pointer_->feed(e);   // ArcadeMaster: gesture recogniser sees every event (touch, wheel, relative mouse)
++
+     if (sdlGameController_) {
+         // Handle adding a game controller
+         if (e.type == SDL_CONTROLLERDEVICEADDED) {
+@@ -629,6 +641,7 @@ void UserInput::updateKeystate() {
+     // First, prepare the state for the new frame.
+     memcpy(lastKeyState_, currentKeyState_, sizeof(lastKeyState_));
+     memset(currentKeyState_, 0, sizeof(currentKeyState_));
++    pointer_->tick();   // ArcadeMaster: resolve this frame's gestures before handlers are polled
+ 
+     // Now, poll all handlers to aggregate the final state for this frame.
+     for (unsigned int i = 0; i < keyHandlers_.size(); ++i) {
+diff --git a/RetroFE/Source/Control/UserInput.h b/RetroFE/Source/Control/UserInput.h
+index 371c3fe..ccbd504 100644
+--- a/RetroFE/Source/Control/UserInput.h
++++ b/RetroFE/Source/Control/UserInput.h
+@@ -18,8 +18,10 @@
+ #include <SDL_joystick.h>
+ #include <SDL_gamecontroller.h>
+ #include <map>
++#include <memory>
+ #include <string>
+ #include <vector>
++#include "PointerInput.h"
+ 
+ const int cMaxJoy = 4;
+ 
+@@ -125,6 +127,7 @@ private:
+     SDL_JoystickID gameControllers_[cMaxJoy];
+     bool sdlGameController_{ false };
+     std::vector<std::pair<InputHandler *, KeyCode_E> > keyHandlers_;
++    std::unique_ptr<PointerInput> pointer_;   // ArcadeMaster: touch / wheel / trackball / spinner gestures
+     bool lastKeyState_[KeyCodeMax]; 
+     bool currentKeyState_[KeyCodeMax];
+     Uint32 lastInputTime_[KeyCodeMax];
