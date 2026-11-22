@@ -71,7 +71,7 @@ foreach ($col in $map.Keys) {
     }
   }
   # rotating backdrop slots
-  $pool = Get-BgPool $col $themeName
+  $pool = @(Get-BgPool $col $themeName)   # @(): a one-fanart collection would otherwise unroll to a string
   if ($Shuffle) { $pool = @($pool | Sort-Object { $rng.Next() }) }
   for ($i = 1; $i -le $BgSlots; $i++) {
     $src = $pool[($i - 1) % $pool.Count]

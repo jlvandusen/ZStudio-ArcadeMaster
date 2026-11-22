@@ -325,7 +325,7 @@ Save-Canvas $c 'ui_video_frame.png'
 # neon text logos for main-menu collections -> layouts\ArcadeMaster\collections\Main\medium_artwork\logo\<name>.png
 $logoDir = Join-Path $OutDir '..\collections\Main\medium_artwork\logo'; New-Item -ItemType Directory -Force $logoDir | Out-Null
 $logos = [ordered]@{ 'Racing' = @('RACING', 'ff2fa0'); 'Flight' = @('FLIGHT', '2ec8ff'); 'Lightgun' = @('LIGHTGUN', 'ff3b3b'); 'Settings' = @('SETTINGS', 'ffb000');
-  'GAMES' = @('ALL GAMES', 'ff2fa0'); 'Arcade' = @('ARCADE', '7b5cff'); 'EXIT' = @('EXIT', '9aa3b2'); 'Favorites' = @('FAVORITES', 'ffe259') }
+  'GAMES' = @('ALL GAMES', 'ff2fa0'); 'Arcade' = @('ARCADE', '7b5cff'); 'Tools' = @('TOOLS', '9be7ff'); 'EXIT' = @('EXIT', '9aa3b2'); 'Favorites' = @('FAVORITES', 'ffe259') }
 foreach ($k in $logos.Keys) {
   $txt = $logos[$k][0]; $col = $logos[$k][1]
   $c = New-Canvas 900 220; $g = $c.G; $font = New-Object Drawing.Font 'Segoe UI Black', 120, ([Drawing.FontStyle]::Italic), ([Drawing.GraphicsUnit]::Pixel)

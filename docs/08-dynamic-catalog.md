@@ -121,3 +121,26 @@ DirectInput instance GUIDs change when a device moves USB port or Windows re-enu
 1. `Get-CabinetDevices.ps1`, `Build-Manifest.ps1`, `Add-GameControls.ps1`
 2. `New-RetroFECollections.ps1 -RetroFE <root>`
 3. `Set-LayoutThemes.ps1 -LayoutDir <root>\layouts\ArcadeMaster -CollectionsDir <root>\collections -Shuffle` (also run at every boot by `Start-ArcadeMaster.ps1`)
+
+## TOOLS menu (maintenance from the cabinet controls)
+
+`tools/New-CabinetToolsCollection.ps1 -RetroFE <root>` adds a **Tools** entry to the main menu. It has eight items, each a `.bat` with a neon logo:
+
+| Item | Runs |
+|---|---|
+| Wheel Setup | `wheelmap\WheelMap.ps1 -Capture`, then device detection |
+| Detect Controllers | `Get-CabinetDevices.ps1` + a dry-run ID check |
+| Repair Controller IDs | `Update-ControllerIds.ps1 -Apply` |
+| Rebuild Game Menus | devices → catalog → controls → collections → backdrops |
+| Force Feedback On-Off | toggles `ffb` in `settings.conf` |
+| Second Screen On-Off | `Set-RetroFEScreens.ps1` / `-Single` |
+| Shuffle Backgrounds | `Set-LayoutThemes.ps1 -Shuffle -BackgroundsOnly` |
+| Performance Log On-Off | toggles `perfLog` |
+
+How a launch works:
+
+- The `AM_TOOLS` launcher runs `wscript RunHidden.vbs <item>.bat`. No console window opens; from a GUI process, a console would open as a desktop-sized Windows Terminal with unreadable text.
+- The `.bat` starts **`Show-ToolScreen.ps1`**. This is a borderless, topmost window covering the display that RetroFE's `screenNum0` points at, with text sized from the screen height. It streams the tool's output live: section titles in cyan, errors in red, warnings in amber.
+- Once the tool is done, any key, tap, mouse click or joystick/wheel button returns to the arcade. Otherwise the window closes after 15 s. While the tool runs, these inputs are ignored, because Wheel Setup needs them.
+- The launcher has `reboot = yes`, so RetroFE restarts and the new settings take effect.
+- Generated items are marked `ARCADEMASTER-TOOLS.txt`, so `Build-Manifest` skips them. `-Remove` deletes the collection.

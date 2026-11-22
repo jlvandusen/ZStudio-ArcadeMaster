@@ -16,7 +16,7 @@ param(
   [string]$Cabinet = 'D:\ArcadeMaster\manifest\cabinet.json',
   [string[]]$Modes,                              # cabinet modes to show (default: cabinet.json capabilities.modes); racing/flight/lightgun/standup
   [switch]$RebuildDatabase,                      # write players/ctrltype/buttons/joyways metadata and rebuild RetroFE's meta.db
-  [string[]]$ExtraMenu = @('SETTINGS'),          # existing collections to keep on the main menu
+  [string[]]$ExtraMenu = @('SETTINGS', 'Tools'),          # existing collections to keep on the main menu
   [switch]$IncludeMultiVariants = $true,         # list e.g. Daytona 3 multicab as its own entry
   [switch]$IncludeUnsupported,                   # also list games this cabinet cannot play (fit.level = unsupported)
   [switch]$Remove

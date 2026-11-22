@@ -17,6 +17,8 @@ A deployable arcade-cabinet system from **The Real Z Studios**. It covers racing
 | Duplicate scan of all game trees | done: **155.5 GB reclaimable across 46 games**, see `reports/dupes/clusters.md` |
 | Dynamic catalog: `games.json` from TeknoParrot/RetroFE/LaunchBox, generated Racing/Flight/Arcade collections + PC games | working: `Build-Manifest.ps1`, `New-RetroFECollections.ps1`, see `docs/08-dynamic-catalog.md` |
 | Single package (one game store, all frontends) | design in `docs/04-package-architecture.md`; base+overlay consolidation next |
+| TOOLS menu: wheel setup, detect/repair controllers, rebuild menus, FFB / second screen / perf toggles, shuffle, all from the cabinet controls on a full-screen tool page | `New-CabinetToolsCollection.ps1`, `Show-ToolScreen.ps1` (docs/08) |
+| Wheel pedals / handbrake no longer stick menu scrolling (pedal axes learn their rest position) | patch 0005, A/B verified on the G29 |
 | Wheel / lightgun master input mapping | built, see `tools/wheelmap/` and `docs/06-input-mapping.md`. The wizard needs one run on the real wheel. |
 
 ## Layout
