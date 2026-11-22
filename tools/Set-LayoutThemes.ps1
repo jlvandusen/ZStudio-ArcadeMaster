@@ -26,10 +26,29 @@ foreach ($c in $Collections) { if (-not $map.ContainsKey($c)) { $map[$c] = $cfg.
 
 $allBg = @($cfg.backgrounds.PSObject.Properties | Where-Object { $_.Name -notlike '_*' } | ForEach-Object { $_.Value } | Where-Object { $_ -ne '*' } | Sort-Object -Unique)
 $rng = New-Object Random
+
+# Game fanart of a collection, following merged sub-collections (<name>.sub) and Main's menu entries.
+function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = @{}) {
+  if (-not $CollectionsDir -or $depth -gt 3 -or $seen.ContainsKey($col)) { return @() }
+  $seen[$col] = $true
+  $dir = Join-Path $CollectionsDir $col
+  $files = @(Get-ChildItem (Join-Path $dir 'medium_artwork\fanart') -File -ErrorAction SilentlyContinue |
+             Where-Object { $_.Extension -match '^\.(jpe?g|png)$' -and $_.BaseName -ne 'default' } | ForEach-Object { $_.FullName })
+  $subs = @(Get-ChildItem $dir -Filter *.sub -File -ErrorAction SilentlyContinue | ForEach-Object { $_.BaseName })
+  $menuTxt = Join-Path $dir 'menu.txt'
+  if (Test-Path $menuTxt) { $subs += @(Get-Content $menuTxt | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) }
+  $subs += @(Get-ChildItem (Join-Path $dir 'menu') -File -ErrorAction SilentlyContinue | ForEach-Object { $_.BaseName })
+  foreach ($s in $subs | Sort-Object -Unique) { $files += Get-CollectionFanart $s ($depth + 1) $seen }
+  return @($files | Sort-Object -Unique)
+}
+
+# Backdrop pool: the collection's own game fanart first; the generated scenes only if it has none.
 function Get-BgPool([string]$col, [string]$themeName) {
+  $fan = @(Get-CollectionFanart $col)
+  if ($fan.Count -gt 0) { return $fan }
   $key = if ($col -eq 'Main') { 'main' } else { $themeName }
   $pool = @($cfg.backgrounds.$key); if (-not $pool -or $pool -contains '*') { $pool = $allBg }
-  return $pool
+  return @($pool | ForEach-Object { Join-Path $LayoutDir ("images\" + ($_ -replace '/', '\')) })
 }
 
 foreach ($col in $map.Keys) {
@@ -49,11 +68,10 @@ foreach ($col in $map.Keys) {
   $pool = Get-BgPool $col $themeName
   if ($Shuffle) { $pool = @($pool | Sort-Object { $rng.Next() }) }
   for ($i = 1; $i -le $BgSlots; $i++) {
-    $pick = $pool[($i - 1) % $pool.Count]
-    $src = Join-Path $LayoutDir ("images\" + ($pick -replace '/', '\'))
-    if (-not (Test-Path $src)) { throw "missing background $src (run tools\New-Backgrounds.ps1)" }
+    $src = $pool[($i - 1) % $pool.Count]
+    if (-not (Test-Path -LiteralPath $src)) { throw "missing background $src" }
     Get-ChildItem $dst -Filter "am_bg$i.*" -ErrorAction SilentlyContinue | Remove-Item -Force   # slot may change extension
-    Copy-Item $src (Join-Path $dst ("am_bg$i" + [IO.Path]::GetExtension($src))) -Force
+    Copy-Item -LiteralPath $src (Join-Path $dst ("am_bg$i" + [IO.Path]::GetExtension($src).ToLower())) -Force
   }
   Write-Host ("{0,-20} -> {1,-8} bg: {2}" -f $col, $themeName, (($pool | Select-Object -First $BgSlots | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) }) -join ', '))
 }

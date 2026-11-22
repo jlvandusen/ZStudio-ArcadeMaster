@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   ArcadeMaster MAIN MENU (c) The Real Z Studios
   Collection logos: layouts/ArcadeMaster/collections/Main/medium_artwork/logo/<Collection>.png (mode="layout")
   Shared art lives three levels up (layouts/ArcadeMaster/images|video|fonts|sounds).
@@ -9,60 +9,67 @@
   <sound type="highlight" src="../../../sounds/highlight.wav"/>
   <sound type="load"      src="../../../sounds/load.wav"/>
 
-  <!-- ROTATING HORIZON BACKDROP: 6 theme slots (am_bg1..6), shuffled per boot by Set-LayoutThemes -Shuffle; 20 s each, 2 s cross-fade, Ken Burns drift -->
-  <reloadableImage type="am_bg1" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="1" layer="0">
+  <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <!-- BACKDROP: random fanart of the games in the HIGHLIGHTED collection (am_bg1..6, mode="layout", reshuffled every boot by Set-LayoutThemes -Shuffle); 20 s each, cross-fade + Ken Burns; restarts on highlight change -->
+  <reloadableImage type="am_bg1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
-      <set duration="18"><animate type="width" from="1920" to="2060" algorithm="linear"/><animate type="height" from="1080" to="1159" algorithm="linear"/><animate type="x" from="960" to="910" algorithm="linear"/></set>
+      <set duration=".6"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="width" from="1920" to="1928"/><animate type="height" from="1080" to="1085"/><animate type="x" from="960" to="958"/></set>
+      <set duration="17.4"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="910" algorithm="linear"/></set>
       <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
-      <set duration="98"><animate type="nop"/></set>
-      <set duration="2"><animate type="alpha" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="100"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg2" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg2" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="18"><animate type="nop"/></set>
-      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" from="1920" to="1928"/><animate type="height" from="1080" to="1085"/><animate type="x" from="960" to="958"/></set>
       <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="1010" algorithm="linear"/></set>
       <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
       <set duration="80"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg3" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg3" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="38"><animate type="nop"/></set>
-      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" from="1920" to="1928"/><animate type="height" from="1080" to="1085"/><animate type="x" from="960" to="958"/></set>
       <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="910" algorithm="linear"/></set>
       <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
       <set duration="60"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg4" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg4" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="58"><animate type="nop"/></set>
-      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" from="1920" to="1928"/><animate type="height" from="1080" to="1085"/><animate type="x" from="960" to="958"/></set>
       <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="1010" algorithm="linear"/></set>
       <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
       <set duration="40"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg5" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg5" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="78"><animate type="nop"/></set>
-      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" from="1920" to="1928"/><animate type="height" from="1080" to="1085"/><animate type="x" from="960" to="958"/></set>
       <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="910" algorithm="linear"/></set>
       <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
       <set duration="20"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg6" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg6" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="98"><animate type="nop"/></set>
-      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" from="1920" to="1928"/><animate type="height" from="1080" to="1085"/><animate type="x" from="960" to="958"/></set>
       <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="1010" algorithm="linear"/></set>
       <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
     </onIdle>
   </reloadableImage>
-
+  <image src="../../../images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" layer="1"/>
 
   <!-- studio mark, breathing -->
   <image src="../../../images/studio_realz.png" x="40" y="20" width="200" height="200" alpha=".95" layer="18">
@@ -140,6 +147,5 @@
     <onMenuIdle><set duration=".45"><animate type="alpha" to="0" algorithm="easeOutCubic"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onMenuIdle>
   </reloadableImage>
 
-  <image src="../../../images/fx_scanlines.png" x="0" y="0" width="1920" height="1080" alpha=".22" layer="17"/>
-  <image src="../../../images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".85" layer="17"/>
+  <image src="../../../images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".45" layer="17"/>
 </layout>

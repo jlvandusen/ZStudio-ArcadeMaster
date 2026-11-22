@@ -279,6 +279,24 @@ $g.FillPath((Brush 'ffffff' 24), $rr); $g.DrawPath((Pen 'ffffff' 5 230), $rr)
 Save-Canvas $c 'ui_select_frame.png'
 $c = New-Canvas 2 2; $c.G.Clear((C '000000')); Save-Canvas $c 'black.png'
 $c = New-Canvas 2 2; Save-Canvas $c 'blank.png'                                         # empty theme slot
+
+# --- per-game background support (fanart is the backdrop; these keep the UI readable over any artwork)
+$c = New-Canvas 1920 1080; $g = $c.G                                                    # neutral fallback when a game has no fanart
+$p = New-Object Drawing.Drawing2D.GraphicsPath; $p.AddEllipse(-500, -400, 2920, 1880)
+$nb = New-Object Drawing.Drawing2D.PathGradientBrush $p; $nb.CenterColor = C '1b2230'; $nb.SurroundColors = @(C '05070b')
+$g.FillRectangle($nb, 0, 0, 1920, 1080); Save-Canvas $c 'bg_neutral.png'
+$c = New-Canvas 1920 1080; $g = $c.G                                                    # game-list scrim: list column + cluster band + title band
+$lb = New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new(0, 0)), ([Drawing.Point]::new(960, 0)), (C '000000' 215), (C '000000' 0)
+$cb = New-Object Drawing.Drawing2D.ColorBlend 3; $cb.Colors = @((C '000000' 215), (C '000000' 170), (C '000000' 0)); $cb.Positions = [float[]]@(0, 0.55, 1); $lb.InterpolationColors = $cb
+$g.FillRectangle($lb, 0, 0, 960, 1080)
+$bb = New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new(0, 660)), ([Drawing.Point]::new(0, 1081)), (C '000000' 0), (C '000000' 230)
+$g.FillRectangle($bb, 0, 660, 1920, 420)
+$tb = New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new(0, 0)), ([Drawing.Point]::new(0, 160)), (C '000000' 150), (C '000000' 0)
+$g.FillRectangle($tb, 0, 0, 1920, 160); Save-Canvas $c 'fx_scrim_gamelist.png'
+$c = New-Canvas 1920 1080; $g = $c.G                                                    # main-menu scrim: centre band behind the collection logos
+$mb = New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new(0, 0)), ([Drawing.Point]::new(0, 1081)), (C '000000' 0), (C '000000' 0)
+$cb = New-Object Drawing.Drawing2D.ColorBlend 5; $cb.Colors = @((C '000000' 90), (C '000000' 185), (C '000000' 185), (C '000000' 60), (C '000000' 215)); $cb.Positions = [float[]]@(0, 0.22, 0.62, 0.74, 1); $mb.InterpolationColors = $cb
+$g.FillRectangle($mb, 0, 0, 1920, 1080); Save-Canvas $c 'fx_scrim_main.png'
 # neon 16:9 frame for the video snap (1120x650 outer, 1040x585 window)
 $c = New-Canvas 1120 650; $g = $c.G; $rr = RoundRect 20 20 1080 610 26
 foreach ($w in 26, 16, 8) { $g.DrawPath((Pen 'ff2fa0' $w ([int](30 + (26 - $w) * 6))), $rr) }

@@ -7,9 +7,9 @@ A deployable arcade-cabinet system from **The Real Z Studios**. It covers racing
 | Area | State |
 |---|---|
 | Machine survey (racing/flight cabinet) | done, see `docs/01-machine-survey.md` |
-| RetroFE: CoinOPS build, crash fixes, symbols | done. Menu is ready in **0.71 s**, down from 4–9 s on stock. See `retrofe/` |
+| RetroFE: ZStudio fork of CoinOPS (`zstudio-retrofe`), crash fixes, symbols | done. Menu is ready in **0.71 s**, down from 4–9 s on stock. See `retrofe/` |
 | ArcadeMaster layout (boot banner, animated wheel/gauges/yoke/HUD, launch sequence) | working on the CoinOPS build, see `layouts/ArcadeMaster/` |
-| Rotating horizon backdrops (5 racing, 6 flight, synthwave; random order every boot, Ken Burns drift) | working: `tools/New-Backgrounds.ps1`, `Set-LayoutThemes.ps1 -Shuffle` |
+| Per-game backdrops: selected game's fanart full screen (game list); random fanart of the highlighted collection, reshuffled every boot (main menu) | working: `Set-LayoutThemes.ps1 -Shuffle -CollectionsDir`; generated scenes only as fallback |
 | Boot launcher (shuffle + crash-restart watchdog) | `tools/Start-ArcadeMaster.ps1` |
 | RetroFE touch / wheel / trackball / spinner / lightgun input | patch 0002, `retrofe/controls/*.conf` profiles, `docs/07-input-extensions.md` (verified with real Windows touch injection) |
 | Duplicate scan of all game trees | done: **155.5 GB reclaimable across 46 games**, see `reports/dupes/clusters.md` |
