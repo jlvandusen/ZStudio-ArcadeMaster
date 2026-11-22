@@ -1,0 +1,28 @@
+﻿{
+    "devices":  [
+                    {
+                        "key":  "VID_D209\u0026PID_0511|Ultimarc Ultra-Stik Player 1|#1",
+                        "id":  "VID_D209\u0026PID_0511",
+                        "name":  "Ultimarc Ultra-Stik Player 1",
+                        "type":  "Joystick",
+                        "role":  "controller",
+                        "guids":  [
+                                      "e31e7a20-e67a-11f1-8003-444553540000"
+                                  ],
+                        "firstSeen":  "2026-11-22T13:59:16",
+                        "lastSeen":  "2026-11-22T13:59:16"
+                    },
+                    {
+                        "key":  "VID_D209\u0026PID_0511|Ultimarc Ultra-Stik Player 1|#2",
+                        "id":  "VID_D209\u0026PID_0511",
+                        "name":  "Ultimarc Ultra-Stik Player 1",
+                        "type":  "Joystick",
+                        "role":  "controller",
+                        "guids":  [
+                                      "e333afd0-e67a-11f1-800c-444553540000"
+                                  ],
+                        "firstSeen":  "2026-11-22T13:59:16",
+                        "lastSeen":  "2026-11-22T13:59:16"
+                    }
+                ]
+}

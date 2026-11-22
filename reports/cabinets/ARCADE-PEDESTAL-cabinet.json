@@ -1,0 +1,96 @@
+﻿{
+    "machine":  "ARCADE-PEDESTAL",
+    "detected":  "2026-11-22T13:59:16",
+    "capabilities":  {
+                         "wheel":  false,
+                         "ffb":  false,
+                         "pedals":  false,
+                         "clutch":  false,
+                         "handbrake":  false,
+                         "shifterPaddles":  false,
+                         "hShifter":  null,
+                         "flightStick":  true,
+                         "gamepads":  0,
+                         "lightguns":  0,
+                         "lightgunModels":  [
+
+                                            ],
+                         "trackball":  true,
+                         "keyboard":  true,
+                         "mice":  3,
+                         "controlPanel":  true,
+                         "displays":  [
+                                          {
+                                              "name":  "\\\\.\\DISPLAY2",
+                                              "primary":  true,
+                                              "width":  1920,
+                                              "height":  1080,
+                                              "x":  0,
+                                              "y":  0
+                                          },
+                                          {
+                                              "name":  "\\\\.\\DISPLAY1",
+                                              "primary":  false,
+                                              "width":  1920,
+                                              "height":  1080,
+                                              "x":  3840,
+                                              "y":  0
+                                          }
+                                      ],
+                         "touchScreens":  0,
+                         "restrictor":  true,
+                         "wii":  {
+                                     "wiimotes":  0,
+                                     "wiiUPro":  0,
+                                     "balanceBoard":  0,
+                                     "gcAdapter":  false,
+                                     "joycons":  0,
+                                     "switchPro":  0,
+                                     "dolphinBar":  false
+                                 },
+                         "players":  4,
+                         "modes":  [
+                                       "flight",
+                                       "standup"
+                                   ]
+                     },
+    "devices":  [
+                    {
+                        "joy":  1,
+                        "name":  "Ultimarc Ultra-Stik Player 1",
+                        "id":  "VID_D209\u0026PID_0511",
+                        "type":  "Joystick",
+                        "role":  "controller",
+                        "ffb":  false,
+                        "axes":  [
+                                     "Y Axis",
+                                     "X Axis"
+                                 ],
+                        "buttons":  15,
+                        "hats":  0,
+                        "guid":  "e31e7a20-e67a-11f1-8003-444553540000",
+                        "historyKey":  "VID_D209\u0026PID_0511|Ultimarc Ultra-Stik Player 1|#1"
+                    },
+                    {
+                        "joy":  2,
+                        "name":  "Ultimarc Ultra-Stik Player 1",
+                        "id":  "VID_D209\u0026PID_0511",
+                        "type":  "Joystick",
+                        "role":  "controller",
+                        "ffb":  false,
+                        "axes":  [
+                                     "Y Axis",
+                                     "X Axis"
+                                 ],
+                        "buttons":  15,
+                        "hats":  0,
+                        "guid":  "e333afd0-e67a-11f1-800c-444553540000",
+                        "historyKey":  "VID_D209\u0026PID_0511|Ultimarc Ultra-Stik Player 1|#2"
+                    }
+                ],
+    "rawMice":  [
+                    "D209:0410",
+                    "D209:0411",
+                    "D209:0511"
+                ]
+}
