@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Detects what this cabinet can physically do (wheel, pedals, clutch, handbrake, FFB, flight stick/HOTAS,
   gamepads, lightguns, trackball/spinner) and writes a capability file used by Build-Manifest to judge
@@ -59,7 +59,9 @@ $cap = [ordered]@{
   mice         = $mice.Count
 }
 # keyboard encoders (Ultimarc I-PAC = VID D209 keyboard device) mean a stand-up control panel
-$encoders = @(Get-PnpDevice -PresentOnly -Class Keyboard -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209' })
+# one PnP enumeration for every check below (each Get-PnpDevice call costs ~0.4 s at boot)
+$allPnp = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue)
+$encoders = @($allPnp | Where-Object { $_.Class -eq 'Keyboard' } | Where-Object { $_.InstanceId -match 'VID_D209' })
 $ultraStiks = @($devices | Where-Object { $_.id -match 'VID_D209&PID_05' -or $_.name -match '(?i)ultra-?stik' })
 $cap['controlPanel'] = ($encoders.Count -gt 0) -or ($ultraStiks.Count -gt 0)
 $cap['encoders'] = @($encoders | ForEach-Object { ([regex]::Match($_.InstanceId, 'VID_D209&PID_([0-9A-F]{4})')).Groups[1].Value } | Select-Object -Unique).Count   # distinct I-PAC boards
@@ -79,17 +81,20 @@ $cap['displays'] = @([Windows.Forms.Screen]::AllScreens | ForEach-Object {
   $ad = [AmDisp.Enum]::Adapter($_.DeviceName); $adName = ($ad -split '\|')[0]
   [ordered]@{ name = $_.DeviceName; primary = $_.Primary; width = $_.Bounds.Width; height = $_.Bounds.Height; x = $_.Bounds.X; y = $_.Bounds.Y; adapter = $adName; usb = [bool]($ad -match $usbRx) } })
 # USB display adapters seen by Windows even when no screen is active (driver missing / not powered)
-$cap['usbDisplayAdapters'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match $usbRx -or $_.InstanceId -match 'VID_17E9|VID_0711|VID_1D5C' } | ForEach-Object { "$($_.FriendlyName) [$($_.Status)]" } | Select-Object -Unique)
-$cap['touchScreens'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)touch ?screen|touch digitizer' -and $_.Status -eq 'OK' }).Count
+$cap['usbDisplayAdapters'] = @($allPnp | Where-Object { $_.FriendlyName -match $usbRx -or $_.InstanceId -match 'VID_17E9|VID_0711|VID_1D5C' } | ForEach-Object { "$($_.FriendlyName) [$($_.Status)]" } | Select-Object -Unique)
+$cap['touchScreens'] = @($allPnp | Where-Object { $_.FriendlyName -match '(?i)touch ?screen|touch digitizer' -and $_.Status -eq 'OK' }).Count
+# USB touch boards that report as a MOUSE (no digitizer, no driver - e.g. ByQDtech 0483:5750 on the pedestal's HDMI
+# touch panel). Windows cannot map them to a display, so the frontend routes them (patch 0003 per-screen touch).
+$cap['touchControllers'] = @($allPnp | Where-Object { $_.FriendlyName -match '(?i)touch' -and $_.Status -eq 'OK' -and $_.InstanceId -match '^(USB|HID)\\VID_' } | ForEach-Object { $m = [regex]::Match($_.InstanceId, 'VID_([0-9A-F]{4})&PID_([0-9A-F]{4})'); "$($m.Groups[1].Value):$($m.Groups[2].Value) $($_.FriendlyName)" } | Select-Object -Unique)
 # touch hardware that is present but NOT working (no / wrong driver) - shows why a touch screen is missing
-$cap['touchProblems'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { ($_.FriendlyName -match '(?i)touch|digitizer|egalax|ilitek|goodix|elo |eeti|weida|hid-compliant touch' -or $_.InstanceId -match 'VID_0EEF|VID_222A|VID_04E7|VID_2575|VID_27C6|VID_1FD2') -and $_.Status -ne 'OK' } | ForEach-Object { "$($_.FriendlyName) [$($_.Status)] $($_.InstanceId)" })
+$cap['touchProblems'] = @($allPnp | Where-Object { ($_.FriendlyName -match '(?i)touch|digitizer|egalax|ilitek|goodix|elo |eeti|weida|hid-compliant touch' -or $_.InstanceId -match 'VID_0EEF|VID_222A|VID_04E7|VID_2575|VID_27C6|VID_1FD2') -and $_.Status -ne 'OK' } | ForEach-Object { "$($_.FriendlyName) [$($_.Status)] $($_.InstanceId)" })
 # joystick restrictors RetroFE can drive per game (joyways metadata): Ultimarc ServoStik (D209:1700); TOS GRS is probed by RetroFE itself
-$cap['restrictor'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209&PID_170[0-9]' }).Count -gt 0
+$cap['restrictor'] = @($allPnp | Where-Object { $_.InstanceId -match 'VID_D209&PID_170[0-9]' }).Count -gt 0
 # Nintendo controllers - Bluetooth (HID ...VID&0002057E_PID&0306) or USB / Mayflash DolphinBar (VID_057E&PID_0306):
 #   Wii Remote "wand" (RVL-CNT-01 0306, Plus/-TR 0330), Wii U Pro (0330 '-UC'), Balance Board (0306 'WBC'),
 #   GameCube adapter for Wii U/Switch (0337), Joy-Con (2006/2007), Switch Pro (2009).
-$pnp = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match '057E[&_]PID[&_](0306|0330|0337|2006|2007|2009)' -and $_.Status -eq 'OK' })
-$btNames = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)RVL-|Nintendo|Pro Controller|Joy-Con' } | ForEach-Object { $_.FriendlyName })
+$pnp = @($allPnp | Where-Object { $_.InstanceId -match '057E[&_]PID[&_](0306|0330|0337|2006|2007|2009)' -and $_.Status -eq 'OK' })
+$btNames = @($allPnp | Where-Object { $_.FriendlyName -match '(?i)RVL-|Nintendo|Pro Controller|Joy-Con' } | ForEach-Object { $_.FriendlyName })
 $hidPid = @($pnp | Where-Object { $_.Class -eq 'HIDClass' } | ForEach-Object { ([regex]::Match($_.InstanceId, 'PID[&_]([0-9A-F]{4})')).Groups[1].Value })
 $wiiUPro = @($btNames | Where-Object { $_ -match '(?i)RVL-CNT-01-UC' }).Count
 $board = @($btNames | Where-Object { $_ -match '(?i)RVL-WBC' }).Count
@@ -100,7 +105,7 @@ $nintendo = [ordered]@{
   gcAdapter    = @($pnp | Where-Object { $_.InstanceId -match 'PID[&_]0337' }).Count -gt 0
   joycons      = @($hidPid | Where-Object { $_ -in '2006', '2007' }).Count
   switchPro    = @($hidPid | Where-Object { $_ -eq '2009' }).Count
-  dolphinBar   = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)DolphinBar|Mayflash' }).Count -gt 0
+  dolphinBar   = @($allPnp | Where-Object { $_.FriendlyName -match '(?i)DolphinBar|Mayflash' }).Count -gt 0
 }
 $cap['wii'] = $nintendo
 foreach ($k in 'wiimotes', 'wiiUPro', 'joycons', 'switchPro') { for ($n = 0; $n -lt [int]$nintendo[$k]; $n++) {

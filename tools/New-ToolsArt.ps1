@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Draws the RetroFE "Tools" list art from the cabinet's CURRENT state, so the menu itself is visual:
     medium_artwork\logo\<item>.png    neon label; toggles carry a live ON/OFF switch
@@ -16,6 +16,11 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\AmVisual.ps1'); . (Join-Path $PSScriptRoot 'lib\CabinetTypes.ps1')
 $col = Join-Path $RetroFE 'collections\Tools'
+# atomic save: write a temp file, then swap it in - RetroFE (already running at boot) never reads a half-written image
+function Save-AmImage($bmp, [string]$path, [scriptblock]$save) {
+  $tmp = "$path.tmp"; & $save $tmp
+  if (Test-Path $path) { try { [IO.File]::Replace($tmp, $path, $null) } catch { Copy-Item $tmp $path -Force; Remove-Item $tmp -ErrorAction SilentlyContinue } } else { [IO.File]::Move($tmp, $path) }
+}
 if (-not (Test-Path (Join-Path $col 'roms'))) { Write-Warning "no Tools collection at $col (run New-CabinetToolsCollection.ps1)"; return }
 foreach ($d in 'logo', 'video', 'fanart') { New-Item -ItemType Directory -Force (Join-Path $col "medium_artwork\$d") | Out-Null }
 
@@ -168,7 +173,7 @@ foreach ($bat in Get-ChildItem (Join-Path $col 'roms') -Filter *.bat -File) {
     $fs = if ($label.Length -gt 18) { 64 } else { 78 }
     [AmDraw]::Neon($g, $label, $ffBlack, [Drawing.FontStyle]::Italic, $fs, $acc, (RectF 0 0 1000 200), 'Center')
   }
-  $g.Dispose(); $bmp.Save((Join-Path $col "medium_artwork\logo\$name.png"), [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+  $g.Dispose(); Save-AmImage $bmp (Join-Path $col "medium_artwork\logo\$name.png") { param($f) $bmp.Save($f, [Drawing.Imaging.ImageFormat]::Png) }; $bmp.Dispose()
 
   # ---- preview card (1040x585) for the big frame
   $bmp = New-Object Drawing.Bitmap 1040, 585; $g = [Drawing.Graphics]::FromImage($bmp); [AmDraw]::Hq($g); $g.Clear([AmPal]::Bg)
@@ -181,7 +186,7 @@ foreach ($bat in Get-ChildItem (Join-Path $col 'roms') -Filter *.bat -File) {
   [AmDraw]::Text($g, $m.what, (PxFont 'Segoe UI' 28), [AmPal]::Text, (RectF 334 150 670 150), 'Near', 'Near')
   $g.FillRectangle((New-Object Drawing.SolidBrush ([AmPal]::A($acc, 120))), (RectF 46 330 948 3))
   Draw-Now $g $tool $acc (RectF 46 395 948 140)
-  $g.Dispose(); $bmp.Save((Join-Path $col "medium_artwork\video\$name.png"), [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+  $g.Dispose(); Save-AmImage $bmp (Join-Path $col "medium_artwork\video\$name.png") { param($f) $bmp.Save($f, [Drawing.Imaging.ImageFormat]::Png) }; $bmp.Dispose()
 
   # ---- backdrop (1920x1080): dark field, glow and a huge faint icon in the tool colour
   if (-not $NoFanart) {
@@ -194,7 +199,7 @@ foreach ($bat in Get-ChildItem (Join-Path $col 'roms') -Filter *.bat -File) {
     $cm = New-Object Drawing.Imaging.ColorMatrix; $cm.Matrix33 = 0.13; $ia = New-Object Drawing.Imaging.ImageAttributes; $ia.SetColorMatrix($cm)
     $g.DrawImage($lay, (New-Object Drawing.Rectangle 1100, 300, 900, 900), 0, 0, 900, 900, [Drawing.GraphicsUnit]::Pixel, $ia); $lay.Dispose()
     $enc = [Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object MimeType -eq 'image/jpeg'; $ep = New-Object Drawing.Imaging.EncoderParameters 1; $ep.Param[0] = New-Object Drawing.Imaging.EncoderParameter ([Drawing.Imaging.Encoder]::Quality), 88L
-    $g.Dispose(); $bmp.Save((Join-Path $col "medium_artwork\fanart\$name.jpg"), $enc, $ep); $bmp.Dispose()
+    $g.Dispose(); Save-AmImage $bmp (Join-Path $col "medium_artwork\fanart\$name.jpg") { param($f) $bmp.Save($f, $enc, $ep) }; $bmp.Dispose()
   }
   $made++
 }

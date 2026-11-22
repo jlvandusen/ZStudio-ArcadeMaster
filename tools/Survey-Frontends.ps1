@@ -17,7 +17,10 @@ param(
   [string]$OutDir = (Join-Path $PSScriptRoot '..\reports\frontends')
 )
 $ErrorActionPreference = 'Stop'
-if (-not $Roots) { $Roots = @(Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Free -ne $null -and $_.Root -match '^[A-Z]:\\$' } | ForEach-Object { $_.Root }) }
+# powershell -File passes "-Roots R:\,E:\" as ONE string - split it (found by ARCADE-PEDESTAL's survey)
+$Roots = @($Roots | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+# default: local fixed / removable drives only - never walk a mapped NAS share (Z:) with millions of files
+if (-not $Roots) { $Roots = @([IO.DriveInfo]::GetDrives() | Where-Object { $_.IsReady -and $_.DriveType -in 'Fixed', 'Removable' } | ForEach-Object { $_.RootDirectory.FullName }) }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 $OutDir = (Resolve-Path $OutDir).Path
 

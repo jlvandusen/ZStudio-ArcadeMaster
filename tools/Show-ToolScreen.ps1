@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Full-screen visual "tool page" for the in-frontend TOOLS menu. Runs Invoke-CabinetTool.ps1 hidden, reads its
   "@AM {json}" events and draws them in the ArcadeMaster style, sized to the cabinet display:
@@ -23,7 +23,7 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\AmVisual.ps1')
 Add-Type -AssemblyName System.Windows.Forms
-Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing @'
+$amWinSrc = @'
 using System; using System.Runtime.InteropServices;
 public static class AmWin {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
@@ -40,6 +40,7 @@ public class AmFeed {
   }
 }
 '@
+. (Join-Path $PSScriptRoot 'lib\AmTypeCache.ps1'); Add-AmCachedType -Source $amWinSrc -References System.Windows.Forms, System.Drawing -ProbeType AmWin
 [void][AmWin]::SetProcessDPIAware()
 
 $toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons'; SystemHealth = 'repair'; Themes = 'shuffle' }[$Tool]

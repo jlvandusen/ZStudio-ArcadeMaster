@@ -98,6 +98,36 @@ The second-screen layouts were previewed on screen 0 with real data, e.g. Ballis
 
 **Not verified** (needs the pedestal hardware): a real second display, Windows digitizer-to-display mapping, and the layout at the pedestal screen's actual resolution. If that screen isn't 16:9, add a ratio-specific file such as `layout 16x10 - 1.xml`.
 
+### Mouse-type touch panels (patch 0006)
+
+The pedestal's touch panel is not a digitizer. Its display is HDMI on the GPU (EDID `MPI7002`). Its touch is a separate USB board, **ByQDtech `0483:5750`**, which Windows sees as an absolute **mouse**. That has two consequences:
+- It never shows up in Tablet PC Settings, so Windows can't map it to a display.
+- RetroFE only gets clicks, not fingers, so no touch gestures fire.
+
+Many cheap touch panels work this way.
+
+| Setting (`controls.conf`) | Default | What |
+|---|---|---|
+| `mouseTouchScreens` | *(unset)* | Comma list of RetroFE screens, e.g. `1`. A left press, drag and release inside those screens' windows becomes a finger. Every `touch1…` gesture and region tap then works. |
+| `mouseTouchJumpPx` | 150 | A single cursor move this large onto a touch screen counts as a new touch's cursor jump, not a trackball spin. |
+
+When the setting is present:
+- RetroFE switches **relative mouse mode off**. RetroFE turns it on at SDL start, before `controls.conf` is read, so PointerInput switches it off again on the next frame.
+- The trackball's hidden cursor is kept centred on screen 0, so it never stalls at a desktop edge or drifts onto the touch panel.
+- After each touch, the cursor is parked back on screen 0.
+
+**Automatic:**
+- `Get-CabinetDevices` records `touchControllers` (USB/HID devices named *touch* that aren't digitizers).
+- `Set-RetroFEScreens` writes `mouseTouchScreens = 1` when there are 2 screens and such a board but no digitizer. It removes the line otherwise, and backs up `controls.conf` once.
+- The boot health check (`screens`) runs it again with `-TouchOnly`, so replugging the board is picked up on the next boot.
+
+**Verified 2026-11-22** on DESKTOP-RACE1 with `mouseTouchScreens = 0` and injected absolute mouse input (`mouse_event` MOVE|ABSOLUTE, the same input a HID touch board sends):
+- A tap at 25 %/75 % logged `finger down 31354 @ 0.25,0.749` → `Tap`, `TapLeft`, `TapBottom`.
+- A press-drag-release upward logged `SwipeUp`.
+- With the setting unset, behaviour is unchanged: RetroFE runs and relative mode stays on.
+
+**Caveat:** any `mouseButtonLeft` binding still fires on a touch as well. Don't bind it on cabinets that use this.
+
 ## Force feedback in the frontend (patch 0004)
 
 The wheel is part of the UI. Opt in with `settings.conf`:

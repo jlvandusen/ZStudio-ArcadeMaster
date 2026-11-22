@@ -93,7 +93,15 @@ foreach ($lf in Get-ChildItem (Join-Path $RetroFE 'layouts') -Recurse -Filter 'l
   $t = [IO.File]::ReadAllText($lf.FullName); $m = [regex]::Match($t, '<layout\b[^>]*>')
   if ($m.Success -and $m.Value -notmatch '\bmonitor=' -and $fix) { Copy-Item $lf.FullName "$($lf.FullName).bak" -Force; $t = $t.Substring(0, $m.Index) + $m.Value.Replace('<layout', "<layout monitor=`"$mon`"") + $t.Substring($m.Index + $m.Length); [IO.File]::WriteAllText($lf.FullName, $t, $u8); $fixedL++ }
 }
-if ($fixedL) { Add-Result 'screens' $checks.screens 'FIXED' "$fixedL layout(s) given monitor= (they drew over the main screen)" } else { Add-Result 'screens' $checks.screens 'OK' 'all declare their monitor' }
+# a mouse-type touch board plugged in / pulled since last boot: re-apply controls.conf mouseTouchScreens (patch 0006)
+$touchMsg = $null
+$ccFile = Join-Path $RetroFE 'controls.conf'
+if ($fix -and $cab -and (Test-Path $ccFile) -and (@($cab.capabilities.touchControllers).Count -or (Select-String $ccFile -Pattern '^\s*mouseTouchScreens\s*=' -Quiet))) {   # only when there is something to decide (saves ~0.4 s per boot)
+  $cabPath = Join-Path $ManifestDir 'cabinet.json'
+  $tOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-RetroFEScreens.ps1') -RetroFE $RetroFE -Cabinet $cabPath -TouchOnly 2>&1 | Out-String
+  if ($tOut -match 'touch: CHANGED (.+)') { $touchMsg = $Matches[1].Trim() }
+}
+if ($fixedL -or $touchMsg) { Add-Result 'screens' $checks.screens 'FIXED' ((@($(if ($fixedL) { "$fixedL layout(s) given monitor= (they drew over the main screen)" }), $touchMsg) | Where-Object { $_ }) -join '; ') } else { Add-Result 'screens' $checks.screens 'OK' 'all declare their monitor' }
 
 # menu
 Emit @{ type = 'step'; id = 'menu'; label = $checks.menu; status = 'run' }

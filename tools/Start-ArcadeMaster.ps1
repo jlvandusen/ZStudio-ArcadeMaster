@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   ArcadeMaster boot launcher (replaces DRIVE.exe):
     1. deals a new random set/order of horizon backgrounds (Set-LayoutThemes -Shuffle -BackgroundsOnly)
@@ -16,7 +16,8 @@ param(
   [int]$MaxCrashes = 5, [int]$CrashWindowSec = 60,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
   [int]$WaitForWheelSec = 30,          # USB wheels often finish enumerating after logon
-  [switch]$NoDeviceCheck
+  [switch]$NoDeviceCheck,
+  [switch]$PrepOnly                    # run every boot step and log the timings, but do not start RetroFE
 )
 $ErrorActionPreference = 'Stop'
 $exe = Join-Path $Root 'retrofe\retrofe.exe'
@@ -24,8 +25,11 @@ if (-not (Test-Path $exe)) { throw "RetroFE not found: $exe" }
 $log = Join-Path $Root 'arcademaster-launcher.log'
 function Write-Log($m) { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) }
 
+$bootClock = [Diagnostics.Stopwatch]::StartNew(); $script:timings = New-Object System.Collections.Generic.List[string]
 function Invoke-Tool([string]$name, [string[]]$toolArgs) {
+  $sw = [Diagnostics.Stopwatch]::StartNew()
   $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot $name) @toolArgs 2>&1 | Out-String
+  $script:timings.Add(('{0} {1:N1}s' -f ($name -replace '\.ps1$'), $sw.Elapsed.TotalSeconds))
   if ($LASTEXITCODE) { Write-Log "$name failed ($LASTEXITCODE): $($out.Trim())" }
   return $out
 }
@@ -59,8 +63,9 @@ if (-not $NoDeviceCheck) {
 
 if (-not $NoShuffle) {
   try {
+    $sw = [Diagnostics.Stopwatch]::StartNew()
     & (Join-Path $PSScriptRoot 'Set-LayoutThemes.ps1') -LayoutDir (Join-Path $Root "layouts\$Layout") -CollectionsDir (Join-Path $Root 'collections') -Shuffle -BackgroundsOnly | Out-Null
-    Write-Log 'backgrounds shuffled'
+    $script:timings.Add(('Shuffle {0:N1}s' -f $sw.Elapsed.TotalSeconds)); Write-Log 'backgrounds shuffled'
   } catch { Write-Log "shuffle failed: $($_.Exception.Message)" }   # never block boot on cosmetics
 }
 
@@ -68,18 +73,38 @@ if (-not $NoShuffle) {
 # cabinet mode follows the hardware (racing stays racing with a wheel; flight stick instead -> flight cab ...)
 try { $mode = Invoke-Tool 'Set-CabinetMode.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log (($mode -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "cabinet mode failed: $($_.Exception.Message)" }
 $active = ((Select-String -Path (Join-Path $Root 'settings.conf') -Pattern '^\s*layout\s*=\s*(.+)$' | Select-Object -Last 1).Matches[0].Groups[1].Value).Trim()
-try { Invoke-Tool 'New-CabinetIntro.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $active) | Out-Null } catch { Write-Log "intro failed: $($_.Exception.Message)" }
-
-# Tools list art shows live state (devices, switches, game counts, backdrops) - refresh it every boot
-if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) {
-  try { Invoke-Tool 'New-ToolsArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-NoFanart') | Out-Null } catch { Write-Log "tools art failed: $($_.Exception.Message)" }
+# the intro card and the Tools list art (live state: devices, switches, game counts) write different files, so they
+# render side by side, each in its own powershell. The boot waits for the intro (max 60 s); the Tools art is only seen
+# inside Tools (never during the intro), so it finishes in the background at low priority while RetroFE starts - its
+# images are swapped in atomically
+$parallel = @(@{ name = 'New-CabinetIntro'; wait = $true; args = @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $active) })
+if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) { $parallel += @{ name = 'New-ToolsArt'; wait = $false; args = @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-NoFanart') } }
+$sw = [Diagnostics.Stopwatch]::StartNew()
+$procs = foreach ($t in $parallel) {
+  try {
+    $errFile = Join-Path $env:TEMP ("am-boot-{0}.err" -f $t.name)
+    $quoted = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot "$($t.name).ps1")) + $t.args | ForEach-Object { if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ } }
+    $proc = Start-Process powershell -ArgumentList ($quoted -join ' ') -WindowStyle Hidden -PassThru -RedirectStandardError $errFile -RedirectStandardOutput "$errFile.out"
+    [void]$proc.Handle   # open the handle now, or ExitCode stays empty after the process ends
+    if (-not $t.wait) { try { $proc.PriorityClass = 'BelowNormal' } catch { } }
+    @{ name = $t.name; wait = $t.wait; err = $errFile; p = $proc }
+  } catch { Write-Log "$($t.name) failed to start: $($_.Exception.Message)" }
 }
+foreach ($x in @($procs | Where-Object { $_.wait })) {
+  if (-not $x.p.WaitForExit(60000)) { Write-Log "$($x.name) still running after 60 s - starting RetroFE anyway"; continue }
+  if ($x.p.ExitCode) { Write-Log "$($x.name) failed ($($x.p.ExitCode)): $((Get-Content $x.err -Raw -ErrorAction SilentlyContinue))" }
+}
+$script:timings.Add(('{0} {1:N1}s' -f (($parallel | ForEach-Object { if ($_.wait) { $_.name } else { $_.name + '(bg)' } }) -join '+'), $sw.Elapsed.TotalSeconds))
+$bgArt = @($procs | Where-Object { -not $_.wait })
 
 $jtk = Join-Path $Root 'JoyToKey\JoyToKey.exe'
 if ((Test-Path $jtk) -and -not (Get-Process JoyToKey -ErrorAction SilentlyContinue)) { Start-Process $jtk -WorkingDirectory (Split-Path $jtk) -WindowStyle Minimized; Write-Log 'JoyToKey started' }
 
 # self-healing: check (and conservatively repair) the install before every boot
 try { $h = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log ((($h -split "`r?`n") | Where-Object { $_ -match 'FIXED|WARN|health:' } | ForEach-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "health check failed: $($_.Exception.Message)" }
+
+Write-Log ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', '))
+if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-Host ("{0} (background) exit {1}" -f $x.name, $x.p.ExitCode) }; Write-Host ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', ')); return }
 
 $crashes = New-Object System.Collections.Generic.List[datetime]
 $snapshotDone = $false; $lkgRestored = $false
