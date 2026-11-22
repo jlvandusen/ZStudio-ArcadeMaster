@@ -117,6 +117,7 @@ switch ($PSCmdlet.ParameterSetName) {
         if ($ans -notmatch '^[nN]') {
             if (Test-Path -LiteralPath $profilePath) { Copy-Item -LiteralPath $profilePath -Destination ($profilePath + '.' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.bak') }
             Write-WMJson $prof $profilePath
+            foreach ($pw in @(Test-WMPedalLayout $prof)) { Write-Warning "pedal layout: $pw" }
             Write-Host "Saved $profilePath" -ForegroundColor Green
         }
     }
@@ -134,6 +135,7 @@ switch ($PSCmdlet.ParameterSetName) {
         Get-WMTPResolvedTable $tg.teknoparrot[0].root
     }
     'Generate' {
+        foreach ($pw in @(Test-WMPedalLayout (Read-WMJson $profilePath))) { Write-Warning "pedal layout: $pw" }
         if (-not (Test-Path -LiteralPath $profilePath)) { throw "Profile not found: $profilePath (run -Capture or -Seed first)" }
         $prof = Read-WMJson $profilePath
         if (-not $prof.confirmed) { Write-Warning "Profile '$Name' is UNCONFIRMED (seeded, not captured). Output is for review only." }

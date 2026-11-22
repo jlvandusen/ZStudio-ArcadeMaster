@@ -1,13 +1,49 @@
 {
-  "schema": "wheelmap.template.m2emulator/1",
-  "description": "Model 2 Emulator (ElSemi). EMULATOR.INI [Input] keys are set from 'ini'. Per-game CFG\\<rom>.input files are an undocumented binary format (one little-endian DWORD per control; observed: high byte 0x01 = joystick 1, 0x11 = joystick 1 axis variant, low byte 0x00-0x0B axes, 0x0C-0x0F hat, 0xN0 = button N; keyboard = DIK scan code) - they are copied from the previous owner's reference set unchanged and are only valid while the wheel is DirectInput device #1. Re-bind inside the emulator (Game > Configure Controls) for any other layout.",
+  "schema": "wheelmap.template.m2emulator/2",
+  "description": "Model 2 Emulator (ElSemi). EMULATOR.INI [Input] keys come from 'ini'. Per-game CFG\\<rom>.input files are GENERATED from the profile (format decoded from EMULATOR.EXE 1.1a and the previous owner's files): one little-endian DWORD per control slot, in the game's slot order (the 'schemas' below were extracted from the emulator's control tables), then a 2-DWORD trailer. Codes: keyboard = DirectInput scan code (< 0x100); joystick button n (1-based) = joy<<8 | (n & 0xF)<<4 | (n >> 4)<<12; hat = joy<<8 | 0x0C+{Left 0, Right 1, Up 2, Down 3}; analog axis = 0xFF000000 | joy<<8 | axisObjectIndex | 0x1000 when inverted. joy = DirectInput enumeration order (1-based). axisObjectIndex = the axis' position in the device's DirectInput OBJECT enumeration (not the DIJOYSTATE offset) - e.g. G29 on G HUB: 0 wheel, 1 clutch ('Y Axis'), 2 brake, 3 accelerator; on the old Logitech driver: 0 wheel, 1 accelerator, 2 brake. Pedals that rest high and fall when pressed (direction '-') get the invert bit.",
   "ini": { "XInput": "0", "EnableFF": "1", "HoldGears": "1" },
+  "trailer": [ 65793, 0 ],
+  "schemas": {
+    "drive24": [ "Up", "Down", "Left", "Right", "Steering", "Accelerate", "Brake", "Shift 1", "Shift 2", "Shift 3", "Shift 4", "Shift Neutral", "VR 1", "VR 2", "VR 3", "VR 4", "Start", "Coin 1", "Coin 2", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ],
+    "drive24t2": [ "Up", "Down", "Left", "Right", "Steering", "Accelerate", "Brake", "Shift 1", "Shift 2", "Shift 3", "Shift 4", "VR 1", "VR 2", "VR 3", "VR 4", "Test 2", "Start", "Coin 1", "Coin 2", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ],
+    "rally21": [ "Up", "Down", "Left", "Right", "Steering", "Accelerate", "Brake", "Shift 1", "Shift 2", "Shift 3", "Shift 4", "Shift Neutral", "VR", "Start", "Coin 1", "Coin 2", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ],
+    "drive18": [ "Up", "Down", "Left", "Right", "Steering", "Accelerate", "Brake", "Button 1", "Button 2", "Button 3", "Button 4", "Start", "Coin", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ],
+    "updown17": [ "Up", "Down", "Left", "Right", "Steering", "Accelerate", "Brake", "Shift Up", "Shift Down", "Start", "Coin 1", "Coin 2", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ],
+    "bike17": [ "Up", "Down", "Left", "Right", "Bank", "Accelerate", "Brake", "Kick", "Punch", "Player 1 Start", "Coin 1", "Coin 2", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ],
+    "flight16": [ "Roll Left", "Roll Right", "Handle Left", "Handle Right", "Throttle", "Handle", "Roll", "Throttle", "View", "Start", "Coin", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ],
+    "tank23": [ "Steer Left", "Steer Right", "Turret Up", "Turret Down", "Accel +", "Accel -", "Steering", "Turret", "Accelerator", "Shift", "Machine Gun", "Cannon", "VR1 (Blue)", "VR2 (Green)", "VR3 (Red)", "Start", "Coin", "Coin 2", "Service", "Test", "Show render stats", "Toggle tilemap render", "Cycle Tilemap update rate" ]
+  },
   "games": {
-    "daytona": "Daytona USA - 4-speed H or VR buttons; FFB via m2 (EnableFF=1) or FFBPlugin.",
-    "srallyc": "Sega Rally Championship - 4-speed, handbrake not supported.",
-    "indy500d": "Indianapolis 500 (Deluxe).",
-    "overrev": "Over Rev.",
-    "sgt24h": "Super GT 24h.",
-    "stcc": "Sega Touring Car Championship."
+    "daytona": "drive24", "daytonas": "drive24", "daytonat": "drive24", "daytona93": "drive24", "daytonam": "drive24", "daytonagtx": "drive24", "daytonase": "drive24", "daytonat2": "drive24", "daytonata": "drive24",
+    "srallyc": "rally21", "srallycb": "rally21", "srallycc": "rally21", "srallycdx": "rally21", "srallycdxa": "rally21", "srallyp": "rally21",
+    "stcc": "drive18", "stcca": "drive18", "stccb": "drive18", "indy500": "drive18", "indy500d": "drive18", "indy500to": "drive18", "overrev": "drive18", "overrevb": "drive18", "sgt24h": "drive18",
+    "manxtt": "bike17", "manxttc": "bike17", "motoraid": "bike17",
+    "wingwar": "flight16", "wingwar1": "flight16", "wingwaru": "flight16", "wingwarj": "flight16",
+    "desert": "tank23"
+  },
+  "note_games": "Unknown roms fall back to the slot count of an existing CFG\\<rom>.input (18 -> drive18, 21 -> rally21, 24 -> drive24); anything else is left untouched with a warning.",
+  "slots": {
+    "Up": "MenuUp", "Down": "MenuDown", "Left": "MenuLeft", "Right": "MenuRight",
+    "Steering": "Steering!", "Bank": "Steering!", "Handle": "Roll!|Steering!", "Roll": "Pitch!", "Turret": "Pitch!",
+    "Accelerate": "Gas!", "Accelerator": "Gas!", "Throttle": "Throttle!|Gas!", "Brake": "Brake!",
+    "Shift 1": "Gear1", "Shift 2": "Gear2", "Shift 3": "Gear3", "Shift 4": "Gear4",
+    "Shift Up": "GearUp", "Shift Down": "GearDown", "Shift": "GearUp",
+    "VR 1": "ViewChange", "VR 2": "View2", "VR 3": "View3", "VR 4": "View4", "VR": "ViewChange", "View": "ViewChange",
+    "VR1 (Blue)": "ViewChange", "VR2 (Green)": "View2", "VR3 (Red)": "View3",
+    "Button 1": "Action1|Nitro", "Button 2": "GearDown", "Button 3": "GearUp", "Button 4": "ViewChange",
+    "Kick": "Action1|Nitro", "Punch": "Action2|ViewChange", "Machine Gun": "Fire|Action1", "Cannon": "Missile|Action2",
+    "Start": "Start", "Player 1 Start": "Start", "Coin": "Coin", "Coin 1": "Coin", "Coin 2": "Coin2",
+    "Service": "Service", "Test": "Test"
+  },
+  "keyDefaults": {
+    "Up": 200, "Down": 208, "Left": 203, "Right": 205, "Shift Neutral": 34, "Coin 2": 7, "Service": 74, "Test": 78, "Test 2": 79,
+    "Show render stats": 66, "Toggle tilemap render": 65, "Cycle Tilemap update rate": 64,
+    "Start": 2, "Player 1 Start": 2, "Coin": 6, "Coin 1": 6
+  },
+  "gameNotes": {
+    "daytona": "Daytona USA - 4-speed H shifter (Shift 1-4) + 4 VR buttons; HoldGears=1 returns to neutral.",
+    "srallyc": "Sega Rally Championship - 4-speed H shifter; the handbrake is not emulated.",
+    "stcc": "Sega Touring Car Championship - Button 2/3 = shift down/up paddles, Button 1/4 = view.",
+    "wingwar": "Wing War - flight stick (Handle = stick X, Roll = stick Y, Throttle); falls back to the wheel when no stick is captured."
   }
 }

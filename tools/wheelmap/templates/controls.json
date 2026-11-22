@@ -53,9 +53,9 @@
   "wizards": {
     "racing": [
       { "control": "Steering",  "device": "wheel",  "prompt": "Turn the WHEEL fully LEFT and hold, then fully RIGHT, then let it centre", "required": true },
-      { "control": "Gas",       "device": "wheel",  "prompt": "Press the GAS pedal all the way down, then release it", "required": true },
-      { "control": "Brake",     "device": "wheel",  "prompt": "Press the BRAKE pedal all the way down, then release it", "required": true },
-      { "control": "Clutch",    "device": "wheel",  "prompt": "Press the CLUTCH pedal all the way down, then release it (S = no clutch)" },
+      { "control": "Gas",       "device": "wheel",  "prompt": "Press the GAS pedal - the RIGHT pedal - all the way down, then release it", "required": true },
+      { "control": "Brake",     "device": "wheel",  "prompt": "Press the BRAKE pedal - the MIDDLE pedal (left pedal on a 2-pedal set) - all the way down, then release it", "required": true },
+      { "control": "Clutch",    "device": "wheel",  "prompt": "Press the CLUTCH pedal - the LEFT pedal - all the way down, then release it (S = no clutch)" },
       { "control": "Handbrake", "device": "any",    "prompt": "Pull the HANDBRAKE fully, then release it (S = none)" },
       { "control": "GearUp",    "device": "wheel",  "prompt": "Pull the RIGHT paddle (shift UP)", "hint": "G29: right paddle", "required": true },
       { "control": "GearDown",  "device": "wheel",  "prompt": "Pull the LEFT paddle (shift DOWN)", "hint": "G29: left paddle", "required": true },

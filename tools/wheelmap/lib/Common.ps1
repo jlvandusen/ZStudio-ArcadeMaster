@@ -236,3 +236,25 @@ function Add-WMWarning($Manifest, [string]$Text) {
     [void]$Manifest.warnings.Add($Text)
     Write-Warning $Text
 }
+
+function Test-WMPedalLayout($Prof) {
+    <# Pedal convention (always): CLUTCH = left pedal, BRAKE = middle (left on a 2-pedal set), GAS = right pedal.
+       Checks the profile against it using the names the driver gives each axis ("Accelerator", "Brake", "Clutch"...),
+       and that no two pedals share an axis. Returns warning strings (empty = OK). #>
+    $msgs = @(); $seen = @{}
+    $rules = [ordered]@{ Clutch = 'accel|gas|throttle|brake'; Brake = 'accel|gas|throttle|clutch'; Gas = 'brake|clutch' }
+    $live = @(); try { Import-WMInput; $live = @([WheelMap.DI]::Enumerate($true)) } catch { }
+    foreach ($p in $rules.Keys) {
+        $b = Get-WMBinding $Prof $p
+        if (-not $b -or $b.type -ne 'axis') { continue }
+        $key = "$($b.device)/$($b.axis)"
+        if ($seen.ContainsKey($key)) { $msgs += "$p and $($seen[$key]) are both on $key - each pedal needs its own axis (clutch LEFT, brake MIDDLE, gas RIGHT)" } else { $seen[$key] = $p }
+        $dev = Get-WMDevice $Prof $b.device
+        $ld = @($live | Where-Object { $_.InstanceGuid.ToString() -eq $dev.instanceGuid -or $_.ProductName -eq $dev.productName }) | Select-Object -First 1
+        if ($ld) {
+            $obj = $ld.Objects | Where-Object { $_.Kind -eq 'Axis' -and $_.Offset -eq [int]$b.offset } | Select-Object -First 1
+            if ($obj -and $obj.Name -match "(?i)$($rules[$p])") { $msgs += "$p is bound to the axis the driver calls '$($obj.Name)' - pedals should be clutch LEFT, brake MIDDLE, gas RIGHT (re-run Wheel Setup for the pedals)" }
+        }
+    }
+    return $msgs
+}

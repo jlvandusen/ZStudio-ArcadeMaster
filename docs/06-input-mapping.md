@@ -404,3 +404,16 @@ Light-gun TeknoParrot games covered by `templates\lightgun.json` (untested): HOT
   - MAME `multimouse` + `GUNCODE` `mapdevice`
   - Supermodel `InputGunX/Y`
 - **G HUB profiles:** if G HUB has a per-game profile with remapped buttons or a different rotation, captured numbers apply only while that G HUB profile is active. Capture with the G HUB profile you'll actually play with.
+
+## Legacy emulators (2026-11-22): generated from the profile, not copied
+
+The previous owner's per-wheel sets were copied unchanged. They encode that machine's driver layout, and on this cabinet (G29 on G HUB) they were wrong:
+
+| Emulator | Was | Now |
+|---|---|---|
+| **Model 2** (`CFG\<rom>.input`) | copied; Accelerate on axis #1 = the **clutch** under G HUB | generated. The format is decoded (see `templates/m2emulator.json`). Per-game slot lists come from EMULATOR.EXE's control tables (Daytona 24, Sega Rally 21, STCC / Indy / Over Rev / Super GT 18, bikes, Wing War flight, Desert Tank). Axes use the device's live DirectInput **object order**. Buttons, hats and keys are encoded per slot. Files are written only for installed ROMs (read from `[RomDirs]`). |
+| **Cemu** (`controllerProfiles\G29.xml`) | copied; gas on **Y+**, active with the pedal released under G HUB | generated. Wii U Pro slot → Cemu DirectInput code (buttons 0–31, hat 34–37, axis halves 38–49). The pedal half follows its pressed direction. |
+| **MAME** | 23 per-game cfgs only; hats named `COMMANDEDEPOUCE*` (French Windows), so the D-pad was dead | per-game cfgs regenerated, plus `ctrlr\wheelmap.cfg` defaults for **every** game: paddle / dial / positional = wheel, pedal 1–3, AD stick X/Y/Z for flight, buttons, start / coin, and device pinning |
+| Supermodel, Dolphin / Triforce | already generated from the profile (DIJOYSTATE axis names) | unchanged |
+
+**Pedal convention (always):** clutch = LEFT pedal, brake = MIDDLE (LEFT on a 2-pedal set), gas = RIGHT. The Wheel Setup prompts name the position. `Test-WMPedalLayout` checks the profile against the axis names the driver reports and warns on swapped or shared pedal axes, both in `-Generate` and after a capture.

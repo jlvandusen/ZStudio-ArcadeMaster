@@ -1,9 +1,15 @@
 {
-  "schema": "wheelmap.template.cemu/1",
-  "description": "Cemu controllerProfiles/<Name>.xml is produced from the previous owner's reference profile (targets: cemu[].reference) because Cemu's internal button-id numbering is not documented on disk. <uuid>/<display_name> are set to the captured wheel (the reference used the SysKeyboard GUID 6f1d2b61-..., which only worked through Cemu's display-name fallback). DirectInput button ids < 32 are translated through 'referenceButtons' (owner's G29 layout); ids >= 32 are Cemu axis/hat codes and are kept, which is only correct when the captured wheel has the reference axis layout (wheel X, gas Y, brake Rz) - the generator checks this and warns otherwise.",
-  "referenceAxes": { "Steering": "X", "Gas": "Y", "Brake": "RotationZ" },
-  "referenceButtons": { "4": "GearUp", "5": "GearDown", "10": "Start", "11": "Coin" },
+  "schema": "wheelmap.template.cemu/2",
+  "description": "Cemu controllerProfiles/<profile>.xml is GENERATED from the profile (DirectInput API, the wheel's instance GUID). <mapping> = emulated-controller slot, <button> = Cemu DirectInput input code. Wii U Pro Controller slots: 1 A, 2 B, 3 X, 4 Y, 5 L, 6 R, 7 ZL, 8 ZR, 9 Plus, 10 Minus, 11 Home, 12 Up, 13 Down, 14 Left, 15 Right, 16 L-stick click, 17 R-stick click, 18-21 L-stick Up/Down/Left/Right, 22-25 R-stick Up/Down/Left/Right. Cemu DirectInput codes: 0-31 buttons, 34-37 hat Up/Down/Left/Right, axis halves X+ 38, Y+ 39, Rx+ 40, Ry+ 41, Z+ 42, Rz+ 43, X- 44, Y- 45, Rx- 46, Ry- 47, Z- 48, Rz- 49 (sliders are not readable through Cemu's DirectInput API). Layout entries name a profile control; 'Steering-' / 'Steering+' = the half of the axis; pedals use the half they travel to when pressed.",
+  "controllerType": "Wii U Pro Controller",
+  "layouts": {
+    "pro-racing": {
+      "1": "Gas", "2": "Action2|ViewChange", "3": "View2", "4": "View3", "5": "GearUp", "6": "Brake", "7": "Action1|Nitro", "8": "GearDown",
+      "9": "Start", "10": "Coin", "12": "MenuUp", "13": "MenuDown", "14": "MenuLeft", "15": "MenuRight",
+      "18": "MenuUp", "19": "MenuDown", "20": "Steering-", "21": "Steering+"
+    }
+  },
   "games": {
-    "000500001010ec00": { "title": "Mario Kart 8 (USA)", "notes": "gameProfiles ini selects controller1 = <profile name>; single-core recompiler settings from the reference are kept." }
+    "000500001010ec00": { "title": "Mario Kart 8 (USA)", "layout": "pro-racing", "notes": "A = gas pedal, R (hop / drift) = brake pedal, B (brake / reverse) = a wheel button; paddles = L / ZR. gameProfiles ini selects controller1 = <profile name>." }
   }
 }
