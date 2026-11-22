@@ -1,0 +1,565 @@
+[2026-11-22 06:46:58.799] [INFO] [Configuration] Dump: "HardwareVideoAccel" = "true"
+[2026-11-22 06:46:58.799] [INFO] [RetroFE] Version: 2504.2-Outside Git0 starting
+[2026-11-22 06:46:58.799] [INFO] [RetroFE] Built: 2026-11-22
+[2026-11-22 06:46:58.799] [INFO] [RetroFE] OS: Windows
+[2026-11-22 06:46:58.799] [INFO] [RetroFE] GStreamer successfully initialized
+[2026-11-22 06:46:58.799] [INFO] [RetroFE] Absolute path: D:\ArcadeMaster\frontend\DRIVE-coinops
+[2026-11-22 06:46:58.799] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Arcade PC.conf"
+[2026-11-22 06:46:58.799] [INFO] [Configuration] Dump: "launchers.Arcade PC.executable" = "collections\TeknoParrot\roms\cmd.exe"
+[2026-11-22 06:46:58.799] [INFO] [Configuration] Dump: "launchers.Arcade PC.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Controller.conf"
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Dump: "launchers.Controller.executable" = "collections\Controller\roms\cmd.exe"
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Dump: "launchers.Controller.arguments" = "cmd.exe /C "%ITEM_NAME%.bat""
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Dump: "launchers.Controller.reboot" = "no"
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Main.conf"
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Dump: "launchers.Main.executable" = "collections\MAIN\roms\cmd.exe"
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Dump: "launchers.Main.arguments" = "cmd.exe /C "%ITEM_NAME%.bat""
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\MAME.conf"
+[2026-11-22 06:46:58.820] [INFO] [Configuration] Dump: "launchers.MAME.executable" = "emulators\MAME\mame.exe"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.MAME.arguments" = ""%ITEM_NAME%""
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Nintendo Gamecube.conf"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.Nintendo Gamecube.executable" = "emulators\Dolphin\Dolphin.exe"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.Nintendo Gamecube.arguments" = "--exec "%ITEM_FILEPATH%" --batch"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Nintendo Wii U.conf"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.Nintendo Wii U.executable" = "collections\Nintendo Wii U\roms\cmd.exe"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.Nintendo Wii U.arguments" = "cmd.exe /C "%ITEM_NAME%.bat""
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Nintendo Wii.conf"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.Nintendo Wii.executable" = "emulators\Dolphin\Dolphin.exe"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.Nintendo Wii.arguments" = "--exec "%ITEM_FILEPATH%" --batch"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\PC Games.conf"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.PC Games.executable" = "collections\PC Games\roms\cmd.exe"
+[2026-11-22 06:46:58.821] [INFO] [Configuration] Dump: "launchers.PC Games.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\SEGA Model 2.conf"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.SEGA Model 2.executable" = "emulators\m2emulator\emulator.exe"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.SEGA Model 2.arguments" = "%ITEM_NAME%"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Sega Model 3.conf"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.Sega Model 3.executable" = "emulators\Supermodel\Supermodel.exe"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.Sega Model 3.arguments" = ""%ITEM_FILEPATH%""
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Sega Triforce F-Zero.conf"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.Sega Triforce F-Zero.executable" = "emulators\Dolphin Triforce\F-Zero AX\DolphinWX.exe"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.Sega Triforce F-Zero.arguments" = "/e "%ITEM_FILEPATH%" --batch"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Sega Triforce.conf"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.Sega Triforce.executable" = "collections\Sega Triforce\roms\cmd.exe"
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Dump: "launchers.Sega Triforce.arguments" = "/C "%ITEM_NAME%""
+[2026-11-22 06:46:58.822] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Sony PlayStation 2 Guns.conf"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.Sony PlayStation 2 Guns.executable" = "emulators\Sony PlayStation 2 Guns\cmd.exe"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.Sony PlayStation 2 Guns.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\Sony PlayStation 3 Guns.conf"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.Sony PlayStation 3 Guns.executable" = "emulators\Sony PlayStation 3 Guns\cmd.exe"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.Sony PlayStation 3 Guns.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\TeknoParrot.conf"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.TeknoParrot.executable" = "emulators\TeknoParrot\TeknoParrotUi.exe"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.TeknoParrot.arguments" = "--profile="%ITEM_FILENAME%""
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\launchers.windows\TeknoParrotMulti.conf"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.TeknoParrotMulti.executable" = "emulators\TeknoParrotMulti\TeknoParrotUi.exe"
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Dump: "launchers.TeknoParrotMulti.arguments" = "--profile="%ITEM_FILENAME%""
+[2026-11-22 06:46:58.823] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Controller\settings.conf"
+[2026-11-22 06:46:58.824] [INFO] [Configuration] Dump: "collections.Controller.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.824] [INFO] [Configuration] Dump: "collections.Controller.list.extensions" = ".bat"
+[2026-11-22 06:46:58.824] [INFO] [Configuration] Dump: "collections.Controller.list.menuSort" = "yes"
+[2026-11-22 06:46:58.824] [INFO] [Configuration] Dump: "collections.Controller.launcher" = "Controller"
+[2026-11-22 06:46:58.824] [INFO] [Configuration] Dump: "collections.Controller.metadata.type" = "Controller"
+[2026-11-22 06:46:58.825] [INFO] [RetroFE] Imported settings for collection: Controller
+[2026-11-22 06:46:58.825] [ERROR] [RetroFE] Could not import any collection settings for GAMES
+[2026-11-22 06:46:58.825] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Main\settings.conf"
+[2026-11-22 06:46:58.825] [INFO] [Configuration] Dump: "collections.Main.list.extensions" = "bat"
+[2026-11-22 06:46:58.826] [INFO] [Configuration] Dump: "collections.Main.list.menuSort" = "yes"
+[2026-11-22 06:46:58.826] [INFO] [Configuration] Dump: "collections.Main.launcher" = "Main"
+[2026-11-22 06:46:58.826] [INFO] [Configuration] Dump: "collections.Main.list.includeMissingItems" = "true"
+[2026-11-22 06:46:58.826] [INFO] [Configuration] Dump: "collections.Main.metadata.type" = "Main"
+[2026-11-22 06:46:58.826] [INFO] [RetroFE] Imported settings for collection: Main
+[2026-11-22 06:46:58.826] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\MAME\settings.conf"
+[2026-11-22 06:46:58.826] [INFO] [Configuration] Dump: "collections.MAME.list.path" = "emulators\MAME\roms"
+[2026-11-22 06:46:58.827] [INFO] [Configuration] Dump: "collections.MAME.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.827] [INFO] [Configuration] Dump: "collections.MAME.list.extensions" = "zip"
+[2026-11-22 06:46:58.827] [INFO] [Configuration] Dump: "collections.MAME.list.menuSort" = "yes"
+[2026-11-22 06:46:58.827] [INFO] [Configuration] Dump: "collections.MAME.launcher" = "MAME"
+[2026-11-22 06:46:58.827] [INFO] [Configuration] Dump: "collections.MAME.metadata.type" = "MAME"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\MAME\info.conf"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Dump: "collections.MAME.manufacturer" = "Various"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Dump: "collections.MAME.year" = "1980+"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Dump: "collections.MAME.genre" = "Arcade"
+[2026-11-22 06:46:58.828] [INFO] [RetroFE] Imported settings for collection: MAME
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Nintendo Gamecube\settings.conf"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.list.extensions" = "rvz,iso,gcz"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.list.menuSort" = "yes"
+[2026-11-22 06:46:58.828] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.launcher" = "Nintendo Gamecube"
+[2026-11-22 06:46:58.829] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.metadata.type" = "Nintendo Gamecube"
+[2026-11-22 06:46:58.829] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Nintendo Gamecube\info.conf"
+[2026-11-22 06:46:58.829] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.manufacturer" = "Nintendo"
+[2026-11-22 06:46:58.829] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.year" = "2001"
+[2026-11-22 06:46:58.830] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.genre" = "Console"
+[2026-11-22 06:46:58.830] [INFO] [RetroFE] Imported settings for collection: Nintendo Gamecube
+[2026-11-22 06:46:58.830] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Nintendo Wii\settings.conf"
+[2026-11-22 06:46:58.830] [INFO] [Configuration] Dump: "collections.Nintendo Wii.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.830] [INFO] [Configuration] Dump: "collections.Nintendo Wii.list.extensions" = "rvz,iso,wbfs"
+[2026-11-22 06:46:58.830] [INFO] [Configuration] Dump: "collections.Nintendo Wii.list.menuSort" = "yes"
+[2026-11-22 06:46:58.830] [INFO] [Configuration] Dump: "collections.Nintendo Wii.launcher" = "Nintendo Wii"
+[2026-11-22 06:46:58.830] [INFO] [Configuration] Dump: "collections.Nintendo Wii.metadata.type" = "Nintendo Wii"
+[2026-11-22 06:46:58.831] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Nintendo Wii\info.conf"
+[2026-11-22 06:46:58.831] [INFO] [Configuration] Dump: "collections.Nintendo Wii.manufacturer" = "Nintendo"
+[2026-11-22 06:46:58.831] [INFO] [Configuration] Dump: "collections.Nintendo Wii.year" = "2006"
+[2026-11-22 06:46:58.831] [INFO] [Configuration] Dump: "collections.Nintendo Wii.genre" = "Console"
+[2026-11-22 06:46:58.831] [INFO] [RetroFE] Imported settings for collection: Nintendo Wii
+[2026-11-22 06:46:58.831] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Nintendo Wii U\settings.conf"
+[2026-11-22 06:46:58.831] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.832] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.list.extensions" = "bat"
+[2026-11-22 06:46:58.832] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.list.menuSort" = "yes"
+[2026-11-22 06:46:58.832] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.launcher" = "Nintendo Wii U"
+[2026-11-22 06:46:58.832] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.metadata.type" = "Nintendo Wii U"
+[2026-11-22 06:46:58.832] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Nintendo Wii U\info.conf"
+[2026-11-22 06:46:58.832] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.manufacturer" = "Nintendo"
+[2026-11-22 06:46:58.833] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.year" = "2012"
+[2026-11-22 06:46:58.833] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.genre" = "Console"
+[2026-11-22 06:46:58.833] [INFO] [RetroFE] Imported settings for collection: Nintendo Wii U
+[2026-11-22 06:46:58.833] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\PC Games\settings.conf"
+[2026-11-22 06:46:58.833] [INFO] [Configuration] Dump: "collections.PC Games.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.833] [INFO] [Configuration] Dump: "collections.PC Games.list.extensions" = "bat"
+[2026-11-22 06:46:58.833] [INFO] [Configuration] Dump: "collections.PC Games.list.menuSort" = "yes"
+[2026-11-22 06:46:58.833] [INFO] [Configuration] Dump: "collections.PC Games.launcher" = "PC Games"
+[2026-11-22 06:46:58.834] [INFO] [RetroFE] Imported settings for collection: PC Games
+[2026-11-22 06:46:58.834] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Sega Model 2\settings.conf"
+[2026-11-22 06:46:58.834] [INFO] [Configuration] Dump: "collections.Sega Model 2.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.834] [INFO] [Configuration] Dump: "collections.Sega Model 2.list.extensions" = "zip"
+[2026-11-22 06:46:58.834] [INFO] [Configuration] Dump: "collections.Sega Model 2.list.menuSort" = "yes"
+[2026-11-22 06:46:58.835] [INFO] [Configuration] Dump: "collections.Sega Model 2.launcher" = "Sega Model 2"
+[2026-11-22 06:46:58.835] [INFO] [Configuration] Dump: "collections.Sega Model 2.metadata.type" = "Sega Model 2"
+[2026-11-22 06:46:58.835] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Sega Model 2\info.conf"
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Dump: "collections.Sega Model 2.manufacturer" = "Sega"
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Dump: "collections.Sega Model 2.year" = "1993"
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Dump: "collections.Sega Model 2.genre" = "Arcade"
+[2026-11-22 06:46:58.836] [INFO] [RetroFE] Imported settings for collection: Sega Model 2
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Sega Model 3\settings.conf"
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Dump: "collections.Sega Model 3.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Dump: "collections.Sega Model 3.list.extensions" = "zip"
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Dump: "collections.Sega Model 3.list.menuSort" = "yes"
+[2026-11-22 06:46:58.836] [INFO] [Configuration] Dump: "collections.Sega Model 3.launcher" = "Sega Model 3"
+[2026-11-22 06:46:58.837] [INFO] [Configuration] Dump: "collections.Sega Model 3.metadata.type" = "Sega Model 3"
+[2026-11-22 06:46:58.837] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Sega Model 3\info.conf"
+[2026-11-22 06:46:58.837] [INFO] [Configuration] Dump: "collections.Sega Model 3.manufacturer" = "Sega"
+[2026-11-22 06:46:58.837] [INFO] [Configuration] Dump: "collections.Sega Model 3.year" = "1997"
+[2026-11-22 06:46:58.838] [INFO] [Configuration] Dump: "collections.Sega Model 3.genre" = "Arcade"
+[2026-11-22 06:46:58.838] [INFO] [RetroFE] Imported settings for collection: Sega Model 3
+[2026-11-22 06:46:58.838] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Sega Triforce\settings.conf"
+[2026-11-22 06:46:58.838] [INFO] [Configuration] Dump: "collections.Sega Triforce.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.838] [INFO] [Configuration] Dump: "collections.Sega Triforce.list.extensions" = "iso,bat"
+[2026-11-22 06:46:58.838] [INFO] [Configuration] Dump: "collections.Sega Triforce.list.menuSort" = "yes"
+[2026-11-22 06:46:58.838] [INFO] [Configuration] Dump: "collections.Sega Triforce.launcher" = "Sega Triforce"
+[2026-11-22 06:46:58.838] [INFO] [Configuration] Dump: "collections.Sega Triforce.metadata.type" = "Sega Triforce"
+[2026-11-22 06:46:58.839] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Sega Triforce\info.conf"
+[2026-11-22 06:46:58.839] [INFO] [Configuration] Dump: "collections.Sega Triforce.manufacturer" = "Nintendo, Sega and Namco"
+[2026-11-22 06:46:58.839] [INFO] [Configuration] Dump: "collections.Sega Triforce.year" = "2002"
+[2026-11-22 06:46:58.839] [INFO] [Configuration] Dump: "collections.Sega Triforce.genre" = "Arcade"
+[2026-11-22 06:46:58.839] [INFO] [RetroFE] Imported settings for collection: Sega Triforce
+[2026-11-22 06:46:58.840] [ERROR] [RetroFE] Could not import any collection settings for SETTINGS
+[2026-11-22 06:46:58.840] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\TeknoParrot\settings.conf"
+[2026-11-22 06:46:58.840] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.path" = "emulators\TeknoParrot\UserProfiles"
+[2026-11-22 06:46:58.840] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.includeMissingItems" = "false"
+[2026-11-22 06:46:58.840] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.extensions" = "xml,bat,exe"
+[2026-11-22 06:46:58.840] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.menuSort" = "yes"
+[2026-11-22 06:46:58.840] [INFO] [Configuration] Dump: "collections.TeknoParrot.launcher" = "TeknoParrot"
+[2026-11-22 06:46:58.840] [INFO] [Configuration] Dump: "collections.TeknoParrot.metadata.type" = "TeknoParrot"
+[2026-11-22 06:46:58.841] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\TeknoParrot\info.conf"
+[2026-11-22 06:46:58.841] [INFO] [Configuration] Dump: "collections.TeknoParrot.manufacturer" = "Various"
+[2026-11-22 06:46:58.841] [INFO] [Configuration] Dump: "collections.TeknoParrot.year" = "1990"
+[2026-11-22 06:46:58.841] [INFO] [Configuration] Dump: "collections.TeknoParrot.genre" = "Arcade"
+[2026-11-22 06:46:58.841] [INFO] [RetroFE] Imported settings for collection: TeknoParrot
+[2026-11-22 06:46:58.841] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\TeknoParrotMulti\settings.conf"
+[2026-11-22 06:46:58.842] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.path" = "emulators\TeknoparrotMulti\UserProfiles"
+[2026-11-22 06:46:58.842] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.includeMissingItems" = "true"
+[2026-11-22 06:46:58.842] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.extensions" = "xml,bat"
+[2026-11-22 06:46:58.842] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.menuSort" = "yes"
+[2026-11-22 06:46:58.842] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.launcher" = "TeknoParrotMulti"
+[2026-11-22 06:46:58.842] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.metadata.type" = "TeknoParrotMulti"
+[2026-11-22 06:46:58.843] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\TeknoParrotMulti\info.conf"
+[2026-11-22 06:46:58.843] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.manufacturer" = "Various"
+[2026-11-22 06:46:58.843] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.year" = "1990"
+[2026-11-22 06:46:58.843] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.genre" = "Arcade"
+[2026-11-22 06:46:58.843] [INFO] [RetroFE] Imported settings for collection: TeknoParrotMulti
+[2026-11-22 06:46:58.843] [INFO] [RetroFE] Imported configuration
+[2026-11-22 06:46:58.843] [DEBUG] [AttractMode] New launch target set: 5 cycles
+[2026-11-22 06:46:58.844] [INFO] [SDL] Performing first-time full initialization of all SDL subsystems.
+[2026-11-22 06:46:58.968] [INFO] [SDL] No screenOrder specified. Using screenNumX and numScreens: 0
+[2026-11-22 06:46:58.968] [INFO] [SDL] Number of displays found: 1
+[2026-11-22 06:46:58.968] [INFO] [SDL] Number of screens requested: 1
+[2026-11-22 06:46:58.968] [INFO] [Configuration] Setting rotation for screen 0 to 0 degrees.
+[2026-11-22 06:46:58.968] [INFO] [SDL] Creating 1920x1080 window (fullscreen: no) for logical screen 0 on physical display 0
+[2026-11-22 06:46:59.304] [INFO] [SDL] Current rendering backend for renderer 0: direct3d11
+[2026-11-22 06:46:59.304] [INFO] [SDL] Supported pixel formats for renderer 0:
+  - SDL_PIXELFORMAT_ARGB8888
+  - SDL_PIXELFORMAT_RGB888
+  - SDL_PIXELFORMAT_YV12
+  - SDL_PIXELFORMAT_IYUV
+  - SDL_PIXELFORMAT_NV12
+  - SDL_PIXELFORMAT_NV21
+[2026-11-22 06:46:59.322] [INFO] [SDL] SDL_mixer decoders (MP3, OGG, etc.) initialized successfully.
+[2026-11-22 06:46:59.322] [INFO] [Layout] Attempting to initialize layout: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\splash.xml
+[2026-11-22 06:46:59.323] [INFO] [Layout] Layout resolution 1920x1080 (scale 1x1)
+[2026-11-22 06:46:59.323] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\video
+[2026-11-22 06:46:59.323] [FILECACHE] [Miss] .\layouts\DRIVE\video does not contain file 'intro'
+[2026-11-22 06:46:59.323] [FILECACHE] [Miss] .\layouts\DRIVE\video does not contain file 'intro'
+[2026-11-22 06:46:59.323] [INFO] [Layout] Initialized D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\splash.xml
+[2026-11-22 06:46:59.323] [INFO] [ThreadPool] Initializing ThreadPool with 3 threads (hardware_concurrency=16)
+[2026-11-22 06:46:59.324] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE-coinops\controls.conf"
+[2026-11-22 06:46:59.324] [INFO] [Configuration] Dump: "controls.up" = "Up,joyHat0Up,joyAxis1-,Up,joyAxis2+"
+[2026-11-22 06:46:59.324] [INFO] [Configuration] Dump: "controls.down" = "Down,joyHat0Down,joyAxis1+,Down,joyAxis5+"
+[2026-11-22 06:46:59.324] [INFO] [Configuration] Dump: "controls.left" = "Left,joyHat0Left,joyAxis0-"
+[2026-11-22 06:46:59.324] [INFO] [Configuration] Dump: "controls.right" = "Right,joyHat0Right,joyAxis0+"
+[2026-11-22 06:46:59.324] [INFO] [Configuration] Dump: "controls.letterUp" = "M,joyButton5"
+[2026-11-22 06:46:59.324] [INFO] [Configuration] Dump: "controls.letterDown" = "N,joyButton4"
+[2026-11-22 06:46:59.325] [INFO] [Configuration] Dump: "controls.random" = "R,joyButton6"
+[2026-11-22 06:46:59.325] [INFO] [Configuration] Dump: "controls.select" = "Return,1,joyButton0,joyButton7"
+[2026-11-22 06:46:59.325] [INFO] [Configuration] Dump: "controls.back" = "Escape,Backspace,joyButton1"
+[2026-11-22 06:46:59.325] [INFO] [Configuration] Dump: "controls.quit" = "Q"
+[2026-11-22 06:46:59.325] [INFO] [Configuration] Dump: "controls.deadZone" = "30"
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.playlistUp
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.playlistDown
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.playlistLeft
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.playlistRight
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.collectionUp
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.collectionDown
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.collectionLeft
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.collectionRight
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.pageDown
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.pageUp
+[2026-11-22 06:46:59.325] [INFO] [Input] Binding key controls.letterDown
+[2026-11-22 06:46:59.325] [INFO] [Input] Binding joypad button 4
+[2026-11-22 06:46:59.325] [INFO] [Input] Binding key controls.letterUp
+[2026-11-22 06:46:59.325] [INFO] [Input] Binding joypad button 5
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.favPlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.nextPlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.prevPlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.cyclePlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.nextCyclePlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.prevCyclePlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.addPlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.removePlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.togglePlaylist
+[2026-11-22 06:46:59.325] [INFO] [Input] Binding key controls.random
+[2026-11-22 06:46:59.325] [INFO] [Input] Binding joypad button 6
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.menu
+[2026-11-22 06:46:59.325] [INFO] [Input] Missing optional property: controls.reboot
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.saveFirstPlaylist
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.kiosk
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.showFps
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.cycleCollection
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.prevCycleCollection
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.toggleGameInfo
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.toggleCollectionInfo
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.toggleBuildInfo
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.settings
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.quickPlaylist
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.musicPlayer.playPause
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.musicPlayer.next
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.musicPlayer.prev
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.musicPlayer.volUp
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional property: controls.musicPlayer.volDown
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional combo property: controls.quitCombo
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional combo property: controls.settingsCombo
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional combo property: controls.gameInfoCombo
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional combo property: controls.collectionInfoCombo
+[2026-11-22 06:46:59.326] [INFO] [Input] Missing optional combo property: controls.buildInfoCombo
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.up
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad hat up
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad axis 1
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.up
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad axis 2
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.left
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad hat left
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad axis 0
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.down
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad hat down
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad axis 1
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.down
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad axis 5
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.right
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad hat right
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad axis 0
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.select
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.select
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad button 0
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad button 7
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.back
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.back
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding joypad button 1
+[2026-11-22 06:46:59.326] [INFO] [Input] Binding key controls.quit
+[2026-11-22 06:46:59.326] [DEBUG] [AttractMode] New launch target set: 5 cycles
+[2026-11-22 06:46:59.326] [INFO] [RestrictorManager] Enqueuing restrictor hardware detection to thread pool...
+[2026-11-22 06:46:59.326] [INFO] [TOSGRS] Searching for TOS GRS hardware...
+[2026-11-22 06:46:59.326] [ERROR] [TOSGRS] GRS device not found or failed to initialize.
+[2026-11-22 06:46:59.326] [INFO] [ServoStik] Attempting to initialize ServoStik restrictor...
+[2026-11-22 06:46:59.326] [INFO] [RetroFE] Asynchronous background core initialization started
+[2026-11-22 06:46:59.327] [INFO] [Payload] Startup sync disabled by config (payload.enabled=false)
+[2026-11-22 06:46:59.328] [INFO] [Database] Opened database "D:\ArcadeMaster\frontend\DRIVE-coinops\meta.db"
+[2026-11-22 06:46:59.330] [INFO] [RetroFE] Music player disabled by configuration
+[2026-11-22 06:46:59.330] [ERROR] [HiScores] Failed to open ZIP file: D:\ArcadeMaster\frontend\DRIVE-coinops\hi2txt\hi2txt_defaults.zip
+[2026-11-22 06:46:59.330] [ERROR] [HiScores] Override directory does not exist or is not accessible: D:\ArcadeMaster\frontend\DRIVE-coinops\hi2txt\scores
+[2026-11-22 06:46:59.339] [INFO] [ServoStik] No ServoStik device found.
+[2026-11-22 06:46:59.381] [INFO] [Input] Joystick connected, assigned to slot 0
+[2026-11-22 06:46:59.447] [INFO] [Input] Joystick connected, assigned to slot 1
+[2026-11-22 06:46:59.447] [INFO] [RetroFE] Restrictor hardware detection finished: No device found.
+[2026-11-22 06:46:59.464] [DEBUG] [RetroFE] Transitioning from RETROFE_NEW to RETROFE_IDLE
+[2026-11-22 06:46:59.830] [DEBUG] [RetroFE] Transitioning from RETROFE_IDLE to RETROFE_SPLASH_EXIT
+[2026-11-22 06:46:59.847] [INFO] [Layout] Attempting to initialize layout: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout.xml
+[2026-11-22 06:46:59.848] [INFO] [Layout] Layout resolution 1920x1080 (scale 1x1)
+[2026-11-22 06:46:59.848] [WARNING] [Sound] Cannot load D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\sounds/select.wav
+[2026-11-22 06:46:59.848] [WARNING] [Sound] Cannot load D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\sounds/highlight.wav
+[2026-11-22 06:46:59.848] [WARNING] [Sound] Cannot load D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\sounds/load.wav
+[2026-11-22 06:46:59.873] [ERROR] [Layout] Failed to find image at: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\images\Xbox.png or D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\images/Xbox.png
+[2026-11-22 06:46:59.873] [ERROR] [Layout] Failed to find image at: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\images\overlayX.png or D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\images/overlayX.png
+[2026-11-22 06:46:59.873] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\sounds
+[2026-11-22 06:46:59.873] [FILECACHE] [Hit] .\layouts\DRIVE\sounds contains menu.mp3
+[2026-11-22 06:46:59.874] [DEBUG] [GStreamerVideo] Using d3d11h264dec/d3d11h265dec for non-Intel GPU
+[2026-11-22 06:46:59.874] [FILECACHE] [Hit] .\layouts\DRIVE\video contains particules.mp4
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [FontCache] [PERF] Shared font hit! Using existing size 50 to satisfy request for size 34
+[2026-11-22 06:46:59.886] [INFO] [Layout] Initialized D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 0.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 1.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 2.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 3.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 4.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 5.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 6.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 7.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 8.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 9.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 10.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 11.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 12.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 13.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 14.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 15.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 16.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 17.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 18.xml
+[2026-11-22 06:46:59.886] [WARNING] [Layout] Layout file does not exist: D:\ArcadeMaster\frontend\DRIVE-coinops\layouts\DRIVE\layout - 19.xml
+[2026-11-22 06:46:59.887] [INFO] [CollectionInfoBuilder] Checking for "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Main\include.txt"
+[2026-11-22 06:46:59.887] [INFO] [CollectionInfoBuilder] Scanning directory "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Main\roms"
+[2026-11-22 06:46:59.887] [ERROR] [Metadata] Failed to prepare metadata query for injection.
+[2026-11-22 06:46:59.887] [INFO] [Menu] File does not exist: "D:\ArcadeMaster\frontend\DRIVE-coinops\collections\Main\menu.txt"; trying menu directory.
+[2026-11-22 06:46:59.887] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\medium_artwork\border
+[2026-11-22 06:46:59.887] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'GAMES'
+[2026-11-22 06:46:59.887] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\main\medium_artwork\border
+[2026-11-22 06:46:59.887] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\main\medium_artwork\border
+[2026-11-22 06:46:59.887] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.887] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'GAMES'
+[2026-11-22 06:46:59.887] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.887] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\border contains default.png
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.888] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\border contains default.png
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'EXIT'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'EXIT'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.888] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\border contains default.png
+[2026-11-22 06:46:59.888] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'GAMES'
+[2026-11-22 06:46:59.888] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'GAMES'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel contains default.png
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel contains default.png
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'EXIT'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'EXIT'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.888] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel contains default.png
+[2026-11-22 06:46:59.888] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\system_artwork
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\system_artwork
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:46:59.888] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] . does not contain file 'null'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:46:59.888] [FILECACHE] [Miss] . does not contain file 'null'
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.888] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:46:59.889] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\main\roms
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\collections\Main\roms does not contain file 'null'
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'GAMES'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'GAMES'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.889] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\border contains default.png
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.889] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\border contains default.png
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'EXIT'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\border does not contain file 'EXIT'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\border
+[2026-11-22 06:46:59.889] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\border contains default.png
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'GAMES'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'GAMES'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.889] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel contains default.png
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'SETTINGS'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.889] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel contains default.png
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'EXIT'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel does not contain file 'EXIT'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\mwheel
+[2026-11-22 06:46:59.889] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\mwheel contains default.png
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] . does not contain file 'null'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] . does not contain file 'null'
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\Main\medium_artwork\null
+[2026-11-22 06:46:59.889] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:46:59.889] [FILECACHE] [Miss] .\collections\Main\roms does not contain file 'null'
+[2026-11-22 06:47:00.033] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\medium_artwork\gallery
+[2026-11-22 06:47:00.033] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\gallery does not contain file 'GAMES'
+[2026-11-22 06:47:00.033] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\gallery does not contain file 'GAMES'
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:47:00.033] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\gallery does not contain file 'GAMES'
+[2026-11-22 06:47:00.033] [FILECACHE] [Miss] .\layouts\DRIVE\collections\_common\medium_artwork\gallery does not contain file 'GAMES'
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\layouts\DRIVE\collections\_common\system_artwork
+[2026-11-22 06:47:00.033] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\gallery contains default.png
+[2026-11-22 06:47:00.033] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\gallery contains default.png
+[2026-11-22 06:47:00.033] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\games\system_artwork
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\collections\games\system_artwork
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\option
+[2026-11-22 06:47:00.033] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\video
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\bezel
+[2026-11-22 06:47:00.034] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.040] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\layouts\drive\collections\_common\medium_artwork\firstletter
+[2026-11-22 06:47:00.041] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\firstLetter contains g.png
+[2026-11-22 06:47:00.041] [FILECACHE] [Hit] .\layouts\DRIVE\collections\_common\medium_artwork\firstLetter contains g.png
+[2026-11-22 06:47:00.067] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\artwork_3d
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\artwork_3d
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\artwork_3D
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\artwork_3D
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\artwork_3D
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\artwork_3D
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\artwork_3D
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\artwork_3D
+[2026-11-22 06:47:00.067] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\main\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\collections\main\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\system_artwork
+[2026-11-22 06:47:00.080] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.081] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\system_artwork
+[2026-11-22 06:47:00.081] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\system_artwork
+[2026-11-22 06:47:00.081] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.082] [FILECACHE] [Populate] Populating cache for directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Directory not present/not a directory: d:\arcademaster\frontend\drive-coinops\collections\main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\Main\medium_artwork\logo
+[2026-11-22 06:47:00.082] [FILECACHE] [Skip] Skipping non-existing directory: .\collections\GAMES\system_artwork
+[2026-11-22 06:47:00.086] [DEBUG] [RetroFE] Transitioning from RETROFE_SPLASH_EXIT to RETROFE_LOAD_ART
+[2026-11-22 06:47:00.088] [DEBUG] [GStreamerVideo] SDL pixel format: SDL_PIXELFORMAT_NV12 (HW accel: true)
+[2026-11-22 06:47:00.088] [DEBUG] [GStreamerVideo] SDL pixel format: SDL_PIXELFORMAT_NV12 (HW accel: true)
+[2026-11-22 06:47:00.103] [DEBUG] [RetroFE] Transitioning from RETROFE_LOAD_ART to RETROFE_ENTER
+[2026-11-22 06:47:00.120] [DEBUG] [RetroFE] Transitioning from RETROFE_ENTER to RETROFE_IDLE
+[2026-11-22 06:47:00.162] [DEBUG] [AudioBus] mixInto_s16(): scratch grew: want=16384 size=16384 cap=16384
+[2026-11-22 06:47:00.203] [DEBUG] [AudioBus] push(): temp_buffer HWM increased: bytes=4096 size=4096 cap=4096

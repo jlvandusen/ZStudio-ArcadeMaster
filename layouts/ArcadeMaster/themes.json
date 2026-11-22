@@ -1,0 +1,54 @@
+{
+  "_comment": "Theme slots are loaded by layout.xml with mode=\"systemlayout\" from layouts/ArcadeMaster/collections/<collection>/system_artwork/<slot>.png. Run tools/Set-LayoutThemes.ps1 after editing.",
+  "themes": {
+    "racing": {
+      "am_spinner": "racing_wheel.png",
+      "am_gauge_face": "racing_speedo_face.png",
+      "am_gauge_under": "blank.png",
+      "am_gauge_over": "racing_needle.png",
+      "am_gauge2_face": "racing_tacho_face.png",
+      "am_gauge2_over": "racing_needle.png",
+      "am_burst": "racing_speedlines.png",
+      "am_drift": "blank.png"
+    },
+    "flight": {
+      "am_spinner": "flight_yoke.png",
+      "am_gauge_face": "flight_attitude_plate.png",
+      "am_gauge_under": "flight_horizon.png",
+      "am_gauge_over": "blank.png",
+      "am_gauge2_face": "flight_hud_reticle.png",
+      "am_gauge2_over": "blank.png",
+      "am_burst": "blank.png",
+      "am_drift": "flight_clouds.png"
+    },
+    "lightgun": {
+      "am_spinner": "gun_crosshair.png",
+      "am_gauge_face": "gun_target.png",
+      "am_gauge_under": "blank.png",
+      "am_gauge_over": "blank.png",
+      "am_gauge2_face": "gun_target.png",
+      "am_gauge2_over": "blank.png",
+      "am_burst": "gun_flash.png",
+      "am_drift": "blank.png"
+    }
+  },
+  "defaultTheme": "racing",
+  "collections": {
+    "Main": "racing",
+    "Racing": "racing",
+    "Flight": "flight",
+    "Lightgun": "lightgun",
+    "Favorites": "racing",
+    "GAMES": "racing",
+    "TeknoParrot": "racing",
+    "TeknoParrotMulti": "racing",
+    "PC Games": "racing",
+    "Sega Model 2": "racing",
+    "Sega Model 3": "racing",
+    "Sega Triforce": "racing",
+    "MAME": "racing",
+    "Nintendo Gamecube": "racing",
+    "Nintendo Wii": "racing",
+    "Nintendo Wii U": "racing"
+  }
+}

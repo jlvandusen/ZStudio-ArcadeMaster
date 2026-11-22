@@ -1,0 +1,28 @@
+# --- scan output (machine-specific, huge) ---
+reports/dupes/*.csv
+reports/dupes/*.log
+reports/**/*.dmp
+
+# --- generated at install / build time ---
+layouts/ArcadeMaster/_gridframes/
+layouts/ArcadeMaster/collections/*/system_artwork/
+
+# --- never commit games, emulators, third-party binaries or secrets ---
+*.iso
+*.rvz
+*.wbfs
+*.zip
+*.7z
+*.rar
+*.exe
+*.dll
+*.pdb
+*.msi
+.env
+*.secret
+
+# --- editor / OS ---
+.vs/
+.vscode/
+Thumbs.db
+desktop.ini

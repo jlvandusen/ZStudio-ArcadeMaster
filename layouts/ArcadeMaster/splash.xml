@@ -1,0 +1,26 @@
+<!-- ArcadeMaster boot banner: The Real Z Studios -->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="3.5">
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <image src="images/fx_sun_glow.png" x="center" y="center" xOrigin="center" yOrigin="center" width="600" height="600" alpha="0" layer="1">
+    <onEnter>
+      <set duration=".5"><animate type="nop"/></set>
+      <set duration=".9"><animate type="alpha" to=".75" algorithm="easeOutCubic"/><animate type="width" to="1500" algorithm="easeOutCubic"/><animate type="height" to="1500" algorithm="easeOutCubic"/></set>
+      <set duration="1.2"><animate type="alpha" to=".45" algorithm="easeInOutSine"/></set>
+      <set duration=".6"><animate type="alpha" to="0"/></set>
+    </onEnter>
+  </image>
+  <image src="images/studio_realz.png" x="center" y="center" xOrigin="center" yOrigin="center" width="560" height="560" alpha="0" layer="2">
+    <onEnter>
+      <set duration=".25"><animate type="nop"/></set>
+      <set duration=".7"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="820" algorithm="easeOutCubic"/><animate type="height" to="820" algorithm="easeOutCubic"/></set>
+      <set duration=".12"><animate type="alpha" to=".55"/></set>
+      <set duration=".1"><animate type="alpha" to="1"/></set>
+      <set duration=".08"><animate type="alpha" to=".7"/></set>
+      <set duration=".1"><animate type="alpha" to="1"/></set>
+      <set duration="1.4"><animate type="width" to="860" algorithm="easeInOutSine"/><animate type="height" to="860" algorithm="easeInOutSine"/></set>
+      <set duration=".5"><animate type="alpha" to="0" algorithm="easeInCubic"/><animate type="width" to="1400"/><animate type="height" to="1400"/></set>
+    </onEnter>
+  </image>
+  <image src="images/fx_scanlines.png" x="0" y="0" width="1920" height="1080" alpha=".3" layer="3"/>
+  <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha="1" layer="3"/>
+</layout>

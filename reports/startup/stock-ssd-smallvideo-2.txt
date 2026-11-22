@@ -1,0 +1,327 @@
+[2026-11-22 06:50:47] [INFO] [RetroFE] Version 0.10.33 starting
+[2026-11-22 06:50:47] [INFO] [RetroFE] OS: Windows
+[2026-11-22 06:50:47] [INFO] [RetroFE] Absolute path: D:\ArcadeMaster\frontend\DRIVE
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings_saved.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings_saved.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings9.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings9.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings8.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings8.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings7.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings7.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings6.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings6.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings5.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings5.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings4.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings4.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings3.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings3.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings2.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings2.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings1.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\settings1.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "numScreens" = "1"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "screenNum0" = "0"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "screenNum1" = "1"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "fullscreen0" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "horizontal0" = "stretch"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "vertical0" = "stretch"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "fullscreen1" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "horizontal1" = "stretch"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "vertical1" = "stretch"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "layout" = "DRIVE"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "hideMouse" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "showParenthesis" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "showSquareBrackets" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "firstCollection" = "Main"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "startCollectionEnter" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "cfwLetterSub" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "autoFavorites" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "rememberMenu" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "attractModeTime" = "90"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "attractModeNextTime" = "20"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "attractModePlaylistTime" = "0"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "videoEnable" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "videoLoop" = "0"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "exitOnFirstPageBack" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "rememberMenu" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collectionInputClear" = "true"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Arcade PC.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.arcade pc.executable" = "collections\TeknoParrot\roms\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.arcade pc.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Controller.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.controller.executable" = "collections\Controller\roms\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.controller.arguments" = "cmd.exe /C "%ITEM_NAME%.bat""
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.controller.reboot" = "no"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Main.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.main.executable" = "collections\MAIN\roms\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.main.arguments" = "cmd.exe /C "%ITEM_NAME%.bat""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\MAME.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.mame.executable" = "emulators\MAME\mame.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.mame.arguments" = ""%ITEM_NAME%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Nintendo Gamecube.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.nintendo gamecube.executable" = "emulators\Dolphin\Dolphin.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.nintendo gamecube.arguments" = "--exec "%ITEM_FILEPATH%" --batch"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Nintendo Wii U.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.nintendo wii u.executable" = "collections\Nintendo Wii U\roms\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.nintendo wii u.arguments" = "cmd.exe /C "%ITEM_NAME%.bat""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Nintendo Wii.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.nintendo wii.executable" = "emulators\Dolphin\Dolphin.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.nintendo wii.arguments" = "--exec "%ITEM_FILEPATH%" --batch"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\PC Games.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.pc games.executable" = "collections\PC Games\roms\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.pc games.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\SEGA Model 2.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega model 2.executable" = "emulators\m2emulator\emulator.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega model 2.arguments" = "%ITEM_NAME%"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Sega Model 3.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega model 3.executable" = "emulators\Supermodel\Supermodel.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega model 3.arguments" = ""%ITEM_FILEPATH%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Sega Triforce F-Zero.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega triforce f-zero.executable" = "emulators\Dolphin Triforce\F-Zero AX\DolphinWX.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega triforce f-zero.arguments" = "/e "%ITEM_FILEPATH%" --batch"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Sega Triforce.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega triforce.executable" = "collections\Sega Triforce\roms\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sega triforce.arguments" = "/C "%ITEM_NAME%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Sony PlayStation 2 Guns.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sony playstation 2 guns.executable" = "emulators\Sony PlayStation 2 Guns\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sony playstation 2 guns.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\Sony PlayStation 3 Guns.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sony playstation 3 guns.executable" = "emulators\Sony PlayStation 3 Guns\cmd.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.sony playstation 3 guns.arguments" = "/C "%ITEM_FILEPATH%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\TeknoParrot.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.teknoparrot.executable" = "emulators\TeknoParrot\TeknoParrotUi.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.teknoparrot.arguments" = "--profile="%ITEM_FILENAME%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\launchers.windows\TeknoParrotMulti.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.teknoparrotmulti.executable" = "emulators\TeknoParrotMulti\TeknoParrotUi.exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "launchers.teknoparrotmulti.arguments" = "--profile="%ITEM_FILENAME%""
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Controller\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\collections\Controller\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Controller\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Controller.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Controller.list.extensions" = ".bat"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Controller.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Controller.launcher" = "Controller"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Controller.metadata.type" = "Controller"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\GAMES\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\collections\GAMES\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\GAMES\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\collections\GAMES\settings.conf"
+[2026-11-22 06:50:47] [INFO] [RetroFE] Could not import "D:\ArcadeMaster\frontend\DRIVE\collections\GAMES\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Main\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\collections\Main\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Main\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Main.list.extensions" = "bat"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Main.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Main.launcher" = "Main"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Main.list.includeMissingItems" = "true"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Main.metadata.type" = "Main"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\MAME\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.manufacturer" = "Various"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.year" = "1980+"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.genre" = "Arcade"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\MAME\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.list.path" = "emulators\MAME\roms"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.list.extensions" = "zip"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.launcher" = "MAME"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.MAME.metadata.type" = "MAME"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Nintendo Gamecube\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.manufacturer" = "Nintendo"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.year" = "2001"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.genre" = "Console"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Nintendo Gamecube\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.list.extensions" = "rvz,iso,gcz"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.launcher" = "Nintendo Gamecube"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Gamecube.metadata.type" = "Nintendo Gamecube"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Nintendo Wii\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.manufacturer" = "Nintendo"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.year" = "2006"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.genre" = "Console"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Nintendo Wii\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.list.extensions" = "rvz,iso,wbfs"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.launcher" = "Nintendo Wii"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii.metadata.type" = "Nintendo Wii"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Nintendo Wii U\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.manufacturer" = "Nintendo"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.year" = "2012"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.genre" = "Console"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Nintendo Wii U\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.list.extensions" = "bat"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.launcher" = "Nintendo Wii U"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Nintendo Wii U.metadata.type" = "Nintendo Wii U"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\PC Games\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\collections\PC Games\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\PC Games\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.PC Games.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.PC Games.list.extensions" = "bat"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.PC Games.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.PC Games.launcher" = "PC Games"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Sega Model 2\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.manufacturer" = "Sega"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.year" = "1993"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.genre" = "Arcade"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Sega Model 2\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.list.extensions" = "zip"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.launcher" = "Sega Model 2"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 2.metadata.type" = "Sega Model 2"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Sega Model 3\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.manufacturer" = "Sega"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.year" = "1997"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.genre" = "Arcade"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Sega Model 3\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.list.extensions" = "zip"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.launcher" = "Sega Model 3"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Model 3.metadata.type" = "Sega Model 3"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Sega Triforce\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.manufacturer" = "Nintendo, Sega and Namco"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.year" = "2002"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.genre" = "Arcade"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\Sega Triforce\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.list.extensions" = "iso,bat"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.launcher" = "Sega Triforce"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.Sega Triforce.metadata.type" = "Sega Triforce"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\SETTINGS\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\collections\SETTINGS\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\SETTINGS\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Could not open D:\ArcadeMaster\frontend\DRIVE\collections\SETTINGS\settings.conf"
+[2026-11-22 06:50:47] [INFO] [RetroFE] Could not import "D:\ArcadeMaster\frontend\DRIVE\collections\SETTINGS\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\TeknoParrot\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.manufacturer" = "Various"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.year" = "1990"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.genre" = "Arcade"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\TeknoParrot\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.path" = "emulators\TeknoParrot\UserProfiles"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.includeMissingItems" = "false"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.extensions" = "xml,bat,exe"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.launcher" = "TeknoParrot"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrot.metadata.type" = "TeknoParrot"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\TeknoParrotMulti\info.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.manufacturer" = "Various"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.year" = "1990"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.genre" = "Arcade"
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\collections\TeknoParrotMulti\settings.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.path" = "emulators\TeknoparrotMulti\UserProfiles"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.includeMissingItems" = "true"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.extensions" = "xml,bat"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.list.menuSort" = "yes"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.launcher" = "TeknoParrotMulti"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "collections.TeknoParrotMulti.metadata.type" = "TeknoParrotMulti"
+[2026-11-22 06:50:47] [INFO] [RetroFE] Imported configuration
+[2026-11-22 06:50:47] [INFO] [SDL] Initializing
+[2026-11-22 06:50:47] [INFO] [SDL] Number of displays found: 1
+[2026-11-22 06:50:47] [INFO] [SDL] Number of displays requested: 1
+[2026-11-22 06:50:47] [INFO] [Configuration] Setting rotation for screen 0 to 0 degrees.
+[2026-11-22 06:50:47] [INFO] [SDL] Creating 1920x1080 window (fullscreen: no) on display 0
+[2026-11-22 06:50:47] [INFO] [Configuration] Importing "D:\ArcadeMaster\frontend\DRIVE\controls.conf"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.up" = "Up,joyHat0Up,joyAxis1-,Up,joyAxis2+"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.down" = "Down,joyHat0Down,joyAxis1+,Down,joyAxis5+"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.left" = "Left,joyHat0Left,joyAxis0-"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.right" = "Right,joyHat0Right,joyAxis0+"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.letterUp" = "M,joyButton5"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.letterDown" = "N,joyButton4"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.random" = "R,joyButton6"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.select" = "Return,1,joyButton0,joyButton7"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.back" = "Escape,Backspace,joyButton1"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.quit" = "Q"
+[2026-11-22 06:50:47] [INFO] [Configuration] Dump: "controls.deadZone" = "30"
+[2026-11-22 06:50:47] [INFO] [RetroFE] Initializing
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.playlistUp
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.playlistDown
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.playlistLeft
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.playlistRight
+[2026-11-22 06:50:47] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\splash 16x9.xml
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.collectionUp
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.collectionDown
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.collectionLeft
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.collectionRight
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.pageDown
+[2026-11-22 06:50:47] [INFO] [Layout] could not find layout file: D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\splash 16x9.xml
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.pageUp
+[2026-11-22 06:50:47] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\splash.xml
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.letterDown
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad button 4
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.letterUp
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad button 5
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.favPlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.nextPlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.prevPlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.cyclePlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.nextCyclePlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.prevCyclePlaylist
+[2026-11-22 06:50:47] [INFO] [Layout] Layout resolution 1920x1080 (scale 1x1)
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.addPlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.removePlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.togglePlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.random
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad button 6
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.menu
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.reboot
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.saveFirstPlaylist
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.jbFastForward1m
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.jbFastRewind1m
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.jbFastForward5p
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.jbFastRewind5p
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.jbPause
+[2026-11-22 06:50:47] [INFO] [Input] Missing property controls.jbRestart
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.up
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad hat up
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad axis 1
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.up
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad axis 2
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.left
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad hat left
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad axis 0
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.down
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad hat down
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad axis 1
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.down
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad axis 5
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.right
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad hat right
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad axis 0
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.select
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.select
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad button 0
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad button 7
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.back
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.back
+[2026-11-22 06:50:47] [INFO] [Input] Binding joypad button 1
+[2026-11-22 06:50:47] [INFO] [Input] Binding key controls.quit
+[2026-11-22 06:50:47] [INFO] [Layout] Initialized
+[2026-11-22 06:50:47] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\splash 16x9 - 0.xml
+[2026-11-22 06:50:47] [INFO] [Layout] could not find layout file: D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\splash 16x9 - 0.xml
+[2026-11-22 06:50:47] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\splash - 0.xml
+[2026-11-22 06:50:47] [INFO] [Layout] could not find layout file: D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\splash - 0.xml
+[2026-11-22 06:50:47] [INFO] [Database] Opened database "D:\ArcadeMaster\frontend\DRIVE\meta.db"
+[2026-11-22 06:50:47] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\layout 16x9.xml
+[2026-11-22 06:50:47] [INFO] [Layout] could not find layout file: D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\layout 16x9.xml
+[2026-11-22 06:50:47] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\layout.xml
+[2026-11-22 06:50:47] [INFO] [Layout] Layout resolution 1920x1080 (scale 1x1)
+[2026-11-22 06:50:47] [ERROR] [Sound] Cannot load D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\sounds/select.wav
+[2026-11-22 06:50:47] [ERROR] [Sound] Cannot load D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\sounds/highlight.wav
+[2026-11-22 06:50:47] [ERROR] [Sound] Cannot load D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\sounds/load.wav
+[2026-11-22 06:50:48] [INFO] [Layout] Initialized
+[2026-11-22 06:50:48] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\layout 16x9 - 0.xml
+[2026-11-22 06:50:48] [INFO] [Layout] could not find layout file: D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\layout 16x9 - 0.xml
+[2026-11-22 06:50:48] [INFO] [Layout] Initializing D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\layout - 0.xml
+[2026-11-22 06:50:48] [INFO] [Layout] could not find layout file: D:\ArcadeMaster\frontend\DRIVE\layouts\DRIVE\layout - 0.xml
+[2026-11-22 06:50:48] [INFO] [CollectionInfoBuilder] Checking for "D:\ArcadeMaster\frontend\DRIVE\collections\Main\include.txt"
+[2026-11-22 06:50:48] [INFO] [CollectionInfoBuilder] Scanning directory "D:\ArcadeMaster\frontend\DRIVE\collections\Main\roms"
+[2026-11-22 06:50:48] [INFO] [Menu] File does not exist: "D:\ArcadeMaster\frontend\DRIVE\collections\Main\menu.txt"; trying menu directory.
