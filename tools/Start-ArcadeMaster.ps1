@@ -119,6 +119,10 @@ if ($pyw -and (Test-Path $deck)) {
 # so the watchdog restarts it without counting a crash. The file holds the reason.
 $restartFlag = Join-Path $ManifestDir 'restart.request'
 Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
+# <Root>\exit.request: written by the menu's EXIT item (collections\Main\roms\EXIT.bat) just before it force-closes
+# RetroFE. That forced close ends with exit code 1, so without this note the watchdog took it for a crash and restarted.
+$exitFlag = Join-Path $Root 'exit.request'
+Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
 $crashes = New-Object System.Collections.Generic.List[datetime]
 $snapshotDone = $false; $lkgRestored = $false
 while ($true) {
@@ -134,6 +138,10 @@ while ($true) {
   if (Test-Path -LiteralPath $restartFlag) {
     $why = (Get-Content -LiteralPath $restartFlag -Raw -ErrorAction SilentlyContinue); Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
     Write-Log "restart requested ($("$why".Trim())) - RetroFE exit $code"; continue
+  }
+  if (Test-Path -LiteralPath $exitFlag) {
+    Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
+    Write-Log "Exit chosen in the menu - RetroFE closed (exit $code), not restarting"; break
   }
   $crashed = ($code -ne 0) -or (Select-String -Path (Join-Path $Root 'log.txt') -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue)
   if (-not $crashed) { Write-Log "RetroFE exited cleanly ($code)"; break }

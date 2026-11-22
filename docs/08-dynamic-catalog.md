@@ -240,7 +240,7 @@ At every boot, before RetroFE starts, and from **Tools → System Health** (a vi
 | settings | layout installed, start collection exists, `numScreens` ≤ connected displays, `enterOnCollection = no` |
 | controls | controls.conf present |
 | screens | second-screen layouts declare `monitor=`; `mouseTouchScreens` follows whether a mouse-type touch board is plugged in (docs/07, patch 0006) |
-| menu | main-menu entries point at real collections |
+| menu | main-menu entries point at real collections; the menu's Exit leaves a note so the launcher stops instead of restarting (2026-11-22) |
 | launchers | report only; emulators are never touched |
 | logs | log rotation above 20 MB, crash folders capped at 10 |
 | disk | free space |

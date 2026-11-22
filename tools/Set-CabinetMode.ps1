@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Boot-time cabinet mode: the configured type follows the hardware that is plugged in.
     settings.conf  cabinetType = racing           what this cabinet normally is (auto = from the hardware)
@@ -43,6 +43,9 @@ if (Test-Path $mt0) {
   $cur = @(Get-Content $mt0 | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() })
   $saved = @(); if (Test-Path $fullFile) { $saved = @(Get-Content $fullFile | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) }
   $full = @($saved | Where-Object { Test-Path (Join-Path $RetroFE "collections\$_") }); foreach ($c in $cur) { if ($full -notcontains $c) { $full += $c } }
+  # retired entries: SETTINGS was the old DRIVE controller switcher - picking G29 / G920 / Xbox there copied old
+  # emulator configs over the WheelMap ones (gas on the clutch again). Tools replaces it. Its files are kept.
+  $full = @($full | Where-Object { $_ -notin 'SETTINGS' })
   Set-Content $fullFile $full -Encoding ascii
   $showAll = (Get-Setting 'cabinetShowAllModes') -match '^(yes|true|1)$'
   $modeCols = Get-AmAllModeCollections; $want = Get-AmModeCollectionsFor $eff.id
