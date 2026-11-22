@@ -218,3 +218,85 @@ $g.DrawEllipse((New-Object Drawing.Pen (C '8fd0ff' 230), 6), -1600, 720, $W + 32
 $g.DrawEllipse((New-Object Drawing.Pen (C '3aa0ff' 90), 26), -1612, 708, $W + 3224, 3624)
 Glow $g 1700 640 140 'ffffff' 180
 Save-Scene $s 'flight_edge_of_space.jpg'
+
+# ===================================================================== ARCADE
+# A1 neon arcade hall interior
+$s = New-Scene; $g = $s.G; $r = New-Object Random 201; $hy = 440
+Sky $g @('06030f', '0d0820', '1a0e30') @(0, 0.3, 1) 0 $hy
+# neon tube lights on ceiling
+foreach ($ty in 60, 160, 290) { $g.DrawLine((New-Object Drawing.Pen (C '7b5cff' 100), 3), 0, $ty, $W, $ty); Glow $g 960 $ty 900 '7b5cff' 20 }
+$g.FillRectangle((New-Object Drawing.SolidBrush (C '0a0612')), 0, $hy, $W, $H - $hy)
+# row of cabinet silhouettes with glowing screens
+for ($x = -40; $x -lt $W; $x += $r.Next(80, 150)) {
+  $bw = $r.Next(60, 100); $bh = $r.Next(260, 400)
+  $g.FillRectangle((New-Object Drawing.SolidBrush (C '0d0a18')), $x, $hy - $bh + 60, $bw, $bh)
+  $sw = $bw - 20; $sh = $r.Next(70, 130); $sy = $hy - $bh + 90
+  $scol = @('7b5cff', '2ec8ff', 'ff2fa0', '39ff9e', 'ffe259')[$r.Next(0, 5)]
+  $g.FillRectangle((New-Object Drawing.SolidBrush (C $scol ($r.Next(80, 180)))), $x + 10, $sy, $sw, $sh)
+  Glow $g ($x + $bw / 2) ($sy + $sh / 2) ($bw * 1.2) $scol 50
+}
+# floor reflections
+for ($fx = 0; $fx -lt $W; $fx += $r.Next(100, 220)) { Glow $g ($fx + 50) 700 200 (@('7b5cff', '2ec8ff', 'ff2fa0')[$r.Next(0, 3)]) 30 }
+Haze $g $hy 50 '7b5cff' 70
+Save-Scene $s 'arcade_neon_hall.jpg'
+
+# A2 pixel city at night
+$s = New-Scene; $g = $s.G; $r = New-Object Random 211; $hy = 580
+Sky $g @('020210', '0a0830', '1a1050', '2a1660') @(0, 0.4, 0.8, 1) 0 $hy
+Stars $g 212 300 480; Disc $g 1600 200 50 'e8e0f0'; Glow $g 1600 200 180 'b89aff' 50
+for ($x = -20; $x -lt $W; $x += $r.Next(30, 100)) {
+  $bw = $r.Next(40, 130); $bh = $r.Next(80, 480); $by = $hy - $bh
+  $g.FillRectangle((New-Object Drawing.SolidBrush (C (@('0d0a1a', '100e22', '0a0816')[$r.Next(0, 3)]))), $x, $by, $bw, $bh + 2)
+  for ($wy = $by + 12; $wy -lt $hy - 8; $wy += 16) { for ($wx = $x + 6; $wx -lt $x + $bw - 6; $wx += 12) {
+    if ($r.NextDouble() -lt 0.35) { $g.FillRectangle((New-Object Drawing.SolidBrush (C (@('7b5cff', '2ec8ff', 'ff2fa0', 'ffe259', '39ff9e')[$r.Next(0, 5)]) ($r.Next(80, 200)))), $wx, $wy, 5, 7) }
+  } }
+  if ($r.NextDouble() -lt 0.12) { Glow $g ($x + $bw / 2) $by 50 (@('ff2fa0', '7b5cff', '2ec8ff')[$r.Next(0, 3)]) 200 }
+}
+Sky $g @('0a0816', '060310') @(0, 1) $hy $H; Haze $g $hy 30 '7b5cff' 100
+Save-Scene $s 'arcade_pixel_city.jpg'
+
+# A3 retro grid with joystick silhouette
+$s = New-Scene; $g = $s.G; $hy = 500
+Sky $g @('02010a', '0d0620', '2a1050', '5a2080') @(0, 0.4, 0.8, 1) 0 $hy; Stars $g 220 180 380
+# large joystick silhouette (centred in the sky)
+$g.FillRectangle((New-Object Drawing.SolidBrush (C '1a0e30' 180)), 920, 180, 80, 260)        # shaft
+Glow $g 960 180 200 '7b5cff' 100
+$g.FillEllipse((New-Object Drawing.SolidBrush (C '2a1050' 180)), 880, 100, 160, 160)         # ball-top
+$g.FillRectangle((New-Object Drawing.SolidBrush (C '1a0e30' 180)), 760, 420, 400, 80)        # base
+# grid floor
+$g.FillRectangle((New-Object Drawing.SolidBrush (C '0a0612')), 0, $hy, $W, $H - $hy)
+$g.DrawLine((New-Object Drawing.Pen (C 'ff2fa0' 200), 4), 0, $hy, $W, $hy)
+for ($X = -40; $X -le 40; $X++) { $g.DrawLine((New-Object Drawing.Pen (C '7b5cff' 50), 2), [float]960, [float]$hy, [float](960 + $X * 1040), [float]($H * 4)) }
+for ($k = 1; $k -lt 60; $k++) { $y = [int]($hy + 580.0 / $k); if ($y -gt $H -or $y -lt $hy) { continue }; $a = [int][Math]::Min(200, 50 + 500 / ($k + 1)); $g.DrawLine((New-Object Drawing.Pen (C '2ec8ff' ([int]($a * 0.4))), ([float][Math]::Max(1, 4 / [Math]::Sqrt($k)))), 0, $y, $W, $y) }
+Glow $g 960 $hy 600 'ff2fa0' 60
+Save-Scene $s 'arcade_retro_grid.jpg'
+
+# A4 coin-op marquee wall
+$s = New-Scene; $g = $s.G; $r = New-Object Random 231; $g.Clear((C '08060e'))
+for ($by = 0; $by -lt $H; $by += 32) { $ox = if (($by / 32) % 2 -eq 0) { 0 } else { 40 }
+  for ($bx = $ox - 80; $bx -lt $W; $bx += 80) { $sh = $r.Next(8, 18); $g.FillRectangle((New-Object Drawing.SolidBrush (C ("{0:X2}{1:X2}{2:X2}" -f $sh, [int]($sh * 0.8), [int]($sh * 1.2)))), $bx + 1, $by + 1, 78, 30) }
+}
+$mW = 280; $mH = 90; $cols = 6; $rows = 7; $xOff = ($W - $cols * ($mW + 20)) / 2; $yOff = ($H - $rows * ($mH + 30)) / 2
+$mCols = @('7b5cff', 'ff2fa0', '2ec8ff', 'ffe259', '39ff9e', 'ff6b4a')
+for ($row = 0; $row -lt $rows; $row++) { for ($col = 0; $col -lt $cols; $col++) {
+  $mx = [int]($xOff + $col * ($mW + 20)); $my = [int]($yOff + $row * ($mH + 30))
+  $c1 = $mCols[$r.Next(0, 6)]; $c2 = $mCols[$r.Next(0, 6)]
+  $mbr = New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new($mx, $my)), ([Drawing.Point]::new($mx + $mW, $my + $mH)), (C $c1 ($r.Next(140, 220))), (C $c2 ($r.Next(140, 220)))
+  $g.FillRectangle($mbr, $mx, $my, $mW, $mH)
+  $g.DrawRectangle((New-Object Drawing.Pen (C (@('ffffff', $c1)[$r.Next(0, 2)]) 200), 3), $mx, $my, $mW, $mH)
+  Glow $g ($mx + $mW / 2) ($my + $mH + 20) ($mW * 0.6) $c1 40
+} }
+Save-Scene $s 'arcade_marquee_wall.jpg'
+
+# A5 space-shooter starfield
+$s = New-Scene; $g = $s.G; $r = New-Object Random 241; $g.Clear((C '010108'))
+Stars $g 242 800 $H
+foreach ($nb in @(@(400, 300, 500, '7b5cff', 40), @(1400, 700, 600, '2ec8ff', 35), @(1000, 500, 450, 'ff2fa0', 25), @(600, 800, 350, '39ff9e', 20))) { Glow $g $nb[0] $nb[1] $nb[2] $nb[3] $nb[4] }
+for ($i = 0; $i -lt 50; $i++) { $sx = $r.Next(0, $W); $sy = $r.Next(0, $H); $len = $r.Next(20, 140); $g.DrawLine((New-Object Drawing.Pen (C 'ffffff' ($r.Next(50, 190))), ($r.NextDouble() * 1.6 + 0.4)), $sx, $sy, $sx + $len, $sy) }
+for ($i = 0; $i -lt 14; $i++) {
+  $ax = $r.Next(50, $W - 50); $ay = $r.Next(50, $H - 50); $ar = $r.Next(12, 42)
+  $pts = New-Object 'System.Collections.Generic.List[Drawing.PointF]'
+  for ($d = 0; $d -lt 360; $d += 36) { $rr = $ar * (0.6 + $r.NextDouble() * 0.8); $pts.Add([Drawing.PointF]::new([float]($ax + $rr * [Math]::Cos($d * [Math]::PI / 180)), [float]($ay + $rr * [Math]::Sin($d * [Math]::PI / 180)))) }
+  $g.FillPolygon((New-Object Drawing.SolidBrush (C '2a2a3a' ($r.Next(100, 200)))), $pts.ToArray()); $g.DrawPolygon((New-Object Drawing.Pen (C '4a4a5a' ($r.Next(80, 160))), 1.5), $pts.ToArray())
+}
+Save-Scene $s 'arcade_starfield.jpg'

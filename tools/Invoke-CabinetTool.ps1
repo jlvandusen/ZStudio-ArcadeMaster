@@ -84,14 +84,14 @@ switch ($Tool) {
     Run 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir) | Out-Null
     Emit-Devices
     Banner 'CONTROLLER ID CHECK (dry run - use Repair Controller IDs to apply)'
-    $o = Run 'Update-ControllerIds.ps1' @('-Cabinet', $cab, '-History', $hist)
+    $o = Run 'Update-ControllerIds.ps1' @('-RetroFE', $RetroFE, '-Cabinet', $cab, '-History', $hist)
     Emit-IdCheck $o $false
   }
   'RepairIds' {
     Banner 'REPAIR CONTROLLER IDS'
     Run 'Get-CabinetDevices.ps1' @('-Out', $cab, '-History', $hist) | Out-Null
     Emit-Devices
-    $o = Run 'Update-ControllerIds.ps1' @('-Cabinet', $cab, '-History', $hist, '-Apply')
+    $o = Run 'Update-ControllerIds.ps1' @('-RetroFE', $RetroFE, '-Cabinet', $cab, '-History', $hist, '-Apply')
     Emit-IdCheck $o $true
   }
   'RebuildMenus' {
@@ -101,7 +101,7 @@ switch ($Tool) {
       catalog     = @('Scan game library', 'Build-Manifest.ps1', @('-RetroFE', $RetroFE, '-Out', $games))
       controls    = @('Match games to controls', 'Add-GameControls.ps1', @('-Manifest', $games, '-Cabinet', $cab))
       collections = @('Build Racing / Flight / Arcade menus', 'New-RetroFECollections.ps1', @('-Manifest', $games, '-RetroFE', $RetroFE, '-Cabinet', $cab, '-RebuildDatabase'))
-      backdrops   = @('Deal new game backdrops', 'Set-LayoutThemes.ps1', @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-Shuffle'))
+      backdrops   = @('Deal new game backdrops', 'Set-LayoutThemes.ps1', @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle'))
     }
     foreach ($id in $plan.Keys) { Step $id $plan[$id][0] 'pending' }
     foreach ($id in $plan.Keys) {
@@ -129,7 +129,7 @@ switch ($Tool) {
     Emit @{ type = 'displays'; displays = $disp; used = $(if ($now) { 2 } else { 1 }) }
   }
   'ShuffleBackgrounds' {
-    Run 'Set-LayoutThemes.ps1' @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-Shuffle', '-BackgroundsOnly') | Out-Null
+    Run 'Set-LayoutThemes.ps1' @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle', '-BackgroundsOnly') | Out-Null
     Banner 'BACKGROUNDS SHUFFLED'
     Emit-Backgrounds
   }

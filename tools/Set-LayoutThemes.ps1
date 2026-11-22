@@ -14,16 +14,51 @@ param(
   [switch]$Shuffle,
   [int]$BgSlots = 6,
   # only refresh background slots (fast path for boot)
-  [switch]$BackgroundsOnly
+  [switch]$BackgroundsOnly,
+  # manifest folder: its cabinet-mode.json decides what "auto" (and unmapped collections) look like
+  [string]$ManifestDir,
+  # force the cabinet style instead (racing | flight | lightgun | arcade)
+  [string]$CabinetTheme
 )
 $ErrorActionPreference = 'Stop'
 $LayoutDir = (Resolve-Path $LayoutDir).Path
 $cfg = Get-Content (Join-Path $LayoutDir 'themes.json') -Raw | ConvertFrom-Json
-$map = @{}
-foreach ($p in $cfg.collections.PSObject.Properties) { $map[$p.Name] = $p.Value }
-if ($CollectionsDir -and (Test-Path $CollectionsDir)) { $Collections += (Get-ChildItem $CollectionsDir -Directory | Where-Object Name -ne '_common').Name }
-foreach ($c in $Collections) { if (-not $map.ContainsKey($c)) { $map[$c] = $cfg.defaultTheme } }
 
+# a style is usable when all its slot images exist (a cabinet that has not run New-LayoutArt for a new style keeps working)
+function Test-Theme([string]$t) { $th = $cfg.themes.$t; if (-not $th) { return $false }; foreach ($s in $th.PSObject.Properties) { if (-not (Test-Path (Join-Path $LayoutDir "images\$($s.Value)"))) { return $false } }; return $true }
+# the cabinet's own style: its effective mode (Set-CabinetMode -> cabinet-mode.json). Wheel cabinets look racing,
+# flight cabinets flight, gun cabinets lightgun, everything else (pedestal, stand-up, multicade) arcade.
+if (-not $CabinetTheme -and $ManifestDir) {
+  $mf = Join-Path $ManifestDir 'cabinet-mode.json'
+  if (Test-Path $mf) {
+    $mode = (((Get-Content $mf -Raw | ConvertFrom-Json).effective) -split '\+')[0]
+    $CabinetTheme = @{ racing = 'racing'; simulation = 'racing'; flight = 'flight'; lightgun = 'lightgun'; standup = 'arcade'; multicade = 'arcade'; pedestal = 'arcade' }[$mode]
+  }
+}
+if (-not $CabinetTheme) { $CabinetTheme = $cfg.defaultTheme }
+if (-not (Test-Theme $CabinetTheme)) { Write-Warning "style '$CabinetTheme' has no art yet (run tools\New-LayoutArt.ps1) - using '$($cfg.defaultTheme)'"; $CabinetTheme = $cfg.defaultTheme }
+# the boot path refreshes only backdrops; when the cabinet's style changed (a wheel plugged in, a new cabinet type),
+# copy the slot art as well, once
+$styleFile = if ($ManifestDir) { Join-Path $ManifestDir 'layout-style.txt' } else { $null }
+if ($BackgroundsOnly -and $styleFile) {
+  $last = if (Test-Path $styleFile) { (Get-Content $styleFile -Raw).Trim() } else { '' }
+  if ($last -ne $CabinetTheme) { Write-Host "cabinet style '$last' -> '$CabinetTheme': refreshing the slot art"; $BackgroundsOnly = $false }
+}
+
+$map = @{}
+foreach ($p in $cfg.collections.PSObject.Properties) { $map[$p.Name] = if ($p.Value -eq 'auto') { $CabinetTheme } else { $p.Value } }
+if ($CollectionsDir -and (Test-Path $CollectionsDir)) { $Collections += (Get-ChildItem $CollectionsDir -Directory | Where-Object Name -ne '_common').Name }
+foreach ($c in $Collections) { if (-not $map.ContainsKey($c)) { $map[$c] = $CabinetTheme } }
+
+# backdrop lists may use wildcards (bg/arcade_*.jpg)
+function Expand-Bg([object[]]$list) {
+  @($list | ForEach-Object {
+    if ($_ -ne '*' -and $_ -match '[*?]') {
+      $rel = $_ -replace '/', '\'; $dirRel = Split-Path $rel
+      Get-ChildItem (Join-Path $LayoutDir "images\$dirRel") -Filter (Split-Path $rel -Leaf) -File -ErrorAction SilentlyContinue | ForEach-Object { "$dirRel\$($_.Name)" }
+    } else { $_ } })
+}
+foreach ($p in @($cfg.backgrounds.PSObject.Properties | Where-Object { $_.Name -notlike '_*' })) { $p.Value = @(Expand-Bg $p.Value) }
 $allBg = @($cfg.backgrounds.PSObject.Properties | Where-Object { $_.Name -notlike '_*' } | ForEach-Object { $_.Value } | Where-Object { $_ -ne '*' } | Sort-Object -Unique)
 $rng = New-Object Random
 
@@ -53,12 +88,14 @@ function Get-BgPool([string]$col, [string]$themeName) {
   $fan = @(Get-CollectionFanart $col)
   if ($fan.Count -gt 0) { return $fan }
   $key = if ($col -eq 'Main') { 'main' } else { $themeName }
-  $pool = @($cfg.backgrounds.$key); if (-not $pool -or $pool -contains '*') { $pool = $allBg }
+  $pool = @($cfg.backgrounds.$key); if ($pool -contains '*') { $pool = @($cfg.backgrounds.$CabinetTheme) }   # main menu: the cabinet's own scenes
+  if (-not $pool -or $pool -contains '*') { $pool = $allBg }
   return @($pool | ForEach-Object { Join-Path $LayoutDir ("images\" + ($_ -replace '/', '\')) })
 }
 
 foreach ($col in $map.Keys) {
   $themeName = $map[$col]
+  if (-not (Test-Theme $themeName)) { $themeName = $CabinetTheme }
   $theme = $cfg.themes.$themeName
   if (-not $theme) { Write-Warning "collection '$col': unknown theme '$themeName'"; continue }
   $dst = Join-Path $LayoutDir "collections\$col\system_artwork"
@@ -81,3 +118,4 @@ foreach ($col in $map.Keys) {
   }
   Write-Host ("{0,-20} -> {1,-8} bg: {2}" -f $col, $themeName, (($pool | Select-Object -First $BgSlots | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) }) -join ', '))
 }
+if ($styleFile -and -not $BackgroundsOnly) { Set-Content $styleFile $CabinetTheme -Encoding ascii }

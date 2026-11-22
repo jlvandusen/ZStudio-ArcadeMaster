@@ -20,8 +20,9 @@ param(
   [switch]$PrepOnly                    # run every boot step and log the timings, but do not start RetroFE
 )
 $ErrorActionPreference = 'Stop'
-$exe = Join-Path $Root 'retrofe\retrofe.exe'
-if (-not (Test-Path $exe)) { throw "RetroFE not found: $exe" }
+. (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1')
+$exe = Get-AmRetroFEExe $Root   # retrofe\retrofe.exe, core\retrofe.exe (CoinOPS LEGENDS / CORE) or <root>\retrofe.exe
+if (-not $exe) { throw "RetroFE not found under $Root (looked in retrofe\, core\ and the root)" }
 $log = Join-Path $Root 'arcademaster-launcher.log'
 function Write-Log($m) { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) }
 
@@ -49,7 +50,7 @@ if (-not $NoDeviceCheck) {
     if ($prev -and $prev.wheel -and -not $now.wheel) { Write-Log "WARNING: racing wheel not detected after $WaitForWheelSec s - wheel games will not respond until it is plugged in" }
     # Dolphin follows what is plugged in: real Wii Remotes / Balance Board / GC adapter, stale device names
     $dol = Invoke-Tool 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir); if ($dol -match '->') { Write-Log ('dolphin: ' + (($dol -split "`r?`n" | Where-Object { $_ -match '->' } | ForEach-Object { $_.Trim() }) -join '; ')) }
-    $ids = Invoke-Tool 'Update-ControllerIds.ps1' @('-Cabinet', $cabFile, '-History', (Join-Path $ManifestDir 'device-history.json'), '-Apply')
+    $ids = Invoke-Tool 'Update-ControllerIds.ps1' @('-RetroFE', $Root, '-Cabinet', $cabFile, '-History', (Join-Path $ManifestDir 'device-history.json'), '-Apply')
     if ($ids -match 'APPLIED: (\d+)' -and [int]$Matches[1] -gt 0) { Write-Log "controller IDs changed - re-pointed $($Matches[1]) profile files" }
     $modesNow = (@($now.modes) | Sort-Object) -join ','; $modesFile = Join-Path $ManifestDir 'last-modes.txt'
     $modesLast = if (Test-Path $modesFile) { (Get-Content $modesFile -Raw).Trim() } else { '' }
@@ -64,7 +65,7 @@ if (-not $NoDeviceCheck) {
 if (-not $NoShuffle) {
   try {
     $sw = [Diagnostics.Stopwatch]::StartNew()
-    & (Join-Path $PSScriptRoot 'Set-LayoutThemes.ps1') -LayoutDir (Join-Path $Root "layouts\$Layout") -CollectionsDir (Join-Path $Root 'collections') -Shuffle -BackgroundsOnly | Out-Null
+    & (Join-Path $PSScriptRoot 'Set-LayoutThemes.ps1') -LayoutDir (Join-Path $Root "layouts\$Layout") -CollectionsDir (Join-Path $Root 'collections') -ManifestDir $ManifestDir -Shuffle -BackgroundsOnly | Out-Null
     $script:timings.Add(('Shuffle {0:N1}s' -f $sw.Elapsed.TotalSeconds)); Write-Log 'backgrounds shuffled'
   } catch { Write-Log "shuffle failed: $($_.Exception.Message)" }   # never block boot on cosmetics
 }
@@ -111,10 +112,12 @@ if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-H
 # and its named mutex (Global\ArcadeMasterStreamDeck) keeps a single copy - so no process scan here (~0.1-1 s of WMI)
 $deck = Join-Path $PSScriptRoot 'streamdeck\amdeck.py'
 $pyw = (Get-Command pythonw.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source   # not the Store stub
-if ($pyw -and (Test-Path $deck)) {   # first boot on a cabinet: install the deck's Python packages once
+$deckOk = Join-Path $ManifestDir 'amdeck-packages.ok'   # first boot on a cabinet: install the deck's Python packages once, then never check again (no Python start on every boot)
+if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk)) {
   $py = Join-Path (Split-Path $pyw) 'python.exe'
   & $py -c "import StreamDeck, PIL" 2>$null
-  if ($LASTEXITCODE) { $o = & $py -m pip install --user --quiet -r (Join-Path $PSScriptRoot 'streamdeck\requirements.txt') 2>&1 | Out-String; Write-Log "Stream Deck packages installed (exit $LASTEXITCODE) $($o.Trim())" }
+  if ($LASTEXITCODE) { $o = & $py -m pip install --user --quiet -r (Join-Path $PSScriptRoot 'streamdeck\requirements.txt') 2>&1 | Out-String; Write-Log "Stream Deck packages installed (exit $LASTEXITCODE) $($o.Trim())"; & $py -c "import StreamDeck, PIL" 2>$null }
+  if (-not $LASTEXITCODE) { Set-Content $deckOk (Get-Date).ToString('s') }
 }
 if ($pyw -and (Test-Path $deck)) {
   try { Start-Process $pyw -ArgumentList @("`"$deck`"", '--retrofe', "`"$Root`"", '--manifest', "`"$ManifestDir`"") -WindowStyle Hidden; Write-Log 'Stream Deck controller started' } catch { Write-Log "Stream Deck controller failed: $($_.Exception.Message)" }
