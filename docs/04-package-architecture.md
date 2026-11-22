@@ -51,6 +51,29 @@ The installer renders this into the files each consumer actually reads:
 | LaunchBox (optional) | `Data\Platforms\Arcade Racing.xml` / `Arcade Flight.xml` |
 | Dolphin / Supermodel / Model 2 / MAME / Cemu | ROM paths and input sections |
 
+## 2a. Variants: standalone vs multicab, patched, revisions (owner rule, 2026-11-22)
+
+The same game often exists as several **variants that must all survive**, e.g. Daytona Championship USA:
+standalone, multicab (linked cabinets), the 2017 revision, each TeknoParrot-patched in its own way. The hash scan shows they share
+~5.3 GB of identical assets and differ in only **36-142 files** (launcher, `config.ini`, `install.ini`, `shelldata.ini`,
+`teknoparrot.ini`, `dinput8.dll`/`sdl2.dll`, FFB plugin, `.ppf` exe patches). Of 62 "duplicate" folders found, **1 is an exact copy**;
+20 are variants and 41 are different builds. "Keep one, delete the rest" is therefore wrong. The model is:
+
+```
+games\<system>\<GameId>\base\                    the shared bulk data, once
+games\<system>\<GameId>\variants\<variant>\      only the files that differ (a few MB), as captured from the existing folder
+```
+
+```json
+"variants": {
+  "standalone": { "overlay": "variants/standalone", "teknoparrot": "Daytona3",      "default": true },
+  "multicab":   { "overlay": "variants/multicab",   "teknoparrot": "Daytona3Multi", "cabinets": ["racing-linked"] },
+  "2017":       { "overlay": "variants/2017" }
+}
+```
+
+At launch, the boot launcher applies the selected variant's overlay to the game folder: it copies the overlay files over and restores the previous overlay's originals. That's config and file copies only, no links. The frontend can list variants as separate entries (e.g. "Daytona 3 (Linked)"). `tools/Get-DuplicateClusters.ps1` classifies every folder as COPY / VARIANT / DIFFERENT, and nothing classified VARIANT or DIFFERENT is ever deleted. Only COPY folders are candidates, and only after owner approval.
+
 ## 3. Package format: why images
 
 The problem isn't total size, it's **1.33 M small files**. Copying them file-by-file is what makes deployment slow.
