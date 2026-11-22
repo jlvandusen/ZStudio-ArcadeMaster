@@ -1,4 +1,4 @@
-# Common.ps1 - shared helpers for WheelMap (PowerShell 5.1)
+﻿# Common.ps1 - shared helpers for WheelMap (PowerShell 5.1)
 Set-StrictMode -Version 1.0
 
 $script:WMLib = $PSScriptRoot
@@ -7,7 +7,8 @@ $script:SysKeyboardGuid = '6f1d2b61-d5a0-11cf-bfc7-444553540000'
 
 function Import-WMInput {
     if (-not ('WheelMap.DI' -as [type])) {
-        Add-Type -Path (Join-Path $script:WMLib 'WheelMapInput.cs')
+        . (Join-Path (Split-Path $script:WMRoot) 'lib\AmTypeCache.ps1')   # tools\lib - compiled once, cached DLL after
+        Add-AmCachedType -Source ([IO.File]::ReadAllText((Join-Path $script:WMLib 'WheelMapInput.cs'))) -ProbeType 'WheelMap.DI'
     }
 }
 

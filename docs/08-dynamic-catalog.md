@@ -239,8 +239,8 @@ At every boot, before RetroFE starts, and from **Tools → System Health** (a vi
 | runtime | retrofe.exe and core DLLs present, else restored from the last-known-good copy |
 | settings | layout installed, start collection exists, `numScreens` ≤ connected displays, `enterOnCollection = no` |
 | controls | controls.conf present |
-| screens | second-screen layouts declare `monitor=` |
-| menu | main-menu entries point at real collections |
+| screens | second-screen layouts declare `monitor=`; `mouseTouchScreens` follows whether a mouse-type touch board is plugged in (docs/07, patch 0006) |
+| menu | main-menu entries point at real collections; the menu's Exit leaves a note so the launcher stops instead of restarting (2026-11-22) |
 | launchers | report only; emulators are never touched |
 | logs | log rotation above 20 MB, crash folders capped at 10 |
 | disk | free space |
@@ -253,3 +253,19 @@ Fixes are conservative and backed up. Results go to `manifest\health.json`; `-No
 - **3 crashes within 2 minutes:** the last-known-good configs are restored once (the current files are kept as `*.before-lkg`) and RetroFE is retried. It gives up only after that.
 
 Tested by breaking settings.conf (missing theme, 2 screens on a 1-display cabinet); both were repaired.
+
+## Boot speed (2026-11-22)
+
+`Start-ArcadeMaster` logs one line per boot with the time of every step, e.g.
+`boot prep 5.5s: Get-CabinetDevices 1.9s, Set-DolphinControllers 0.4s, Update-ControllerIds 0.6s, Shuffle 0.7s, Set-CabinetMode 0.4s, New-CabinetIntro+New-ToolsArt(bg) 0.8s, Repair-ArcadeHealth 0.6s`.
+`-PrepOnly` runs every step and prints the timings without starting RetroFE, so you can measure without disturbing the cabinet.
+
+On DESKTOP-RACE1, boot prep went from **9.6 s to 5.5 s**:
+
+| Change | Saved |
+|---|---|
+| `Get-CabinetDevices` lists PnP devices once instead of 7 times (about 0.4 s each) | ~1.7 s |
+| Inline C# (`WheelMapInput.cs`, AmVisual, the Tool screen) compiles once to `%LOCALAPPDATA%\ArcadeMaster\typecache\<type>-<hash>.dll` and is loaded from there after that (`tools\lib\AmTypeCache.ps1`). An edited source gets a new hash, so it never loads a stale build. If the cache fails, it compiles in memory as before. | ~0.25 s per tool start, at boot and on every Tools page |
+| The intro and the Tools art render side by side | ~0.8 s |
+| The Tools art finishes in the background at low priority while RetroFE starts. It only shows inside Tools, never during the intro. Its images are swapped in atomically (temp file, then replace). | ~1.1 s |
+| The health check only starts the touch re-check when there is a touch board or a touch setting | ~0.4 s |

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Self-healing health check for an ArcadeMaster cabinet. Runs at every boot (Start-ArcadeMaster) and from
   Tools > System Health. Each check reports OK / FIXED / WARN; fixes are conservative and backed up.
@@ -93,18 +93,37 @@ foreach ($lf in Get-ChildItem (Join-Path $RetroFE 'layouts') -Recurse -Filter 'l
   $t = [IO.File]::ReadAllText($lf.FullName); $m = [regex]::Match($t, '<layout\b[^>]*>')
   if ($m.Success -and $m.Value -notmatch '\bmonitor=' -and $fix) { Copy-Item $lf.FullName "$($lf.FullName).bak" -Force; $t = $t.Substring(0, $m.Index) + $m.Value.Replace('<layout', "<layout monitor=`"$mon`"") + $t.Substring($m.Index + $m.Length); [IO.File]::WriteAllText($lf.FullName, $t, $u8); $fixedL++ }
 }
-if ($fixedL) { Add-Result 'screens' $checks.screens 'FIXED' "$fixedL layout(s) given monitor= (they drew over the main screen)" } else { Add-Result 'screens' $checks.screens 'OK' 'all declare their monitor' }
+# a mouse-type touch board plugged in / pulled since last boot: re-apply controls.conf mouseTouchScreens (patch 0006)
+$touchMsg = $null
+$ccFile = Join-Path $RetroFE 'controls.conf'
+if ($fix -and $cab -and (Test-Path $ccFile) -and (@($cab.capabilities.touchControllers).Count -or (Select-String $ccFile -Pattern '^\s*mouseTouchScreens\s*=' -Quiet))) {   # only when there is something to decide (saves ~0.4 s per boot)
+  $cabPath = Join-Path $ManifestDir 'cabinet.json'
+  $tOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-RetroFEScreens.ps1') -RetroFE $RetroFE -Cabinet $cabPath -TouchOnly 2>&1 | Out-String
+  if ($tOut -match 'touch: CHANGED (.+)') { $touchMsg = $Matches[1].Trim() }
+}
+if ($fixedL -or $touchMsg) { Add-Result 'screens' $checks.screens 'FIXED' ((@($(if ($fixedL) { "$fixedL layout(s) given monitor= (they drew over the main screen)" }), $touchMsg) | Where-Object { $_ }) -join '; ') } else { Add-Result 'screens' $checks.screens 'OK' 'all declare their monitor' }
 
 # menu
 Emit @{ type = 'step'; id = 'menu'; label = $checks.menu; status = 'run' }
+$exitMsg = $null
+# the menu's EXIT item force-closes RetroFE (taskkill /f -> exit code 1, which looks like a crash). It must leave
+# exit.request in the frontend folder first, so Start-ArcadeMaster stops instead of restarting the frontend.
+$exitBat = Join-Path $RetroFE 'collections\Main\roms\EXIT.bat'
+if ((Test-Path $exitBat) -and -not (Select-String $exitBat -Pattern 'exit\.request' -Quiet) -and $fix) {
+  Copy-Item $exitBat "$exitBat.bak" -Force
+  Set-Content $exitBat @('@echo off', 'rem ArcadeMaster: tell the launcher this exit was chosen in the menu (not a crash), then close the frontend', 'echo menu exit> "%~dp0..\..\..\exit.request"', 'taskkill /f /im RetroFE.exe') -Encoding ascii
+  $exitMsg = 'menu Exit now really exits (the launcher used to restart the frontend)'
+}
 $mt = Join-Path $RetroFE 'collections\Main\menu.txt'
 if (Test-Path $mt) {
   $menu = @(Get-Content $mt | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() })
   $bad = @($menu | Where-Object { -not (Test-Path (Join-Path $RetroFE "collections\$_")) })
   if ($bad -and $fix) { Copy-Item $mt "$mt.bak" -Force; Set-Content $mt @($menu | Where-Object { $bad -notcontains $_ }) -Encoding ascii; Add-Result 'menu' $checks.menu 'FIXED' "removed entries with no collection: $($bad -join ', ')" }
   elseif ($bad) { Add-Result 'menu' $checks.menu 'WARN' "no collection for: $($bad -join ', ')" }
+  elseif ($exitMsg) { Add-Result 'menu' $checks.menu 'FIXED' $exitMsg }
   else { Add-Result 'menu' $checks.menu 'OK' ($menu -join ', ') }
 } else { Add-Result 'menu' $checks.menu 'WARN' 'Main\menu.txt missing' }
+
 
 # launchers (report only - emulators are never touched)
 Emit @{ type = 'step'; id = 'launchers'; label = $checks.launchers; status = 'run' }

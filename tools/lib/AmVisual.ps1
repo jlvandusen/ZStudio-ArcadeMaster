@@ -1,10 +1,10 @@
-<#
+﻿<#
   ArcadeMaster visual kit - shared by Show-ToolScreen.ps1 (live tool pages) and New-ToolsArt.ps1 (Tools list art).
   Dot-source it. Provides [AmDraw] (GDI+ icons, cards, switches, checks, bars) and [AmJoyLive] (winmm joystick read).
 #>
 if (-not ('AmDraw' -as [type])) {
 Add-Type -AssemblyName System.Drawing
-Add-Type -ReferencedAssemblies System.Drawing @'
+$amVisualSrc = @'
 using System; using System.Drawing; using System.Drawing.Drawing2D; using System.Runtime.InteropServices; using System.Text;
 
 public static class AmPal {
@@ -280,4 +280,5 @@ public static class AmJoyLive {
   }
 }
 '@
+. (Join-Path $PSScriptRoot 'AmTypeCache.ps1'); Add-AmCachedType -Source $amVisualSrc -References System.Drawing -ProbeType AmDraw   # compiled once, cached DLL after
 }

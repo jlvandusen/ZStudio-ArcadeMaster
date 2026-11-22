@@ -670,8 +670,9 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.manifest, exist_ok=True); LOG = os.path.join(a.manifest, "amdeck.log")
 
-    _k32.CreateMutexW(None, False, "Global\\ArcadeMasterStreamDeck")
-    if _k32.GetLastError() == 183:                         # ERROR_ALREADY_EXISTS
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)   # plain windll.GetLastError() is not reliable after a ctypes call
+    _mutex = k32.CreateMutexW(None, False, "Global\\ArcadeMasterStreamDeck")   # kept for the life of the process
+    if ctypes.get_last_error() == 183:      # ERROR_ALREADY_EXISTS
         log("another amdeck is running - exiting"); return 0
     cab = Cabinet(a.retrofe, a.manifest)
     told = False

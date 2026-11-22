@@ -16,7 +16,8 @@ param(
   [int]$MaxCrashes = 5, [int]$CrashWindowSec = 60,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
   [int]$WaitForWheelSec = 30,          # USB wheels often finish enumerating after logon
-  [switch]$NoDeviceCheck
+  [switch]$NoDeviceCheck,
+  [switch]$PrepOnly                    # run every boot step and log the timings, but do not start RetroFE
 )
 $ErrorActionPreference = 'Stop'
 $exe = Join-Path $Root 'retrofe\retrofe.exe'
@@ -24,8 +25,11 @@ if (-not (Test-Path $exe)) { throw "RetroFE not found: $exe" }
 $log = Join-Path $Root 'arcademaster-launcher.log'
 function Write-Log($m) { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) }
 
+$bootClock = [Diagnostics.Stopwatch]::StartNew(); $script:timings = New-Object System.Collections.Generic.List[string]
 function Invoke-Tool([string]$name, [string[]]$toolArgs) {
+  $sw = [Diagnostics.Stopwatch]::StartNew()
   $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot $name) @toolArgs 2>&1 | Out-String
+  $script:timings.Add(('{0} {1:N1}s' -f ($name -replace '\.ps1$'), $sw.Elapsed.TotalSeconds))
   if ($LASTEXITCODE) { Write-Log "$name failed ($LASTEXITCODE): $($out.Trim())" }
   return $out
 }
@@ -59,8 +63,9 @@ if (-not $NoDeviceCheck) {
 
 if (-not $NoShuffle) {
   try {
+    $sw = [Diagnostics.Stopwatch]::StartNew()
     & (Join-Path $PSScriptRoot 'Set-LayoutThemes.ps1') -LayoutDir (Join-Path $Root "layouts\$Layout") -CollectionsDir (Join-Path $Root 'collections') -Shuffle -BackgroundsOnly | Out-Null
-    Write-Log 'backgrounds shuffled'
+    $script:timings.Add(('Shuffle {0:N1}s' -f $sw.Elapsed.TotalSeconds)); Write-Log 'backgrounds shuffled'
   } catch { Write-Log "shuffle failed: $($_.Exception.Message)" }   # never block boot on cosmetics
 }
 
@@ -68,12 +73,29 @@ if (-not $NoShuffle) {
 # cabinet mode follows the hardware (racing stays racing with a wheel; flight stick instead -> flight cab ...)
 try { $mode = Invoke-Tool 'Set-CabinetMode.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log (($mode -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "cabinet mode failed: $($_.Exception.Message)" }
 $active = ((Select-String -Path (Join-Path $Root 'settings.conf') -Pattern '^\s*layout\s*=\s*(.+)$' | Select-Object -Last 1).Matches[0].Groups[1].Value).Trim()
-try { Invoke-Tool 'New-CabinetIntro.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $active) | Out-Null } catch { Write-Log "intro failed: $($_.Exception.Message)" }
-
-# Tools list art shows live state (devices, switches, game counts, backdrops) - refresh it every boot
-if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) {
-  try { Invoke-Tool 'New-ToolsArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-NoFanart') | Out-Null } catch { Write-Log "tools art failed: $($_.Exception.Message)" }
+# the intro card and the Tools list art (live state: devices, switches, game counts) write different files, so they
+# render side by side, each in its own powershell. The boot waits for the intro (max 60 s); the Tools art is only seen
+# inside Tools (never during the intro), so it finishes in the background at low priority while RetroFE starts - its
+# images are swapped in atomically
+$parallel = @(@{ name = 'New-CabinetIntro'; wait = $true; args = @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $active) })
+if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) { $parallel += @{ name = 'New-ToolsArt'; wait = $false; args = @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-NoFanart') } }
+$sw = [Diagnostics.Stopwatch]::StartNew()
+$procs = foreach ($t in $parallel) {
+  try {
+    $errFile = Join-Path $env:TEMP ("am-boot-{0}.err" -f $t.name)
+    $quoted = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot "$($t.name).ps1")) + $t.args | ForEach-Object { if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ } }
+    $proc = Start-Process powershell -ArgumentList ($quoted -join ' ') -WindowStyle Hidden -PassThru -RedirectStandardError $errFile -RedirectStandardOutput "$errFile.out"
+    [void]$proc.Handle   # open the handle now, or ExitCode stays empty after the process ends
+    if (-not $t.wait) { try { $proc.PriorityClass = 'BelowNormal' } catch { } }
+    @{ name = $t.name; wait = $t.wait; err = $errFile; p = $proc }
+  } catch { Write-Log "$($t.name) failed to start: $($_.Exception.Message)" }
 }
+foreach ($x in @($procs | Where-Object { $_.wait })) {
+  if (-not $x.p.WaitForExit(60000)) { Write-Log "$($x.name) still running after 60 s - starting RetroFE anyway"; continue }
+  if ($x.p.ExitCode) { Write-Log "$($x.name) failed ($($x.p.ExitCode)): $((Get-Content $x.err -Raw -ErrorAction SilentlyContinue))" }
+}
+$script:timings.Add(('{0} {1:N1}s' -f (($parallel | ForEach-Object { if ($_.wait) { $_.name } else { $_.name + '(bg)' } }) -join '+'), $sw.Elapsed.TotalSeconds))
+$bgArt = @($procs | Where-Object { -not $_.wait })
 
 $jtk = Join-Path $Root 'JoyToKey\JoyToKey.exe'
 if ((Test-Path $jtk) -and -not (Get-Process JoyToKey -ErrorAction SilentlyContinue)) { Start-Process $jtk -WorkingDirectory (Split-Path $jtk) -WindowStyle Minimized; Write-Log 'JoyToKey started' }
@@ -81,8 +103,12 @@ if ((Test-Path $jtk) -and -not (Get-Process JoyToKey -ErrorAction SilentlyContin
 # self-healing: check (and conservatively repair) the install before every boot
 try { $h = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log ((($h -split "`r?`n") | Where-Object { $_ -match 'FIXED|WARN|health:' } | ForEach-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "health check failed: $($_.Exception.Message)" }
 
+Write-Log ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', '))
+if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-Host ("{0} (background) exit {1}" -f $x.name, $x.p.ExitCode) }; Write-Host ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', ')); return }
+
 # Stream Deck: tools\streamdeck\amdeck.py drives the deck (themes, switches, in-game keys) when one is plugged in
-# and Python + the streamdeck package are present. It exits on its own if no deck is found or Elgato's app owns it.
+# and Python + the streamdeck package are present. It exits on its own if no deck is found or Elgato's app owns it,
+# and its named mutex (Global\ArcadeMasterStreamDeck) keeps a single copy - so no process scan here (~0.1-1 s of WMI)
 $deck = Join-Path $PSScriptRoot 'streamdeck\amdeck.py'
 $pyw = (Get-Command pythonw.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source   # not the Store stub
 if ($pyw -and (Test-Path $deck)) {   # first boot on a cabinet: install the deck's Python packages once
@@ -90,7 +116,7 @@ if ($pyw -and (Test-Path $deck)) {   # first boot on a cabinet: install the deck
   & $py -c "import StreamDeck, PIL" 2>$null
   if ($LASTEXITCODE) { $o = & $py -m pip install --user --quiet -r (Join-Path $PSScriptRoot 'streamdeck\requirements.txt') 2>&1 | Out-String; Write-Log "Stream Deck packages installed (exit $LASTEXITCODE) $($o.Trim())" }
 }
-if ($pyw -and (Test-Path $deck) -and -not (Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match 'amdeck\.py' })) {
+if ($pyw -and (Test-Path $deck)) {
   try { Start-Process $pyw -ArgumentList @("`"$deck`"", '--retrofe', "`"$Root`"", '--manifest', "`"$ManifestDir`"") -WindowStyle Hidden; Write-Log 'Stream Deck controller started' } catch { Write-Log "Stream Deck controller failed: $($_.Exception.Message)" }
 }
 
@@ -98,6 +124,10 @@ if ($pyw -and (Test-Path $deck) -and -not (Get-CimInstance Win32_Process -Filter
 # so the watchdog restarts it without counting a crash. The file holds the reason.
 $restartFlag = Join-Path $ManifestDir 'restart.request'
 Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
+# <Root>\exit.request: written by the menu's EXIT item (collections\Main\roms\EXIT.bat) just before it force-closes
+# RetroFE. That forced close ends with exit code 1, so without this note the watchdog took it for a crash and restarted.
+$exitFlag = Join-Path $Root 'exit.request'
+Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
 $crashes = New-Object System.Collections.Generic.List[datetime]
 $snapshotDone = $false; $lkgRestored = $false
 while ($true) {
@@ -113,6 +143,10 @@ while ($true) {
   if (Test-Path -LiteralPath $restartFlag) {
     $why = (Get-Content -LiteralPath $restartFlag -Raw -ErrorAction SilentlyContinue); Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
     Write-Log "restart requested ($("$why".Trim())) - RetroFE exit $code"; continue
+  }
+  if (Test-Path -LiteralPath $exitFlag) {
+    Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
+    Write-Log "Exit chosen in the menu - RetroFE closed (exit $code), not restarting"; break
   }
   $crashed = ($code -ne 0) -or (Select-String -Path (Join-Path $Root 'log.txt') -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue)
   if (-not $crashed) { Write-Log "RetroFE exited cleanly ($code)"; break }
