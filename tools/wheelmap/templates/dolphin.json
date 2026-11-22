@@ -1,0 +1,91 @@
+{
+  "schema": "wheelmap.template.dolphin/1",
+  "description": "Dolphin GCPad/Wiimote profiles per game. Each slot lists logical controls OR-ed together (Dolphin '|'); 'A|B' inside one entry means fallback (first one the device profile has). Steering-/Steering+ are the two halves of the steering axis (Pitch-/Pitch+, Roll-/Roll+ likewise). Pedal-type controls become 'Full Axis Y-' (current Dolphin, axisStyle fullaxis) or 'Axis Y+-' (older Triforce builds, axisStyle surface). Controls on a second device (e.g. handbrake) are written device-qualified (`DInput/0/handbrake:Slider 0+`). PadType lines already in GameSettings are preserved - only PadProfile/WiimoteProfile lines are set.",
+  "gcpad": {
+    "MKDD": {
+      "title": "Mario Kart: Double Dash!!", "games": [ "GM4E01" ],
+      "notes": "A accelerate, B brake, L/R drift/hop on the paddles, X/Y item, Z swap.",
+      "map": {
+        "Buttons/A": [ "Gas", "MenuSelect" ], "Buttons/B": [ "Brake" ], "Buttons/X": [ "Action1|ViewChange" ], "Buttons/Y": [ "Action2|Nitro" ],
+        "Buttons/Z": [ "Nitro|View3" ], "Buttons/Start": [ "Start" ],
+        "Main Stick/Left": [ "Steering-", "MenuLeft" ], "Main Stick/Right": [ "Steering+", "MenuRight" ],
+        "Main Stick/Up": [ "MenuUp" ], "Main Stick/Down": [ "MenuDown" ],
+        "Triggers/L": [ "GearDown" ], "Triggers/R": [ "GearUp" ],
+        "D-Pad/Up": [ "MenuUp" ], "D-Pad/Down": [ "MenuDown" ], "D-Pad/Left": [ "MenuLeft" ], "D-Pad/Right": [ "MenuRight" ]
+      },
+      "settings": { "Rumble/Motor": "Constant", "Rumble/Motor/Range": "75.000000000000000" }
+    },
+    "FZERO": {
+      "title": "F-Zero GX", "games": [ "GFZE01" ],
+      "notes": "A accelerate, pedal brake on B (air brake), L/R side attack/drift on paddles, Y boost. Stick up/down pitch is on the hat.",
+      "map": {
+        "Buttons/A": [ "Gas", "MenuSelect" ], "Buttons/B": [ "Brake" ], "Buttons/X": [ "Action1|ViewChange" ], "Buttons/Y": [ "Nitro" ],
+        "Buttons/Z": [ "Action2|View3" ], "Buttons/Start": [ "Start" ],
+        "Main Stick/Left": [ "Steering-", "MenuLeft" ], "Main Stick/Right": [ "Steering+", "MenuRight" ],
+        "Main Stick/Up": [ "MenuUp" ], "Main Stick/Down": [ "MenuDown" ],
+        "Triggers/L": [ "GearDown" ], "Triggers/R": [ "GearUp" ], "Triggers/L-Analog": [ "GearDown" ], "Triggers/R-Analog": [ "GearUp" ],
+        "D-Pad/Up": [ "MenuUp" ], "D-Pad/Down": [ "MenuDown" ], "D-Pad/Left": [ "MenuLeft" ], "D-Pad/Right": [ "MenuRight" ]
+      },
+      "settings": { "Rumble/Motor": "Constant", "Triggers/Threshold": "75.000000000000000" }
+    },
+    "AM": {
+      "title": "Auto Modellista", "games": [ "GAUE08" ],
+      "notes": "Previous owner's working setup drives gas/brake through the main stick (stick up = throttle, down = brake); kept. Paddles = L/R shift.",
+      "map": {
+        "Buttons/A": [ "MenuSelect|ViewChange" ], "Buttons/B": [ "Action2|Nitro" ], "Buttons/X": [ "ViewChange" ], "Buttons/Y": [ "Action1|View2" ],
+        "Buttons/Z": [ "View3" ], "Buttons/Start": [ "Start" ],
+        "Main Stick/Up": [ "Gas" ], "Main Stick/Down": [ "Brake" ],
+        "Main Stick/Left": [ "Steering-" ], "Main Stick/Right": [ "Steering+" ],
+        "Triggers/L": [ "GearDown" ], "Triggers/R": [ "GearUp" ],
+        "D-Pad/Up": [ "MenuUp" ], "D-Pad/Down": [ "MenuDown" ], "D-Pad/Left": [ "MenuLeft" ], "D-Pad/Right": [ "MenuRight" ]
+      },
+      "settings": { "Rumble/Motor": "Constant", "Triggers/Threshold": "75.000000000000000" }
+    }
+  },
+  "wiimote": {
+    "MKW": {
+      "title": "Mario Kart Wii (Classic Controller)", "games": [ "RMCE01" ],
+      "notes": "Classic Controller: A accelerate, B brake/reverse, R drift (right paddle), L item (left paddle or Action1).",
+      "map": {
+        "Classic/Buttons/A": [ "Gas", "MenuSelect" ], "Classic/Buttons/B": [ "Brake" ], "Classic/Buttons/X": [ "ViewChange" ], "Classic/Buttons/Y": [ "Action2|Nitro" ],
+        "Classic/Buttons/+": [ "Start" ], "Classic/Buttons/-": [ "Coin|Action3" ],
+        "Classic/Left Stick/Left": [ "Steering-" ], "Classic/Left Stick/Right": [ "Steering+" ],
+        "Classic/Left Stick/Up": [ "MenuUp" ], "Classic/Left Stick/Down": [ "MenuDown" ],
+        "Classic/Triggers/L": [ "Action1|GearDown" ], "Classic/Triggers/R": [ "GearUp" ],
+        "Classic/D-Pad/Up": [ "MenuUp" ], "Classic/D-Pad/Down": [ "MenuDown" ], "Classic/D-Pad/Left": [ "MenuLeft" ], "Classic/D-Pad/Right": [ "MenuRight" ]
+      },
+      "settings": { "IR/Auto-Hide": "True", "Extension": "Classic", "Rumble/Motor": "Constant", "Rumble/Motor/Range": "25.000000000000000", "Options/Sideways Wiimote": "True" }
+    }
+  },
+  "triforce": {
+    "F-Zero AX": {
+      "notes": "Triforce F-Zero AX cabinet: gas/brake pedals on A/B (as the previous owner's working file), boost on Y, paddles on L/R analog.",
+      "map": {
+        "Buttons/A": [ "Gas" ], "Buttons/B": [ "Brake" ], "Buttons/X": [ "Action1|ViewChange" ], "Buttons/Y": [ "Nitro|MenuSelect" ], "Buttons/Start": [ "Start" ],
+        "Main Stick/Left": [ "Steering-" ], "Main Stick/Right": [ "Steering+" ],
+        "Triggers/L-Analog": [ "GearDown" ], "Triggers/R-Analog": [ "GearUp" ],
+        "D-Pad/Up": [ "MenuUp" ], "D-Pad/Down": [ "MenuDown" ], "D-Pad/Left": [ "MenuLeft" ], "D-Pad/Right": [ "MenuRight" ]
+      }
+    },
+    "Mario Kart Arcade GP": {
+      "notes": "Triforce MKGP: wheel on main stick X, gas on R-Analog, brake on L-Analog, item on A, Mario/cancel on B.",
+      "map": {
+        "Buttons/A": [ "Action1|ViewChange", "MenuSelect" ], "Buttons/B": [ "Action2|Nitro" ], "Buttons/X": [ "ViewChange" ], "Buttons/Start": [ "Start" ],
+        "Main Stick/Left": [ "Steering-" ], "Main Stick/Right": [ "Steering+" ],
+        "Triggers/L-Analog": [ "Brake" ], "Triggers/R-Analog": [ "Gas" ],
+        "D-Pad/Up": [ "MenuUp" ], "D-Pad/Down": [ "MenuDown" ], "D-Pad/Left": [ "MenuLeft" ], "D-Pad/Right": [ "MenuRight" ]
+      },
+      "settings": { "Rumble/Motor": "Constant" }
+    },
+    "Mario Kart Arcade GP 2": {
+      "notes": "As MKGP.",
+      "map": {
+        "Buttons/A": [ "Action1|ViewChange", "MenuSelect" ], "Buttons/B": [ "Action2|Nitro" ], "Buttons/X": [ "ViewChange" ], "Buttons/Start": [ "Start" ],
+        "Main Stick/Left": [ "Steering-" ], "Main Stick/Right": [ "Steering+" ],
+        "Triggers/L-Analog": [ "Brake" ], "Triggers/R-Analog": [ "Gas" ],
+        "D-Pad/Up": [ "MenuUp" ], "D-Pad/Down": [ "MenuDown" ], "D-Pad/Left": [ "MenuLeft" ], "D-Pad/Right": [ "MenuRight" ]
+      },
+      "settings": { "Rumble/Motor": "Constant" }
+    }
+  }
+}

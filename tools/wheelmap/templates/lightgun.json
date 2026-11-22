@@ -1,0 +1,50 @@
+{
+  "schema": "wheelmap.template.lightgun/1",
+  "status": "UNTESTED - no light gun is attached to RACE1. Names below were read from TeknoParrot v1.0.0.1919 GameProfiles; the generator wiring exists for DirectInput/joystick-mode guns only.",
+  "description": "Light-gun cabinets (Sinden, Ultimarc AimTrak, Gun4IR). Profile controls: AimX, AimY, Trigger, Reload, GunAction, Grenade, Pedal for gun 1 and 'P2.<control>' for gun 2 (WheelMap -Capture -CabinetType lightgun -Guns 2). Aim axes are 'axis' bindings for joystick-mode guns (Gun4IR / AimTrak joystick mode) or 'mouse' bindings for mouse-mode guns (Sinden default, AimTrak mouse) - mouse bindings need TeknoParrot's RawInput API / MAME multimouse and are reported as not generated.",
+  "gunModes": {
+    "Sinden":  { "default": "mouse + keyboard buttons (Sinden software)", "recommend": "joystick mode off; bind TeknoParrot via RawInput; offscreen reload handled by Sinden software", "detect": "RawInput mouse 'Sinden' / VID_16C0" },
+    "AimTrak": { "default": "mouse (absolute) + buttons", "recommend": "AimTrak utility: joystick mode for DirectInput emulators, mouse mode for MAME/Model2", "detect": "VID_D209 (Ultimarc)" },
+    "Gun4IR":  { "default": "mouse + joystick + keyboard composite", "recommend": "use the joystick interface for DirectInput, mouse interface for MAME", "detect": "VID_2341 / VID_1B4F (Arduino based)" }
+  },
+  "teknoparrot": {
+    "rules": [
+      { "match": "Gun [XY] (Left|Right|Up|Down)$|Gun (Left|Right|Up|Down)$|STICK (Left|Right|Up|Down)$", "control": null, "why": "relative/digital aim helpers" },
+      { "match": "^(Player 1 |P1 )?Gun X$|^LEFT GUN AIMING X Axis$", "control": "AimX" },
+      { "match": "^(Player 1 |P1 )?Gun Y$|^LEFT GUN AIMING Y Axis$", "control": "AimY" },
+      { "match": "^(Player 2 |P2 )Gun X$|^RIGHT GUN AIMING X Axis$", "control": "P2.AimX" },
+      { "match": "^(Player 2 |P2 )Gun Y$|^RIGHT GUN AIMING Y Axis$", "control": "P2.AimY" },
+      { "match": "^(Player 1 |P1 )(Gun )?Trigger$|^Trigger P1$|^LEFT GUN Trigger$|^P1 Trigger (Left|Right)$", "control": "Trigger" },
+      { "match": "^(Player 2 |P2 )(Gun )?Trigger$|^Trigger P2$|^RIGHT GUN Trigger$|^P2 Trigger (Left|Right)$", "control": "P2.Trigger" },
+      { "match": "^(Player 1 )?Reload$", "control": "Reload" },
+      { "match": "^Player 2 Reload$", "control": "P2.Reload" },
+      { "match": "^(Player 1 Grenade|Grenades P1)$", "control": "Grenade" },
+      { "match": "^(Player 2 Grenade|Grenades P2)$", "control": "P2.Grenade" },
+      { "match": "^Player 1 (Action|Special|Change|Flame)$", "control": "GunAction" },
+      { "match": "^Player 2 (Action|Special|Change|Flame)$", "control": "P2.GunAction" },
+      { "match": "^Pedal( Left)?$", "control": "Pedal" },
+      { "match": "^Pedal Right$", "control": "P2.Pedal" },
+      { "match": "^(Player 2 Start|P2 Start|Start Button P2)$", "control": "P2.Start" },
+      { "match": "^(Player 1 Start|P1 Start|Start Button P1)$", "control": "Start" },
+      { "match": "Light Gun$|^P[12] Gun$", "control": null, "why": "P1LightGun/P2LightGun are RawInput (mouse) bindings - not generated yet" },
+      { "match": "^(Coin P1|COIN)$", "control": "Coin" },
+      { "match": "^Coin P2$", "control": "Coin2" }
+    ],
+    "games": {
+      "HOTD4": "The House of the Dead 4", "HOTD4SP": "HOTD4 Special", "HOTDEX": "HOTD EX", "HOTDSD": "HOTD Scarlet Dawn",
+      "LGJ": "Let's Go Jungle", "LGJS": "Let's Go Jungle Special", "LGI": "Let's Go Island", "LGI3D": "Let's Go Island 3D",
+      "Gunslinger": "Gunslinger Stratos", "GSEVO": "Ghost Squad Evolution", "AliensExtermination": "Aliens Extermination",
+      "2Spicy": "2 Spicy", "DarkEscape4D": "Dark Escape 4D", "JurassicPark": "Jurassic Park", "MIB": "Men in Black",
+      "LostLand": "Lost Land Adventure", "BugBusters": "Bug Busters", "HauntedMuseum": "Haunted Museum", "HauntedMuseumII": "Haunted Museum II"
+    }
+  },
+  "mame": {
+    "status": "planned",
+    "ports": { "LIGHTGUN_X": "AimX", "LIGHTGUN_Y": "AimY", "P1_BUTTON1": "Trigger", "P1_BUTTON2": "Reload" },
+    "note": "Joystick-mode guns: JOYCODE_n_XAXIS/YAXIS on LIGHTGUN_X/Y. Mouse-mode guns: set mame.ini lightgun_device mouse + multimouse 1 and use <mapdevice device=\"<raw input path>\" controller=\"GUNCODE_n\"/> (ids from mame -v)."
+  },
+  "supermodel": {
+    "status": "planned",
+    "keys": { "InputGunX": "AimX", "InputGunY": "AimY", "InputTrigger": "Trigger", "InputOffscreen": "Reload", "InputGunX2": "P2.AimX", "InputGunY2": "P2.AimY", "InputTrigger2": "P2.Trigger", "InputOffscreen2": "P2.Reload" }
+  }
+}

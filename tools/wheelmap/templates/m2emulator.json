@@ -1,0 +1,13 @@
+{
+  "schema": "wheelmap.template.m2emulator/1",
+  "description": "Model 2 Emulator (ElSemi). EMULATOR.INI [Input] keys are set from 'ini'. Per-game CFG\\<rom>.input files are an undocumented binary format (one little-endian DWORD per control; observed: high byte 0x01 = joystick 1, 0x11 = joystick 1 axis variant, low byte 0x00-0x0B axes, 0x0C-0x0F hat, 0xN0 = button N; keyboard = DIK scan code) - they are copied from the previous owner's reference set unchanged and are only valid while the wheel is DirectInput device #1. Re-bind inside the emulator (Game > Configure Controls) for any other layout.",
+  "ini": { "XInput": "0", "EnableFF": "1", "HoldGears": "1" },
+  "games": {
+    "daytona": "Daytona USA - 4-speed H or VR buttons; FFB via m2 (EnableFF=1) or FFBPlugin.",
+    "srallyc": "Sega Rally Championship - 4-speed, handbrake not supported.",
+    "indy500d": "Indianapolis 500 (Deluxe).",
+    "overrev": "Over Rev.",
+    "sgt24h": "Super GT 24h.",
+    "stcc": "Sega Touring Car Championship."
+  }
+}

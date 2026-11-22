@@ -1,0 +1,45 @@
+{
+  "schema": "wheelmap.template.mame/1",
+  "description": "MAME (0.244) per-game cfg rewriting. Base file = live cfg\\<game>.cfg, else the previous owner's reference set (targets: mame[].reference) - MAME needs the exact port tag/type/mask/defvalue, so games without a base file are skipped. For each port: (1) 'games.<game>.ports' or the global 'ports' (by port type) gives a logical control -> the whole standard sequence is replaced; (2) otherwise every JOYCODE token is translated through 'referenceLayout' (what that token meant on the owner's G29) to the captured device; tokens with no known meaning stay on the same physical button but move to the profile's device number. A ctrlr file (ctrlr\\wheelmap.cfg) pins JOYCODE_1.. to the profile devices with <mapdevice>, and mame.ini 'ctrlr' is set to it, so enumeration order no longer matters.",
+  "referenceLayout": {
+    "note": "Owner's G29 sets: START1=BUTTON11, COIN1=BUTTON12, gears BUTTON13-16, paddles BUTTON5/6, wheel X, gas Y, brake RZ, clutch SLIDER1. 'COMMANDEDEPOUCE*' are French-locale DirectInput hat names (the files were made on a French Windows) - they do not resolve on an English install and are translated to HAT1*.",
+    "pedalDirection": { "YAXIS": "-", "RZAXIS": "-", "SLIDER1": "-" },
+    "codes": {
+      "XAXIS": "Steering", "YAXIS": "Gas", "RZAXIS": "Brake", "SLIDER1": "Clutch",
+      "BUTTON5": "GearUp", "BUTTON6": "GearDown", "BUTTON11": "Start", "BUTTON12": "Coin",
+      "BUTTON13": "Gear1", "BUTTON14": "Gear2", "BUTTON15": "Gear3", "BUTTON16": "Gear4", "BUTTON17": "Gear5", "BUTTON18": "Gear6",
+      "COMMANDEDEPOUCEU": "MenuUp", "COMMANDEDEPOUCED": "MenuDown", "COMMANDEDEPOUCEL": "MenuLeft", "COMMANDEDEPOUCER": "MenuRight",
+      "HAT1UP": "MenuUp", "HAT1DOWN": "MenuDown", "HAT1LEFT": "MenuLeft", "HAT1RIGHT": "MenuRight"
+    }
+  },
+  "ports": {
+    "START1": "Start", "COIN1": "Coin", "COIN2": "Coin2",
+    "P1_PADDLE": "Steering", "P1_DIAL": "Steering", "P1_AD_STICK_X": "Steering",
+    "P1_PEDAL": "Gas", "P1_PEDAL2": "Brake", "P1_PEDAL3": "Clutch"
+  },
+  "games": {
+    "outrun":     { "title": "Out Run", "ports": { "P1_BUTTON3": "GearUp" }, "notes": "Lo/Hi gear lever is a toggle (P1_BUTTON3) - right paddle." },
+    "toutrun":    { "title": "Turbo Out Run", "ports": { "P1_BUTTON3": "GearUp", "P1_BUTTON4": "Nitro" }, "notes": "Turbo on Nitro." },
+    "pdrift":     { "title": "Power Drift", "ports": { "P1_BUTTON3": "GearUp" } },
+    "acedrive":   { "title": "Ace Driver", "ports": { "P1_JOYSTICK_UP": "GearDown", "P1_JOYSTICK_DOWN": "GearUp" }, "notes": "Sequential lever: up = downshift (left paddle), down = upshift (right paddle), as the owner's working file." },
+    "victlap":    { "title": "Ace Driver: Victory Lap", "ports": { "P1_JOYSTICK_UP": "GearDown", "P1_JOYSTICK_DOWN": "GearUp" } },
+    "ridgerac":   { "title": "Ridge Racer", "notes": "4-way gear lever on P1_JOYSTICK_* (owner used face buttons), clutch pedal used as a switch (SLIDER1_NEG_SWITCH). FFB: none in MAME." },
+    "ridgera2":   { "title": "Ridge Racer 2", "notes": "As ridgerac." },
+    "calspeed":   { "title": "California Speed", "ports": { "P1_BUTTON3": "Gear1", "P1_BUTTON4": "Gear2", "P1_BUTTON5": "Gear3", "P1_BUTTON6": "Gear4" }, "notes": "4-speed H; P1_BUTTON7-10 view/music buttons stay on the same wheel buttons." },
+    "crusnusa":   { "title": "Cruis'n USA", "ports": { "P1_BUTTON5": "Gear1", "P1_BUTTON6": "Gear2", "P1_BUTTON7": "Gear3", "P1_BUTTON8": "Gear4" }, "notes": "4-speed H; view buttons 1-4 stay on face buttons." },
+    "crusnwld":   { "title": "Cruis'n World", "ports": { "P1_BUTTON5": "Gear1", "P1_BUTTON6": "Gear2", "P1_BUTTON7": "Gear3", "P1_BUTTON8": "Gear4" } },
+    "offroadc":   { "title": "Off Road Challenge", "ports": { "P1_BUTTON5": "Gear1", "P1_BUTTON6": "Gear2", "P1_BUTTON7": "Gear3", "P1_BUTTON8": "Gear4" } },
+    "vr":         { "title": "Virtua Racing", "notes": "VR1-4 view buttons + shift up/down on P1_BUTTON7/8 (owner: paddles)." },
+    "orunners":   { "title": "OutRunners", "notes": "Shift on P1_BUTTON1 (owner: button 7)." },
+    "radr":       { "title": "Rad Rally", "ports": { "P1_BUTTON1": "GearUp" } },
+    "slipstrm":   { "title": "Slip Stream", "ports": { "P1_BUTTON1": "GearUp" } },
+    "roadblst":   { "title": "Road Blasters", "notes": "Yoke game: P1_AD_STICK_X steering." },
+    "sf2049":     { "title": "San Francisco Rush 2049", "ports": { "P1_BUTTON4": "Gear1", "P1_BUTTON5": "Gear2", "P1_BUTTON6": "Gear3", "P1_BUTTON7": "Gear4" }, "notes": "Clutch pedal P1_PEDAL3. START1 used a French hat name in the owner's file." },
+    "sf2049se":   { "title": "San Francisco Rush 2049 SE", "ports": { "P1_BUTTON4": "Gear1", "P1_BUTTON5": "Gear2", "P1_BUTTON6": "Gear3", "P1_BUTTON7": "Gear4" } },
+    "sfrush":     { "title": "San Francisco Rush", "ports": { "P1_BUTTON4": "Gear1", "P1_BUTTON5": "Gear2", "P1_BUTTON6": "Gear3", "P1_BUTTON7": "Gear4" } },
+    "sfrushrk":   { "title": "San Francisco Rush: The Rock", "ports": { "P1_BUTTON4": "Gear1", "P1_BUTTON5": "Gear2", "P1_BUTTON6": "Gear3", "P1_BUTTON7": "Gear4" } },
+    "buggyboyjr": { "title": "Buggy Boy Junior", "ports": { "P1_BUTTON3": "GearUp" } },
+    "polepos":    { "title": "Pole Position", "ports": { "P1_BUTTON3": "GearUp" }, "notes": "Lo/Hi shifter toggle." },
+    "polepos2a":  { "title": "Pole Position II", "ports": { "P1_BUTTON3": "GearUp" }, "notes": "Owner's file swaps ACCEL/BRAKE tags (ACCEL=RZ, BRAKE=Y) - the port-type rule puts P1_PEDAL on Gas; check in-game." }
+  }
+}

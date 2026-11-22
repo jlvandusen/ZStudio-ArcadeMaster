@@ -1,0 +1,218 @@
+{
+    "schema":  "wheelmap.profile/1",
+    "name":  "G29",
+    "cabinetType":  "racing",
+    "confirmed":  false,
+    "source":  "WheelMap.ps1 -Seed (non-interactive: DirectInput object names + existing TeknoParrot bindings). RUN -Capture TO CONFIRM.",
+    "created":  "2026-11-22T08:19:47",
+    "machine":  "DESKTOP-RACE1",
+    "devices":  [
+                    {
+                        "id":  "wheel",
+                        "productName":  "Logitech G HUB G29 Driving Force Racing Wheel USB",
+                        "instanceName":  "Logitech G HUB G29 Driving Force Racing Wheel USB",
+                        "instanceGuid":  "32304790-2e7c-11ec-8001-444553540000",
+                        "productGuid":  "c24f046d-0000-0000-0000-504944564944",
+                        "vid":  "046D",
+                        "pid":  "C24F",
+                        "diType":  "Driving",
+                        "enumIndex":  1,
+                        "mameIndexGuess":  1,
+                        "forceFeedback":  true,
+                        "sdlGuid":  "030000006d0400004fc2000000000000"
+                    },
+                    {
+                        "id":  "handbrake",
+                        "productName":  "handbrake",
+                        "instanceName":  "handbrake",
+                        "instanceGuid":  "6a358b90-2e78-11ec-8001-444553540000",
+                        "productGuid":  "88888888-0000-0000-0000-504944564944",
+                        "vid":  "8888",
+                        "pid":  "8888",
+                        "diType":  "Supplemental",
+                        "enumIndex":  2,
+                        "mameIndexGuess":  2,
+                        "forceFeedback":  false,
+                        "sdlGuid":  "03000000888800008888000000000000"
+                    }
+                ],
+    "controls":  {
+                     "Steering":  {
+                                      "device":  "wheel",
+                                      "type":  "axis",
+                                      "axis":  "X",
+                                      "offset":  0,
+                                      "invert":  false,
+                                      "center":  32768,
+                                      "source":  "seed: DirectInput object name 'Wheel axis'"
+                                  },
+                     "Clutch":  {
+                                    "device":  "wheel",
+                                    "type":  "axis",
+                                    "axis":  "Sliders0",
+                                    "offset":  24,
+                                    "direction":  "-",
+                                    "rest":  32768,
+                                    "pressed":  0,
+                                    "source":  "seed: DirectInput object name 'Y Axis'; rest = idle reading 32768 (direction assumed)"
+                                },
+                     "Brake":  {
+                                   "device":  "wheel",
+                                   "type":  "axis",
+                                   "axis":  "RotationZ",
+                                   "offset":  20,
+                                   "direction":  "-",
+                                   "rest":  32768,
+                                   "pressed":  0,
+                                   "source":  "seed: DirectInput object name 'Brake'; rest = idle reading 32768 (direction assumed); TeknoParrot IsAxisMinus true:24 false:2"
+                               },
+                     "Gas":  {
+                                 "device":  "wheel",
+                                 "type":  "axis",
+                                 "axis":  "Y",
+                                 "offset":  4,
+                                 "direction":  "-",
+                                 "rest":  32768,
+                                 "pressed":  0,
+                                 "source":  "seed: DirectInput object name 'Accelerator'; rest = idle reading 32768 (direction assumed); TeknoParrot IsAxisMinus true:27 false:2"
+                             },
+                     "Handbrake":  {
+                                       "device":  "handbrake",
+                                       "type":  "axis",
+                                       "axis":  "Sliders0",
+                                       "offset":  24,
+                                       "direction":  "+",
+                                       "rest":  0,
+                                       "pressed":  65535,
+                                       "source":  "seed: DirectInput object name 'Slider'; rest = idle reading 0 (direction assumed)"
+                                   },
+                     "Coin":  {
+                                  "device":  "wheel",
+                                  "type":  "button",
+                                  "button":  11,
+                                  "source":  "seed: most common existing TeknoParrot binding (28 game(s))"
+                              },
+                     "Start":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  10,
+                                   "source":  "seed: most common existing TeknoParrot binding (22 game(s))"
+                               },
+                     "GearDown":  {
+                                      "device":  "wheel",
+                                      "type":  "button",
+                                      "button":  5,
+                                      "source":  "seed: most common existing TeknoParrot binding (14 game(s))"
+                                  },
+                     "GearUp":  {
+                                    "device":  "wheel",
+                                    "type":  "button",
+                                    "button":  4,
+                                    "source":  "seed: most common existing TeknoParrot binding (14 game(s))"
+                                },
+                     "MenuDown":  {
+                                      "device":  "wheel",
+                                      "type":  "pov",
+                                      "pov":  0,
+                                      "dir":  "Down",
+                                      "source":  "seed: most common existing TeknoParrot binding (8 game(s))"
+                                  },
+                     "MenuUp":  {
+                                    "device":  "wheel",
+                                    "type":  "pov",
+                                    "pov":  0,
+                                    "dir":  "Up",
+                                    "source":  "seed: most common existing TeknoParrot binding (8 game(s))"
+                                },
+                     "MenuLeft":  {
+                                      "device":  "wheel",
+                                      "type":  "pov",
+                                      "pov":  0,
+                                      "dir":  "Left",
+                                      "source":  "seed: most common existing TeknoParrot binding (5 game(s))"
+                                  },
+                     "MenuRight":  {
+                                       "device":  "wheel",
+                                       "type":  "pov",
+                                       "pov":  0,
+                                       "dir":  "Right",
+                                       "source":  "seed: most common existing TeknoParrot binding (5 game(s))"
+                                   },
+                     "ViewChange":  {
+                                        "device":  "wheel",
+                                        "type":  "button",
+                                        "button":  1,
+                                        "source":  "seed: most common existing TeknoParrot binding (5 game(s))"
+                                    },
+                     "Gear1":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  12,
+                                   "source":  "seed: most common existing TeknoParrot binding (4 game(s))"
+                               },
+                     "Gear2":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  13,
+                                   "source":  "seed: most common existing TeknoParrot binding (4 game(s))"
+                               },
+                     "Gear3":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  14,
+                                   "source":  "seed: most common existing TeknoParrot binding (4 game(s))"
+                               },
+                     "Gear4":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  15,
+                                   "source":  "seed: most common existing TeknoParrot binding (4 game(s))"
+                               },
+                     "Nitro":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  0,
+                                   "source":  "seed: most common existing TeknoParrot binding (4 game(s))"
+                               },
+                     "View3":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  3,
+                                   "source":  "seed: most common existing TeknoParrot binding (3 game(s))"
+                               },
+                     "Gear5":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  16,
+                                   "source":  "seed: most common existing TeknoParrot binding (2 game(s))"
+                               },
+                     "Gear6":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  17,
+                                   "source":  "seed: most common existing TeknoParrot binding (2 game(s))"
+                               },
+                     "Test":  {
+                                  "device":  "wheel",
+                                  "type":  "button",
+                                  "button":  19,
+                                  "source":  "seed: most common existing TeknoParrot binding (2 game(s))"
+                              },
+                     "Service":  {
+                                     "device":  "wheel",
+                                     "type":  "button",
+                                     "button":  20,
+                                     "source":  "seed: most common existing TeknoParrot binding (1 game(s))"
+                                 },
+                     "View2":  {
+                                   "device":  "wheel",
+                                   "type":  "button",
+                                   "button":  2,
+                                   "source":  "seed: most common existing TeknoParrot binding (1 game(s))"
+                               }
+                 },
+    "notes":  [
+                  "Existing TeknoParrot bindings disagree: Coin also bound to offset 54 in 8 game(s); offset 59 is Coin but also ViewChange in 7 game(s); offset 52 is GearUp but also Action1 in 6 game(s); Coin also bound to offset 48 in 6 game(s); offset 48 is Nitro but also Action1 in 3 game(s); Nitro also bound to offset 58 in 3 game(s); ViewChange also bound to offset 32 pov 27000 in 3 game(s); ViewChange also bound to offset 48 in 3 game(s); offset 53 is GearDown but also Action2 in 2 game(s); Coin also bound to offset 55 in 2 game(s); offset 32 pov 18000 is MenuDown but also Service in 2 game(s); Test also bound to offset 32 pov 0 in 2 game(s); offset 49 is ViewChange but also View2 in 2 game(s); ViewChange also bound to offset 50 in 2 game(s)",
+                  "UNCONFIRMED: generated without anyone touching the controls. Pedal rest values are assumptions (Logitech pedals rest at max). Run: .\\WheelMap.ps1 -Capture -Name G29"
+              ]
+}

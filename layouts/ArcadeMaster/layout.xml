@@ -12,15 +12,60 @@
   <sound type="highlight" src="sounds/highlight.wav"/>
   <sound type="load"      src="sounds/load.wav"/>
 
-  <!-- ================= BACKDROP: synthwave sky, animated neon grid floor, pulsing sun ================= -->
-  <image src="images/bg_synthwave.png" x="0" y="0" width="1920" height="1080" layer="0"/>
-  <video src="video/grid_floor.mp4" numLoops="0" volume="0" x="0" y="600" width="1920" height="480" layer="1"/>
-  <image src="images/fx_sun_glow.png" x="center" y="560" xOrigin="center" yOrigin="center" width="1100" height="1100" alpha=".55" layer="2">
+  <!-- ROTATING HORIZON BACKDROP: 6 theme slots (am_bg1..6), shuffled per boot by Set-LayoutThemes -Shuffle; 20 s each, 2 s cross-fade, Ken Burns drift -->
+  <reloadableImage type="am_bg1" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="1" layer="0">
     <onIdle>
-      <set duration="3"><animate type="alpha" to=".9" algorithm="easeInOutSine"/><animate type="width" to="1180"/><animate type="height" to="1180"/></set>
-      <set duration="3"><animate type="alpha" to=".5" algorithm="easeInOutSine"/><animate type="width" to="1100"/><animate type="height" to="1100"/></set>
+      <set duration="18"><animate type="width" from="1920" to="2060" algorithm="linear"/><animate type="height" from="1080" to="1159" algorithm="linear"/><animate type="x" from="960" to="910" algorithm="linear"/></set>
+      <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="98"><animate type="nop"/></set>
+      <set duration="2"><animate type="alpha" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
     </onIdle>
-  </image>
+  </reloadableImage>
+  <reloadableImage type="am_bg2" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onIdle>
+      <set duration="18"><animate type="nop"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="1010" algorithm="linear"/></set>
+      <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="80"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage type="am_bg3" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onIdle>
+      <set duration="38"><animate type="nop"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="910" algorithm="linear"/></set>
+      <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="60"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage type="am_bg4" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onIdle>
+      <set duration="58"><animate type="nop"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="1010" algorithm="linear"/></set>
+      <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="40"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage type="am_bg5" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onIdle>
+      <set duration="78"><animate type="nop"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="910" algorithm="linear"/></set>
+      <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="20"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage type="am_bg6" mode="systemlayout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+    <onIdle>
+      <set duration="98"><animate type="nop"/></set>
+      <set duration="2"><animate type="alpha" from="0" to="1" algorithm="easeInOutSine"/><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/></set>
+      <set duration="18"><animate type="width" to="2060" algorithm="linear"/><animate type="height" to="1159" algorithm="linear"/><animate type="x" to="1010" algorithm="linear"/></set>
+      <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+    </onIdle>
+  </reloadableImage>
+
   <!-- flight theme: cloud band drifting (seamless: image is two identical 1920 halves) -->
   <reloadableImage type="am_drift" mode="systemlayout" x="0" y="110" xOrigin="left" yOrigin="top" width="3840" height="420" alpha=".8" layer="3">
     <onIdle><set duration="70"><animate type="x" from="0" to="-1920" algorithm="linear"/></set></onIdle>

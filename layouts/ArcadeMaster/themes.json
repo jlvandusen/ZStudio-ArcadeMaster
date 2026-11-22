@@ -32,6 +32,13 @@
       "am_drift": "blank.png"
     }
   },
+  "backgrounds": {
+    "_comment": "Pools for the rotating horizon backdrop (6 slots am_bg1..am_bg6, cross-faded with a Ken Burns drift). Set-LayoutThemes.ps1 -Shuffle deals a random 6 per collection; run it at every boot for a new order.",
+    "racing":   ["bg/racing_desert_highway.jpg", "bg/racing_coastal_road.jpg", "bg/racing_alpine_pass.jpg", "bg/racing_night_city.jpg", "bg/racing_circuit_dusk.jpg", "bg_synthwave.png"],
+    "flight":   ["bg/flight_above_clouds.jpg", "bg/flight_ocean_islands.jpg", "bg/flight_aurora_night.jpg", "bg/flight_storm_front.jpg", "bg/flight_mountain_dusk.jpg", "bg/flight_edge_of_space.jpg"],
+    "lightgun": ["bg/racing_night_city.jpg", "bg/flight_storm_front.jpg", "bg/flight_aurora_night.jpg", "bg_synthwave.png", "bg/racing_circuit_dusk.jpg", "bg/flight_mountain_dusk.jpg"],
+    "main":     ["*"]
+  },
   "defaultTheme": "racing",
   "collections": {
     "Main": "racing",
