@@ -417,3 +417,18 @@ The previous owner's per-wheel sets were copied unchanged. They encode that mach
 | Supermodel, Dolphin / Triforce | already generated from the profile (DIJOYSTATE axis names) | unchanged |
 
 **Pedal convention (always):** clutch = LEFT pedal, brake = MIDDLE (LEFT on a 2-pedal set), gas = RIGHT. The Wheel Setup prompts name the position. `Test-WMPedalLayout` checks the profile against the axis names the driver reports and warns on swapped or shared pedal axes, both in `-Generate` and after a capture.
+## Per-game controls cards (game list)
+
+`tools/New-GameControlsArt.ps1` draws a card for each game showing the cabinet controller: wheel face, paddles, pedals (clutch left / brake middle / gas right), handbrake and shifter. Every control the game uses is lit and numbered, with a legend of what it does **in that game**. The data comes from the live configuration:
+
+| Emulator | Source |
+|---|---|
+| TeknoParrot | UserProfiles: ButtonName + BindNameDi |
+| Model 2 | decoded `.input` codes + slot names |
+| Supermodel | its INI |
+| MAME | per-game cfg + `ctrlr\wheelmap.cfg` |
+| Dolphin (GC / Wii / Triforce) and Cemu (Wii U) | their templates + per-game action labels |
+
+**In the frontend:** the game list fades the card in bottom-right about 1 s after you stop on a game (`am_controls` art type). PC games use their own in-game control menus, so they get no card.
+
+**First run:** 64 cards. They already show real binding problems, e.g. GRID (TeknoParrot) has Brake bound to the clutch pedal.

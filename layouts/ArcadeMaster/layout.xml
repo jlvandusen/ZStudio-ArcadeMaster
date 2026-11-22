@@ -162,6 +162,16 @@
   <!-- ================= SCREEN FX ================= -->
   <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".45" layer="16"/>
 
+  <!-- ================= CONTROLS CARD: what every control does in the highlighted game (tools/New-GameControlsArt.ps1) ================= -->
+  <reloadableImage type="am_controls" x="1345" y="905" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="17">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".9"><animate type="nop"/></set>
+      <set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
   <!-- ================= GAME LAUNCH: blackout + logo punch-in ================= -->
   <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">
     <onGameEnter><set duration=".35"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1"/></set></onGameEnter>
