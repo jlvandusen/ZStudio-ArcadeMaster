@@ -1,0 +1,3 @@
+#!/bin/sh
+# Commits are authored by James alone: strip any Co-Authored-By / tool credit line from the message
+sed -i '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"
