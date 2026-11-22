@@ -92,6 +92,18 @@ foreach ($name in $Layout) {
   #     Our neon logo is composited onto the theme's own default frame, so it keeps the theme's style. Gaps only.
   $menuItems = @(); $mt0 = Join-Path $RetroFE 'collections\Main\menu.txt'; if (Test-Path $mt0) { $menuItems = @(Get-Content $mt0 | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) }
   $menuItems += @(Get-ChildItem (Join-Path $RetroFE 'collections\Main\menu') -File -ErrorAction SilentlyContinue | ForEach-Object { $_.BaseName })
+  # games too: a commonlayout menu draws EVERY list (main menu and game lists) from the same art folder, so each game
+  # in the merged mode collections gets its own logo on the theme's frame
+  $gameLogos = @{}
+  foreach ($mc in 'Racing', 'Flight', 'Lightgun', 'Arcade', 'GAMES') {
+    foreach ($sf in Get-ChildItem (Join-Path $RetroFE "collections\$mc") -Filter *.sub -File -ErrorAction SilentlyContinue) {
+      foreach ($gi in (Get-Content $sf.FullName | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() })) {
+        $lg = Get-ChildItem (Join-Path $RetroFE "collections\$($sf.BaseName)\medium_artwork\logo") -Filter "$gi.*" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($lg) { $gameLogos[$gi] = $lg.FullName }
+      }
+    }
+  }
+  $menuItems += @($gameLogos.Keys)
   $menuTypes = @{}
   foreach ($x in Get-ChildItem $dest -Recurse -Filter *.xml -File) { foreach ($m in [regex]::Matches([IO.File]::ReadAllText($x.FullName), '<menu\b[^>]*\bimageType="([^"]+)"[^>]*\bmode="commonlayout"|<menu\b[^>]*\bmode="commonlayout"[^>]*\bimageType="([^"]+)"')) { $menuTypes[($m.Groups[1].Value + $m.Groups[2].Value)] = $true } }
   if ($menuTypes.Count -and $menuItems) {
@@ -101,7 +113,7 @@ foreach ($name in $Layout) {
       $frame = Get-ChildItem $dir -Filter 'default.*' -File -ErrorAction SilentlyContinue | Select-Object -First 1
       foreach ($it in ($menuItems | Select-Object -Unique)) {
         if (Get-ChildItem $dir -Filter "$it.*" -File -ErrorAction SilentlyContinue) { continue }
-        $logo = Join-Path $ours "collections\Main\medium_artwork\logo\$it.png"
+        $logo = if ($gameLogos.ContainsKey($it)) { $gameLogos[$it] } else { Join-Path $ours "collections\Main\medium_artwork\logo\$it.png" }
         if ($frame) { $bg = [Drawing.Image]::FromFile($frame.FullName); $bmp = New-Object Drawing.Bitmap $bg.Width, $bg.Height; $g = [Drawing.Graphics]::FromImage($bmp); $g.DrawImage($bg, 0, 0, $bg.Width, $bg.Height); $bg.Dispose() }
         else { $bmp = New-Object Drawing.Bitmap 1000, 200; $g = [Drawing.Graphics]::FromImage($bmp); $g.Clear([Drawing.Color]::Transparent) }
         $g.SmoothingMode = 'AntiAlias'; $g.InterpolationMode = 'HighQualityBicubic'
@@ -139,7 +151,7 @@ foreach ($name in $Layout) {
   $res = ([regex]::Match((Get-Content (Join-Path $dest 'layout.xml') -Raw), '<layout[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"')).Groups
   $info = [ordered]@{
     name = $destName; source = $src; imported = (Get-Date).ToString('s'); resolution = "$($res[1].Value)x$($res[2].Value)"
-    monitors = 1 + @(Get-ChildItem $dest -Filter 'layout - *.xml').Count; score = $score; coverage = $cover; gaps = $gaps; fixes = $fixes; preview = $null
+    monitors = 1 + @(Get-ChildItem $dest -Filter 'layout - *.xml').Count; score = $score; coverage = $cover; gaps = $gaps; fixes = $fixes; preview = $(if ($existing -and $existing.preview -and (Test-Path $existing.preview)) { $existing.preview } else { $null })
   }
 
   # 5. preview: run RetroFE on the theme for a moment

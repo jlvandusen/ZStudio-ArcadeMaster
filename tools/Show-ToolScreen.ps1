@@ -454,7 +454,7 @@ function Paint-All($g) {
   $y = $SH * 0.2; $h = $SH * 0.65
   if ($M.intro) { Paint-Intro $g $y $h }
   elseif ($M.settings -and -not $M.done) { Paint-Settings $g $y $h }
-  elseif ($M.choice) { Paint-Choice $g $y $h }
+  elseif ($M.choice -and -not ($M.choice.confirmed -and $M.images)) { Paint-Choice $g $y $h }
   elseif ($M.wiz) { Paint-Wizard $g $y $h }
   elseif ($M.toggle) { Paint-Toggle $g $y $h }
   elseif ($M.steps.Count) { Paint-Steps $g $y $h }
