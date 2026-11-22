@@ -16,9 +16,17 @@ param(
   [string]$Cabinet = 'D:\ArcadeMaster\manifest\cabinet.json',
   [string]$History = 'D:\ArcadeMaster\manifest\device-history.json',
   [string[]]$TeknoParrot = @('E:\DRIVE Collection\emulators\TeknoParrot', 'E:\DRIVE Collection\emulators\TeknoParrotMulti', 'D:\Emulators\TeknoParrot'),
+  [string]$RetroFE,                  # the frontend being booted: when given, only ITS TeknoParrot install(s) are re-pointed
   [switch]$Apply
 )
 $ErrorActionPreference = 'Stop'
+if (-not $PSBoundParameters.ContainsKey('TeknoParrot')) {
+  . (Join-Path $PSScriptRoot 'lib\AmMachine.ps1')
+  # default list = DESKTOP-RACE1's; elsewhere only what exists. With -RetroFE only that frontend's own install(s),
+  # so booting a test copy never rewrites the live frontend's profiles.
+  # DESKTOP-RACE1 keeps exactly its list (it exists there); other cabinets get only the booted frontend's own install(s)
+  $TeknoParrot = @(@($TeknoParrot | Where-Object { Test-Path -LiteralPath $_ }) + @(if ($RetroFE) { Get-AmTeknoParrotRoots -RetroFE $RetroFE -LocalOnly }) | Select-Object -Unique)
+}
 $SysKeyboard = '6f1d2b61-d5a0-11cf-bfc7-444553540000'
 $SysMouse = '6f1d2b60-d5a0-11cf-bfc7-444553540000'
 $cab = Get-Content $Cabinet -Raw | ConvertFrom-Json

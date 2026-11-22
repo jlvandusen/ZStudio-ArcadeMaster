@@ -28,6 +28,30 @@ param(
 $CabinetTypes = @('racing', 'flight', 'lightgun', 'standup')
 $ErrorActionPreference = 'Stop'
 
+# ---------------- this machine's own locations when the caller did not name them (Setup / Tools pass only -RetroFE / -Out).
+# The defaults above are DESKTOP-RACE1's; another cabinet finds its installs instead of failing on a missing drive.
+if (-not $PSBoundParameters.ContainsKey('TeknoParrot')) {
+  $found = [ordered]@{}
+  $tgt = Join-Path $PSScriptRoot "wheelmap\targets\$env:COMPUTERNAME.json"
+  if (Test-Path $tgt) { foreach ($t in @((Get-Content $tgt -Raw | ConvertFrom-Json).teknoparrot)) { if ($t.root -and (Test-Path -LiteralPath $t.root)) { $found[$t.root.TrimEnd('\').ToLower()] = $t.root } } }
+  foreach ($d in Get-ChildItem (Join-Path $RetroFE 'emulators') -Directory -Filter 'TeknoParrot*' -ErrorAction SilentlyContinue) { if (Test-Path (Join-Path $d.FullName 'UserProfiles')) { $found[$d.FullName.ToLower()] = $d.FullName } }
+  foreach ($p in @($TeknoParrot | ForEach-Object { $_.Path })) { if (Test-Path -LiteralPath $p) { $found[$p.TrimEnd('\').ToLower()] = $p } }
+  $cols = @(Get-ChildItem (Join-Path $RetroFE 'collections') -Directory -ErrorAction SilentlyContinue | ForEach-Object Name)
+  $TeknoParrot = @($found.Values | ForEach-Object {
+    $leaf = Split-Path $_ -Leaf
+    $variant = if ($leaf -match 'multi') { 'multicab' } elseif ($leaf -match 'light ?gun') { 'lightgun' } elseif ($_ -like "$RetroFE*") { 'standalone' } else { 'external' }
+    $col = $cols | Where-Object { $_ -eq $leaf -or ($variant -eq 'standalone' -and $_ -eq 'TeknoParrot') } | Select-Object -First 1
+    @{ Name = $leaf; Path = $_; Variant = $variant; Collection = $col } })
+  Write-Host ("TeknoParrot installs found: {0}" -f (($TeknoParrot | ForEach-Object { "$($_.Path) [$($_.Variant)]" }) -join '; '))
+}
+$TeknoParrot = @($TeknoParrot | Where-Object { $_.Path -and (Test-Path -LiteralPath $_.Path) })   # a missing drive is skipped, not fatal
+if ($LaunchBox -and -not (Test-Path -LiteralPath $LaunchBox)) { Write-Host "LaunchBox not found at $LaunchBox - skipped"; $LaunchBox = $null }
+if (-not $PSBoundParameters.ContainsKey('DefaultCategory')) {
+  # games with no genre follow the cabinet: a wheel cabinet is a racing set, a flight-stick one flight, anything else stand-up arcade
+  $cabFile = Join-Path (Split-Path $Out) 'cabinet.json'
+  if (Test-Path $cabFile) { $cap = (Get-Content $cabFile -Raw | ConvertFrom-Json).capabilities; $DefaultCategory = if ($cap.wheel) { 'racing' } elseif ($cap.flightStick) { 'flight' } else { 'standup' }; Write-Host "default category (from the cabinet's controls): $DefaultCategory" }
+}
+
 function Get-Category([string]$genre, [string]$platform) {
   $g = "$genre $platform".ToLower()
   if ($g -match 'flight|flying|aircraft|plane|air combat') { return 'flight' }
@@ -44,7 +68,14 @@ function Find-Media([string]$col, [string]$item) {
   }
   $m
 }
-function Resolve-GamePath([string]$tp, [string]$p) { if (-not $p) { return $null }; if ([IO.Path]::IsPathRooted($p)) { return $p }; [IO.Path]::GetFullPath((Join-Path $tp $p)) }
+function Resolve-GamePath([string]$tp, [string]$p) {
+  if (-not $p) { return $null }
+  $full = if ([IO.Path]::IsPathRooted($p)) { $p } else { [IO.Path]::GetFullPath((Join-Path $tp $p)) }
+  # a broken relative GamePath (..\..\ above the drive root) collapses to the root: report it, don't fail the catalog
+  if ($full -match '^([A-Za-z]:)?\\\.\.' -or -not [IO.Path]::GetDirectoryName($full)) { $script:brokenPaths += "$tp :: $p"; return $null }
+  return $full
+}
+$script:brokenPaths = @()
 function New-Game([string]$id) { [ordered]@{ id = $id; title = $id; year = $null; platform = $null; genre = $null; category = $null; tags = @(); wheelRotation = $null; variants = [ordered]@{}; media = [ordered]@{}; sources = @() } }
 
 $games = [ordered]@{}
@@ -76,7 +107,7 @@ foreach ($tp in $TeknoParrot) {
     $vname = $tp.Variant; if ($g.variants.Contains($vname)) { $vname = "$vname-$($tp.Name)" }
     $g.variants[$vname] = [ordered]@{
       emulator = 'teknoparrot'; install = $tp.Path; profile = $id; gamePath = $gp
-      gameDir = if ($gp) { Split-Path $gp } else { $null }
+      gameDir = if ($gp) { [IO.Path]::GetDirectoryName($gp) } else { $null }
       ok = [bool]($gp -and (Test-Path -LiteralPath $gp)); retrofeCollection = $tp.Collection
     }
     if ($tp.Collection) {
@@ -110,7 +141,7 @@ foreach ($col in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
 }
 
 # ---------------- LaunchBox platforms: link to TP profiles, add category + extra media
-foreach ($plat in $LaunchBoxPlatforms) {
+foreach ($plat in @(if ($LaunchBox) { $LaunchBoxPlatforms })) {
   $px = Join-Path $LaunchBox "Data\Platforms\$plat.xml"; if (-not (Test-Path $px)) { continue }
   [xml]$lb = Get-Content $px -Raw
   foreach ($e in $lb.LaunchBox.Game) {
@@ -188,3 +219,4 @@ $list | Group-Object { $_['category'] } | ForEach-Object {
   $fan = @($_.Group | Where-Object { $_.media.Contains('fanart') }).Count
   Write-Host ("  {0,-9} {1,3} games  {2,3} launchable  {3,3} with fanart  {4,3} multi-variant" -f $_.Name, $_.Count, $ok, $fan, @($_.Group | Where-Object { $_.variants.Count -gt 1 }).Count)
 }
+if ($script:brokenPaths) { Write-Host ("{0} TeknoParrot profile(s) with a GamePath above the drive root (fix with Repair-TPProfiles.ps1):" -f $script:brokenPaths.Count); $script:brokenPaths | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" } }

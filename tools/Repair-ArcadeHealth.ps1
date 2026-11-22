@@ -53,7 +53,8 @@ foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$
 
 # runtime
 Emit @{ type = 'step'; id = 'runtime'; label = $checks.runtime; status = 'run' }
-$rt = Join-Path $RetroFE 'retrofe'; $need = @('retrofe.exe', 'SDL2.dll', 'gstreamer-1.0-0.dll', 'glib-2.0-0.dll')
+. (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $rexe = Get-AmRetroFEExe $RetroFE   # retrofe\, core\ (CoinOPS) or the root
+$rt = if ($rexe) { Split-Path $rexe } else { Join-Path $RetroFE 'retrofe' }; $need = @('retrofe.exe', 'SDL2.dll', 'gstreamer-1.0-0.dll', 'glib-2.0-0.dll')
 $miss = @($need | Where-Object { -not (Test-Path (Join-Path $rt $_)) })
 if (-not $miss) { Add-Result 'runtime' $checks.runtime 'OK' "$((Get-ChildItem $rt -File -ErrorAction SilentlyContinue).Count) files" }
 else {

@@ -152,6 +152,13 @@ foreach ($cat in $Order) {
 foreach ($e in $ExtraMenu) { if (Test-Path (Join-Path $cols $e)) { $menu.Add($e) } }
 
 if ((Test-Path $menuTxt) -and -not (Test-Path "$menuTxt.am-backup")) { Copy-Item $menuTxt "$menuTxt.am-backup" }
+if (-not (Test-Path $menuTxt) -and -not (Test-Path "$menuTxt.am-backup")) {
+  # a CoinOPS build (LEGENDS, CORE ...) has no Main menu: its library starts at settings.conf firstCollection (e.g. Arcades).
+  # Keep that whole library one press away from the ArcadeMaster main menu instead of hiding it behind the catalogued games.
+  $fc = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*firstCollection\s*=\s*(.+)$' -ErrorAction SilentlyContinue | Select-Object -Last 1
+  if ($fc) { $own = $fc.Matches[0].Groups[1].Value.Trim(); if ($own -and $own -ne 'Main' -and (Test-Path (Join-Path $cols $own)) -and $menu -notcontains $own) { $menu.Add($own); Write-Host "kept the build's own library in the main menu: $own" } }
+  New-Item -ItemType Directory -Force (Split-Path $menuTxt) | Out-Null
+}
 Set-Content $menuTxt $menu -Encoding ascii
 Write-Host ("Main menu: " + ($menu -join ' | '))
 if ($skipped.Count) { Write-Host "not listed ($($skipped.Count)):"; $skipped | ForEach-Object { Write-Host "  $_" } }
@@ -185,6 +192,6 @@ if ($RebuildDatabase) {
     $doc.Save($path)
   }
   Write-Host ("metadata written for {0} collections -> rebuilding meta.db" -f $metaItems.Count)
-  $exe = Join-Path $RetroFE 'retrofe\retrofe.exe'
-  if (Test-Path $exe) { $p = Start-Process $exe -ArgumentList '-rebuilddatabase' -WorkingDirectory (Split-Path $exe) -PassThru -WindowStyle Hidden; if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Warning 'meta.db rebuild timed out' } else { Write-Host "meta.db rebuilt (exit $($p.ExitCode))" } }
+  . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $exe = Get-AmRetroFEExe $RetroFE   # retrofe\, core\ (CoinOPS) or the root
+  if ($exe) { $p = Start-Process $exe -ArgumentList '-rebuilddatabase' -WorkingDirectory (Split-Path $exe) -PassThru -WindowStyle Hidden; if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Warning 'meta.db rebuild timed out' } else { Write-Host "meta.db rebuilt (exit $($p.ExitCode))" } }
 }
