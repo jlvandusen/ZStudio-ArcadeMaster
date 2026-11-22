@@ -33,11 +33,11 @@
     },
     "arcade": {
       "am_spinner": "arcade_joystick.png",
-      "am_gauge_face": "arcade_credits_face.png",
+      "am_gauge_face": "blank.png",
       "am_gauge_under": "blank.png",
-      "am_gauge_over": "arcade_needle.png",
-      "am_gauge2_face": "arcade_power_face.png",
-      "am_gauge2_over": "arcade_needle.png",
+      "am_gauge_over": "blank.png",
+      "am_gauge2_face": "blank.png",
+      "am_gauge2_over": "blank.png",
       "am_burst": "arcade_burst.png",
       "am_drift": "arcade_drift.png"
     }

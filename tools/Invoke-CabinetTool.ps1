@@ -109,6 +109,14 @@ switch ($Tool) {
       Run $plan[$id][1] $plan[$id][2] | Out-Null
       Step $id $plan[$id][0] $(if ($script:lastExit -eq 0) { 'ok' } else { 'fail' })
     }
+    # joystick-panel cabinets (pedestal / stand-up, no wheel): a button-layout card for every game (tools/New-PanelControlsArt.py)
+    $capNow = if (Test-Path $cab) { (Get-Content $cab -Raw | ConvertFrom-Json).capabilities } else { $null }
+    $py = (Get-Command python.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source
+    if ($capNow -and $capNow.controlPanel -and -not $capNow.wheel -and $py) {
+      Step 'panelcards' 'Button layout cards' 'run'
+      & $py (Join-Path $t 'New-PanelControlsArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'panelcards' 'Button layout cards' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+    }
     Emit-Collections
   }
   'ToggleFfb' {
