@@ -80,6 +80,7 @@ switch ($Tool) {
   'DetectControllers' {
     Banner 'CONTROLLERS DETECTED'
     Run 'Get-CabinetDevices.ps1' @('-Out', $cab, '-History', $hist) | Out-Null
+    Run 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir) | Out-Null
     Emit-Devices
     Banner 'CONTROLLER ID CHECK (dry run - use Repair Controller IDs to apply)'
     $o = Run 'Update-ControllerIds.ps1' @('-Cabinet', $cab, '-History', $hist)

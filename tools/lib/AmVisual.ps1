@@ -192,6 +192,12 @@ public static class AmDraw {
         Icon(g, "gamepad", new RectangleF(x, y + s * .12f, s * .62f, s * .62f), AmPal.A(c, 160), 0);
         Icon(g, "wheel", new RectangleF(x + s * .38f, y + s * .3f, s * .62f, s * .62f), c, live);
         break; }
+      case "wiimote": case "wand": {
+        var body = new RectangleF(x + s * .36f, y + s * .04f, s * .28f, s * .92f);
+        using (var p = Round(body, s * .08f)) { using (var b = new SolidBrush(AmPal.A(c, 45))) g.FillPath(b, p); using (var pen = P(c, w)) g.DrawPath(pen, p); }
+        using (var pen = P(c, w * .8f)) { g.DrawLine(pen, x + s * .44f, y + s * .2f, x + s * .56f, y + s * .2f); g.DrawLine(pen, x + s * .5f, y + s * .14f, x + s * .5f, y + s * .26f); }
+        using (var b = new SolidBrush(c)) { g.FillEllipse(b, x + s * .45f, y + s * .33f, s * .1f, s * .1f); g.FillEllipse(b, x + s * .47f, y + s * .7f, s * .06f, s * .06f); g.FillEllipse(b, x + s * .47f, y + s * .8f, s * .06f, s * .06f); }
+        break; }
       case "plane": case "jet": {
         // top-down jet: fuselage, swept wings, tailplane
         g.TranslateTransform(x + s / 2, y + s / 2); g.RotateTransform(live);
@@ -233,7 +239,7 @@ public static class AmDraw {
       case "wheel": return "wheel"; case "pedals": return "pedals"; case "handbrake": return "handbrake"; case "shifter": return "shifter";
       case "gamepad": case "pad": case "xinput": return "gamepad"; case "lightgun": case "gun": return "gun"; case "trackball": case "spinner": return "trackball";
       case "flight": case "flightstick": case "joystick": case "stick": case "arcade": return "joystick"; case "keyboard": return "keyboard"; case "mouse": return "mouse";
-      case "touch": return "touch"; case "display": return "display"; default: return "joystick";
+      case "touch": return "touch"; case "display": return "display"; case "wiimote": return "wiimote"; case "gcadapter": return "gamepad"; default: return "joystick";
     }
   }
 }

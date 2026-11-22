@@ -66,6 +66,29 @@ $cap['displays'] = @([Windows.Forms.Screen]::AllScreens | ForEach-Object { [orde
 $cap['touchScreens'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)touch ?screen|touch digitizer' -and $_.Status -eq 'OK' }).Count
 # joystick restrictors RetroFE can drive per game (joyways metadata): Ultimarc ServoStik (D209:1700); TOS GRS is probed by RetroFE itself
 $cap['restrictor'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209&PID_170[0-9]' }).Count -gt 0
+# Nintendo controllers - Bluetooth (HID ...VID&0002057E_PID&0306) or USB / Mayflash DolphinBar (VID_057E&PID_0306):
+#   Wii Remote "wand" (RVL-CNT-01 0306, Plus/-TR 0330), Wii U Pro (0330 '-UC'), Balance Board (0306 'WBC'),
+#   GameCube adapter for Wii U/Switch (0337), Joy-Con (2006/2007), Switch Pro (2009).
+$pnp = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match '057E[&_]PID[&_](0306|0330|0337|2006|2007|2009)' -and $_.Status -eq 'OK' })
+$btNames = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)RVL-|Nintendo|Pro Controller|Joy-Con' } | ForEach-Object { $_.FriendlyName })
+$hidPid = @($pnp | Where-Object { $_.Class -eq 'HIDClass' } | ForEach-Object { ([regex]::Match($_.InstanceId, 'PID[&_]([0-9A-F]{4})')).Groups[1].Value })
+$wiiUPro = @($btNames | Where-Object { $_ -match '(?i)RVL-CNT-01-UC' }).Count
+$board = @($btNames | Where-Object { $_ -match '(?i)RVL-WBC' }).Count
+$nintendo = [ordered]@{
+  wiimotes     = [Math]::Max(0, @($hidPid | Where-Object { $_ -in '0306', '0330' }).Count - $wiiUPro - $board)
+  wiiUPro      = $wiiUPro
+  balanceBoard = $board
+  gcAdapter    = @($pnp | Where-Object { $_.InstanceId -match 'PID[&_]0337' }).Count -gt 0
+  joycons      = @($hidPid | Where-Object { $_ -in '2006', '2007' }).Count
+  switchPro    = @($hidPid | Where-Object { $_ -eq '2009' }).Count
+  dolphinBar   = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)DolphinBar|Mayflash' }).Count -gt 0
+}
+$cap['wii'] = $nintendo
+foreach ($k in 'wiimotes', 'wiiUPro', 'joycons', 'switchPro') { for ($n = 0; $n -lt [int]$nintendo[$k]; $n++) {
+  $devices.Add([ordered]@{ joy = 0; name = @{ wiimotes = 'Wii Remote'; wiiUPro = 'Wii U Pro Controller'; joycons = 'Joy-Con'; switchPro = 'Switch Pro Controller' }[$k] + $(if ([int]$nintendo[$k] -gt 1) { " $($n + 1)" })
+    id = 'VID_057E'; type = 'Nintendo'; role = @{ wiimotes = 'wiimote'; wiiUPro = 'gamepad'; joycons = 'gamepad'; switchPro = 'gamepad' }[$k]; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) } }
+if ($nintendo.gcAdapter) { $devices.Add([ordered]@{ joy = 0; name = 'GameCube controller adapter'; id = 'VID_057E&PID_0337'; type = 'Nintendo'; role = 'gcadapter'; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) }
+$cap['gamepads'] = [int]$cap.gamepads + [int]$nintendo.wiiUPro + [int]$nintendo.switchPro + [Math]::Floor([int]$nintendo.joycons / 2)
 $sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' }).Count
 $cap['players'] = if ($Players -gt 0) { $Players } else { [Math]::Max(1, [Math]::Max($sticks + $cap.gamepads, [Math]::Max($cap.lightguns, $(if ($cap.controlPanel) { 2 } else { 1 })))) }
 $cap['modes'] = if ($Modes) { $Modes } else {
@@ -78,6 +101,7 @@ $hist = if (Test-Path $History) { Get-Content $History -Raw | ConvertFrom-Json }
 $hlist = New-Object System.Collections.Generic.List[object]; foreach ($h in @($hist.devices)) { $hlist.Add($h) }
 $seenKey = @{}
 foreach ($d in $devices) {
+  if ($d.type -eq 'Nintendo') { continue }   # no DirectInput GUID to track
   $base = "$($d.id)|$($d.name)"; $seenKey[$base] = [int]$seenKey[$base] + 1; $key = "$base|#$($seenKey[$base])"
   $h = $hlist | Where-Object { $_.key -eq $key } | Select-Object -First 1
   if (-not $h) { $h = [pscustomobject]@{ key = $key; id = $d.id; name = $d.name; type = $d.type; role = $d.role; guids = @(); firstSeen = (Get-Date).ToString('s'); lastSeen = $null }; $hlist.Add($h) }
@@ -92,4 +116,4 @@ New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 [ordered]@{ machine = $env:COMPUTERNAME; detected = (Get-Date).ToString('s'); capabilities = $cap; devices = $devices; rawMice = $mice } |
   ConvertTo-Json -Depth 6 | Set-Content $Out -Encoding UTF8
 Write-Host "cabinet capabilities -> $Out"
-$cap.GetEnumerator() | ForEach-Object { $v = if ($_.Key -eq 'displays') { "$(@($_.Value).Count): " + ((@($_.Value) | ForEach-Object { "$($_.width)x$($_.height)$(if ($_.primary) { '*' })" }) -join ', ') } else { $_.Value -join ',' }; Write-Host ("  {0,-15} {1}" -f $_.Key, $v) }
+$cap.GetEnumerator() | ForEach-Object { $v = if ($_.Value -is [Collections.IDictionary]) { ($_.Value.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ' ' } elseif ($_.Key -eq 'displays') { "$(@($_.Value).Count): " + ((@($_.Value) | ForEach-Object { "$($_.width)x$($_.height)$(if ($_.primary) { '*' })" }) -join ', ') } else { $_.Value -join ',' }; Write-Host ("  {0,-15} {1}" -f $_.Key, $v) }

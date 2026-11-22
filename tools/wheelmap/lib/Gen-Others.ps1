@@ -408,6 +408,20 @@ function Invoke-WMGenCemu($Prof, $Targets, $Manifest) {
             Add-WMStaged $Manifest $ini ($lines -join "`r`n") 'cemu' "$($g.title) -> controller1 = $profileName"
             [void]$rep.Add([pscustomobject]@{ game = $g.title; profile = $live; mappings = $desc.Count })
         }
+        # keyboard-encoder control panels (stand-up / pedestal): Keyboard-API profiles for P1 / P2
+        if ($tpl.Contains('keyboardPanels')) {
+            foreach ($pn in $tpl.keyboardPanels.Keys) {
+                $pd = $tpl.keyboardPanels[$pn]; $lay = $tpl.panelLayout[$pd.type]
+                $sb = New-Object Text.StringBuilder
+                [void]$sb.AppendLine('<?xml version="1.0" encoding="UTF-8"?>'); [void]$sb.AppendLine('<emulated_controller>')
+                [void]$sb.AppendLine("`t<type>$($pd.type)</type>"); [void]$sb.AppendLine("`t<profile>$pn</profile>")
+                [void]$sb.AppendLine("`t<controller>"); [void]$sb.AppendLine("`t`t<api>Keyboard</api>"); [void]$sb.AppendLine("`t`t<uuid>keyboard</uuid>"); [void]$sb.AppendLine("`t`t<display_name>Keyboard</display_name>")
+                [void]$sb.AppendLine("`t`t<mappings>")
+                foreach ($slot in $lay.Keys) { $vk = $pd.keys[$lay[$slot]]; if ($vk) { [void]$sb.AppendLine("`t`t`t<entry><mapping>$slot</mapping><button>$vk</button></entry>") } }
+                [void]$sb.AppendLine("`t`t</mappings>"); [void]$sb.AppendLine("`t</controller>"); [void]$sb.AppendLine('</emulated_controller>')
+                Add-WMStaged $Manifest (Join-Path $t.root "controllerProfiles\$pn.xml") $sb.ToString() 'cemu' "$pn ($($pd.type), keyboard encoder - I-PAC/MAME keys)"
+            }
+        }
     }
     return $rep
 }

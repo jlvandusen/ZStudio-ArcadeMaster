@@ -43,6 +43,8 @@ if (-not $NoDeviceCheck) {
       Write-Log 'wheel not detected yet - waiting'; Start-Sleep -Seconds 3
     } while ((Get-Date) -lt $deadline)
     if ($prev -and $prev.wheel -and -not $now.wheel) { Write-Log "WARNING: racing wheel not detected after $WaitForWheelSec s - wheel games will not respond until it is plugged in" }
+    # Dolphin follows what is plugged in: real Wii Remotes / Balance Board / GC adapter, stale device names
+    $dol = Invoke-Tool 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir); if ($dol -match '->') { Write-Log ('dolphin: ' + (($dol -split "`r?`n" | Where-Object { $_ -match '->' } | ForEach-Object { $_.Trim() }) -join '; ')) }
     $ids = Invoke-Tool 'Update-ControllerIds.ps1' @('-Cabinet', $cabFile, '-History', (Join-Path $ManifestDir 'device-history.json'), '-Apply')
     if ($ids -match 'APPLIED: (\d+)' -and [int]$Matches[1] -gt 0) { Write-Log "controller IDs changed - re-pointed $($Matches[1]) profile files" }
     $modesNow = (@($now.modes) | Sort-Object) -join ','; $modesFile = Join-Path $ManifestDir 'last-modes.txt'

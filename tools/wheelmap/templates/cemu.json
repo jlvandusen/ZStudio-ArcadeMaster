@@ -11,5 +11,14 @@
   },
   "games": {
     "000500001010ec00": { "title": "Mario Kart 8 (USA)", "layout": "pro-racing", "notes": "A = gas pedal, R (hop / drift) = brake pedal, B (brake / reverse) = a wheel button; paddles = L / ZR. gameProfiles ini selects controller1 = <profile name>." }
+  },
+  "keyboardPanels_description": "Stand-up / pedestal cabinets: the joysticks and buttons are keyboard encoders (I-PAC style), so Cemu gets Keyboard-API profiles. Keys are Windows virtual-key codes (what Cemu's keyboard controller records). Defaults follow the I-PAC / MAME layout; override a key here if the panel is wired differently. GamePad slots: 1 A, 2 B, 3 X, 4 Y, 5 L, 6 R, 7 ZL, 8 ZR, 9 Plus, 10 Minus, 11-14 D-pad Up/Down/Left/Right, 17-20 L-stick Up/Down/Left/Right. Pro Controller slots as above (12-15 D-pad, 18-21 L-stick).",
+  "keyboardPanels": {
+    "ArcadeMaster Panel P1": { "type": "Wii U GamePad", "keys": { "up": 38, "down": 40, "left": 37, "right": 39, "b1": 17, "b2": 18, "b3": 32, "b4": 16, "b5": 90, "b6": 88, "b7": 67, "b8": 86, "start": 49, "coin": 53 } },
+    "ArcadeMaster Panel P2": { "type": "Wii U Pro Controller", "keys": { "up": 82, "down": 70, "left": 68, "right": 71, "b1": 65, "b2": 83, "b3": 81, "b4": 87, "b5": 73, "b6": 75, "b7": 74, "b8": 76, "start": 50, "coin": 54 } }
+  },
+  "panelLayout": {
+    "Wii U GamePad":        { "1": "b1", "2": "b2", "3": "b3", "4": "b4", "5": "b5", "6": "b6", "7": "b7", "8": "b8", "9": "start", "10": "coin", "11": "up", "12": "down", "13": "left", "14": "right", "17": "up", "18": "down", "19": "left", "20": "right" },
+    "Wii U Pro Controller": { "1": "b1", "2": "b2", "3": "b3", "4": "b4", "5": "b5", "6": "b6", "7": "b7", "8": "b8", "9": "start", "10": "coin", "12": "up", "13": "down", "14": "left", "15": "right", "18": "up", "19": "down", "20": "left", "21": "right" }
   }
 }
