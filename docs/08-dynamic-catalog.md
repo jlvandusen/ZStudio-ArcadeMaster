@@ -43,8 +43,42 @@ Not listed yet (17), and why:
 - not installed: Blur, Juiced, NFS MW / MW 2012, Ridge Racer Unbounded, Split/Second, SnoCross, Blazing Angels, Heliborne
 - profile/exe still needed: Under Defeat (only `game.bat`), FnF / Super Bikes 1+2, Valve Limit R, Road Fighters 3D (`spice.exe` missing), Chaos Code, Guitar Hero Arcade
 
+## Controls, preferred emulator, cabinet fit
+
+`tools/Get-CabinetDevices.ps1` writes `manifest\cabinet.json`, what this cabinet can physically do (via `tools/wheelmap`):
+
+- wheel, force feedback, pedals, clutch, handbrake, paddles
+- H-shifter (needs a capture to confirm)
+- flight stick / HOTAS, gamepads
+- lightguns by vendor ID (Sinden, Gun4IR, AimTrak)
+- trackball
+
+DESKTOP-RACE1 has: G29 (wheel, FFB, pedals, clutch, paddles) + handbrake, no stick/gun/pad.
+
+`tools/Add-GameControls.ps1` adds the following to every game in `games.json`:
+
+| Field | From | Contents |
+|---|---|---|
+| `controls` | TeknoParrot GameProfiles (`ButtonName`/`AnalogType`/`InputMapping`), `mame -listxml` (MAME + Model 2/3 sets), defaults for console/PC | wheel, pedals, shifter `paddles`/`hpattern`, handbrake, flight stick, throttle, lightgun (+ gun players; a "gun trigger" on a flight stick is not a lightgun), trackball/spinner, analog stick, gamepad, buttons, players, extras (view/boost/weapons/...) |
+| `preferred` | rules | variant + emulator + backend (TeknoParrot / OpenParrot / Lindbergh / ...) + reason. Rules: newest TeknoParrot install first, multicab only for linked cabinets, Model 2 → m2emulator (MAME `model2` is preliminary), Model 3 → Supermodel, Triforce → Dolphin Triforce, PC → native. The same MAME set in several collections keeps the preferred one; the others become `hidden`. |
+| `fit` | `cabinet.json` | `native` / `mapped` / `unsupported` + notes, e.g. "flight stick mapped to wheel (roll) + pedals (throttle/brake)", "uses an H-pattern shifter", "set wheel rotation to 540 deg" |
+
+`New-RetroFECollections.ps1` skips hidden duplicates and `unsupported` games (unless `-IncludeUnsupported`).
+The human-readable table is in `reports/game-controls.md`.
+
+This machine: 124 games, 118 native + 6 mapped (flight games on the wheel).
+
+| Controls | Games |
+|---|---:|
+| wheel + pedals + paddles | 57 |
+| wheel + pedals | 52 |
+| wheel + pedals + **H-pattern** (Initial D, Daytona 3, …) | 11 |
+| **handbrake** (D1GP, Sega Rally 3, …) | 3 |
+
+Preferred emulators: TeknoParrot 47, Supermodel 22, PC native 15, MAME 9, m2emulator 6, Dolphin 4, Dolphin Triforce 3, Cemu 1.
+
 ## Order of operations on a cabinet
 
-1. `Build-Manifest.ps1`
+1. `Get-CabinetDevices.ps1`, `Build-Manifest.ps1`, `Add-GameControls.ps1`
 2. `New-RetroFECollections.ps1 -RetroFE <root>`
 3. `Set-LayoutThemes.ps1 -LayoutDir <root>\layouts\ArcadeMaster -CollectionsDir <root>\collections -Shuffle` (also run at every boot by `Start-ArcadeMaster.ps1`)

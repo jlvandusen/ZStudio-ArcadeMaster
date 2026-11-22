@@ -86,6 +86,7 @@ foreach ($tp in $TeknoParrot) {
 $tpCollections = @($TeknoParrot | ForEach-Object { $_.Collection } | Where-Object { $_ })
 foreach ($col in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   if ($col.Name -in $tpCollections -or $col.Name -in 'Main', 'GAMES', 'SETTINGS', 'Controller') { continue }
+  if (Test-Path (Join-Path $col.FullName 'ARCADEMASTER-GENERATED.txt')) { continue }   # our own generated views are outputs, not sources
   $settings = Join-Path $col.FullName 'settings.conf'; if (-not (Test-Path $settings)) { continue }
   $conf = @{}; foreach ($line in Get-Content $settings) { if ($line -match '^\s*([^#=]+?)\s*=\s*(.*)$') { $conf[$Matches[1]] = $Matches[2].Trim() } }
   $listDir = if ($conf['list.path']) { Join-Path $RetroFE $conf['list.path'] } else { Join-Path $col.FullName 'roms' }

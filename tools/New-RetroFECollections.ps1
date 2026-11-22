@@ -15,6 +15,7 @@ param(
   [string[]]$Order = @('racing', 'flight', 'lightgun', 'arcade'),
   [string[]]$ExtraMenu = @('SETTINGS'),          # existing collections to keep on the main menu
   [switch]$IncludeMultiVariants = $true,         # list e.g. Daytona 3 multicab as its own entry
+  [switch]$IncludeUnsupported,                   # also list games this cabinet cannot play (fit.level = unsupported)
   [switch]$Remove
 )
 $ErrorActionPreference = 'Stop'
@@ -49,6 +50,8 @@ $extraTP = @{}       # install path -> @{ items; media }
 $pcGames = New-Object System.Collections.Generic.List[object]   # native Windows exes (LaunchBox-only PC titles)
 $skipped = New-Object System.Collections.Generic.List[string]
 foreach ($g in $m.games) {
+  if ($g.hidden) { $skipped.Add("$($g.id) - hidden duplicate of $($g.alternativeOf)"); continue }
+  if ($g.fit -and $g.fit.level -eq 'unsupported' -and -not $IncludeUnsupported) { $skipped.Add("$($g.id) - not playable on this cabinet: $(($g.fit.notes) -join '; ')"); continue }
   $cat = $g.category; if (-not $names.ContainsKey($cat)) { $cat = 'arcade' }
   $picked = @()
   foreach ($v in Get-VariantOrder $g) {
