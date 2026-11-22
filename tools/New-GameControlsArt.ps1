@@ -23,15 +23,21 @@ $tg = Get-Content $Targets -Raw | ConvertFrom-Json
 # ---------------- physical controls of the cabinet controller (G29 layout; unknown devices fall back to "Button n")
 $G29 = @{ 0 = 'Cross'; 1 = 'Square'; 2 = 'Circle'; 3 = 'Triangle'; 4 = 'Right paddle'; 5 = 'Left paddle'; 6 = 'R2'; 7 = 'L2'; 8 = 'Share'; 9 = 'Options'; 10 = 'R3'; 11 = 'L3'
           12 = 'Gear 1'; 13 = 'Gear 2'; 14 = 'Gear 3'; 15 = 'Gear 4'; 16 = 'Gear 5'; 17 = 'Gear 6'; 18 = 'Reverse'; 19 = 'Plus'; 20 = 'Minus'; 21 = 'Dial right'; 22 = 'Dial left'; 23 = 'Dial press'; 24 = 'PS' }
-# where each control sits on the G29 (300x300 wheel picture, centre 150,150): left spoke D-pad + Share + L2/L3,
-# right spoke face buttons + Options + R2/R3, bottom +/- , red dial and PS; the paddles sit behind the rim
-$Pos = [ordered]@{ 'Share' = @(80, 108); 'Options' = @(220, 108)
-          'D-pad up' = @(84, 124); 'D-pad down' = @(84, 152); 'D-pad left' = @(70, 138); 'D-pad right' = @(98, 138)
-          'Triangle' = @(216, 122); 'Square' = @(200, 138); 'Circle' = @(232, 138); 'Cross' = @(216, 154)
-          'L2' = @(74, 178); 'L3' = @(98, 184); 'R2' = @(226, 178); 'R3' = @(202, 184)
-          'Plus' = @(120, 196); 'Minus' = @(120, 220); 'Dial right' = @(180, 208); 'Dial left' = @(180, 208); 'Dial press' = @(180, 208); 'PS' = @(150, 238)
-          'Left paddle' = @(16, 128); 'Right paddle' = @(284, 128) }
+# where each control sits on the REAL G29 (Logitech G HUB's front picture, scaled to 300x300): measured on the
+# picture itself - D-pad upper left, face buttons upper right, L2/R2 and L3/R3 on the inner spoke edges, +/- lower
+# left, red dial lower right, Share / Options / PS stacked in the bottom spoke, the shift paddles behind the rim
+$Pos = [ordered]@{
+  'D-pad up' = @(88.5, 111); 'D-pad down' = @(88.5, 133.5); 'D-pad left' = @(76.5, 121.5); 'D-pad right' = @(100.5, 121.5)
+  'Triangle' = @(206, 110); 'Square' = @(195.6, 121); 'Circle' = @(216.6, 120); 'Cross' = @(206, 131)
+  'L2' = @(100, 152); 'R2' = @(199, 152); 'L3' = @(81, 173); 'R3' = @(219, 173)
+  'Plus' = @(110, 185); 'Minus' = @(110, 197); 'Dial right' = @(189, 189); 'Dial left' = @(189, 189); 'Dial press' = @(189, 189)
+  'Share' = @(150, 198); 'Options' = @(150, 207); 'PS' = @(150, 217)
+  'Left paddle' = @(66, 99); 'Right paddle' = @(234, 99) }
+# number markers that would cover each other sit beside their button
+$BadgeAt = @{ 'Share' = @(131, 198); 'Options' = @(169, 207); 'PS' = @(131, 217); 'Plus' = @(92, 185); 'Minus' = @(92, 197); 'Dial right' = @(207, 177); 'Dial left' = @(207, 177); 'Dial press' = @(207, 177) }
 $HatMask = @{ 'D-pad up' = 1; 'D-pad right' = 2; 'D-pad down' = 4; 'D-pad left' = 8 }
+# the real wheel / pedals / shifter pictures that Logitech G HUB installs (newest depot); none -> simple drawing
+$GHub = Get-ChildItem 'C:\ProgramData\LGHUB\depots\*\g29\g29_wheel_front.png' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
 function Get-Physical([string]$bind) {
   # TeknoParrot BindNameDi: "Driving Buttons4", "Driving X -", "Driving RotationZ -", "Driving PointOfViewControllers0 UP", "Keyboard Button Return", "Supplemental Sliders0 +"
   if (-not $bind) { return $null }
@@ -171,11 +177,22 @@ function Read-TemplateGame([string]$item, [string]$kind) {
 }
 # ---------------- drawing
 # Three layers, so RetroFE can bring the wheel to life (retrofe patch 0007, liveSteer / liveButton / liveAxis):
-#   am_controls        1100x300 card: pedals, shifter, handbrake and the legend (what every control does in this game)
-#   am_controls_wheel   300x300 the G29 itself, the game's buttons coloured and numbered - turns with the real wheel
+#   am_controls        1100x300 card: the real pedals + shifter, and the legend (what every control does in this game)
+#   am_controls_wheel   300x300 the real G29, the game's buttons numbered on it - turns with the real wheel
 #   images\controls\    one glow per wheel button / pedal (same for every game) - lights while it is pressed
 $pal = @([AmPal]::Magenta, [AmPal]::Cyan, [AmPal]::Amber, [AmPal]::Green, [AmPal]::Violet, [AmPal]::Red, [AmPal]::Hex('9be7ff'), [AmPal]::Hex('ff8a3d'), [AmPal]::Hex('f5f56b'), [AmPal]::Hex('7cf0c8'))
-$PedalRect = @{ 'Clutch pedal' = @(336, 128, 46, 116); 'Brake pedal' = @(394, 128, 46, 116); 'Gas pedal' = @(452, 108, 46, 136) }   # x, y, w, h on the card
+# the pedal picture on the card and its three plates (measured on G HUB's g29_pedals.png, in % of the picture)
+$PedalImg = @(322, 110, 200, 160)
+$PedalRect = [ordered]@{}
+foreach ($pp in @(@('Clutch pedal', 8, 19, 34), @('Brake pedal', 37, 20, 34), @('Gas pedal', 73, 17, 40))) {
+  $PedalRect[$pp[0]] = @(($PedalImg[0] + $PedalImg[2] * $pp[1] / 100), $PedalImg[1], ($PedalImg[2] * $pp[2] / 100), ($PedalImg[3] * $pp[3] / 100))
+}
+$imgCache = @{}
+function Get-GHubImage([string]$name) {
+  if (-not $GHub) { return $null }
+  if (-not $imgCache.ContainsKey($name)) { $f = Join-Path $GHub "$name.png"; $imgCache[$name] = if (Test-Path $f) { [Drawing.Image]::FromFile($f) } else { $null } }
+  return $imgCache[$name]
+}
 function Get-Friendly([string]$phys) {
   switch -Regex ($phys) {
     '^Key Return$' { return 'Enter key' }
@@ -200,66 +217,32 @@ function Get-UsedMap($rows) {
 function Fill-Round($g, $rect, [float]$rad, $color) { $p = [AmDraw]::Round($rect, $rad); $g.FillPath((New-Object Drawing.SolidBrush $color), $p); $p.Dispose() }
 function Draw-Num($g, [float]$cx, [float]$cy, [float]$r, $u) {
   $rr = New-Object Drawing.RectangleF ($cx - $r), ($cy - $r), (2 * $r), (2 * $r)
+  $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::A([Drawing.Color]::Black, 120))), ($rr.X + 1), ($rr.Y + 2), $rr.Width, $rr.Height)   # drop shadow
   $g.FillEllipse((New-Object Drawing.SolidBrush $u.color), $rr)
-  $g.DrawEllipse((New-Object Drawing.Pen ([AmPal]::A([Drawing.Color]::White, 200)), 1.5), $rr)
+  $g.DrawEllipse((New-Object Drawing.Pen ([Drawing.Color]::White), 1.6), $rr)
   [AmDraw]::Text($g, "$($u.n)", (New-Object Drawing.Font('Segoe UI Black', [float]([Math]::Max(10, $r * 1.15)), [Drawing.GraphicsUnit]::Pixel)), [AmPal]::Bg, $rr, 'Center', 'Center')
 }
-function Draw-Glyph($g, [string]$name, [float]$cx, [float]$cy, $color) {
-  $pen = New-Object Drawing.Pen $color, 1.8
-  switch ($name) {
-    'Cross'    { $g.DrawLine($pen, $cx - 4, $cy - 4, $cx + 4, $cy + 4); $g.DrawLine($pen, $cx - 4, $cy + 4, $cx + 4, $cy - 4) }
-    'Circle'   { $g.DrawEllipse($pen, $cx - 4.5, $cy - 4.5, 9, 9) }
-    'Square'   { $g.DrawRectangle($pen, $cx - 4, $cy - 4, 8, 8) }
-    'Triangle' { $g.DrawPolygon($pen, [Drawing.PointF[]]@((New-Object Drawing.PointF $cx, ($cy - 5)), (New-Object Drawing.PointF ($cx + 5), ($cy + 4)), (New-Object Drawing.PointF ($cx - 5), ($cy + 4)))) }
-    'Plus'     { $g.DrawLine($pen, $cx - 4, $cy, $cx + 4, $cy); $g.DrawLine($pen, $cx, $cy - 4, $cx, $cy + 4) }
-    'Minus'    { $g.DrawLine($pen, $cx - 4, $cy, $cx + 4, $cy) }
-  }
-  $pen.Dispose()
-}
-# the G29 seen from the driver's seat; $used colours + numbers the controls this game uses (empty = plain wheel)
-function Draw-G29($g, $used) {
-  $c = 150
-  # paddles behind the rim (drawn first so the rim overlaps them)
-  foreach ($side in 'Left paddle', 'Right paddle') {
-    $xy = $Pos[$side]; $u = if ($used) { $used[$side] } else { $null }
-    $pr = New-Object Drawing.RectangleF ($xy[0] - 12), ($xy[1] - 26), 24, 52
-    Fill-Round $g $pr 10 $(if ($u) { $u.color } else { [AmPal]::Hex('3a3f4a') })
-  }
-  # rim: dark leather with a lighter top edge and stitching
-  $rim = New-Object Drawing.Pen ([AmPal]::Hex('23262d')), 30; $g.DrawEllipse($rim, 22, 22, 256, 256); $rim.Dispose()
-  $hi = New-Object Drawing.Pen ([AmPal]::A([Drawing.Color]::White, 40)), 2; $g.DrawArc($hi, 9, 9, 282, 282, 200, 140); $hi.Dispose()
-  $st = New-Object Drawing.Pen ([AmPal]::A([AmPal]::Hex('9aa4b2'), 90)), 1.2; $st.DashPattern = @(3, 3); $g.DrawEllipse($st, 22, 22, 256, 256); $st.Dispose()
-  # three spokes (brushed metal) + hub
-  $metal = New-Object Drawing.Drawing2D.LinearGradientBrush ((New-Object Drawing.PointF 0, 90)), ((New-Object Drawing.PointF 0, 250)), ([AmPal]::Hex('5b616d')), ([AmPal]::Hex('2b2f37'))
-  $g.FillPath($metal, [AmDraw]::Round((New-Object Drawing.RectangleF 34, 96, 232, 100), 40))
-  $g.FillPath($metal, [AmDraw]::Round((New-Object Drawing.RectangleF 104, 150, 92, 112), 24))
-  $metal.Dispose()
-  $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::Hex('1b1e24'))), 118, 112, 64, 64)
-  $g.DrawEllipse((New-Object Drawing.Pen ([AmPal]::A([Drawing.Color]::White, 60)), 1.5), 118, 112, 64, 64)
-  # the red dial
-  $dial = $Pos['Dial press']; $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::Hex('c8202f'))), ($dial[0] - 15), ($dial[1] - 15), 30, 30)
-  $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::Hex('1b1e24'))), ($dial[0] - 7), ($dial[1] - 7), 14, 14)
-  $dialUse = if ($used) { @('Dial right', 'Dial left', 'Dial press' | Where-Object { $used.Contains($_) }) } else { @() }
-  if ($dialUse) { Draw-Num $g ($dial[0] + 17) ($dial[1] - 15) 9 $used[$dialUse[0]] }
-  # D-pad cross
-  $dp = New-Object Drawing.SolidBrush ([AmPal]::Hex('15171c'))
-  $g.FillRectangle($dp, 75, 116, 18, 44); $g.FillRectangle($dp, 62, 129, 44, 18); $dp.Dispose()
-  # every other button
-  foreach ($k in $Pos.Keys) {
-    if ($k -match 'paddle|^Dial') { continue }
-    $xy = $Pos[$k]; $u = if ($used) { $used[$k] } else { $null }
-    $r = if ($k -match '^D-pad') { 8 } elseif ($k -match '^(Share|Options|Plus|Minus|PS)$') { 7.5 } else { 10 }
-    if ($u) { Draw-Num $g $xy[0] $xy[1] ([Math]::Max($r, 9)) $u; continue }
-    $b = New-Object Drawing.RectangleF ($xy[0] - $r), ($xy[1] - $r), (2 * $r), (2 * $r)
-    if ($k -notmatch '^D-pad') { $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::Hex('15171c'))), $b); $g.DrawEllipse((New-Object Drawing.Pen ([AmPal]::A([Drawing.Color]::White, 50)), 1), $b) }
-    Draw-Glyph $g $k $xy[0] $xy[1] ([AmPal]::A([Drawing.Color]::White, 150))
-  }
-  if ($used -and $used.Contains('Steering')) { Draw-Num $g 150 16 12 $used['Steering'] }   # top of the rim
-  foreach ($side in 'Left paddle', 'Right paddle') { if ($used -and $used.Contains($side)) { $xy = $Pos[$side]; Draw-Num $g $xy[0] ($xy[1] - 34) 11 $used[$side] } }   # paddle numbers above the rim
-}
+# the wheel picture: G HUB's real G29 (or a plain outline when G HUB is not installed) + this game's numbers
 function New-WheelPicture($used, [string]$path) {
   $bmp = New-Object Drawing.Bitmap 300, 300; $g = [Drawing.Graphics]::FromImage($bmp); [AmDraw]::Hq($g); $g.Clear([Drawing.Color]::Transparent)
-  Draw-G29 $g $used
+  $real = Get-GHubImage 'g29_wheel_front'
+  if ($real) { $g.DrawImage($real, 0, 0, 300, 300) }
+  else {
+    $g.DrawEllipse((New-Object Drawing.Pen ([AmPal]::Hex('23262d')), 26), 16, 16, 268, 268)
+    $g.FillPath((New-Object Drawing.SolidBrush ([AmPal]::Hex('3a3f4a'))), [AmDraw]::Round((New-Object Drawing.RectangleF 64, 96, 172, 130), 30))
+    foreach ($k in $Pos.Keys) { $xy = $Pos[$k]; $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::Hex('15171c'))), ($xy[0] - 6), ($xy[1] - 6), 12, 12) }
+  }
+  if ($used) {
+    # a thin ring on every button this game uses, then its number (beside the button where they would overlap)
+    foreach ($k in $Pos.Keys) {
+      if (-not $used.Contains($k)) { continue }
+      $xy = $Pos[$k]; $u = $used[$k]
+      $g.DrawEllipse((New-Object Drawing.Pen $u.color, 2.2), ($xy[0] - 8), ($xy[1] - 8), 16, 16)
+      $at = if ($BadgeAt.ContainsKey($k)) { $BadgeAt[$k] } else { $xy }
+      Draw-Num $g $at[0] $at[1] 8.5 $u
+    }
+    if ($used.Contains('Steering')) { Draw-Num $g 150 14 11 $used['Steering'] }   # on the blue stripe at the top of the rim
+  }
   $g.Dispose(); New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null; $bmp.Save($path, [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
 }
 function New-Card([string]$title, $rows, [string]$path) {
@@ -269,30 +252,34 @@ function New-Card([string]$title, $rows, [string]$path) {
   $cp = [AmDraw]::Round($card, 22); $g.FillPath((New-Object Drawing.SolidBrush ([AmPal]::Hex('0b0d12'))), $cp); $g.DrawPath((New-Object Drawing.Pen ([AmPal]::A([AmPal]::Magenta, 220)), 3), $cp)
   # soft pool of light where the (separate, turning) wheel picture sits
   $pool = New-Object Drawing.Drawing2D.GraphicsPath; $pool.AddEllipse(14, 4, 292, 292)
-  $pb = New-Object Drawing.Drawing2D.PathGradientBrush $pool; $pb.CenterColor = [AmPal]::Hex('1a1f2a'); $pb.SurroundColors = @([AmPal]::Hex('0b0d12')); $g.FillPath($pb, $pool); $pb.Dispose()
-  # pedals: clutch LEFT, brake MIDDLE, gas RIGHT
+  $pb = New-Object Drawing.Drawing2D.PathGradientBrush $pool; $pb.CenterColor = [AmPal]::Hex('20263a'); $pb.SurroundColors = @([AmPal]::Hex('0b0d12')); $g.FillPath($pb, $pool); $pb.Dispose()
+  # the real pedals: clutch LEFT, brake MIDDLE, gas RIGHT
+  $ped = Get-GHubImage 'g29_pedals'
+  if ($ped) { $g.DrawImage($ped, $PedalImg[0], $PedalImg[1], $PedalImg[2], $PedalImg[3]) }
   foreach ($pd in @(@('Clutch pedal', 'CLUTCH'), @('Brake pedal', 'BRAKE'), @('Gas pedal', 'GAS'))) {
     $q = $PedalRect[$pd[0]]; $pr = New-Object Drawing.RectangleF $q[0], $q[1], $q[2], $q[3]; $u = $used[$pd[0]]
-    Fill-Round $g $pr 9 ([AmPal]::Hex('2b2f37'))
-    for ($ry = $pr.Y + 12; $ry -lt $pr.Bottom - 8; $ry += 12) { $g.DrawLine((New-Object Drawing.Pen ([AmPal]::Hex('3c414c')), 3), ($pr.X + 9), $ry, ($pr.Right - 9), $ry) }   # grip ridges
-    $g.DrawPath((New-Object Drawing.Pen $(if ($u) { $u.color } else { [AmPal]::Hex('3c414c') }), 2.5), [AmDraw]::Round($pr, 9))
-    [AmDraw]::Text($g, $pd[1], (New-Object Drawing.Font('Segoe UI Semibold', 12, [Drawing.GraphicsUnit]::Pixel)), $(if ($u) { [AmPal]::Text } else { [AmPal]::Dim }), (New-Object Drawing.RectangleF ($pr.X - 10), ($pr.Bottom + 6), ($pr.Width + 20), 18), 'Center', 'Center')
-    if ($u) { Draw-Num $g ($pr.X + $pr.Width / 2) ($pr.Y - 16) 12 $u }
+    if (-not $ped) { Fill-Round $g $pr 7 ([AmPal]::Hex('5b616d')) }
+    if ($u) { $g.DrawPath((New-Object Drawing.Pen $u.color, 2.5), [AmDraw]::Round($pr, 7)); Draw-Num $g ($pr.X + $pr.Width / 2) ($pr.Y - 14) 11 $u }
+    [AmDraw]::Text($g, $pd[1], (New-Object Drawing.Font('Segoe UI Semibold', 12, [Drawing.GraphicsUnit]::Pixel)), $(if ($u) { [AmPal]::Text } else { [AmPal]::Dim }), (New-Object Drawing.RectangleF ($pr.X - 12), 274, ($pr.Width + 24), 18), 'Center', 'Center')
   }
-  # shifter + handbrake
-  $gearUse = @($used.Keys | Where-Object { $_ -match '^(Gear \d|Reverse)$' })
-  $hb = $used['Handbrake']
-  [AmDraw]::Icon($g, 'shifter', (New-Object Drawing.RectangleF 516, 34, 62, 62), $(if ($gearUse) { $used[$gearUse[0]].color } else { [AmPal]::Hex('3c414c') }), [float]0)
-  if ($gearUse) { Draw-Num $g 586 40 11 $used[$gearUse[0]] }
-  [AmDraw]::Icon($g, 'handbrake', (New-Object Drawing.RectangleF 516, 150, 62, 62), $(if ($hb) { $hb.color } else { [AmPal]::Hex('3c414c') }), [float]0.4)
-  if ($hb) { Draw-Num $g 586 156 11 $hb }
-  $g.DrawLine((New-Object Drawing.Pen ([AmPal]::A([AmPal]::Magenta, 90)), 1.5), 606, 24, 606, 276)
+  # the real shifter (only lit when the game uses it) + handbrake
+  $gearUse = @($used.Keys | Where-Object { $_ -match '^(Gear \d|Reverse)$' }); $hb = $used['Handbrake']
+  $sh = Get-GHubImage 'g29_shifter'
+  if ($sh) {
+    $sr = New-Object Drawing.RectangleF 530, 26, 66, 78
+    if ($gearUse) { $g.DrawImage($sh, $sr) }
+    else { $ia = New-Object Drawing.Imaging.ImageAttributes; $cm = New-Object Drawing.Imaging.ColorMatrix; $cm.Matrix33 = 0.3; $ia.SetColorMatrix($cm); $g.DrawImage($sh, [Drawing.Rectangle]::Round($sr), 0, 0, $sh.Width, $sh.Height, [Drawing.GraphicsUnit]::Pixel, $ia); $ia.Dispose() }
+  } else { [AmDraw]::Icon($g, 'shifter', (New-Object Drawing.RectangleF 530, 34, 62, 62), $(if ($gearUse) { $used[$gearUse[0]].color } else { [AmPal]::Hex('3c414c') }), [float]0) }
+  if ($gearUse) { Draw-Num $g 594 34 11 $used[$gearUse[0]] }
+  [AmDraw]::Icon($g, 'handbrake', (New-Object Drawing.RectangleF 532, 160, 60, 60), $(if ($hb) { $hb.color } else { [AmPal]::Hex('3c414c') }), [float]0.4)
+  if ($hb) { Draw-Num $g 594 164 11 $hb }
+  $g.DrawLine((New-Object Drawing.Pen ([AmPal]::A([AmPal]::Magenta, 90)), 1.5), 610, 24, 610, 276)
   # legend: what each control does in this game
-  $lx = 624
+  $lx = 626
   [AmDraw]::Text($g, $title.ToUpper(), (New-Object Drawing.Font('Segoe UI Black', 24, [Drawing.FontStyle]::Italic, [Drawing.GraphicsUnit]::Pixel)), [AmPal]::Cyan, (New-Object Drawing.RectangleF $lx, 12, 460, 34), 'Near', 'Center')
   $af = New-Object Drawing.Font('Segoe UI Semibold', 17, [Drawing.GraphicsUnit]::Pixel); $pf = New-Object Drawing.Font('Segoe UI', 13, [Drawing.GraphicsUnit]::Pixel)
   $list = @($used.Keys | ForEach-Object { $ph = $_; $acts = @($rows | Where-Object { $_.physical -eq $ph } | ForEach-Object { $_.action } | Select-Object -Unique); @{ physical = $ph; action = ($acts -join ' / '); u = $used[$ph] } } | Select-Object -First 14)
-  $perCol = [Math]::Max(1, [Math]::Ceiling($list.Count / 2)); $colW = 232; $rh = [Math]::Min(40, [Math]::Floor(236 / [Math]::Max(1, $perCol)))
+  $perCol = [Math]::Max(1, [Math]::Ceiling($list.Count / 2)); $colW = 230; $rh = [Math]::Min(40, [Math]::Floor(236 / [Math]::Max(1, $perCol)))
   for ($j = 0; $j -lt $list.Count; $j++) {
     $it = $list[$j]; $cx = $lx + [Math]::Floor($j / $perCol) * $colW; $cy = 54 + ($j % $perCol) * $rh
     Draw-Num $g ($cx + 12) ($cy + 17) 12 $it.u
@@ -309,13 +296,14 @@ function New-GlowSet([string]$dir) {
   foreach ($k in $HatMask.Keys) { $names["hat$($HatMask[$k])"] = $k }
   foreach ($f in $names.Keys) {
     $xy = $Pos[$names[$f]]; $bmp = New-Object Drawing.Bitmap 300, 300; $g = [Drawing.Graphics]::FromImage($bmp); [AmDraw]::Hq($g); $g.Clear([Drawing.Color]::Transparent)
-    foreach ($ring in @(@(22, 40), @(17, 90), @(13, 200))) { $r = $ring[0]; $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::A([AmPal]::Hex('bff6ff'), $ring[1]))), ($xy[0] - $r), ($xy[1] - $r), (2 * $r), (2 * $r)) }
+    foreach ($ring in @(@(17, 45), @(12, 110), @(8, 210))) { $r = $ring[0]; $g.FillEllipse((New-Object Drawing.SolidBrush ([AmPal]::A([AmPal]::Hex('bff6ff'), $ring[1]))), ($xy[0] - $r), ($xy[1] - $r), (2 * $r), (2 * $r)) }
     $g.Dispose(); $bmp.Save((Join-Path $dir "$f.png"), [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
   }
   foreach ($pd in $PedalRect.Keys) {
     $q = $PedalRect[$pd]; $bmp = New-Object Drawing.Bitmap ([int]$q[2] + 24), ([int]$q[3] + 24); $g = [Drawing.Graphics]::FromImage($bmp); [AmDraw]::Hq($g); $g.Clear([Drawing.Color]::Transparent)
-    foreach ($ring in @(@(0, 50), @(5, 110), @(10, 190))) { $i = $ring[0]; Fill-Round $g (New-Object Drawing.RectangleF $i, $i, ($q[2] + 24 - 2 * $i), ($q[3] + 24 - 2 * $i)) 12 ([AmPal]::A([AmPal]::Hex('bff6ff'), $ring[1])) }
+    foreach ($ring in @(@(0, 50), @(5, 110), @(10, 170))) { $i = $ring[0]; Fill-Round $g (New-Object Drawing.RectangleF $i, $i, ($q[2] + 24 - 2 * $i), ($q[3] + 24 - 2 * $i)) 10 ([AmPal]::A([AmPal]::Hex('bff6ff'), $ring[1])) }
     $g.Dispose(); $bmp.Save((Join-Path $dir ("pedal_" + ($pd -replace ' pedal', '').ToLower() + '.png')), [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+    Write-Host ("pedal glow {0}: card x={1:N0} y={2:N0} -> layout x={3:N0} y={4:N0} w={5} h={6}" -f $pd, $q[0], $q[1], (795 + $q[0] - 12), (755 + $q[1] - 12), ([int]$q[2] + 24), ([int]$q[3] + 24))
   }
 }
 

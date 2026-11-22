@@ -436,8 +436,8 @@ The previous owner's per-wheel sets were copied unchanged. They encode that mach
 ## Controls card: the real wheel, live (2026-11-22)
 
 When a game is highlighted, the card at the bottom of the game list shows:
-- **Left:** a drawing of the G29 as you see it from the seat. The buttons that game uses are filled in colour and numbered, and the steering number sits at the top of the rim. **The drawing turns as you turn the real wheel**, and any button or D-pad direction you press lights up.
-- **Middle:** the pedals, clutch LEFT, brake MIDDLE and gas RIGHT. Each one **lights up as you press it**. Next to them are the shifter and handbrake.
+- **Left:** the real G29, using the product picture that Logitech G HUB installs (`C:\ProgramData\LGHUB\depots\*\g29\`). These pictures are read on each cabinet and never copied into the repo. Without G HUB, a simple outline wheel is drawn instead. The buttons that game uses are filled in colour and numbered, and the steering number sits at the top of the rim. **The drawing turns as you turn the real wheel**, and any button or D-pad direction you press lights up.
+- **Middle:** the real pedal set, clutch LEFT, brake MIDDLE and gas RIGHT. Each one **lights up as you press it**. Next to them are the shifter and handbrake.
 - **Right:** the game's name and what each numbered control does in that game, in plain words (for example "Shift up: Right paddle (behind the wheel)").
 
 How it's made:

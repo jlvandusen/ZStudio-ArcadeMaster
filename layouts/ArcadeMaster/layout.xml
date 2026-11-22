@@ -358,7 +358,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/pedal_clutch.png" x="1119" y="871" width="70" height="140" alpha="0" layer="17" additive="true" liveAxis="3" liveFrom="32767" liveTo="-32768">
+  <image src="images/controls/pedal_clutch.png" x="1121" y="853" width="62" height="78" alpha="0" layer="17" additive="true" liveAxis="3" liveFrom="32767" liveTo="-32768">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -366,7 +366,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/pedal_brake.png" x="1177" y="871" width="70" height="140" alpha="0" layer="17" additive="true" liveAxis="2" liveFrom="32767" liveTo="-32768">
+  <image src="images/controls/pedal_brake.png" x="1179" y="853" width="64" height="78" alpha="0" layer="17" additive="true" liveAxis="2" liveFrom="32767" liveTo="-32768">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -374,7 +374,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/pedal_gas.png" x="1235" y="851" width="70" height="160" alpha="0" layer="17" additive="true" liveAxis="1" liveFrom="32767" liveTo="-32768">
+  <image src="images/controls/pedal_gas.png" x="1251" y="853" width="58" height="88" alpha="0" layer="17" additive="true" liveAxis="1" liveFrom="32767" liveTo="-32768">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
