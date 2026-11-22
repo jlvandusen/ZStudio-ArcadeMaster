@@ -62,6 +62,9 @@ if (-not $NoShuffle) {
   } catch { Write-Log "shuffle failed: $($_.Exception.Message)" }   # never block boot on cosmetics
 }
 
+# boot intro: render the cabinet-type title card (settings.conf cabinetType, auto = detected hardware)
+try { Invoke-Tool 'New-CabinetIntro.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout) | Out-Null } catch { Write-Log "intro failed: $($_.Exception.Message)" }
+
 # Tools list art shows live state (devices, switches, game counts, backdrops) - refresh it every boot
 if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) {
   try { Invoke-Tool 'New-ToolsArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-NoFanart') | Out-Null } catch { Write-Log "tools art failed: $($_.Exception.Message)" }

@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -131,7 +131,37 @@ switch ($Tool) {
     Banner 'BACKGROUNDS SHUFFLED'
     Emit-Backgrounds
   }
-  'TogglePerfLog' {
+  'CabinetType' {
+    . (Join-Path $t 'lib\CabinetTypes.ps1')
+    $cabObj = if (Test-Path $cab) { Get-Content $cab -Raw | ConvertFrom-Json } else { $null }
+    $current = Get-Setting 'cabinetType'; if (-not $current) { $current = 'auto' }
+    $ids = @(Get-AmCabinetChoices)
+    $opts = @(foreach ($id in $ids) {
+      $r = Resolve-AmCabinetType $id $cabObj '' ''
+      @{ id = $id; label = $(if ($id -eq 'auto') { 'AUTO' } else { $r.title }); sub = $(if ($id -eq 'auto') { "detected: $($r.title)" } else { $r.tagline }); icons = @($r.icons); color = $r.color; color2 = $r.color2 }
+    })
+    $sel = [Math]::Max(0, [array]::IndexOf($ids, $current.ToLower()))
+    Banner "CABINET TYPE - now: $current"
+    $chosen = $null
+    if ($visual -and $env:AM_WIZ_KEYFILE) {
+      Emit @{ type = 'choice'; title = 'WHAT IS THIS CABINET?'; prompt = 'Shown in the boot intro after the studio logo'; options = $opts; selected = $sel }
+      $deadline = (Get-Date).AddSeconds(180)
+      while ((Get-Date) -lt $deadline) {
+        if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) {
+          $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue
+          if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break }
+        }
+        Start-Sleep -Milliseconds 100
+      }
+    }
+    if ($chosen -and $ids -contains $chosen) {
+      Set-Setting 'cabinetType' $chosen
+      Write-Host "cabinetType = $chosen"
+    } else { Write-Host 'no change' }
+    $out = Join-Path $RetroFE 'layouts\ArcadeMaster\images\intro'
+    Run 'New-CabinetIntro.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null
+    Emit @{ type = 'intro'; dir = $out; setting = (Get-Setting 'cabinetType') }
+  }  'TogglePerfLog' {
     $on = [int]("0" + (Get-Setting 'perfLog')) -gt 0
     Set-Setting 'perfLog' $(if ($on) { '0' } else { '10' })
     Banner ("PERFORMANCE LOG: " + $(if ($on) { 'OFF' } else { 'ON (every 10 s, see log.txt [Perf] lines)' }))

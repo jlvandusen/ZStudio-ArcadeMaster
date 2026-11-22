@@ -14,7 +14,7 @@ param(
   [switch]$NoFanart
 )
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'lib\AmVisual.ps1')
+. (Join-Path $PSScriptRoot 'lib\AmVisual.ps1'); . (Join-Path $PSScriptRoot 'lib\CabinetTypes.ps1')
 $col = Join-Path $RetroFE 'collections\Tools'
 if (-not (Test-Path (Join-Path $col 'roms'))) { Write-Warning "no Tools collection at $col (run New-CabinetToolsCollection.ps1)"; return }
 foreach ($d in 'logo', 'video', 'fanart') { New-Item -ItemType Directory -Force (Join-Path $col "medium_artwork\$d") | Out-Null }
@@ -35,6 +35,7 @@ $meta = @{
   ToggleFfb          = @{ icon = 'ffb'; color = 'ff2fa0'; what = 'Centre spring, detent ticks and a thunk on select while you browse. Released when a game starts.'; toggle = 'ffb' }
   ToggleSecondScreen = @{ icon = 'screen2'; color = '9be7ff'; what = 'Marquee banner, game header and touch buttons on the pedestal / second screen.'; toggle = 'screens' }
   ShuffleBackgrounds = @{ icon = 'shuffle'; color = '7b5cff'; what = 'Deal a fresh random set of game backdrops for the main menu.' }
+  CabinetType        = @{ icon = 'cabinet'; color = '2ec8ff'; what = 'Tell the arcade what it is - racing, flight, light gun, stand-up, multicade, or a combo. Shown in the boot intro.' }
   TogglePerfLog      = @{ icon = 'perf'; color = '9aa3b2'; what = 'Write frame times, p99 and hitches to log.txt every 10 seconds.'; toggle = 'perf' }
 }
 
@@ -91,6 +92,12 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
               $g.DrawPath((New-Object Drawing.Pen ([AmPal]::Violet), 3), [AmDraw]::Round($tr, 10)) } catch { }
         $x += $tw + 15
       }
+    }
+    'CabinetType' {
+      $setting = Get-Setting 'cabinetType'; $ct = Resolve-AmCabinetType $setting $cab (Get-Setting 'cabinetTitle') (Get-Setting 'cabinetTagline')
+      $x = $r.X; foreach ($ic in $ct.icons) { [AmDraw]::Icon($g, $ic, (RectF $x ($r.Y + 6) 84 84), [AmPal]::Hex($ct.color), 0); $x += 96 }
+      [AmDraw]::Text($g, $ct.title, (PxFont 'Segoe UI Black' 40 'Italic'), [AmPal]::Text, (RectF ($x + 10) $r.Y ($r.Right - $x - 10) 60), 'Near', 'Center')
+      [AmDraw]::Text($g, $(if (-not $setting -or $setting -eq 'auto') { 'auto - from the detected controllers' } else { "cabinetType = $setting" }), $small, [AmPal]::Dim, (RectF ($x + 12) ($r.Y + 58) ($r.Right - $x - 12) 34), 'Near', 'Center')
     }
     'WheelSetup' {
       $pf = Join-Path $PSScriptRoot 'wheelmap\profiles\G29.json'
@@ -156,8 +163,6 @@ foreach ($bat in Get-ChildItem (Join-Path $col 'roms') -Filter *.bat -File) {
     [AmDraw]::Icon($lg, $m.icon, (RectF 0 0 900 900), $acc, [float]$live); $lg.Dispose()
     $cm = New-Object Drawing.Imaging.ColorMatrix; $cm.Matrix33 = 0.13; $ia = New-Object Drawing.Imaging.ImageAttributes; $ia.SetColorMatrix($cm)
     $g.DrawImage($lay, (New-Object Drawing.Rectangle 1100, 300, 900, 900), 0, 0, 900, 900, [Drawing.GraphicsUnit]::Pixel, $ia); $lay.Dispose()
-    $pen = New-Object Drawing.Pen ([AmPal]::A($acc, 18)), 2
-    for ($i = 0; $i -lt 14; $i++) { $y = 760 + $i * $i * 2.4; $g.DrawLine($pen, 0, [float]$y, 1920, [float]$y) }   # receding floor lines
     $enc = [Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object MimeType -eq 'image/jpeg'; $ep = New-Object Drawing.Imaging.EncoderParameters 1; $ep.Param[0] = New-Object Drawing.Imaging.EncoderParameter ([Drawing.Imaging.Encoder]::Quality), 88L
     $g.Dispose(); $bmp.Save((Join-Path $col "medium_artwork\fanart\$name.jpg"), $enc, $ep); $bmp.Dispose()
   }

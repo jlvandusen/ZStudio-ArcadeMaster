@@ -10,6 +10,7 @@ A deployable arcade-cabinet system from **The Real Z Studios**. It covers racing
 | RetroFE: ZStudio fork of CoinOPS (`zstudio-retrofe`), crash fixes, symbols | done. Menu is ready in **0.71 s**, down from 4–9 s on stock. See `retrofe/` |
 | ArcadeMaster layout (boot banner, animated wheel/gauges/yoke/HUD, launch sequence) | working on the CoinOPS build, see `layouts/ArcadeMaster/` |
 | Per-game backdrops: selected game's fanart full screen (game list); random fanart of the highlighted collection, reshuffled every boot (main menu) | working: `Set-LayoutThemes.ps1 -Shuffle -CollectionsDir`; generated scenes only as fallback |
+| Boot intro: studio logo -> black -> cabinet title card (racing / flight / simulation / stand-up / light gun / multicade / pedestal, or hybrids like racing+lightgun); `cabinetType` in settings.conf or Tools -> Cabinet Type | `splash.xml`, `New-CabinetIntro.ps1`, `lib/CabinetTypes.ps1` (docs/08) |
 | Boot launcher (shuffle + crash-restart watchdog) | `tools/Start-ArcadeMaster.ps1` |
 | Second screen (pedestal/marquee touchscreen): marquee banner + game header + touch buttons, per-screen touch | `layout - 1.xml`, `Set-RetroFEScreens.ps1`, patch 0003, `controls-pedestal-4p.conf` (docs/07) |
 | Frontend force feedback on the wheel (spring, detent ticks, thunk, rumble; released for games) + frame-time telemetry | patch 0004, verified on the G29 (docs/07) |

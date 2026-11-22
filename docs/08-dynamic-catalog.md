@@ -149,3 +149,34 @@ How it fits together:
 - Generated items are marked `ARCADEMASTER-TOOLS.txt`, so `Build-Manifest` skips them. `-Remove` deletes the collection.
 
 **Second-screen layouts:** `layout - 1.xml` (root and Main) must declare `<layout monitor="1" ...>`. Without it, RetroFE draws the pedestal layout (touch bar, title, PLAYERS/MAKER) over the main screen on a single-display cabinet. With it, RetroFE skips the layout when monitor 1 doesn't exist.
+## Boot intro: cabinet type
+
+The boot splash (`layouts/ArcadeMaster/splash.xml`) plays the Real Z Studios logo, fades to black, then shows a **cabinet title card**: icons rise, a neon title punches in, an accent line draws out and a tagline fades in. Total ≈ 6.8 s.
+
+Set the type in RetroFE `settings.conf`:
+
+```
+cabinetType = auto        # auto | racing | flight | simulation | standup | lightgun | multicade | pedestal
+                          # combine with +, e.g. racing+lightgun  (wheel + handbrake + gun shooters)
+cabinetTitle = ...        # optional custom title
+cabinetTagline = ...      # optional custom tagline
+```
+
+| type | title | icons | tagline |
+|---|---|---|---|
+| racing | RACING CABINET | wheel, pedals | START YOUR ENGINES |
+| flight | FLIGHT CABINET | jet, flight stick | CLEARED FOR TAKEOFF |
+| simulation | SIMULATION CABINET | wheel, shifter, pedals | FULL CONTROL |
+| standup | STAND-UP ARCADE | cabinet, control panel | INSERT COIN |
+| lightgun | LIGHT GUN ARCADE | gun, crosshair | LOCK AND LOAD |
+| multicade | MULTICADE | control panel, trackball, gun | EVERY GAME - ONE CABINET |
+| pedestal | 4-PLAYER PEDESTAL | pad, control panel | PLAYERS 1 TO 4 READY |
+| hybrids (`a+b`) | "RACING + LIGHT GUN CABINET" | both sets, two-tone (racing hybrids show the handbrake if one is detected) | the types' verbs: DRIVE - AIM - FIRE |
+
+**How it's set and drawn:**
+- **`auto`** works the type out from `manifest\cabinet.json`:
+  - wheel → racing; wheel + clutch/shifter + flight stick → simulation; flight stick → flight
+  - a light gun is added to any of those
+  - otherwise: 3+ players → pedestal, trackball → multicade, else stand-up
+- **Rendering:** `tools/New-CabinetIntro.ps1` draws `images/intro/*.png`. Definitions live in `tools/lib/CabinetTypes.ps1`. `Start-ArcadeMaster.ps1` re-renders it every boot.
+- **Tools → Cabinet Type** is a visual picker. Turn the wheel or a joystick (or use the hat or arrow keys) to move, press a button or Enter to confirm, or tap a card. It saves `cabinetType`, re-renders the intro and plays a preview of the new title card.

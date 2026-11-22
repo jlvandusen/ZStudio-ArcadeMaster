@@ -192,6 +192,36 @@ public static class AmDraw {
         Icon(g, "gamepad", new RectangleF(x, y + s * .12f, s * .62f, s * .62f), AmPal.A(c, 160), 0);
         Icon(g, "wheel", new RectangleF(x + s * .38f, y + s * .3f, s * .62f, s * .62f), c, live);
         break; }
+      case "plane": case "jet": {
+        // top-down jet: fuselage, swept wings, tailplane
+        g.TranslateTransform(x + s / 2, y + s / 2); g.RotateTransform(live);
+        var body = new[] { new PointF(0, -s * .46f), new PointF(s * .06f, -s * .3f), new PointF(s * .06f, -s * .06f), new PointF(s * .44f, s * .14f), new PointF(s * .44f, s * .22f), new PointF(s * .06f, s * .12f),
+                           new PointF(s * .05f, s * .32f), new PointF(s * .17f, s * .42f), new PointF(s * .17f, s * .47f), new PointF(0, s * .42f), new PointF(-s * .17f, s * .47f), new PointF(-s * .17f, s * .42f),
+                           new PointF(-s * .05f, s * .32f), new PointF(-s * .06f, s * .12f), new PointF(-s * .44f, s * .22f), new PointF(-s * .44f, s * .14f), new PointF(-s * .06f, -s * .06f), new PointF(-s * .06f, -s * .3f) };
+        using (var b = new SolidBrush(AmPal.A(c, 60))) g.FillPolygon(b, body); using (var pen = P(c, w * .8f)) g.DrawPolygon(pen, body);
+        break; }
+      case "crosshair": case "target": {
+        float R = s * .4f; float cx = x + s / 2, cy = y + s / 2;
+        using (var pen = P(c, w)) { g.DrawEllipse(pen, cx - R, cy - R, 2 * R, 2 * R); g.DrawEllipse(pen, cx - R * .45f, cy - R * .45f, R * .9f, R * .9f);
+          g.DrawLine(pen, cx, cy - s * .48f, cx, cy - R * .6f); g.DrawLine(pen, cx, cy + R * .6f, cx, cy + s * .48f); g.DrawLine(pen, cx - s * .48f, cy, cx - R * .6f, cy); g.DrawLine(pen, cx + R * .6f, cy, cx + s * .48f, cy); }
+        using (var b = new SolidBrush(AmPal.Red)) g.FillEllipse(b, cx - s * .04f, cy - s * .04f, s * .08f, s * .08f);
+        break; }
+      case "cabinet": case "arcade": {
+        // upright cabinet side-on-front: marquee, screen, control panel, base
+        var outline = new[] { new PointF(.24f, .04f), new PointF(.76f, .04f), new PointF(.76f, .56f), new PointF(.84f, .66f), new PointF(.84f, .72f), new PointF(.76f, .74f), new PointF(.76f, .96f), new PointF(.24f, .96f), new PointF(.24f, .74f), new PointF(.16f, .72f), new PointF(.16f, .66f), new PointF(.24f, .56f) };
+        var op = new PointF[outline.Length]; for (int i = 0; i < op.Length; i++) op[i] = new PointF(x + s * outline[i].X, y + s * outline[i].Y);
+        using (var b = new SolidBrush(AmPal.A(c, 40))) g.FillPolygon(b, op); using (var pen = P(c, w)) g.DrawPolygon(pen, op);
+        using (var b = new SolidBrush(AmPal.A(AmPal.Magenta, 200))) g.FillRectangle(b, x + s * .3f, y + s * .09f, s * .4f, s * .08f);
+        using (var p = Round(new RectangleF(x + s * .3f, y + s * .22f, s * .4f, s * .3f), s * .03f)) { using (var b = new SolidBrush(AmPal.Card)) g.FillPath(b, p); using (var pen = P(c, w * .7f)) g.DrawPath(pen, p); }
+        using (var b = new SolidBrush(c)) { g.FillEllipse(b, x + s * .33f, y + s * .62f, s * .07f, s * .07f); g.FillEllipse(b, x + s * .52f, y + s * .63f, s * .06f, s * .06f); g.FillEllipse(b, x + s * .61f, y + s * .63f, s * .06f, s * .06f); }
+        break; }
+      case "buttons": case "panel": {
+        using (var p = Round(new RectangleF(x + s * .04f, y + s * .5f, s * .92f, s * .34f), s * .06f)) { using (var b = new SolidBrush(AmPal.A(c, 40))) g.FillPath(b, p); using (var pen = P(c, w)) g.DrawPath(pen, p); }
+        using (var pen = P(c, s / 14)) g.DrawLine(pen, x + s * .2f, y + s * .62f, x + s * .2f, y + s * .3f);
+        using (var b = new SolidBrush(AmPal.Magenta)) g.FillEllipse(b, x + s * .1f, y + s * .18f, s * .2f, s * .2f);
+        var cols = new[] { AmPal.Red, AmPal.Amber, AmPal.Green, AmPal.Cyan, AmPal.Violet, Color.White };
+        for (int i = 0; i < 6; i++) using (var b = new SolidBrush(cols[i])) g.FillEllipse(b, x + s * (.4f + (i % 3) * .17f), y + s * (.56f + (i / 3) * .13f), s * .1f, s * .1f);
+        break; }
       default: {
         using (var pen = P(c, w)) g.DrawEllipse(pen, x + s * .15f, y + s * .15f, s * .7f, s * .7f);
         break; }

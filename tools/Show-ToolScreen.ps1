@@ -42,8 +42,8 @@ public class AmFeed {
 '@
 [void][AmWin]::SetProcessDPIAware()
 
-$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf' }[$Tool]
-$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim }[$Tool]
+$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet' }[$Tool]
+$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan }[$Tool]
 if (-not $Title) { $Title = ($Tool -creplace '(?<=[a-z])(?=[A-Z])', ' ').ToUpper() }
 if ($Screen -lt 0) {
   $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*screenNum0\s*=\s*(\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
@@ -102,6 +102,11 @@ function On-Event($e) {
     'wiz-step' { if ($M.wiz) { $M.wiz.step = $e; $M.wiz.axis = $null; $M.wiz.stepAt = Get-Date } }
     'wiz-axis' { if ($M.wiz) { $M.wiz.axis = $e } }
     'wiz-result' { if ($M.wiz) { [void]$M.wiz.results.Add($e) } }
+    'choice' { $M.choice = @{ opts = @($e.options); idx = [int]$e.selected; title = $e.title; prompt = $e.prompt; confirmed = $false; at = Get-Date; rest = @{}; moveAt = [datetime]::MinValue; dir = 0 } }
+    'intro' {
+      $M.intro = @{ at = Get-Date; setting = $e.setting; img = @{} }
+      foreach ($n in 'glow', 'icons', 'title', 'line', 'tagline') { $f = Join-Path $e.dir "intro_$n.png"; if (Test-Path $f) { $bytes = [IO.File]::ReadAllBytes($f); $M.intro.img[$n] = [Drawing.Image]::FromStream((New-Object IO.MemoryStream (, $bytes))) } }
+    }
   }
 }
 function On-Line([string]$l) {
@@ -305,6 +310,53 @@ function Paint-Wizard($g, [float]$y, [float]$h) {
     }
   }
 }
+function Get-ChoiceRects([float]$y, [float]$h) {
+  $n = @($M.choice.opts).Count; $cols = 4; $rows = [Math]::Ceiling($n / $cols); $gap = $SW * 0.012
+  $cw = ($SW - 2 * $pad - ($cols - 1) * $gap) / $cols; $ch = [Math]::Min($SH * 0.17, ($h - $SH * 0.06 - ($rows - 1) * $gap) / $rows)
+  for ($i = 0; $i -lt $n; $i++) { Rect ($pad + ($i % $cols) * ($cw + $gap)) ($y + $SH * 0.06 + [Math]::Floor($i / $cols) * ($ch + $gap)) $cw $ch }
+}
+function Paint-Choice($g, [float]$y, [float]$h) {
+  $c = $M.choice
+  [AmDraw]::Text($g, "$($c.title)", $fnt.textB, [AmPal]::Text, (Rect $pad $y ($SW * 0.5) ($SH * 0.05)), 'Near', 'Center')
+  [AmDraw]::Text($g, "$($c.prompt)", $fnt.small, [AmPal]::Dim, (Rect ($SW * 0.45) $y ($SW * 0.55 - $pad) ($SH * 0.05)), 'Far', 'Center')
+  $rects = @(Get-ChoiceRects $y $h); $pulse = 0.5 + 0.5 * [Math]::Sin(((Get-Date) - $c.at).TotalSeconds * 5)
+  for ($i = 0; $i -lt $rects.Count; $i++) {
+    $o = $c.opts[$i]; $r = $rects[$i]; $sel = $i -eq $c.idx; $col = [AmPal]::Hex($o.color)
+    if ($sel) { $r = [Drawing.RectangleF]::Inflate($r, $SH * 0.004, $SH * 0.004) }
+    [AmDraw]::Card($g, $r, $(if ($sel) { $col } else { [AmPal]::Faint }), $r.Height * 0.12, $sel)
+    if ($sel -and $c.confirmed) { [AmDraw]::Check($g, (Rect ($r.Right - $r.Height * 0.32) ($r.Y + $r.Height * 0.08) ($r.Height * 0.24) ($r.Height * 0.24)), 2, 0) }
+    $ics = @($o.icons); $isz = $r.Height * 0.38; $ix = $r.X + $r.Height * 0.1
+    for ($k = 0; $k -lt [Math]::Min(4, $ics.Count); $k++) {
+      $icol = if ($k -ge [Math]::Ceiling($ics.Count / 2) -and $o.color2 -ne $o.color) { [AmPal]::Hex($o.color2) } else { $col }
+      [AmDraw]::Icon($g, $ics[$k], (Rect $ix ($r.Y + $r.Height * 0.1) $isz $isz), $(if ($sel) { $icol } else { [AmPal]::A($icol, 150) }), 0); $ix += $isz * 1.08
+    }
+    $lf = Fit-Font $g "$($o.label)" @($fnt.textB, $fnt.label, $fnt.chip) ($r.Width - $r.Height * 0.2)
+    [AmDraw]::Text($g, "$($o.label)", $lf, $(if ($sel) { [AmPal]::Text } else { [AmPal]::Dim }), (Rect ($r.X + $r.Height * 0.1) ($r.Y + $r.Height * 0.52) ($r.Width - $r.Height * 0.2) ($r.Height * 0.24)), 'Near', 'Center')
+    [AmDraw]::Text($g, "$($o.sub)", $fnt.chip, $(if ($sel) { $col } else { [AmPal]::Faint }), (Rect ($r.X + $r.Height * 0.1) ($r.Y + $r.Height * 0.74) ($r.Width - $r.Height * 0.2) ($r.Height * 0.2)), 'Near', 'Center')
+  }
+}
+# preview of the boot title card, composited like splash.xml (1920x1080 space scaled into the stage)
+function Paint-Intro($g, [float]$y, [float]$h) {
+  $im = $M.intro.img; $ph = $h * 0.9; $pw = $ph * 16 / 9; $px = ($SW - $pw) / 2; $s = $pw / 1920
+  $box = Rect $px $y $pw $ph; $st = $g.Save(); $g.SetClip([AmDraw]::Round($box, $SH * 0.012)); $g.FillRectangle((Brush ([Drawing.Color]::Black)), $box)
+  $el = ((Get-Date) - $M.intro.at).TotalSeconds
+  function A([double]$t0, [double]$d) { [float][Math]::Max(0, [Math]::Min(1, ($el - $t0) / $d)) }
+  function Put($name, [float]$cx, [float]$cy, [float]$alpha, [float]$scale = 1, [float]$wOverride = 0) {
+    $i = $im[$name]; if (-not $i -or $alpha -le 0) { return }
+    $w = if ($wOverride) { $wOverride } else { $i.Width * $scale }; $hh = $i.Height * $scale
+    $ia = New-Object Drawing.Imaging.ImageAttributes; $cm = New-Object Drawing.Imaging.ColorMatrix; $cm.Matrix33 = $alpha; $ia.SetColorMatrix($cm)
+    $r = [Drawing.Rectangle]::Round((Rect ($px + ($cx - $w / 2) * $s) ($y + ($cy - $hh / 2) * $s) ($w * $s) ($hh * $s)))
+    $g.DrawImage($i, $r, 0, 0, $i.Width, $i.Height, [Drawing.GraphicsUnit]::Pixel, $ia)
+  }
+  $loop = $el % 4.5; $el = $loop   # replay the card every 4.5 s
+  Put 'glow' 960 540 (A 0 0.6)
+  $ai = A 0.1 0.6; Put 'icons' 960 ([float](430 - 50 * $ai)) $ai
+  $at = A 0.5 0.3; Put 'title' 960 690 $at ([float](1.2 - 0.2 * $at))
+  Put 'line' 960 800 1 1 ([float](10 + 1590 * (A 0.8 0.5)))
+  Put 'tagline' 960 860 (A 1.05 0.5)
+  $g.Restore($st); $g.DrawPath((New-Object Drawing.Pen ([AmPal]::A([AmPal]::Cyan, 200)), 3), [AmDraw]::Round($box, $SH * 0.012))
+  [AmDraw]::Text($g, ("BOOT INTRO PREVIEW   -   cabinetType = {0}" -f $M.intro.setting), $fnt.chip, [AmPal]::Dim, (Rect $px ($y + $ph + $SH * 0.008) $pw ($SH * 0.03)), 'Center', 'Center')
+}
 function Paint-Log($g, [float]$y, [float]$h) {
   $lh = $fnt.mono.GetHeight($g); $n = [Math]::Max(1, [int]($h / $lh)); $lines = @($M.log | Select-Object -Last $n); $i = 0
   foreach ($l in $lines) {
@@ -319,6 +371,9 @@ function Get-ButtonRects {
 }
 function Paint-Footer($g) {
   $now = Get-Date
+  if ($M.choice -and -not $M.choice.confirmed -and -not $M.done) {
+    [AmDraw]::Text($g, "TURN THE WHEEL / JOYSTICK OR TAP TO CHOOSE   -   PRESS A BUTTON TO CONFIRM", $fnt.foot, [AmPal]::Amber, (Rect $pad ($SH * 0.875) ($SW - 2 * $pad) ($SH * 0.075)), 'Center', 'Center'); return
+  }
   if ($M.wiz -and -not $M.wizEnd -and -not $M.done) {
     $rects = @(Get-ButtonRects)
     for ($i = 0; $i -lt $rects.Count; $i++) {
@@ -346,7 +401,9 @@ function Paint-All($g) {
   $pb = New-Object Drawing.Drawing2D.PathGradientBrush $gp; $pb.CenterColor = [AmPal]::A($toolColor, 28); $pb.SurroundColors = @([AmPal]::A($toolColor, 0)); $g.FillPath($pb, $gp)
   Paint-Header $g
   $y = $SH * 0.2; $h = $SH * 0.65
-  if ($M.wiz) { Paint-Wizard $g $y $h }
+  if ($M.intro) { Paint-Intro $g $y $h }
+  elseif ($M.choice) { Paint-Choice $g $y $h }
+  elseif ($M.wiz) { Paint-Wizard $g $y $h }
   elseif ($M.toggle) { Paint-Toggle $g $y $h }
   elseif ($M.steps.Count) { Paint-Steps $g $y $h }
   elseif ($M.images) { Paint-Images $g $y $h }
@@ -382,6 +439,7 @@ function Close-Screen([string]$why = '?') {
   $form.Close()
 }
 function Send-WizKey([string]$k) { try { [IO.File]::WriteAllText($keyFile, $k) } catch { } }
+function Confirm-Choice { $c = $M.choice; if (-not $c -or $c.confirmed) { return }; $c.confirmed = $true; Send-WizKey ("CHOICE:" + $c.opts[$c.idx].id) }
 
 $timer = New-Object Windows.Forms.Timer; $timer.Interval = 33
 $timer.Add_Tick({
@@ -403,6 +461,21 @@ $timer.Add_Tick({
   $M.prevButtons = $btn
   # remember when each button went down
   for ($b = 0; $b -lt 32; $b++) { $bit = [long]1 -shl $b; if (($btn -band $bit) -and -not ($M.lastPoll -band $bit)) { $M.downAt[$b] = $now } }
+  if ($M.choice -and -not $M.choice.confirmed -and -not $M.done) {
+    $c = $M.choice
+    # move: any centring axis 0 (wheel / stick X) or a hat, relative to where it rested when the picker opened
+    $dir = 0
+    foreach ($d in @(Get-LiveJoys)) {
+      $k = "$($d.Id)"; if (-not $c.rest.ContainsKey($k)) { $c.rest[$k] = $d.Axis[0] }
+      if ([Math]::Abs($c.rest[$k]) -lt 0.5) { $dx = $d.Axis[0] - $c.rest[$k]; if ($dx -gt 0.15) { $dir = 1 } elseif ($dx -lt -0.15) { $dir = -1 } }
+      if ($d.Pov -ge 0) { if ($d.Pov -ge 4500 -and $d.Pov -le 13500) { $dir = 1 } elseif ($d.Pov -ge 22500 -and $d.Pov -le 31500) { $dir = -1 } }
+    }
+    if ($dir -ne 0 -and ($dir -ne $c.dir -or ($now - $c.moveAt).TotalMilliseconds -gt 450)) { $c.idx = ($c.idx + $dir + $c.opts.Count) % $c.opts.Count; $c.moveAt = $now }
+    $c.dir = $dir
+    $released = $M.lastPoll -band (-bnot $btn) -band (-bnot $M.noisy)
+    for ($b = 0; $b -lt 32 -and $released; $b++) { $bit = [long]1 -shl $b
+      if (($released -band $bit) -and $M.downAt[$b] -and $M.downAt[$b] -ge $c.at -and ($now - $M.downAt[$b]).TotalSeconds -lt 1.5) { Confirm-Choice; break } }
+  }
   if ($M.done) {
     # close on a short press-and-release (< 1.5 s) that started after the tool finished. Latching inputs
     # (an H-shifter sitting in gear reports a held button) and chattering buttons never close the page.
@@ -416,10 +489,13 @@ $timer.Add_Tick({
 })
 $form.Add_KeyDown({ param($s, $e)
   if ($M.done) { Close-Screen "key $($e.KeyCode)"; return }
+  if ($M.choice -and -not $M.choice.confirmed) { $c = $M.choice; $n = $c.opts.Count
+    switch ($e.KeyCode) { 'Right' { $c.idx = ($c.idx + 1) % $n } 'Left' { $c.idx = ($c.idx - 1 + $n) % $n } 'Down' { $c.idx = [Math]::Min($n - 1, $c.idx + 4) } 'Up' { $c.idx = [Math]::Max(0, $c.idx - 4) } 'Return' { Confirm-Choice } 'Escape' { Close-Screen 'cancelled (Esc)' } }; return }
   if ($M.wiz -and -not $M.wizEnd) { switch ($e.KeyCode) { 'S' { Send-WizKey 'S' } 'R' { Send-WizKey 'R' } 'B' { Send-WizKey 'B' } 'Q' { Send-WizKey 'Q' } 'Return' { Send-WizKey 'Enter' } 'Escape' { $M.cancelled = $true; Close-Screen 'cancelled (Esc)' } } }
 })
 $form.Add_MouseDown({ param($s, $e)
   if ($M.done) { Close-Screen 'tap/click'; return }
+  if ($M.choice -and -not $M.choice.confirmed) { $rects = @(Get-ChoiceRects ($SH * 0.2) ($SH * 0.65)); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { $M.choice.idx = $i; Confirm-Choice } }; return }
   if ($M.wiz -and -not $M.wizEnd) { $rects = @(Get-ButtonRects); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { Send-WizKey $wizButtons[$i].key } } }
 })
 $form.Add_Shown({
