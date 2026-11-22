@@ -35,6 +35,7 @@ $meta = @{
   ToggleFfb          = @{ icon = 'ffb'; color = 'ff2fa0'; what = 'Centre spring, detent ticks and a thunk on select while you browse. Released when a game starts.'; toggle = 'ffb' }
   ToggleSecondScreen = @{ icon = 'screen2'; color = '9be7ff'; what = 'Marquee banner, game header and touch buttons on the pedestal / second screen.'; toggle = 'screens' }
   ShuffleBackgrounds = @{ icon = 'shuffle'; color = '7b5cff'; what = 'Deal a fresh random set of game backdrops for the main menu.' }
+  Themes             = @{ icon = 'shuffle'; color = '7b5cff'; what = 'Change the whole look - ArcadeMaster or a theme imported from CoinOPS / Core. Kept per cabinet mode.' }
   SystemHealth       = @{ icon = 'repair'; color = '3ddc84'; what = 'Check and repair the install: runtime, settings, controls, screens, menus, launchers, logs, disk, art.' }
   SystemSettings     = @{ icon = 'buttons'; color = 'ffb000'; what = 'Auto login, start the arcade at logon, quiet startup, no Windows pop-ups, game bezels, screen always on.' }
   CabinetType        = @{ icon = 'cabinet'; color = '2ec8ff'; what = 'Tell the arcade what it is - racing, flight, light gun, stand-up, multicade, or a combo. Shown in the boot intro.' }
@@ -95,6 +96,14 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
         $x += $tw + 15
       }
     }
+    'Themes' {
+      $cur = Get-Setting 'layout'; $reg = Join-Path $ManifestDir 'themes.json'; $n = 0; $pv = $null
+      if (Test-Path $reg) { $all = @((Get-Content $reg -Raw | ConvertFrom-Json).themes | ForEach-Object { $_ }); $n = $all.Count; $pv = ($all | Where-Object { $_.name -eq $cur }).preview }
+      $x = $r.X; if ($pv -and (Test-Path $pv)) { try { $img = [Drawing.Image]::FromFile($pv); $tr = RectF $x $r.Y 220 124; $st = $g.Save(); $g.SetClip([AmDraw]::Round($tr, 10)); $g.DrawImage($img, $tr); $g.Restore($st); $img.Dispose(); $x += 240 } catch { } }
+      [AmDraw]::Text($g, "$cur", $val, [AmPal]::Text, (RectF $x $r.Y ($r.Right - $x) 60), 'Near', 'Center')
+      [AmDraw]::Text($g, "$n theme(s) installed", $small, [AmPal]::Dim, (RectF ($x + 2) ($r.Y + 58) ($r.Right - $x) 34), 'Near', 'Center')
+    }
+
     'SystemHealth' {
       $hf = Join-Path $ManifestDir 'health.json'
       if (Test-Path $hf) { $hj = Get-Content $hf -Raw | ConvertFrom-Json; $x = $r.X

@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -189,7 +189,26 @@ switch ($Tool) {
     Banner 'SYSTEM HEALTH'
     Run 'Repair-ArcadeHealth.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null
   }
-  'TogglePerfLog' {
+  'Themes' {
+    $reg = Join-Path $ManifestDir 'themes.json'
+    $list = @(); if (Test-Path $reg) { $list = @((Get-Content $reg -Raw | ConvertFrom-Json).themes | ForEach-Object { $_ }) }
+    $list = @($list | Where-Object { Test-Path (Join-Path $RetroFE "layouts\$($_.name)\layout.xml") })
+    $cur = Get-Setting 'layout'; $mode = $null; $mf = Join-Path $ManifestDir 'cabinet-mode.json'; if (Test-Path $mf) { $mode = ((Get-Content $mf -Raw | ConvertFrom-Json).effective -split '\+')[0] }
+    Banner "THEMES - now: $cur$(if ($mode) { " (cabinet mode: $mode)" })"
+    if (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not $list) { $list | ForEach-Object { Write-Host ("  {0,-20} coverage {1}%" -f $_.name, $_.score) }; break }
+    $opts = @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
+    Emit @{ type = 'choice'; title = "PICK A THEME$(if ($mode) { " FOR $($mode.ToUpper()) MODE" })"; prompt = 'Applied after the frontend restarts'; options = $opts; selected = 0 }
+    $deadline = (Get-Date).AddSeconds(180); $chosen = $null
+    while ((Get-Date) -lt $deadline) { if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) { $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue; if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break } }; Start-Sleep -Milliseconds 100 }
+    if ($chosen -and ($list | Where-Object { $_.name -eq $chosen })) {
+      Set-Setting 'layout' $chosen
+      if ($mode) { Set-Setting "cabinetTheme.$mode" $chosen }   # this mode keeps the theme across boots (Set-CabinetMode)
+      Run 'New-CabinetIntro.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir, '-Layout', $chosen) | Out-Null
+      $pv = ($list | Where-Object { $_.name -eq $chosen }).preview
+      Emit @{ type = 'images'; title = "THEME: $($chosen -replace '^CO-','')$(if ($mode) { " - kept for $mode mode" })"; files = @($pv | Where-Object { $_ }) }
+      Write-Host "layout = $chosen"
+    } else { Write-Host 'no change' }
+  }  'TogglePerfLog' {
     $on = [int]("0" + (Get-Setting 'perfLog')) -gt 0
     Set-Setting 'perfLog' $(if ($on) { '0' } else { '10' })
     Banner ("PERFORMANCE LOG: " + $(if ($on) { 'OFF' } else { 'ON (every 10 s, see log.txt [Perf] lines)' }))

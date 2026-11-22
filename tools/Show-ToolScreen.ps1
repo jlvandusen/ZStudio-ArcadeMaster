@@ -42,8 +42,8 @@ public class AmFeed {
 '@
 [void][AmWin]::SetProcessDPIAware()
 
-$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons'; SystemHealth = 'repair' }[$Tool]
-$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan; SystemSettings = [AmPal]::Amber; SystemHealth = [AmPal]::Green }[$Tool]
+$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons'; SystemHealth = 'repair'; Themes = 'shuffle' }[$Tool]
+$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan; SystemSettings = [AmPal]::Amber; SystemHealth = [AmPal]::Green; Themes = [AmPal]::Violet }[$Tool]
 if (-not $Title) { $Title = ($Tool -creplace '(?<=[a-z])(?=[A-Z])', ' ').ToUpper() }
 if ($Screen -lt 0) {
   $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*screenNum0\s*=\s*(\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
@@ -108,7 +108,8 @@ function On-Event($e) {
       if ($M.yielded) { $M.yielded = $false; $form.WindowState = 'Normal'; $form.Bounds = $SB; $form.TopMost = $true; $form.Activate() }
     }
     'yield' { $M.yielded = $true; if ($M.settings) { $M.settings.message = "$($e.message)" }; $form.TopMost = $false; $form.WindowState = 'Minimized' }
-    'choice' { $M.choice = @{ opts = @($e.options); idx = [int]$e.selected; title = $e.title; prompt = $e.prompt; confirmed = $false; at = Get-Date; rest = @{}; moveAt = [datetime]::MinValue; dir = 0 } }
+    'choice' { foreach ($op in @($e.options)) { if ($op.preview -and (Test-Path $op.preview) -and -not $M.thumbs[$op.preview]) { try { $bytes = [IO.File]::ReadAllBytes($op.preview); $M.thumbs[$op.preview] = [Drawing.Image]::FromStream((New-Object IO.MemoryStream (, $bytes))) } catch { } } }
+      $M.choice = @{ opts = @($e.options); idx = [int]$e.selected; title = $e.title; prompt = $e.prompt; confirmed = $false; at = Get-Date; rest = @{}; moveAt = [datetime]::MinValue; dir = 0 } }
     'intro' {
       $M.intro = @{ at = Get-Date; setting = $e.setting; img = @{} }
       foreach ($n in 'glow', 'icons', 'title', 'line', 'tagline') { $f = Join-Path $e.dir "intro_$n.png"; if (Test-Path $f) { $bytes = [IO.File]::ReadAllBytes($f); $M.intro.img[$n] = [Drawing.Image]::FromStream((New-Object IO.MemoryStream (, $bytes))) } }
@@ -317,8 +318,8 @@ function Paint-Wizard($g, [float]$y, [float]$h) {
   }
 }
 function Get-ChoiceRects([float]$y, [float]$h) {
-  $n = @($M.choice.opts).Count; $cols = 4; $rows = [Math]::Ceiling($n / $cols); $gap = $SW * 0.012
-  $cw = ($SW - 2 * $pad - ($cols - 1) * $gap) / $cols; $ch = [Math]::Min($SH * 0.17, ($h - $SH * 0.06 - ($rows - 1) * $gap) / $rows)
+  $n = @($M.choice.opts).Count; $pv = @($M.choice.opts | Where-Object { $_.preview }).Count -gt 0; $cols = if ($pv) { 3 } else { 4 }; $rows = [Math]::Ceiling($n / $cols); $gap = $SW * 0.012
+  $cw = ($SW - 2 * $pad - ($cols - 1) * $gap) / $cols; $ch = [Math]::Min($(if ($pv) { $SH * 0.3 } else { $SH * 0.17 }), ($h - $SH * 0.06 - ($rows - 1) * $gap) / $rows)
   for ($i = 0; $i -lt $n; $i++) { Rect ($pad + ($i % $cols) * ($cw + $gap)) ($y + $SH * 0.06 + [Math]::Floor($i / $cols) * ($ch + $gap)) $cw $ch }
 }
 function Paint-Choice($g, [float]$y, [float]$h) {
@@ -331,6 +332,14 @@ function Paint-Choice($g, [float]$y, [float]$h) {
     if ($sel) { $r = [Drawing.RectangleF]::Inflate($r, $SH * 0.004, $SH * 0.004) }
     [AmDraw]::Card($g, $r, $(if ($sel) { $col } else { [AmPal]::Faint }), $r.Height * 0.12, $sel)
     if ($sel -and $c.confirmed) { [AmDraw]::Check($g, (Rect ($r.Right - $r.Height * 0.32) ($r.Y + $r.Height * 0.08) ($r.Height * 0.24) ($r.Height * 0.24)), 2, 0) }
+    if ($o.preview -and $M.thumbs[$o.preview]) {
+      # theme preview fills the card above the label
+      $im = $M.thumbs[$o.preview]; $ir = Rect ($r.X + $r.Height * 0.05) ($r.Y + $r.Height * 0.05) ($r.Width - $r.Height * 0.1) ($r.Height * 0.62)
+      $st0 = $g.Save(); $g.SetClip([AmDraw]::Round($ir, $r.Height * 0.04)); $g.DrawImage($im, $ir); $g.Restore($st0)
+      [AmDraw]::Text($g, "$($o.label)", $fnt.textB, $(if ($sel) { [AmPal]::Text } else { [AmPal]::Dim }), (Rect ($r.X + $r.Height * 0.06) ($r.Y + $r.Height * 0.69) ($r.Width - $r.Height * 0.12) ($r.Height * 0.15)), 'Near', 'Center')
+      [AmDraw]::Text($g, "$($o.sub)", $fnt.chip, $(if ($sel) { $col } else { [AmPal]::Faint }), (Rect ($r.X + $r.Height * 0.06) ($r.Y + $r.Height * 0.84) ($r.Width - $r.Height * 0.12) ($r.Height * 0.12)), 'Near', 'Center')
+      continue
+    }
     $ics = @($o.icons); $isz = $r.Height * 0.38; $ix = $r.X + $r.Height * 0.1
     for ($k = 0; $k -lt [Math]::Min(4, $ics.Count); $k++) {
       $icol = if ($k -ge [Math]::Ceiling($ics.Count / 2) -and $o.color2 -ne $o.color) { [AmPal]::Hex($o.color2) } else { $col }

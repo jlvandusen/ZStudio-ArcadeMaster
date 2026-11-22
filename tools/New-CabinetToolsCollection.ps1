@@ -34,6 +34,7 @@ $items = [ordered]@{
   '7 Shuffle Backgrounds'    = @('ShuffleBackgrounds', '7b5cff')
   '8 Performance Log On-Off' = @('TogglePerfLog', '9aa3b2')
   '9 Cabinet Type'           = @('CabinetType', '2ec8ff')
+  '9a Themes'                = @('Themes', '7b5cff')
 }
 
 if (Test-Path $col) { Remove-Item $col -Recurse -Force }

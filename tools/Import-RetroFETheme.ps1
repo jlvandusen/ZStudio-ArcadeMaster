@@ -149,7 +149,9 @@ foreach ($name in $Layout) {
       $orig = [IO.File]::ReadAllText($sc)
       try {
         [IO.File]::WriteAllText($sc, ($orig -replace '(?m)^layout\s*=.*$', "layout = $destName"), (New-Object Text.ASCIIEncoding))
-        $p = Start-Process $exe -WorkingDirectory (Split-Path $exe) -PassThru; Start-Sleep 11
+        $p = Start-Process $exe -WorkingDirectory (Split-Path $exe) -PassThru; Start-Sleep 15   # boot intro is ~7 s
+        Add-Type -Namespace AmTh -Name W -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetForegroundWindow(System.IntPtr h);' -ErrorAction SilentlyContinue
+        $p.Refresh(); if ($p.MainWindowHandle -ne [IntPtr]::Zero) { [void][AmTh.W]::SetForegroundWindow($p.MainWindowHandle); Start-Sleep -Milliseconds 800 }
         Add-Type -AssemblyName System.Drawing, System.Windows.Forms
         $b = [Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object Drawing.Bitmap $b.Width, $b.Height; $g = [Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen($b.Location, [Drawing.Point]::Empty, $b.Size)
         $pd = Join-Path $ManifestDir 'themes'; New-Item -ItemType Directory -Force $pd | Out-Null
