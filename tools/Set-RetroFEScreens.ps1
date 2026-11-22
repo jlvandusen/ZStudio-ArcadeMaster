@@ -31,7 +31,9 @@ if ($Single -or $displays.Count -lt 2) {
 } else {
   # SDL display index follows Windows enumeration; find the primary and the first non-primary
   $primary = [array]::IndexOf(@($displays | ForEach-Object { [bool]$_.primary }), $true); if ($primary -lt 0) { $primary = 0 }
-  $second = (0..($displays.Count - 1) | Where-Object { $_ -ne $primary } | Select-Object -First 1)
+  # the pedestal's second screen is USB-connected (DisplayLink etc.): prefer that display for screen 1
+$usbIdx = @(0..($displays.Count - 1) | Where-Object { $_ -ne $primary -and $displays[$_].usb })
+$second = if ($usbIdx) { $usbIdx[0] } else { (0..($displays.Count - 1) | Where-Object { $_ -ne $primary } | Select-Object -First 1) }
   Set-Key 'numScreens' '2'
   Set-Key 'screenNum0' "$primary"; Set-Key 'fullscreen0' $fs; Set-Key 'horizontal0' "$($displays[$primary].width)"; Set-Key 'vertical0' "$($displays[$primary].height)"
   Set-Key 'screenNum1' "$second";  Set-Key 'fullscreen1' $fs; Set-Key 'horizontal1' "$($displays[$second].width)"; Set-Key 'vertical1' "$($displays[$second].height)"

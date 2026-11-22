@@ -66,8 +66,23 @@ $cap['encoders'] = @($encoders | ForEach-Object { ([regex]::Match($_.InstanceId,
 $cap['arcadeSticks'] = $ultraStiks.Count
 # displays + touch digitizers (pedestal / marquee touchscreens become RetroFE screen 1)
 Add-Type -AssemblyName System.Windows.Forms
-$cap['displays'] = @([Windows.Forms.Screen]::AllScreens | ForEach-Object { [ordered]@{ name = $_.DeviceName; primary = $_.Primary; width = $_.Bounds.Width; height = $_.Bounds.Height; x = $_.Bounds.X; y = $_.Bounds.Y } })
+# which graphics adapter drives each display: a USB display (DisplayLink / MCT / SiliconMotion / Fresco ...) is the
+# pedestal's USB-connected second screen - Set-RetroFEScreens puts screen 1 there
+Add-Type -Namespace AmDisp -Name Enum -MemberDefinition @"
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+public struct DISPLAY_DEVICE { public int cb; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)] public string DeviceName; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceString; public int StateFlags; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceID; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceKey; }
+[System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] public static extern bool EnumDisplayDevices(string dev, uint i, ref DISPLAY_DEVICE dd, uint flags);
+public static string Adapter(string name) { var d = new DISPLAY_DEVICE(); d.cb = System.Runtime.InteropServices.Marshal.SizeOf(d); for (uint i = 0; EnumDisplayDevices(null, i, ref d, 0); i++) { if (d.DeviceName == name) return d.DeviceString + "|" + d.DeviceID; d.cb = System.Runtime.InteropServices.Marshal.SizeOf(d); } return ""; }
+"@ -ErrorAction SilentlyContinue
+$usbRx = '(?i)displaylink|usb display|usb graphics|usb mobile monitor|mct|trigger|siliconmotion|smi usb|fresco|VID_17E9|VID_0711|VID_090C|VID_1D5C'
+$cap['displays'] = @([Windows.Forms.Screen]::AllScreens | ForEach-Object {
+  $ad = [AmDisp.Enum]::Adapter($_.DeviceName); $adName = ($ad -split '\|')[0]
+  [ordered]@{ name = $_.DeviceName; primary = $_.Primary; width = $_.Bounds.Width; height = $_.Bounds.Height; x = $_.Bounds.X; y = $_.Bounds.Y; adapter = $adName; usb = [bool]($ad -match $usbRx) } })
+# USB display adapters seen by Windows even when no screen is active (driver missing / not powered)
+$cap['usbDisplayAdapters'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match $usbRx -or $_.InstanceId -match 'VID_17E9|VID_0711|VID_1D5C' } | ForEach-Object { "$($_.FriendlyName) [$($_.Status)]" } | Select-Object -Unique)
 $cap['touchScreens'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match '(?i)touch ?screen|touch digitizer' -and $_.Status -eq 'OK' }).Count
+# touch hardware that is present but NOT working (no / wrong driver) - shows why a touch screen is missing
+$cap['touchProblems'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { ($_.FriendlyName -match '(?i)touch|digitizer|egalax|ilitek|goodix|elo |eeti|weida|hid-compliant touch' -or $_.InstanceId -match 'VID_0EEF|VID_222A|VID_04E7|VID_2575|VID_27C6|VID_1FD2') -and $_.Status -ne 'OK' } | ForEach-Object { "$($_.FriendlyName) [$($_.Status)] $($_.InstanceId)" })
 # joystick restrictors RetroFE can drive per game (joyways metadata): Ultimarc ServoStik (D209:1700); TOS GRS is probed by RetroFE itself
 $cap['restrictor'] = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209&PID_170[0-9]' }).Count -gt 0
 # Nintendo controllers - Bluetooth (HID ...VID&0002057E_PID&0306) or USB / Mayflash DolphinBar (VID_057E&PID_0306):
