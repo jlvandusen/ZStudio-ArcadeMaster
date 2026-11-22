@@ -49,7 +49,8 @@ $cap = [ordered]@{
   handbrake    = @($devices | Where-Object { $_.role -eq 'handbrake' }).Count -gt 0
   shifterPaddles = $wheel.Count -gt 0                                                   # every supported wheel has paddles/sequential buttons
   hShifter     = $null                                                                  # G29 shifter shares the wheel's USB id: confirm with WheelMap -Capture
-  flightStick  = @($devices | Where-Object { $_.type -match 'Flight|Joystick' -and $_.role -notmatch 'wheel|handbrake' }).Count -gt 0
+  # Ultimarc (VID D209: UltraStik, ServoStik, encoders) and other arcade-panel sticks are NOT flight sticks
+  flightStick  = @($devices | Where-Object { $_.type -match 'Flight|Joystick' -and $_.role -notmatch 'wheel|handbrake' -and $_.id -notmatch 'VID_D209' -and $_.name -notmatch '(?i)ultra-?stik|servostik|i-?pac|arcade|xin-?mo|zero delay|dragonrise' }).Count -gt 0
   gamepads     = $xinput + @($devices | Where-Object { $_.type -eq 'Gamepad' }).Count
   lightguns    = $guns.Count
   lightgunModels = $guns
@@ -59,7 +60,10 @@ $cap = [ordered]@{
 }
 # keyboard encoders (Ultimarc I-PAC = VID D209 keyboard device) mean a stand-up control panel
 $encoders = @(Get-PnpDevice -PresentOnly -Class Keyboard -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_D209' })
-$cap['controlPanel'] = $encoders.Count -gt 0
+$ultraStiks = @($devices | Where-Object { $_.id -match 'VID_D209&PID_05' -or $_.name -match '(?i)ultra-?stik' })
+$cap['controlPanel'] = ($encoders.Count -gt 0) -or ($ultraStiks.Count -gt 0)
+$cap['encoders'] = @($encoders | ForEach-Object { ([regex]::Match($_.InstanceId, 'VID_D209&PID_([0-9A-F]{4})')).Groups[1].Value } | Select-Object -Unique).Count   # distinct I-PAC boards
+$cap['arcadeSticks'] = $ultraStiks.Count
 # displays + touch digitizers (pedestal / marquee touchscreens become RetroFE screen 1)
 Add-Type -AssemblyName System.Windows.Forms
 $cap['displays'] = @([Windows.Forms.Screen]::AllScreens | ForEach-Object { [ordered]@{ name = $_.DeviceName; primary = $_.Primary; width = $_.Bounds.Width; height = $_.Bounds.Height; x = $_.Bounds.X; y = $_.Bounds.Y } })
@@ -89,8 +93,9 @@ foreach ($k in 'wiimotes', 'wiiUPro', 'joycons', 'switchPro') { for ($n = 0; $n 
     id = 'VID_057E'; type = 'Nintendo'; role = @{ wiimotes = 'wiimote'; wiiUPro = 'gamepad'; joycons = 'gamepad'; switchPro = 'gamepad' }[$k]; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) } }
 if ($nintendo.gcAdapter) { $devices.Add([ordered]@{ joy = 0; name = 'GameCube controller adapter'; id = 'VID_057E&PID_0337'; type = 'Nintendo'; role = 'gcadapter'; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) }
 $cap['gamepads'] = [int]$cap.gamepads + [int]$nintendo.wiiUPro + [int]$nintendo.switchPro + [Math]::Floor([int]$nintendo.joycons / 2)
-$sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' }).Count
-$cap['players'] = if ($Players -gt 0) { $Players } else { [Math]::Max(1, [Math]::Max($sticks + $cap.gamepads, [Math]::Max($cap.lightguns, $(if ($cap.controlPanel) { 2 } else { 1 })))) }
+$sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' }).Count   # incl. UltraStiks (panel sticks)
+# each I-PAC board serves 2 players (an I-PAC 4 / two I-PAC 2s = 4-player pedestal)
+$cap['players'] = if ($Players -gt 0) { $Players } elseif ($cap.encoders -ge 2) { [Math]::Max(4, 2 * $cap.encoders) } else { [Math]::Max(1, [Math]::Max($sticks + $cap.gamepads, [Math]::Max($cap.lightguns, $(if ($cap.controlPanel) { 2 } else { 1 })))) }
 $cap['modes'] = if ($Modes) { $Modes } else {
   @(if ($cap.wheel) { 'racing' }; if ($cap.flightStick -or $cap.wheel) { 'flight' }; if ($cap.lightguns -gt 0) { 'lightgun' }; if ($cap.controlPanel -or $sticks -gt 0 -or $cap.gamepads -gt 0) { 'standup' })
 }
