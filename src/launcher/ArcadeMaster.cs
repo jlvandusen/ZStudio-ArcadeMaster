@@ -350,8 +350,60 @@ namespace ArcadeMaster
         }
         void Save() { var s = Snapshot(); foreach (var f in typeof(Config).GetFields()) f.SetValue(c, f.GetValue(s)); c.Save(); }
 
+        // Why Install should go to a copy of this frontend, or null. A frontend the PC starts at logon (CoinOPS LEGENDS ...)
+        // is the one people play every day; one ArcadeMaster has never been installed in is somebody's working setup.
+        static string LiveReason(string root)
+        {
+            root = (root ?? "").Trim().TrimEnd('\\'); if (root.Length == 0 || !Directory.Exists(root)) return null;
+            var me = Process.GetCurrentProcess().MainModule.FileName;
+            // ArcadeMaster's own logon entries (this exe, or Start-ArcadeMaster.ps1 directly) are not "someone else's frontend"
+            var mentions = new System.Text.RegularExpressions.Regex(System.Text.RegularExpressions.Regex.Escape(root) + @"(?=[\\""\s]|$)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var starter = LogonTargets().FirstOrDefault(t => t.IndexOf(me, StringComparison.OrdinalIgnoreCase) < 0 && t.IndexOf("Start-ArcadeMaster", StringComparison.OrdinalIgnoreCase) < 0 && mentions.IsMatch(t));
+            if (starter != null) return "This PC starts this frontend at logon:\n  " + starter.Trim() + "\nInstall would change the frontend the cabinet plays every day (its settings.conf, layout and menus).";
+            if (!Directory.Exists(Path.Combine(root, @"layouts\ArcadeMaster")) && !root.EndsWith("-am", StringComparison.OrdinalIgnoreCase))
+                return "ArcadeMaster has never been installed in " + root + ".\nInstall changes its settings.conf (layout, screens), adds the ArcadeMaster layout and rebuilds its menus.";
+            return null;
+        }
+        // Everything Windows starts at logon: Startup folder shortcuts / scripts, the Run keys and the Winlogon shell.
+        static List<string> LogonTargets()
+        {
+            var r = new List<string>();
+            foreach (var dir in new[] { Environment.GetFolderPath(Environment.SpecialFolder.Startup), Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup) })
+            {
+                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) continue;
+                foreach (var f in Directory.GetFiles(dir))
+                    try
+                    {
+                        if (f.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dynamic sh = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")); dynamic s = sh.CreateShortcut(f);
+                            r.Add((string)s.TargetPath + " " + (string)s.Arguments + " (in " + (string)s.WorkingDirectory + ")");
+                        }
+                        else if (!Path.GetFileName(f).Equals("desktop.ini", StringComparison.OrdinalIgnoreCase) && new FileInfo(f).Length < 65536) r.Add(Path.GetFileName(f) + ": " + File.ReadAllText(f).Replace("\r", " ").Replace("\n", " "));
+                    }
+                    catch { }
+            }
+            foreach (var hive in new[] { Microsoft.Win32.Registry.CurrentUser, Microsoft.Win32.Registry.LocalMachine })
+                foreach (var key in new[] { @"Software\Microsoft\Windows\CurrentVersion\Run", @"Software\Microsoft\Windows NT\CurrentVersion\Winlogon" })
+                    try { using (var k = hive.OpenSubKey(key)) if (k != null) foreach (var n in k.GetValueNames()) if (key.EndsWith("Run") || n == "Shell") r.Add(Convert.ToString(k.GetValue(n))); }
+                    catch { }
+            return r;
+        }
+
         void ApplyAll()
         {
+            if (!useCopy.Checked)
+            {
+                var why = LiveReason(retro.Text);
+                if (why != null)
+                {
+                    var a = MessageBox.Show(this, why + "\n\nYes = work on a COPY (recommended - the original is not touched; games and media are copied too)\nNo = change this frontend anyway\nCancel = do nothing",
+                        "ArcadeMaster Setup - this frontend is in use", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
+                    if (a == DialogResult.Cancel) { Say("install cancelled - nothing changed"); return; }
+                    if (a == DialogResult.Yes) { useCopy.Checked = true; Say("working on a copy of " + retro.Text.Trim()); }
+                    else Say("changing the frontend in use, as chosen: " + retro.Text.Trim());
+                }
+            }
             Save(); var cfg = Snapshot(); bool copy = useCopy.Checked;
             bool doLayout = installLayout.Checked, doActive = activeLayout.Checked, doTools = toolsMenu.Checked, doRebuild = rebuild.Checked;
             var now = new Dictionary<string, bool> { { "autoStartArcade", sAutoStart.Checked }, { "quietStartup", sQuiet.Checked }, { "noOverlays", sNoPopups.Checked }, { "gameBezels", sBezels.Checked }, { "alwaysOn", sAlwaysOn.Checked } };
