@@ -101,6 +101,9 @@ switch ($Tool) {
       catalog     = @('Scan game library', 'Build-Manifest.ps1', @('-RetroFE', $RetroFE, '-Out', $games))
       controls    = @('Match games to controls', 'Add-GameControls.ps1', @('-Manifest', $games, '-Cabinet', $cab))
       collections = @('Build Racing / Flight / Arcade menus', 'New-RetroFECollections.ps1', @('-Manifest', $games, '-RetroFE', $RetroFE, '-Cabinet', $cab, '-RebuildDatabase'))
+      # the menu builder lists every mode that has games; the cabinet mode then hides the ones whose controls are not
+      # plugged in (as at boot) - without this, Flight showed on a wheel-only cabinet until the next boot
+      mode        = @('Show only what this cabinet can play', 'Set-CabinetMode.ps1', @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir))
       backdrops   = @('Deal new game backdrops', 'Set-LayoutThemes.ps1', @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle'))
     }
     foreach ($id in $plan.Keys) { Step $id $plan[$id][0] 'pending' }
@@ -108,6 +111,12 @@ switch ($Tool) {
       Step $id $plan[$id][0] 'run'
       Run $plan[$id][1] $plan[$id][2] | Out-Null
       Step $id $plan[$id][0] $(if ($script:lastExit -eq 0) { 'ok' } else { 'fail' })
+    }
+    # how many games can start, and where the reasons for the others are (Build-Manifest writes games-cant-start.txt)
+    if (Test-Path $games) {
+      $gl = @((Get-Content $games -Raw | ConvertFrom-Json).games)
+      $cantN = @($gl | Where-Object { -not @($_.variants.PSObject.Properties | Where-Object { $_.Value.ok }).Count }).Count
+      Step 'games' ("{0} of {1} games can start{2}" -f ($gl.Count - $cantN), $gl.Count, $(if ($cantN) { " - why the other $cantN can't: manifest\games-cant-start.txt" } else { '' })) 'ok'   # information, not a failure of the rebuild
     }
     # joystick-panel cabinets (pedestal / stand-up, no wheel): a button-layout card for every game (tools/New-PanelControlsArt.py)
     $capNow = if (Test-Path $cab) { (Get-Content $cab -Raw | ConvertFrom-Json).capabilities } else { $null }

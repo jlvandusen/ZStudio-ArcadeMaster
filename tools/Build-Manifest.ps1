@@ -40,7 +40,12 @@ if (-not $PSBoundParameters.ContainsKey('TeknoParrot')) {
   $TeknoParrot = @($found.Values | ForEach-Object {
     $leaf = Split-Path $_ -Leaf
     $variant = if ($leaf -match 'multi') { 'multicab' } elseif ($leaf -match 'light ?gun') { 'lightgun' } elseif ($_ -like "$RetroFE*") { 'standalone' } else { 'external' }
-    $col = $cols | Where-Object { $_ -eq $leaf -or ($variant -eq 'standalone' -and $_ -eq 'TeknoParrot') } | Select-Object -First 1
+    # only an install INSIDE this frontend belongs to one of its collections: a RetroFE collection lists the profiles of
+    # its own emulators\TeknoParrot*, so D:\Emulators\TeknoParrot or another frontend's copy with the same folder name
+    # must not claim it (its games would be listed there and hidden, as missing). Outside installs get their own
+    # AM_TP_* collection from New-RetroFECollections.
+    $inside = $_.ToLower().StartsWith($RetroFE.TrimEnd('\').ToLower() + '\')
+    $col = if ($inside) { $cols | Where-Object { $_ -eq $leaf -or ($variant -eq 'standalone' -and $_ -eq 'TeknoParrot') } | Select-Object -First 1 } else { $null }
     @{ Name = $leaf; Path = $_; Variant = $variant; Collection = $col } })
   Write-Host ("TeknoParrot installs found: {0}" -f (($TeknoParrot | ForEach-Object { "$($_.Path) [$($_.Variant)]" }) -join '; '))
 }
@@ -176,6 +181,10 @@ foreach ($plat in @(if ($LaunchBox) { $LaunchBoxPlatforms })) {
   }
 }
 
+# ---------------- games that can't start: find moved files, give every other one a plain reason (lib\AmGameDoctor.ps1)
+. (Join-Path $PSScriptRoot 'lib\AmGameDoctor.ps1')
+$doctor = Invoke-AmGameDoctor $games.Values
+
 # ---------------- categories + write
 foreach ($g in $games.Values) {
   if (-not $g.category) {
@@ -219,4 +228,16 @@ $list | Group-Object { $_['category'] } | ForEach-Object {
   $fan = @($_.Group | Where-Object { $_.media.Contains('fanart') }).Count
   Write-Host ("  {0,-9} {1,3} games  {2,3} launchable  {3,3} with fanart  {4,3} multi-variant" -f $_.Name, $_.Count, $ok, $fan, @($_.Group | Where-Object { $_.variants.Count -gt 1 }).Count)
 }
+$cant = @($list | Where-Object { -not (& $launchable $_) })
+if ($doctor.moved -or $cant) {
+  Write-Host ("games that can't start: {0} (moved {1}, incomplete copy {2}, not installed {3}, never set up in TeknoParrot {4}, no path {5})" -f $cant.Count, $doctor.moved, $doctor.incomplete, $doctor['not-installed'], $doctor['not-set-up'], $doctor['no-path'])
+  foreach ($g in $list) { foreach ($v in $g.variants.Values) { if ($v.problem) { Write-Host ("  {0,-34} {1,-13} {2}" -f $g.title, $v.problem, $v.why) } } }
+}
+# the same list in plain words beside the catalog (the System Health page points here)
+$txt = @("Games that can't start on $env:COMPUTERNAME ($((Get-Date).ToString('yyyy-MM-dd HH:mm'))). Rebuilt with the catalog (Tools > Rebuild Game Menus).", '')
+foreach ($g in $cant | Sort-Object { $_.title }) { $txt += "$($g.title)"; foreach ($v in $g.variants.Values) { if ($v.why) { $txt += "    $($v.why)" } } }
+$moved = @($list | Where-Object { @($_.variants.Values | Where-Object { $_.movedFrom }).Count })
+if ($moved) { $txt += '', 'Found in a new place (they start again):'; foreach ($g in $moved) { foreach ($v in $g.variants.Values) { if ($v.movedFrom) { $txt += "    $($g.title): $($v.why)" } } } }
+if (-not $cant -and -not $moved) { $txt += 'Every game in the catalog can start.' }
+Set-Content (Join-Path (Split-Path $Out) 'games-cant-start.txt') $txt -Encoding UTF8
 if ($script:brokenPaths) { Write-Host ("{0} TeknoParrot profile(s) with a GamePath above the drive root (fix with Repair-TPProfiles.ps1):" -f $script:brokenPaths.Count); $script:brokenPaths | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" } }

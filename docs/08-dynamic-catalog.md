@@ -242,6 +242,7 @@ At every boot, before RetroFE starts, and from **Tools → System Health** (a vi
 | screens | second-screen layouts declare `monitor=`; `mouseTouchScreens` follows whether a mouse-type touch board is plugged in (docs/07, patch 0006) |
 | menu | main-menu entries point at real collections; the menu's Exit leaves a note so the launcher stops instead of restarting (2026-11-22) |
 | launchers | report only; emulators are never touched |
+| games | TeknoParrot profiles inside this frontend whose game path is gone are repaired by `Repair-TPProfiles.ps1`, which backs up first and only writes when it found the game. The path comes from the same profile in another TeknoParrot install, or by file name. Profiles that can't be fixed are remembered, so the disks aren't searched on every boot. The check also says how many catalog games can start and why the others can't (2026-11-23). |
 | logs | log rotation above 20 MB, crash folders capped at 10 |
 | disk | free space |
 | art | intro and Tools art (regenerated when missing) |
@@ -253,6 +254,23 @@ Fixes are conservative and backed up. Results go to `manifest\health.json`; `-No
 - **3 crashes within 2 minutes:** the last-known-good configs are restored once (the current files are kept as `*.before-lkg`) and RetroFE is retried. It gives up only after that.
 
 Tested by breaking settings.conf (missing theme, 2 screens on a 1-display cabinet); both were repaired.
+
+## Games that can't start (2026-11-23)
+
+Every catalog build (`Build-Manifest`, Tools → Rebuild Game Menus) runs `tools\lib\AmGameDoctor.ps1` over each game copy that can't start. It gives each one a reason, in `games.json` (`problem`, `why`) and in plain words in `manifest\games-cant-start.txt`:
+
+| Reason | Meaning | What happens |
+|---|---|---|
+| moved | the program file is in another folder on this PC, with the same file name and the same folder name | PC games: the catalog points there and the game is back in the menu. TeknoParrot: the health check repairs the profile. |
+| incomplete | the game's folder is here but its program file isn't (a partial copy) | listed: copy the game in again |
+| not installed | neither the file nor its folder is on this PC | listed |
+| not set up | TeknoParrot has never been set up for the game (no profile) | listed |
+
+Games that can't start are never shown in the menus. First run on DESKTOP-RACE1:
+- Road Fighters 3D moved (`D:\Arcade PC\PC\...` → `D:\Arcade PC\Konami\...`) and is back.
+- Nicktoons Nitro, Fast & Furious Drift and Fast & Furious SuperCars had broken relative paths in the frontend's own TeknoParrot copy, left over from copying the frontend from E: to D:. They were repaired.
+- Chaos Code and Guitar Hero Arcade are incomplete copies: the data is there, the program files are missing.
+- 7 PC games are not installed, and 7 TeknoParrot games were never set up.
 
 ## Boot speed (2026-11-22)
 

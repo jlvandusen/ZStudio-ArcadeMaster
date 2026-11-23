@@ -27,8 +27,15 @@ $marker = 'ARCADEMASTER-GENERATED.txt'
 $names = @{ racing = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup = 'Arcade' }
 
 # --- clean previous generation
-foreach ($d in Get-ChildItem $cols -Directory) { if (Test-Path (Join-Path $d.FullName $marker)) { Remove-Item $d.FullName -Recurse -Force } }
-Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter 'AM_*.conf' -ErrorAction SilentlyContinue | Remove-Item -Force
+# only the launchers of collections made here (AM_PC, AM_TP_*): AM_TOOLS belongs to New-CabinetToolsCollection, and
+# deleting every AM_*.conf broke the Tools menu after each Rebuild Game Menus
+$ownLaunchers = @(foreach ($d in Get-ChildItem $cols -Directory) {
+  if (-not (Test-Path (Join-Path $d.FullName $marker))) { continue }
+  $l = Select-String -LiteralPath (Join-Path $d.FullName 'settings.conf') -Pattern '^\s*launcher\s*=\s*(AM_\S+)\s*$' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($l) { $l.Matches[0].Groups[1].Value }
+  Remove-Item $d.FullName -Recurse -Force
+})
+foreach ($l in $ownLaunchers) { Remove-Item (Join-Path $RetroFE "launchers.windows\$l.conf") -Force -ErrorAction SilentlyContinue }
 $menuTxt = Join-Path $cols 'Main\menu.txt'
 if ($Remove) {
   if (Test-Path "$menuTxt.am-backup") { Move-Item "$menuTxt.am-backup" $menuTxt -Force } elseif (Test-Path $menuTxt) { Remove-Item $menuTxt }
