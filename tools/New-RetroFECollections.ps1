@@ -152,15 +152,28 @@ foreach ($cat in $Order) {
 foreach ($e in $ExtraMenu) { if (Test-Path (Join-Path $cols $e)) { $menu.Add($e) } }
 
 if ((Test-Path $menuTxt) -and -not (Test-Path "$menuTxt.am-backup")) { Copy-Item $menuTxt "$menuTxt.am-backup" }
-if (-not (Test-Path $menuTxt) -and -not (Test-Path "$menuTxt.am-backup")) {
-  # a CoinOPS build (LEGENDS, CORE ...) has no Main menu: its library starts at settings.conf firstCollection (e.g. Arcades).
-  # Keep that whole library one press away from the ArcadeMaster main menu instead of hiding it behind the catalogued games.
-  $fc = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*firstCollection\s*=\s*(.+)$' -ErrorAction SilentlyContinue | Select-Object -Last 1
-  if ($fc) { $own = $fc.Matches[0].Groups[1].Value.Trim(); if ($own -and $own -ne 'Main' -and (Test-Path (Join-Path $cols $own)) -and $menu -notcontains $own) { $menu.Add($own); Write-Host "kept the build's own library in the main menu: $own" } }
-  New-Item -ItemType Directory -Force (Split-Path $menuTxt) | Out-Null
-}
+# A CoinOPS build (LEGENDS, CORE ...) has no Main menu: its library starts at settings.conf firstCollection (e.g. Arcades).
+# Keep that whole library one press away from the ArcadeMaster main menu, and start the frontend at Main so Back from the
+# library returns to the menu (started inside the library, Back has nowhere to go). The library's name is remembered in
+# Main\am-library.txt because firstCollection says Main after the first run.
+$settingsConf = Join-Path $RetroFE 'settings.conf'
+$libFile = Join-Path (Split-Path $menuTxt) 'am-library.txt'
+$fcLine = Select-String -Path $settingsConf -Pattern '^\s*firstCollection\s*=\s*(.+)$' -ErrorAction SilentlyContinue | Select-Object -Last 1
+$fc = if ($fcLine) { $fcLine.Matches[0].Groups[1].Value.Trim() } else { '' }
+$own = if (Test-Path $libFile) { (Get-Content $libFile -Raw).Trim() } elseif ($fc -ne 'Main') { $fc } else { '' }
+if ($own -and (Test-Path (Join-Path $cols $own))) {
+  if ($menu -notcontains $own) { $menu.Add($own); Write-Host "kept the build's own library in the main menu: $own" }
+} else { $own = '' }
+New-Item -ItemType Directory -Force (Split-Path $menuTxt) | Out-Null
 Set-Content $menuTxt $menu -Encoding ascii
+if ($own) { Set-Content $libFile $own -Encoding ascii }
 Write-Host ("Main menu: " + ($menu -join ' | '))
+if ($own -and $fc -eq $own) {
+  if (-not (Test-Path "$settingsConf.am-firstcollection")) { Copy-Item $settingsConf "$settingsConf.am-firstcollection" }
+  $raw = [IO.File]::ReadAllText($settingsConf)
+  [IO.File]::WriteAllText($settingsConf, ($raw -replace '(?m)^(\s*firstCollection\s*=\s*).+?(\r?)$', '${1}Main$2'))
+  Write-Host "frontend now starts at Main (was $own), so Back returns to the menu"
+}
 if ($skipped.Count) { Write-Host "not listed ($($skipped.Count)):"; $skipped | ForEach-Object { Write-Host "  $_" } }
 
 # --- game metadata for RetroFE: players / ctrltype / buttons / joyways (drives the ServoStik/GRS restrictor per game)
