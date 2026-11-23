@@ -115,6 +115,7 @@ switch ($Tool) {
     # how many games can start, and where the reasons for the others are (Build-Manifest writes games-cant-start.txt)
     if (Test-Path $games) {
       $gl = @((Get-Content $games -Raw | ConvertFrom-Json).games)
+      $myModes = @(if (Test-Path $cab) { (Get-Content $cab -Raw | ConvertFrom-Json).capabilities.modes }); if ($myModes) { $gl = @($gl | Where-Object { $myModes -contains $_.category }) }
       $cantN = @($gl | Where-Object { -not @($_.variants.PSObject.Properties | Where-Object { $_.Value.ok }).Count }).Count
       Step 'games' ("{0} of {1} games can start{2}" -f ($gl.Count - $cantN), $gl.Count, $(if ($cantN) { " - why the other $cantN can't: manifest\games-cant-start.txt" } else { '' })) 'ok'   # information, not a failure of the rebuild
     }

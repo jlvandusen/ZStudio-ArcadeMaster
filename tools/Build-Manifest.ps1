@@ -235,7 +235,12 @@ if ($doctor.moved -or $cant) {
 }
 # the same list in plain words beside the catalog (the System Health page points here)
 $txt = @("Games that can't start on $env:COMPUTERNAME ($((Get-Date).ToString('yyyy-MM-dd HH:mm'))). Rebuilt with the catalog (Tools > Rebuild Game Menus).", '')
-foreach ($g in $cant | Sort-Object { $_.title }) { $txt += "$($g.title)"; foreach ($v in $g.variants.Values) { if ($v.why) { $txt += "    $($v.why)" } } }
+# games for this cabinet's modes first; the others (a shooter on a racing cabinet ...) would not be in its menus anyway
+$cabModes = @(); $cabJson = Join-Path (Split-Path $Out) 'cabinet.json'
+if (Test-Path $cabJson) { $cabModes = @((Get-Content $cabJson -Raw | ConvertFrom-Json).capabilities.modes) }
+$mine = @($cant | Where-Object { -not $cabModes -or $cabModes -contains $_.category }); $other = @($cant | Where-Object { $mine -notcontains $_ })
+foreach ($g in $mine | Sort-Object { $_.title }) { $txt += "$($g.title)"; foreach ($v in $g.variants.Values) { if ($v.why) { $txt += "    $($v.why)" } } }
+if ($other) { $txt += ''; $txt += ("For other cabinet types (not in this cabinet's menus): " + (($other | Sort-Object { $_.title } | ForEach-Object { "$($_.title) [$($_.category)]" }) -join ', ')) }
 $moved = @($list | Where-Object { @($_.variants.Values | Where-Object { $_.movedFrom }).Count })
 if ($moved) { $txt += '', 'Found in a new place (they start again):'; foreach ($g in $moved) { foreach ($v in $g.variants.Values) { if ($v.movedFrom) { $txt += "    $($g.title): $($v.why)" } } } }
 if (-not $cant -and -not $moved) { $txt += 'Every game in the catalog can start.' }

@@ -181,6 +181,8 @@ $gInfo = ''
 $gj = Join-Path $ManifestDir 'games.json'
 if (Test-Path $gj) {
   $glist = @((Get-Content $gj -Raw | ConvertFrom-Json).games)
+  # only the games this cabinet plays (a shooter on the racing cabinet is not its problem)
+  $myModes = @(if ($cab) { $cab.capabilities.modes }); if ($myModes) { $glist = @($glist | Where-Object { $myModes -contains $_.category }) }
   $cant = @($glist | Where-Object { -not @($_.variants.PSObject.Properties | Where-Object { $_.Value.ok }).Count })
   $why = @($cant | ForEach-Object { @($_.variants.PSObject.Properties | ForEach-Object { $_.Value.problem } | Where-Object { $_ })[0] }) | Group-Object | ForEach-Object { "$($_.Count) $($_.Name -replace '-', ' ')" }
   $gInfo = "{0} of {1} games can start" -f ($glist.Count - $cant.Count), $glist.Count

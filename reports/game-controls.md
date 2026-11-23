@@ -10,7 +10,6 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Heliborne | flight | flight stick, throttle, gamepad | 0 | 1 | - | mapped | flight stick mapped to wheel (roll) + pedals (throttle/brake) |
 | MachStorm | flight | pedals, flight stick, throttle | 1 | 1 | teknoparrot (OpenParrot) | mapped | flight stick mapped to wheel (roll) + pedals (throttle/brake) |
 | STAR WARS: Battle Pod | flight | pedals, flight stick, throttle | 2 | 1 | teknoparrot (OpenParrot) | mapped | flight stick mapped to wheel (roll) + pedals (throttle/brake) |
-| Under Defeat HD+ | flight | flight stick, throttle, gamepad | 0 | 1 | - | mapped | flight stick mapped to wheel (roll) + pedals (throttle/brake) |
 | American Truck Simulator | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | Arctic Thunder | racing | wheel, pedals | 2 | 1 | teknoparrot (TeknoParrot) | native |  |
 | Auto Modellista (USA) | racing | wheel, pedals, paddles | 0 | 1 | dolphin | native |  |
@@ -51,8 +50,8 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Gaelco Championship Tuning Race | racing | wheel, pedals, paddles | 3 | 2 | teknoparrot (ElfLdr2) | native | supports 2 players; this cabinet has 1 station(s) |
 | getbass | racing | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
 | getbassur | racing | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
-| GRID | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | GRID | racing | wheel, pedals, hpattern | 4 | 2 | teknoparrot (OpenParrot) | native | uses an H-pattern shifter: map gears to buttons, or confirm the shifter with WheelMap -Capture; supports 2 players; this cabinet has 1 station(s) |
+| GRID | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | GRID 2 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | GRID Autosport | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | GRID Race Driver | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
@@ -77,8 +76,8 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Mario Kart: Arcade GP DX | racing | wheel, pedals | 3 | 1 | teknoparrot (TeknoParrot) | native |  |
 | NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | NASCAR Heat 5 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
@@ -110,7 +109,7 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Split/Second | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
 | srally2dx | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | Storm Racer G | racing | wheel, pedals | 3 | 1 | teknoparrot (TeknoParrot) | native |  |
-| Super Bikes 2 | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
+| Super Bikes 2 | racing | wheel, pedals | 6 | 1 | - | native |  |
 | Super GT 24h | racing | wheel, pedals | 3 | 1 | m2emulator | native | emulation status: preliminary |
 | The Fast and the Furious | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
 | The Fast and the Furious Drift | racing | wheel, pedals, paddles | 4 | 1 | teknoparrot (OpenParrot) | native |  |
@@ -129,3 +128,4 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Get Bass: Sega Bass Fishing | standup | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
 | Guitar Hero Arcade | standup | gamepad | 5 | 2 | - | native | supports 2 players; this cabinet has 1 station(s) |
 | Nitro+ Blasterz: Heroines Infinite Duel | standup |  | 6 | 2 | teknoparrot (TeknoParrot) | native | supports 2 players; this cabinet has 1 station(s) |
+| Under Defeat HD+ | standup | gamepad | 0 | 1 | - | native |  |
