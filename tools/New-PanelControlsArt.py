@@ -282,9 +282,10 @@ def mame_inputs(exe: Path | None, cache: Path, log) -> dict:
 
 # ------------------------------------------------------------------ drawing
 class Card:
-    def __init__(self):
-        self.base = Image.new('RGBA', (W * S, H * S), (0, 0, 0, 0))
-        self.glow = Image.new('RGBA', (W * S, H * S), (0, 0, 0, 0))
+    def __init__(self, w=W, h=H, accent=MAGENTA):
+        self.w, self.h, self.accent = w, h, accent
+        self.base = Image.new('RGBA', (w * S, h * S), (0, 0, 0, 0))
+        self.glow = Image.new('RGBA', (w * S, h * S), (0, 0, 0, 0))
         self.d = ImageDraw.Draw(self.base)
         self.g = ImageDraw.Draw(self.glow)
 
@@ -305,13 +306,14 @@ class Card:
         out = Image.alpha_composite(self.base_plate(), blurred)
         out = Image.alpha_composite(out, blurred)
         out = Image.alpha_composite(out, self.base)
-        return out.resize((W, H), Image.LANCZOS)
+        return out.resize((self.w, self.h), Image.LANCZOS)
 
     def base_plate(self):
-        p = Image.new('RGBA', (W * S, H * S), (0, 0, 0, 0))
+        p = Image.new('RGBA', (self.w * S, self.h * S), (0, 0, 0, 0))
         d = ImageDraw.Draw(p)
-        d.rounded_rectangle(self.r(2, 2, W - 2, H - 2), radius=22 * S, fill=BG + (236,),
-                            outline=MAGENTA + (200,), width=3 * S)
+        rad = min(22, self.h // 2 - 2)
+        d.rounded_rectangle(self.r(2, 2, self.w - 2, self.h - 2), radius=rad * S, fill=BG + (236,),
+                            outline=self.accent + (200,), width=3 * S)
         return p
 
 
@@ -547,6 +549,136 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
     return c.finish()
 
 
+# ------------------------------------------------------------------ special-control reminder (am_hint)
+# A strip over the top of the preview video for games played with something other than stick + buttons. The layout
+# pulses it so it catches the eye: players forget the trackball, the restrictor switching to 4-way, gas on button 1.
+HINT_W, HINT_H = 980, 92
+
+
+def hint_of(s: Sig):
+    ex, b = set(s.extras), s.buttons
+    if 'keypad' in ex:
+        return None
+    if 'lightgun' in ex:
+        return 'lightgun', LIGHTGUN_HINT
+    if 'wheel' in ex:
+        return 'wheel', 'STICK STEERS  ·  1 = GAS  ·  2 = BRAKE'
+    if 'trackball' in ex:
+        if s.stick:
+            return 'trackball', 'STICK MOVES  +  TRACKBALL AIMS'
+        return 'trackball', 'ROLL THE TRACKBALL' + ('  +  PRESS 1' if b else '')
+    if ex & {'spinner', 'paddle'}:
+        return 'spinner', 'SPIN THE TRACKBALL LEFT / RIGHT' + ('  +  PRESS 1' if b else '')
+    if 'flightstick' in ex:
+        return 'flightstick', 'FLY WITH THE ANALOG STICK'
+    if 'twinstick' in ex:
+        return 'twinstick', 'TWIN STICKS  ·  ONE STICK IN EACH HAND'
+    if s.stick == '4':
+        return '4way', '4-WAY GAME  ·  STICK SWITCHES ITSELF'
+    return None
+
+
+LIGHTGUN_HINT = 'AIM AT THE SCREEN  +  PULL THE TRIGGER'
+
+
+def hint_key(h) -> str:
+    return 'hint-' + hashlib.sha1(('|'.join(h) + f'|{CARD_VERSION}').encode()).hexdigest()[:10]
+
+
+def render_hint(kind: str, text: str) -> Image.Image:
+    c = Card(HINT_W, HINT_H, accent=GREEN)
+    cy = HINT_H / 2
+    c.d.ellipse(c.r(14, cy - 34, 82, cy + 34), fill=CARD + (255,), outline=GREEN + (255,), width=3 * S)
+    if kind == '4way':
+        c.text((48, cy + 1), '4', font('black', 40), CYAN + (255,), 'mm', glow=CYAN + (140,))
+    else:
+        draw_icon(c, kind, 48, cy, GREEN, 26)
+    f = font('black', 36)
+    t = text
+    while c.width(t, f) > HINT_W - 130 and len(t) > 4:
+        t = t[:-2]
+    c.text((104, cy + 1), t, f, TEXT + (255,), 'lm', glow=GREEN + (120,))
+    return c.finish()
+
+
+# ------------------------------------------------------------------ filters (RetroFE playlists)
+# Written into every game collection's playlists folder; the ArcadeMaster layout switches them with LEFT / RIGHT and
+# shows the name as a banner. Our names start at 20 so the build's own playlists (00-19) come first.
+FILTERS = [
+    ('20 2 player games', lambda s: s.players >= 2 and not s.alt),
+    ('21 4 player games', lambda s: s.players >= 4 and not s.alt),
+    ('22 trackball', lambda s: 'trackball' in s.extras),
+    ('23 trackball + stick', lambda s: 'trackball' in s.extras and bool(s.stick)),
+    ('24 spinner + paddle', lambda s: bool({'spinner', 'paddle'} & set(s.extras))),
+    ('25 light gun', lambda s: 'lightgun' in s.extras),
+    ('26 driving', lambda s: 'wheel' in s.extras),
+    ('27 flight stick', lambda s: 'flightstick' in s.extras),
+    ('28 twin stick', lambda s: 'twinstick' in s.extras),
+    ('29 4-way stick', lambda s: s.stick == '4'),
+]
+FILTER_MIN = 3          # a filter with fewer games is not worth a stop on the cycle
+
+
+def write_filters(fe, plan, sigs, dry) -> dict:
+    made = {}
+    for col, lst in plan.items():
+        pdir = fe.cdir / col / 'playlists'
+        for name, test in FILTERS:
+            lines = sorted({(it if src.lower() == col.lower() else f'_{src}:{it}') for it, k, src in lst if test(sigs[k])},
+                           key=str.lower)
+            f = pdir / f'{name}.txt'
+            if len(lines) >= FILTER_MIN:
+                made[(col, name)] = len(lines)
+                body = '\r\n'.join(lines) + '\r\n'
+                if dry:
+                    continue
+                pdir.mkdir(parents=True, exist_ok=True)
+                if not f.exists() or f.read_text(encoding='utf-8', errors='replace') != body:
+                    f.write_text(body, encoding='utf-8', newline='')
+            elif f.exists() and not dry:
+                f.unlink()                                   # ours (fixed name): too few games now
+    return made
+
+
+def friendly_playlist(name: str) -> str:
+    n = re.sub(r'^\d+\s+', '', name).strip()
+    return {'all': 'ALL GAMES', 'favorites': 'FAVORITES', 'lastplayed': 'LAST PLAYED'}.get(n.lower(), n.upper())
+
+
+def render_banner(label: str) -> Image.Image:
+    bw, bh = 760, 74
+    c = Card(bw, bh, accent=CYAN)
+    cy = bh / 2
+    for x, ang in ((34, 180), (bw - 34, 0)):
+        pts = [(px * S, py * S) for px, py in tri(x, cy, ang, 17)]
+        c.d.polygon(pts, fill=CYAN + (255,))
+        c.g.polygon(pts, fill=CYAN + (200,))
+    f = font('black', 36)
+    t = label
+    while c.width(t, f) > bw - 130 and len(t) > 3:
+        t = t[:-1]
+    c.text((bw / 2, cy + 1), t, f, TEXT + (255,), 'mm', glow=CYAN + (110,))
+    return c.finish()
+
+
+def write_banners(fe, layout_dir: Path, dry, force) -> int:
+    names = {'all', 'favorites', 'lastplayed'}
+    for d in fe.cdir.iterdir():
+        if d.is_dir() and (d / 'playlists').is_dir():
+            names |= {p.stem for p in (d / 'playlists').glob('*.txt')}
+    out = layout_dir / 'collections' / '_common' / 'medium_artwork' / 'playlist'
+    n = 0
+    for nm in sorted(names):
+        p = out / f'{nm}.png'
+        if p.exists() and not force:
+            continue
+        n += 1
+        if not dry:
+            out.mkdir(parents=True, exist_ok=True)
+            render_banner(friendly_playlist(nm)).save(p, 'PNG', optimize=True)
+    return n
+
+
 # ------------------------------------------------------------------ RetroFE collections
 def read_conf(p: Path) -> dict:
     out = {}
@@ -568,7 +700,7 @@ def read_list(p: Path) -> list[str]:
 
 
 BAD = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
-SKIP_DEFAULT = re.compile(r'^(_|zzz|main$)', re.I)
+SKIP_DEFAULT = re.compile(r'^(_|zzz|main$|tools$)', re.I)   # Tools = the ArcadeMaster settings list
 
 
 class Emulators:
@@ -712,6 +844,8 @@ def main(argv=None):
     ap.add_argument('--mame', type=Path, help='MAME exe for -listxml (default: emulators/mame/mame64.exe from the mame launcher)')
     ap.add_argument('--dry-run', action='store_true', help='resolve and count only; write nothing')
     ap.add_argument('--list-sigs', action='store_true', help='print every signature with its game count')
+    ap.add_argument('--no-filters', action='store_true', help='do not write the player / control filters (playlists)')
+    ap.add_argument('--layout', default='ArcadeMaster', help='layout whose _common playlist banners are written')
     a = ap.parse_args(argv)
     t0 = time.time()
     log = lambda m: print(m, flush=True)
@@ -846,7 +980,7 @@ def main(argv=None):
             s = s.with_emu(emus.item(scol, it))
             key = s.key()
             sigs.setdefault(key, s)
-            lst.append((it, key))
+            lst.append((it, key, scol))
     t_resolve = time.time()
 
     # ---- render one card per signature
@@ -867,6 +1001,16 @@ def main(argv=None):
                 fh.truncate(0)
                 fh.write(buf.getvalue())
         rendered += 1
+    # special-control reminder strips: one per distinct hint, linked per game like the cards
+    sig_hint = {}
+    for key, s in sigs.items():
+        h = hint_of(s)
+        if h:
+            hk = hint_key(h)
+            sig_hint[key] = hk
+            p = cards_dir / f'{hk}.png'
+            if not p.exists() and not a.dry_run:
+                render_hint(*h).save(p, 'PNG', optimize=True)
     t_render = time.time()
     # NTFS allows 1023 hard links per file: popular signatures spill into shards <sig>~2.png, <sig>~3.png ...
     ours_ino = {}                         # inode -> signature key (main card or shard)
@@ -914,7 +1058,7 @@ def main(argv=None):
         elif not a.dry_run:
             adir.mkdir(parents=True, exist_ok=True)
         n_col = 0
-        for item, key in lst:
+        for item, key, _src in lst:
             dst = adir / f'{item}.png'
             e = existing.get(item.lower())
             if e is not None:
@@ -948,7 +1092,7 @@ def main(argv=None):
             n_col += 1
         # cards of ours that no listed game uses any more (an earlier run saw other items): a stale card would win
         # over the right one, so remove it. Files that are not ours are left alone.
-        planned = {item.lower() for item, _ in lst}
+        planned = {item.lower() for item, _k, _s in lst}
         for name, e in existing.items():
             if name in planned:
                 continue
@@ -962,10 +1106,51 @@ def main(argv=None):
                 pass
         per_col[col] = (len(lst), n_col)
 
+    # ---- special-control reminders: am_hint/<item>.png (only games with a special control get one)
+    hints_linked = hints_stale = 0
+    for col, lst in plan.items():
+        hdir = fe.cdir / col / 'medium_artwork' / 'am_hint'
+        existing = {}
+        if hdir.is_dir():
+            with os.scandir(hdir) as it:
+                for e in it:
+                    if e.name.lower().endswith('.png'):
+                        existing[e.name[:-4].lower()] = e
+        wanted = {}
+        for item, key, _src in lst:
+            if key in sig_hint:
+                wanted[item.lower()] = (item, sig_hint[key])
+        for low, (item, hk) in wanted.items():
+            e = existing.get(low)
+            if e is not None:
+                if ours_ino.get(e.inode()) == hk:
+                    continue
+                if e.inode() not in ours_ino and not a.force:
+                    continue
+                if not a.dry_run:
+                    os.unlink(e.path)
+            if a.dry_run:
+                hints_linked += 1
+                continue
+            hdir.mkdir(parents=True, exist_ok=True)
+            dst = hdir / f'{item}.png'
+            if not link_card(hk, dst):
+                shutil.copyfile(cards_dir / f'{hk}.png', dst)
+            hints_linked += 1
+        for low, e in existing.items():
+            if low not in wanted and e.inode() in ours_ino:
+                if not a.dry_run:
+                    os.unlink(e.path)
+                hints_stale += 1
+
+    # ---- filters + their banners
+    filters = write_filters(fe, plan, sigs, a.dry_run) if not a.no_filters else {}
+    banners = write_banners(fe, root / 'layouts' / a.layout, a.dry_run, a.force) if (root / 'layouts' / a.layout).is_dir() else 0
+
     # ---- state + preview
     counts = {}
     for lst in plan.values():
-        for _, k in lst:
+        for _, k, _s in lst:
             counts[k] = counts.get(k, 0) + 1
     if not a.dry_run:
         state = {'version': CARD_VERSION, 'rows': a.rows, 'cols': a.cols, 'copies': copies,
@@ -1002,6 +1187,13 @@ def main(argv=None):
     log(f'signatures: {len(sigs)} ({rendered} rendered)  sources: {src_count}')
     log(f'items: {linked} linked ({copied} as copies), {relinked} replaced, {already} already linked, '
         f'{foreign} skipped (not ours; --force replaces), {stale} stale removed, {sum(unknown.values())} unknown controls')
+    log(f'reminders: {hints_linked} linked, {hints_stale} stale removed ({len(set(sig_hint.values()))} kinds)')
+    fsum = {}
+    for (col, name), n in filters.items():
+        fsum.setdefault(name, []).append(f'{col} {n}')
+    for name in sorted(fsum):
+        log(f'filter {friendly_playlist(name):<20} ' + ', '.join(fsum[name]))
+    log(f'filter banners: {banners} written')
     log(f'disk: {disk / 1024:.0f} KB in {cards_dir} ({nshard} link-limit shards; links add no data)')
     log(f'time: data {t_data - t0:.1f}s, resolve {t_resolve - t_data:.1f}s, render {t_render - t_resolve:.1f}s, '
         f'link {t_end - t_render:.1f}s, total {t_end - t0:.1f}s' + ('  [dry run]' if a.dry_run else ''))
