@@ -1,3 +1,6 @@
 #!/bin/sh
 # Commits are authored by James alone: strip any Co-Authored-By / tool credit line from the message
 sed -i '/^[Cc]o-[Aa]uthored-[Bb]y:/d' "$1"
+# PowerShell 5.1 writes UTF-8 files with a byte-order mark (Set-Content / Out-File -Encoding utf8); with
+# git commit -F it would become an invisible first character of the subject line
+sed -i '1s/^\xEF\xBB\xBF//' "$1"
