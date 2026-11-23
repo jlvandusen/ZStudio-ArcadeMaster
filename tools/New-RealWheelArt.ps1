@@ -48,8 +48,15 @@ function Get-CachedPicture($entry) {
   try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $tmp = "$file.part"
-    Invoke-WebRequest -Uri $entry.image -OutFile $tmp -UseBasicParsing -TimeoutSec 25 -UserAgent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ArcadeMaster'
-    # keep it only if it really is a picture
+    # a normal browser request (some shops refuse bare clients); JPEG/PNG only - no WebP/AVIF, which Windows' picture
+    # library can't read. curl.exe (in Windows 10/11) first: Windows PowerShell's own client drops the Accept header
+    # and gets 403 from some image servers (Micro Center); Invoke-WebRequest stays as the fallback.
+    $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+    $accept = 'image/jpeg,image/png,image/*;q=0.8,*/*;q=0.5'
+    $curl = Join-Path $env:WINDIR 'System32\curl.exe'
+    $got = $false
+    if (Test-Path $curl) { & $curl -s -f -L --max-time 25 -A $ua -H "Accept: $accept" -H 'Accept-Language: en-US,en;q=0.9' -o $tmp $entry.image; $got = ($LASTEXITCODE -eq 0) -and (Test-Path $tmp) }
+    if (-not $got) { Invoke-WebRequest -Uri $entry.image -OutFile $tmp -UseBasicParsing -TimeoutSec 25 -UserAgent $ua -Headers @{ Accept = $accept } }    # keep it only if it really is a picture
     try { $probe = [Drawing.Image]::FromFile($tmp); $probe.Dispose() } catch { Remove-Item $tmp -Force; Write-Host "wheel picture for $($entry.key) is not an image: $($entry.image)"; return $null }
     Move-Item $tmp $file -Force
     Write-Host "downloaded $($entry.model) -> $file"
