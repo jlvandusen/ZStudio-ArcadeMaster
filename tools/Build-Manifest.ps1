@@ -124,6 +124,13 @@ foreach ($tp in $TeknoParrot) {
 
 # ---------------- RetroFE non-TeknoParrot collections (file-based items)
 $tpCollections = @($TeknoParrot | ForEach-Object { $_.Collection } | Where-Object { $_ })
+# Supermodel's own list of Model 3 sets (Config\Games.xml): full title, version/region, year, parent set. Clones such
+# as scudau (Scud Race, Australia) have no entry in RetroFE's hyperlist and showed in the menu as "scudau" or "NA".
+$setInfo = @{}
+foreach ($gx in Get-ChildItem (Join-Path $RetroFE 'emulators') -Recurse -Depth 3 -Filter 'Games.xml' -File -ErrorAction SilentlyContinue) {
+  try { [xml]$sx = Get-Content -LiteralPath $gx.FullName -Raw } catch { continue }
+  foreach ($s in @($sx.games.game)) { if ($s.name -and -not $setInfo.ContainsKey($s.name)) { $setInfo[$s.name] = @{ title = [string]$s.identity.title; version = [string]$s.identity.version; year = [string]$s.identity.year; parent = [string]$s.parent } } }
+}
 foreach ($col in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   if ($col.Name -in $tpCollections -or $col.Name -in 'Main', 'GAMES', 'SETTINGS', 'Controller') { continue }
   if (Get-ChildItem $col.FullName -Filter 'ARCADEMASTER-*.txt' -File -ErrorAction SilentlyContinue) { continue }   # our own generated collections (views, Tools) are outputs, not sources
@@ -138,9 +145,24 @@ foreach ($col in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
     $item = $f.BaseName; $id = "$($col.Name):$item"
     $g = New-Game $id; $hg = $hyper[$item]
     if ($hg) { $g.title = $hg.description; $g.year = $hg.year; $g.genre = $hg.genre; $g.platform = $col.Name } else { $g.title = $item; $g.platform = $col.Name }
+    $si = $setInfo[$item]
+    if ($si -and $si.title -and (-not $hg -or "$($hg.description)".Trim() -in '', 'NA', $item)) {
+      # a clone carries its version in the name, so the menu tells "Scud Race (Australia, Twin/DX)" from "Scud Race"
+      $g.title = if ($si.parent -and $si.version) { "$($si.title) ($($si.version))" } else { $si.title }
+      if ((-not $g.year -or $g.year -eq 'NA') -and $si.year) { $g.year = $si.year }
+      $ph = if ($si.parent) { $hyper[$si.parent] } else { $null }
+      if (-not $g.genre -or $g.genre -eq 'NA') { $g.genre = if ($ph -and $ph.genre) { $ph.genre } else { $g.genre } }
+    }
     $g.variants['default'] = [ordered]@{ emulator = $conf['launcher']; file = $f.FullName; ok = $true; retrofeCollection = $col.Name }
     $g.sources += [ordered]@{ frontend = 'retrofe'; collection = $col.Name; item = $item }
     $g.media = Find-Media $col.Name $item
+    # missing art comes from the game's family in the same collection: its parent, then the other versions
+    # (Emergency Call Ambulance: only the US set ecau has art; eca, ecaj and ecap use it)
+    if ($si -and $g.media.Count -lt 2) {
+      $family = $si.parent; if (-not $family) { $family = $item }
+      $kin = @($family) + @($setInfo.Keys | Where-Object { $setInfo[$_].parent -eq $family -and $_ -ne $item } | Sort-Object)
+      foreach ($k in $kin) { if ($k -eq $item) { continue }; foreach ($kv in (Find-Media $col.Name $k).GetEnumerator()) { if (-not $g.media.Contains($kv.Key)) { $g.media[$kv.Key] = $kv.Value } } }
+    }
     $games[$id] = $g
   }
 }

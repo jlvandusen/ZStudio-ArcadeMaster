@@ -38,18 +38,20 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | DiRT 4 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | DiRT 5 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | Dirt Devils | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Dirt Devils (Australia, Revision A) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Dirt Devils (Export, Ver. G?) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Dirt Devils (Japan, Revision A) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Dirt Devils (USA, Revision A) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | DiRT Showdown | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
-| dirtdvlsau | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| dirtdvlsu | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | Dirty Drivin' | racing | wheel, pedals | 4 | 1 | teknoparrot (OpenParrot) | native |  |
 | Emergency Call Ambulance | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | Emergency Call Ambulance | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
+| Emergency Call Ambulance (Japan) | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
+| Emergency Call Ambulance (US location test?) | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | Ford Racing: Full Blown | racing | wheel, pedals, paddles | 3 | 1 | teknoparrot (TeknoParrot) | native |  |
 | F-Zero AX | racing | wheel, pedals, paddles | 0 | 1 | dolphin-triforce | native |  |
 | F-Zero GX (USA) | racing | wheel, pedals, paddles | 0 | 1 | dolphin | native |  |
 | Gaelco Championship Tuning Race | racing | wheel, pedals, paddles | 3 | 2 | teknoparrot (ElfLdr2) | native | supports 2 players; this cabinet has 1 station(s) |
-| getbass | racing | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
-| getbassur | racing | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
 | GRID | racing | wheel, pedals, hpattern | 4 | 2 | teknoparrot (OpenParrot) | native | uses an H-pattern shifter: map gears to buttons, or confirm the shifter with WheelMap -Capture; supports 2 players; this cabinet has 1 station(s) |
 | GRID | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | GRID 2 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
@@ -74,12 +76,6 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Mario Kart Double Dash!! (USA) | racing | wheel, pedals, paddles | 0 | 1 | dolphin | native |  |
 | Mario Kart Wii (USA) (En,Fr,Es) | racing | wheel, pedals, paddles | 0 | 1 | dolphin | native |  |
 | Mario Kart: Arcade GP DX | racing | wheel, pedals | 3 | 1 | teknoparrot (TeknoParrot) | native |  |
-| NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | NASCAR Heat 5 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | Need for Speed: Most Wanted | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
 | Need for Speed: Most Wanted 2012 | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
@@ -96,18 +92,20 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | San Francisco Rush 2049 Special Edition | racing | wheel, pedals | 12 | 1 | mame | native |  |
 | San Francisco Rush The Rock - Alcatraz Edition | racing | wheel, pedals | 13 | 1 | mame | native |  |
 | Scud Race | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| scudau | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| scuddx | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Scud Race (Australia, Twin/DX) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Scud Race (Export, Deluxe) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Scud Race Plus (Export, Twin/DX) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Scud Race Plus (Export, Twin/DX, Revision A) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | SEGA Race TV | racing | wheel, pedals, paddles | 0 | 2 | teknoparrot (Lindbergh) | native | supports 2 players; this cabinet has 1 station(s) |
 | SEGA Racing Classic | racing | wheel, pedals, hpattern | 0 | 1 | teknoparrot (TeknoParrot) | native | uses an H-pattern shifter: map gears to buttons, or confirm the shifter with WheelMap -Capture |
 | Sega Rally 2 | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| Sega Rally 2 (Export, Deluxe) | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | SEGA Rally 3 | racing | wheel, pedals, paddles, handbrake | 4 | 1 | teknoparrot (TeknoParrot) | native | handbrake supported; set wheel rotation to 270 deg |
 | Sega Rally Championship | racing | wheel, pedals | 6 | 1 | m2emulator | native | emulation status: preliminary |
 | Sega Touring Car Championship | racing | wheel, pedals | 4 | 1 | m2emulator | native | emulation status: preliminary |
 | Sega World Drivers Championship | racing | wheel, pedals, paddles | 4 | 2 | teknoparrot (TeknoParrot) | native | set wheel rotation to 270 deg; supports 2 players; this cabinet has 1 station(s) |
 | Sonic & SEGA All-Stars Racing | racing | wheel, pedals | 1 | 1 | teknoparrot (TeknoParrot) | native |  |
 | Split/Second | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
-| srally2dx | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | Storm Racer G | racing | wheel, pedals | 3 | 1 | teknoparrot (TeknoParrot) | native |  |
 | Super Bikes 2 | racing | wheel, pedals | 6 | 1 | - | native |  |
 | Super GT 24h | racing | wheel, pedals | 3 | 1 | m2emulator | native | emulation status: preliminary |
@@ -126,6 +124,8 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Wreckfest | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | Chaos Code | standup |  | 4 | 2 | - | native | supports 2 players; this cabinet has 1 station(s) |
 | Get Bass: Sega Bass Fishing | standup | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
+| Get Bass: Sega Bass Fishing (Japan, Standard) | standup | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
+| Get Bass: Sega Bass Fishing (Japan, Upright) | standup | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
 | Guitar Hero Arcade | standup | gamepad | 5 | 2 | - | native | supports 2 players; this cabinet has 1 station(s) |
 | Nitro+ Blasterz: Heroines Infinite Duel | standup |  | 6 | 2 | teknoparrot (TeknoParrot) | native | supports 2 players; this cabinet has 1 station(s) |
 | Under Defeat HD+ | standup | gamepad | 0 | 1 | - | native |  |

@@ -105,6 +105,29 @@ foreach ($g in $m.games) {
   }
 }
 
+# --- borrowed art: RetroFE finds art by the item's own name (medium_artwork\fanart\scudau.png). A clone whose art the
+# catalog borrowed from its family (Build-Manifest: scudau -> scud) gets a hard link under its own name - same file, no
+# extra space (a copy when linking fails). Only missing files are added, never replaced; every one is listed in
+# medium_artwork\ARCADEMASTER-borrowed-art.txt so it can be removed again.
+$borrowed = 0
+foreach ($srcCol in @($metaItems.Keys)) {
+  foreach ($item in @($metaItems[$srcCol].Keys)) {
+    $g = $metaItems[$srcCol][$item]
+    foreach ($t in @($g.media.PSObject.Properties)) {
+      $src = [string]$t.Value
+      if (-not $src -or [IO.Path]::GetFileNameWithoutExtension($src) -eq $item -or -not (Test-Path -LiteralPath $src)) { continue }
+      if ($src -notlike (Join-Path $cols "$srcCol\medium_artwork\*")) { continue }   # only art from the same collection
+      $dst = Join-Path $cols ("$srcCol\medium_artwork\$($t.Name)\$item" + [IO.Path]::GetExtension($src).ToLower())
+      if (Test-Path -LiteralPath $dst) { continue }
+      if (@(Get-ChildItem (Split-Path $dst) -Filter "$item.*" -File -ErrorAction SilentlyContinue).Count) { continue }   # has its own art in another format
+      try { New-Item -ItemType HardLink -Path $dst -Target $src -ErrorAction Stop | Out-Null } catch { Copy-Item -LiteralPath $src $dst }
+      Add-Content (Join-Path $cols "$srcCol\medium_artwork\ARCADEMASTER-borrowed-art.txt") $dst -Encoding UTF8
+      $borrowed++
+    }
+  }
+}
+if ($borrowed) { Write-Host "art: $borrowed file(s) linked for game versions that had none of their own (list: medium_artwork\ARCADEMASTER-borrowed-art.txt)" }
+
 # --- extra TeknoParrot installs as their own (hidden) source collections
 foreach ($inst in $extraTP.Keys) {
   $colName = 'AM_TP_' + (($inst -replace '^[A-Za-z]:\\', '') -replace '[^A-Za-z0-9]+', '_').Trim('_')
@@ -188,6 +211,13 @@ if ($RebuildDatabase) {
       if (-not $node) {
         $node = $doc.CreateElement('game'); $node.SetAttribute('name', $item); [void]$menuNode.AppendChild($node)
         foreach ($kv in @(@('description', $g.title), @('year', $g.year), @('genre', $g.genre))) { if ($kv[1]) { $e = $doc.CreateElement($kv[0]); $e.InnerText = [string]$kv[1]; [void]$node.AppendChild($e) } }
+      }
+      # placeholders only (empty, "NA", the raw set name such as "scudau") get the catalog's name / year - a real name
+      # someone wrote stays as it is
+      foreach ($kv in @(@('description', $g.title), @('year', $g.year), @('genre', $g.genre))) {
+        $new = [string]$kv[1]; if (-not $new -or $new -eq 'NA' -or $new -eq $item) { continue }
+        $e = $node.SelectSingleNode($kv[0]); $cur = if ($e) { $e.InnerText.Trim() } else { '' }
+        if ($cur -in '', 'NA', $item) { if (-not $e) { $e = $doc.CreateElement($kv[0]); [void]$node.AppendChild($e) }; $e.InnerText = $new }
       }
       $vals = [ordered]@{ players = $c.players; ctrltype = $c.ctrltype; buttons = $c.buttons; joyways = $c.ways }
       foreach ($k in $vals.Keys) {

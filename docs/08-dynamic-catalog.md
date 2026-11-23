@@ -255,6 +255,12 @@ Fixes are conservative and backed up. Results go to `manifest\health.json`; `-No
 
 Tested by breaking settings.conf (missing theme, 2 screens on a 1-display cabinet); both were repaired.
 
+## Game names and art for versions of the same game (2026-11-23)
+
+Sega Model 3 clones (regional or updated versions such as `scudau`, `ecaj`, `dirtdvlsj`) had no name in RetroFE's list. The menu showed them as their set name or as "NA", without art. Now:
+- **Names:** `Build-Manifest` reads Supermodel's `Config\Games.xml`, which has each set's title, version/region, year and parent. A clone is named "Scud Race (Australia, Twin/DX)". `New-RetroFECollections` writes that name into `meta\hyperlist\<collection>.xml` only where the entry was a placeholder (empty, "NA", or the set name). Real names are never overwritten, and the original file is kept as `.am-backup`.
+- **Art:** a version with no art of its own uses its family's art from the same collection: the parent first, then the other versions. Emergency Call Ambulance's art exists only for the US set, so `eca`, `ecaj` and `ecap` all use it. RetroFE finds art by the item's own name, so the menu builder adds a **hard link** under that name. That's the same file on disk, using no extra space (it falls back to a copy). Only missing files are added, and every one is listed in `medium_artwork\ARCADEMASTER-borrowed-art.txt`. On this cabinet 72 files were linked, and racing games with background art went from 93 to 105.
+
 ## Games that can't start (2026-11-23)
 
 Every catalog build (`Build-Manifest`, Tools → Rebuild Game Menus) runs `tools\lib\AmGameDoctor.ps1` over each game copy that can't start. It gives each one a reason, in `games.json` (`problem`, `why`) and in plain words in `manifest\games-cant-start.txt`:
