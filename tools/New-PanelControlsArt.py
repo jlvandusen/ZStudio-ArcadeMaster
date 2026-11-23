@@ -804,16 +804,33 @@ def main(argv=None):
     src_count = {'games.json': 0, 'meta.db': 0, 'mame': 0}
     unknown: dict[str, int] = {}
     unknown_examples: dict[str, list] = {}
+    def mtype_of(c):
+        if c not in mtypes:
+            mtypes[c] = read_conf(fe.cdir / c / 'settings.conf').get('metadata.type', c).replace('%ITEM_COLLECTION_NAME%', c)
+        return mtypes[c]
+
     for col in cols:
-        items = fe.items(col, meta_names, catalog_items)
-        mt = mtypes[col].lower()
+        # a game list that also merges other systems in (LEGENDS' Arcades has TeknoParrot.sub, Naomi.sub ...) shows
+        # those games with ITS OWN art folder first: they need their card here too, or a stale one wins
+        pairs, seen_items = [], set()
+        for it in fe.items(col, meta_names, catalog_items):
+            seen_items.add(it.lower()); pairs.append((col, it))
+        for sf in sorted((fe.cdir / col).glob('*.sub')):
+            sc = sf.stem
+            if sc.lower() == col.lower() or SKIP_DEFAULT.match(sc) or not (fe.cdir / sc).is_dir() or not fe.is_game_collection(sc):
+                continue
+            only = {x.lower() for x in read_list(sf)}
+            for it in fe.items(sc, meta_names, catalog_items):
+                if (not only or it.lower() in only) and it.lower() not in seen_items:
+                    seen_items.add(it.lower()); pairs.append((sc, it))
         lst = plan.setdefault(col, [])
-        for it in items:
+        for scol, it in pairs:
+            mt = mtype_of(scol).lower()
             k = it.lower()
-            s = overrides.get(f'{col.lower()}/{k}') or by_item.get((col.lower(), k)) or by_norm.get(norm(it))
+            s = overrides.get(f'{scol.lower()}/{k}') or by_item.get((scol.lower(), k)) or by_norm.get(norm(it))
             src = 'games.json'
             if s is None:
-                s = meta.get((mt, k)) or meta.get((col.lower(), k))
+                s = meta.get((mt, k)) or meta.get((scol.lower(), k))
                 src = 'meta.db'
                 if s is not None and not s.known() and mt == 'mame' and k in mame:
                     s = None
@@ -826,7 +843,7 @@ def main(argv=None):
                     ex.append(it)
                 continue
             src_count[src] += 1
-            s = s.with_emu(emus.item(col, it))
+            s = s.with_emu(emus.item(scol, it))
             key = s.key()
             sigs.setdefault(key, s)
             lst.append((it, key))
@@ -882,7 +899,7 @@ def main(argv=None):
             lst.append([q, st.st_nlink])
 
     # ---- link items
-    linked = already = foreign = copied = relinked = 0
+    linked = already = foreign = copied = relinked = stale = 0
     per_col = {}
     for col, lst in plan.items():
         if not lst:
@@ -929,6 +946,20 @@ def main(argv=None):
                 copied += 1
             linked += 1
             n_col += 1
+        # cards of ours that no listed game uses any more (an earlier run saw other items): a stale card would win
+        # over the right one, so remove it. Files that are not ours are left alone.
+        planned = {item.lower() for item, _ in lst}
+        for name, e in existing.items():
+            if name in planned:
+                continue
+            try:
+                if e.inode() in ours_ino or str(adir / e.name).lower() in copies:
+                    if not a.dry_run:
+                        os.unlink(e.path)
+                        copies.pop(str(adir / e.name).lower(), None)
+                    stale += 1
+            except OSError:
+                pass
         per_col[col] = (len(lst), n_col)
 
     # ---- state + preview
@@ -970,7 +1001,7 @@ def main(argv=None):
                 + (f'  e.g. {", ".join(unknown_examples[col][:3])}' if unknown.get(col) else ''))
     log(f'signatures: {len(sigs)} ({rendered} rendered)  sources: {src_count}')
     log(f'items: {linked} linked ({copied} as copies), {relinked} replaced, {already} already linked, '
-        f'{foreign} skipped (not ours; --force replaces), {sum(unknown.values())} unknown controls')
+        f'{foreign} skipped (not ours; --force replaces), {stale} stale removed, {sum(unknown.values())} unknown controls')
     log(f'disk: {disk / 1024:.0f} KB in {cards_dir} ({nshard} link-limit shards; links add no data)')
     log(f'time: data {t_data - t0:.1f}s, resolve {t_resolve - t_data:.1f}s, render {t_render - t_resolve:.1f}s, '
         f'link {t_end - t_render:.1f}s, total {t_end - t0:.1f}s' + ('  [dry run]' if a.dry_run else ''))

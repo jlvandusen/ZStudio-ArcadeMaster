@@ -265,11 +265,17 @@ namespace ArcadeMaster
             int ls = 260 * u;
             if (logo != null) form.Controls.Add(new PictureBox { Image = logo, SizeMode = PictureBoxSizeMode.Zoom, Bounds = new Rectangle(cx - ls / 2, cy - ls - 40 * u, ls, ls), BackColor = Color.Transparent });
             var title = new Label { Text = "ARCADEMASTER", ForeColor = Ui.Text, Font = Ui.F(64 * u, FontStyle.Bold, "Segoe UI Black"), AutoSize = false, TextAlign = ContentAlignment.MiddleCenter, Bounds = new Rectangle(0, cy - 10 * u, scr.Width, 90 * u) };
-            step = new Label { Text = "Starting up...", ForeColor = Ui.Dim, Font = Ui.F(26 * u), AutoSize = false, TextAlign = ContentAlignment.MiddleCenter, Bounds = new Rectangle(0, cy + 150 * u, scr.Width, 44 * u) };
-            var track = new Panel { BackColor = Ui.Panel, Bounds = new Rectangle(cx - 300 * u, cy + 110 * u, 600 * u, 8 * u) };
+            step = new Label { Text = "Starting up...", ForeColor = Ui.Dim, Font = Ui.F(26 * u), AutoSize = false, TextAlign = ContentAlignment.MiddleCenter, Bounds = new Rectangle(0, cy + 190 * u, scr.Width, 44 * u) };
+            var track = new Panel { BackColor = Ui.Panel, Bounds = new Rectangle(cx - 300 * u, cy + 160 * u, 600 * u, 8 * u) };
             bar = new Panel { BackColor = Ui.Magenta, Bounds = new Rectangle(0, 0, 140 * u, 8 * u) };
             track.Controls.Add(bar);
-            form.Controls.AddRange(new Control[] { title, track, step });
+            var count = new Label { Text = "", ForeColor = Ui.Cyan, Font = Ui.F(30 * u, FontStyle.Bold), AutoSize = false, TextAlign = ContentAlignment.MiddleCenter, Bounds = new Rectangle(0, cy + 95 * u, scr.Width, 44 * u) };
+            form.Controls.AddRange(new Control[] { title, count, track, step });
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                int systems; int games = CountGames(c.RetroFERoot, out systems);
+                if (games > 0) OnUi(() => count.Text = games.ToString("N0") + " games  ·  " + systems + " systems");
+            });
             var tick = new System.Windows.Forms.Timer { Interval = 33 };
             tick.Tick += (s, e) => { pos = (pos + 9 * u) % (track.Width + bar.Width); bar.Left = pos - bar.Width; };
             var poll = new System.Windows.Forms.Timer { Interval = 400 };
@@ -283,6 +289,54 @@ namespace ArcadeMaster
             form.Shown += (s, e) => { tick.Start(); poll.Start(); ready.Set(); form.Activate(); };
             form.FormClosed += (s, e) => { closing = true; ready.Set(); };
             Application.Run(form);
+        }
+
+        // Games the frontend will list: every real game collection (a launcher or list.path, no menu.txt; merged .sub
+        // views are not counted twice), its include.txt, else the files in its list folder with the listed extensions.
+        public static int CountGames(string root, out int systems)
+        {
+            systems = 0;
+            // lists that read the same folder (LEGENDS' Arcades, ArcadesMini and Fight all list MAME's roms) count once
+            var games = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                foreach (var d in Directory.GetDirectories(Path.Combine(root, "collections")))
+                {
+                    var name = Path.GetFileName(d);
+                    if (name.StartsWith("_") || name.StartsWith("zzz", StringComparison.OrdinalIgnoreCase) || name.Equals("Main", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (File.Exists(Path.Combine(d, "menu.txt"))) continue;
+                    var conf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var sc = Path.Combine(d, "settings.conf");
+                    if (File.Exists(sc))
+                        foreach (var raw in File.ReadAllLines(sc))
+                        {
+                            var l = raw.Trim(); int eq = l.IndexOf('=');
+                            if (l.Length == 0 || l.StartsWith("#") || eq < 1) continue;
+                            conf[l.Substring(0, eq).Trim()] = l.Substring(eq + 1).Trim();
+                        }
+                    var inc = Path.Combine(d, "include.txt");
+                    if (!conf.ContainsKey("launcher") && !conf.ContainsKey("list.path") && !File.Exists(inc)) continue;
+                    int before = games.Count; string folder;
+                    if (File.Exists(inc))
+                    {
+                        folder = inc;
+                        foreach (var x in File.ReadAllLines(inc)) if (x.Trim().Length > 0 && !x.Trim().StartsWith("#")) games.Add(name + "|" + x.Trim());
+                    }
+                    else
+                    {
+                        string lp; var dir = conf.TryGetValue("list.path", out lp) ? Path.Combine(root, lp.Replace("%ITEM_COLLECTION_NAME%", name)) : Path.Combine(d, "roms");
+                        folder = Path.GetFullPath(dir).TrimEnd('\\');
+                        string ex; var exts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (conf.TryGetValue("list.extensions", out ex)) foreach (var e in ex.Split(',')) if (e.Trim().Length > 0) exts.Add("." + e.Trim().TrimStart('.'));
+                        if (Directory.Exists(dir))
+                            foreach (var f in Directory.EnumerateFiles(dir)) if (exts.Count == 0 || exts.Contains(Path.GetExtension(f))) games.Add(Path.GetFullPath(f));
+                    }
+                    if (games.Count > before && folders.Add(folder)) systems++;
+                }
+            }
+            catch { }
+            return games.Count;
         }
 
         // the boot log is appended for every start: only show lines written since this launch

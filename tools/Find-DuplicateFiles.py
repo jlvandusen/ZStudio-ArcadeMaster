@@ -116,16 +116,29 @@ def main(argv=None):
         print(f'scanned {t}: {len(files) - n0} files >= {a.min_mb} MB in {time.time() - t1:.0f}s', flush=True)
     t_scan = time.time()
 
-    # files already hard-linked together count once
+    # files already hard-linked together count once. On Windows a DirEntry's stat has st_ino = 0, so the real file
+    # id is read with os.stat - only for files that share a size and name with another (a small fraction).
     by_key = defaultdict(list)
-    seen_ino = set()
-    for p, size, ino, name in files:
-        if ino in seen_ino:
-            stats['already_linked'] += 1
-            continue
-        seen_ino.add(ino)
+    for p, size, _ino, name in files:
         by_key[(size, name)].append(p)
-    cand = {k: v for k, v in by_key.items() if len(v) > 1}
+    cand = {}
+    for k, ps in by_key.items():
+        if len(ps) < 2:
+            continue
+        ids, keep = set(), []
+        for p in ps:
+            try:
+                st = os.stat(p)
+                fid = (st.st_dev, st.st_ino)
+            except OSError:
+                continue
+            if fid in ids:
+                stats['already_linked'] += 1
+                continue
+            ids.add(fid)
+            keep.append(p)
+        if len(keep) > 1:
+            cand[k] = keep
     print(f'{len(cand)} candidate groups by size+name; fingerprinting ...', flush=True)
 
     groups = []
