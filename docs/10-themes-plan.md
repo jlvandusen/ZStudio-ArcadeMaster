@@ -20,7 +20,7 @@ A CoinOPS theme is a RetroFE layout, and our fork is CoinOPS-compatible, so thes
 - The same visual picker as Cabinet Type: preview cards, with the wheel / stick / tap to choose and a button to apply.
 - Cabinet default (`layout =`), plus optional per-collection overrides, e.g. Racing in one theme and Flight in another.
 - "Random theme each boot" option, handled by `Start-ArcadeMaster`.
-- ArcadeMaster stays the fallback. If a theme crashes RetroFE twice at boot, the watchdog reverts to it (part of the self-healing work).
+- ArcadeMaster stays the fallback. **Done (2026-11-22):** at boot, a theme that is missing its `layout.xml` is reset by the health check. In a crash loop, the watchdog first restores the last-known-good settings. If RetroFE still crashes, it sets `layout = ArcadeMaster` (keeping `settings.conf.before-theme-fallback`) and tries again before giving up. Tested with a fake frontend that always crashes.
 
 ## 3. BigBox themes: two routes
 

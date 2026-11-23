@@ -149,7 +149,7 @@ Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
 $exitFlag = Join-Path $Root 'exit.request'
 Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
 $crashes = New-Object System.Collections.Generic.List[datetime]
-$snapshotDone = $false; $lkgRestored = $false
+$snapshotDone = $false; $lkgRestored = $false; $themeFallback = $false
 while ($true) {
   Write-Log 'starting RetroFE'
   $p = Start-Process $exe -WorkingDirectory (Split-Path $exe) -PassThru
@@ -180,6 +180,21 @@ while ($true) {
     $r = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-RestoreLkg'); Write-Log "crash loop - $($r.Trim())"
     continue
   }
-  if ($recent.Count -ge $MaxCrashes) { Write-Log "$MaxCrashes crashes in $CrashWindowSec s - giving up"; break }
+  if ($recent.Count -ge $MaxCrashes) {
+    # last try before giving up: an imported theme (CO-*, a CoinOPS layout ...) that crashes RetroFE -> back to the
+    # ArcadeMaster layout, which ships with the repo. Only settings.conf 'layout =' changes; a copy is kept.
+    $sc = Join-Path $Root 'settings.conf'
+    $cur = (Select-String -LiteralPath $sc -Pattern '^\s*layout\s*=\s*(.+)$' -ErrorAction SilentlyContinue | Select-Object -Last 1)
+    $curLayout = if ($cur) { $cur.Matches[0].Groups[1].Value.Trim() } else { '' }
+    if (-not $themeFallback -and $curLayout -and $curLayout -ne $Layout -and (Test-Path (Join-Path $Root "layouts\$Layout\layout.xml"))) {
+      $themeFallback = $true; $crashes.Clear()
+      Copy-Item -LiteralPath $sc "$sc.before-theme-fallback" -Force
+      $txt = [IO.File]::ReadAllText($sc); $txt = [regex]::Replace($txt, '(?m)^(\s*layout\s*=\s*).+?(\r?)$', "`${1}$Layout`${2}")
+      [IO.File]::WriteAllText($sc, $txt, (New-Object Text.UTF8Encoding $false))
+      Write-Log "theme '$curLayout' keeps crashing RetroFE - switched back to the $Layout theme (old settings: settings.conf.before-theme-fallback)"
+      continue
+    }
+    Write-Log "$MaxCrashes crashes in $CrashWindowSec s - giving up"; break
+  }
   Start-Sleep -Seconds 2
 }
