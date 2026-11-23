@@ -107,7 +107,7 @@ public static class AmWheelBg {
 '@
 
 # square, upright, centred on a soft light disc (a black wheel on the dark menu would vanish without it)
-function Write-WheelPicture([string]$srcPath, [string]$dest) {
+function Write-WheelPicture([string]$srcPath, [string]$dest, [string]$fit = '') {
   $raw = [Drawing.Image]::FromFile($srcPath)
   try {
     $bmp = New-Object Drawing.Bitmap $raw.Width, $raw.Height, ([Drawing.Imaging.PixelFormat]::Format32bppArgb)
@@ -118,6 +118,22 @@ function Write-WheelPicture([string]$srcPath, [string]$dest) {
   for ($y = 0; $y -lt $bmp.Height; $y += $step) { for ($x = 0; $x -lt $bmp.Width; $x += $step) { if ($bmp.GetPixel($x, $y).A -gt 24) { if ($x -lt $minX) { $minX = $x }; if ($x -gt $maxX) { $maxX = $x }; if ($y -lt $minY) { $minY = $y }; if ($y -gt $maxY) { $maxY = $y } } } }
   if ($maxX -le $minX) { $bmp.Dispose(); throw "nothing left of the picture after removing its background: $srcPath" }
   $cw = [Math]::Min($bmp.Width - $minX, $maxX - $minX + $step); $ch = [Math]::Min($bmp.Height - $minY, $maxY - $minY + $step)
+  # "top-square": the photo shows the base under the rim (G920, PRO Racing Wheel). A rim is round, so a square as wide
+  # as the rim, from the top, is the rim alone - and its centre is where the wheel turns.
+  if ($fit -eq 'top-square') {
+    # the rim's width comes from the upper part of the picture (only rim there); the base below can be wider
+    $x1 = $bmp.Width; $x2 = 0; $yEnd = $minY + [int](0.45 * ($maxY - $minY))
+    for ($y = $minY; $y -le $yEnd; $y += $step) { for ($x = 0; $x -lt $bmp.Width; $x += $step) { if ($bmp.GetPixel($x, $y).A -gt 24) { if ($x -lt $x1) { $x1 = $x }; if ($x -gt $x2) { $x2 = $x } } } }
+    if ($x2 -gt $x1) { $minX = $x1; $cw = [Math]::Min($bmp.Width - $minX, $x2 - $x1 + $step); $ch = [Math]::Min($ch, $cw) }
+  }
+  # "rim:0.86": the rim is drawn that much shorter than wide (shot slightly from above): crop to the rim's height and
+  # clear everything outside the rim's oval, so the base under it is gone and the picture turns about the rim's centre
+  $rimOval = $null
+  if ($fit -match '^rim:([\d.]+)$') {
+    $ratio = [double]$Matches[1]; $x1 = $bmp.Width; $x2 = 0; $yEnd = $minY + [int](0.45 * ($maxY - $minY))
+    for ($y = $minY; $y -le $yEnd; $y += $step) { for ($x = 0; $x -lt $bmp.Width; $x += $step) { if ($bmp.GetPixel($x, $y).A -gt 24) { if ($x -lt $x1) { $x1 = $x }; if ($x -gt $x2) { $x2 = $x } } } }
+    if ($x2 -gt $x1) { $minX = $x1; $cw = $x2 - $x1 + $step; $ch = [Math]::Min($bmp.Height - $minY, [int]($cw * $ratio)); $rimOval = $true }
+  }
   $canvas = New-Object Drawing.Bitmap $Size, $Size, ([Drawing.Imaging.PixelFormat]::Format32bppArgb)
   $g = [Drawing.Graphics]::FromImage($canvas)
   $g.SmoothingMode = 'AntiAlias'; $g.InterpolationMode = 'HighQualityBicubic'; $g.PixelOffsetMode = 'HighQuality'; $g.Clear([Drawing.Color]::Transparent)
@@ -125,7 +141,10 @@ function Write-WheelPicture([string]$srcPath, [string]$dest) {
   $glow = New-Object Drawing.Drawing2D.PathGradientBrush $gp; $glow.CenterColor = [Drawing.Color]::FromArgb(150, 70, 80, 105); $glow.SurroundColors = @([Drawing.Color]::FromArgb(0, 20, 22, 30))
   $g.FillEllipse($glow, 0, 0, $Size, $Size)
   $fit = 0.94 * $Size / [Math]::Max($cw, $ch); $dw = $cw * $fit; $dh = $ch * $fit
-  $g.DrawImage($bmp, (New-Object Drawing.RectangleF ((($Size - $dw) / 2), (($Size - $dh) / 2), $dw, $dh)), (New-Object Drawing.RectangleF $minX, $minY, $cw, $ch), [Drawing.GraphicsUnit]::Pixel)
+  $dstRect = New-Object Drawing.RectangleF ((($Size - $dw) / 2), (($Size - $dh) / 2), $dw, $dh)
+  if ($rimOval) { $clip = New-Object Drawing.Drawing2D.GraphicsPath; $clip.AddEllipse($dstRect); $g.SetClip($clip) }
+  $g.DrawImage($bmp, $dstRect, (New-Object Drawing.RectangleF $minX, $minY, $cw, $ch), [Drawing.GraphicsUnit]::Pixel)
+  $g.ResetClip()
   $g.Dispose(); $glow.Dispose(); $gp.Dispose(); $bmp.Dispose()
   New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null
   $tmp = "$dest.tmp.png"; $canvas.Save($tmp, [Drawing.Imaging.ImageFormat]::Png); $canvas.Dispose(); Move-Item $tmp $dest -Force
@@ -147,8 +166,13 @@ else {
     if ($w) {
       $name = $w.name
       if ($w.id -match 'VID_([0-9A-F]{4})&PID_([0-9A-F]{4})') { $usb = "$($Matches[1]):$($Matches[2])" }
-      $entry = $list | Where-Object { $usb -and @($_.usb) -contains $usb } | Select-Object -First 1
-      if (-not $entry) { $entry = $list | Where-Object { $e = $_; @($e.match | Where-Object { $_ -and $name -like "*$_*" }).Count } | Sort-Object { -(@($_.match) | Measure-Object Length -Maximum).Maximum } | Select-Object -First 1 }
+      # by name: the entry whose matching piece is the longest wins (G923 Xbox before G923)
+      $byName = @($list | ForEach-Object { $e = $_; $hit = @($e.match | Where-Object { $_ -and $name -like "*$_*" } | Sort-Object Length -Descending)[0]; if ($hit) { [pscustomobject]@{ e = $e; len = $hit.Length } } } | Sort-Object len -Descending | ForEach-Object { $_.e })
+      # by USB id; several wheels can share one (Fanatec CSL DD / GT DD Pro / ClubSport DD): then the name decides
+      $byUsb = @($list | Where-Object { $usb -and @($_.usb) -contains $usb })
+      $entry = if ($byUsb.Count -gt 1) { @($byName | Where-Object { $byUsb -contains $_ })[0] } else { $null }
+      if (-not $entry -and $byUsb.Count) { $entry = $byUsb[0] }
+      if (-not $entry -and $byName.Count) { $entry = $byName[0] }
     }
   }
 }
@@ -163,6 +187,7 @@ if (-not $src) {
 }
 $key = "$($src.FullName)|$($src.LastWriteTimeUtc.Ticks)|$Size|2"
 if (-not $Model -and (Test-Path $Out) -and (Test-Path $stamp) -and (Get-Content $stamp -Raw).Trim() -eq $key) { Write-Host "real wheel: $name up to date"; return }
-Write-WheelPicture $src.FullName $Out
+$fitMode = if ($entry -and $entry.PSObject.Properties['fit'] -and $src.DirectoryName -eq $Cache) { [string]$entry.fit } else { '' }   # crop hints are for the downloaded photo, not G HUB's
+Write-WheelPicture $src.FullName $Out $fitMode
 if (-not $Model) { New-Item -ItemType Directory -Force $ManifestDir | Out-Null; Set-Content $stamp $key -Encoding ascii }
 Write-Host "real wheel: $name -> $Out (picture: $($src.FullName))"
