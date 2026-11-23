@@ -23,29 +23,17 @@ function Test-AmProgramFile([string]$p) {
   return ($n -eq 4 -and $b[0] -eq 0x7F -and $b[1] -eq 0x45 -and $b[2] -eq 0x4C -and $b[3] -eq 0x46)   # Linux ELF
 }
 
-function Get-AmFileIndex([string[]]$Roots, [string[]]$Names) {
-  # every file with one of these names (any extension, so Linux program files too) under the roots, by lower-case name
-  $ix = @{}; $Names = @($Names | Where-Object { $_ } | Select-Object -Unique); if (-not $Names) { return $ix }
-  foreach ($r in $Roots | Select-Object -Unique) {
-    if (-not (Test-Path -LiteralPath $r)) { continue }
-    foreach ($l in (robocopy $r "$env:TEMP\am-none" @Names /S /L /NJH /NJS /NDL /NC /NS /XJ /R:0 /W:0 2>$null)) {
-      $p = $l.Trim(); if ($p -notmatch '^[A-Za-z]:\\') { continue }
-      $k = [IO.Path]::GetFileName($p).ToLower()
-      if (-not $ix.ContainsKey($k)) { $ix[$k] = New-Object System.Collections.Generic.List[string] }
-      if (-not $ix[$k].Contains($p)) { $ix[$k].Add($p) }
-    }
-  }
-  $ix
-}
-
-function Get-AmDirIndex([string[]]$Roots) {
-  # every folder up to 4 levels under the roots, by lower-case folder name
+function Get-AmDirIndex([string[]]$Roots, [int]$Levels = 6) {
+  # every folder up to 6 levels under the roots, by lower-case folder name (several folders can share a name).
+  # Folders only: listing them takes ~2 s; listing every file under D:\Arcade PC (700,000+) took 9-14 s.
   $ix = @{}
   foreach ($r in $Roots | Select-Object -Unique) {
     if (-not (Test-Path -LiteralPath $r)) { continue }
-    foreach ($l in (robocopy $r "$env:TEMP\am-none" /S /L /LEV:4 /NJH /NJS /NFL /NC /NS /XJ /R:0 /W:0 2>$null)) {
-      $p = $l.Trim().TrimEnd('\'); if ($p -notmatch '^[A-Za-z]:\\') { continue }
-      $k = [IO.Path]::GetFileName($p).ToLower(); if (-not $ix.ContainsKey($k)) { $ix[$k] = $p }
+    foreach ($l in (robocopy $r "$env:TEMP\am-none" /S /L "/LEV:$Levels" /NJH /NJS /NFL /NC /NS /XJ /R:0 /W:0 2>$null)) {
+      $d = $l.Trim().TrimEnd('\'); if ($d -notmatch '^[A-Za-z]:\\') { continue }
+      $k = [IO.Path]::GetFileName($d).ToLower()
+      if (-not $ix.ContainsKey($k)) { $ix[$k] = New-Object System.Collections.Generic.List[string] }
+      $ix[$k].Add($d)
     }
   }
   $ix
@@ -65,7 +53,11 @@ function Get-AmGameRoots($games) {
       }
     }
   }
-  @($roots.Values)
+  # a root inside another root is scanned with it: keep only the outermost (D:\Arcade PC, not also D:\Arcade PC\PC ...)
+  $all = @($roots.Values | Where-Object { Test-Path -LiteralPath $_ } | Sort-Object Length)
+  $keep = New-Object System.Collections.Generic.List[string]
+  foreach ($r in $all) { if (-not @($keep | Where-Object { $r.ToLower().StartsWith($_.ToLower().TrimEnd('\') + '\') }).Count) { $keep.Add($r) } }
+  @($keep)
 }
 
 # folder names arcade dumps commonly use that don't look like the game's name (TeknoParrot name -> folder names)
@@ -92,10 +84,7 @@ function Invoke-AmGameDoctor($games) {
   $roots = Get-AmGameRoots $list
   $script:amDirIndex = $null
   $dirIx = { if ($null -eq $script:amDirIndex) { $script:amDirIndex = Get-AmDirIndex $roots }; $script:amDirIndex }
-  # every missing program file's name, so one disk pass finds them all
-  $want = @(foreach ($g in $list) { foreach ($v in $g.variants.Values) { if (-not $v.ok) { $p = if ($v.gamePath) { $v.gamePath } else { $v.file }; if ($p -and $p -notmatch '(?i)\.xml$') { [IO.Path]::GetFileName($p) } } } })
-  $index = Get-AmFileIndex $roots $want
-  $stats = [ordered]@{ moved = 0; incomplete = 0; 'not-installed' = 0; 'not-set-up' = 0; 'no-path' = 0 }
+  $stats =[ordered]@{ moved = 0; incomplete = 0; 'not-installed' = 0; 'not-set-up' = 0; 'no-path' = 0 }
   foreach ($g in $list) {
     foreach ($name in @($g.variants.Keys)) {
       $v = $g.variants[$name]
@@ -110,8 +99,8 @@ function Invoke-AmGameDoctor($games) {
         # a folder named after the game (its TeknoParrot name or its title)?
         $keys = @((ConvertTo-AmKey $tpId), (ConvertTo-AmKey $g.title) -replace '^the', '') | Where-Object { $_.Length -ge 4 }
         $ix = & $dirIx
-        $found = @($script:AmFolderHints[$tpId]) | Where-Object { $_ -and $ix.ContainsKey($_.ToLower()) } | ForEach-Object { $ix[$_.ToLower()] } | Select-Object -First 1
-        if (-not $found) { $found = $ix.Keys | Where-Object { $k = ConvertTo-AmKey $_; $k.Length -ge 5 -and @($keys | Where-Object { $_ -eq $k -or ($k.Length -ge 6 -and $_.Contains($k)) -or $k.Contains($_) }).Count } | ForEach-Object { $ix[$_] } | Select-Object -First 1 }
+        $found = @($script:AmFolderHints[$tpId]) | Where-Object { $_ -and $ix.ContainsKey($_.ToLower()) } | ForEach-Object { $ix[$_.ToLower()][0] } | Select-Object -First 1
+        if (-not $found) { $found = $ix.Keys | Where-Object { $k = ConvertTo-AmKey $_; $k.Length -ge 5 -and @($keys | Where-Object { $_ -eq $k -or ($k.Length -ge 6 -and $_.Contains($k)) -or $k.Contains($_) }).Count } | ForEach-Object { $ix[$_][0] } | Select-Object -First 1 }
         if ($found) {
           $gp = Join-Path $tpDir "GameProfiles\$tpId.xml"
           $expected = if (Test-Path -LiteralPath $gp) { ([regex]::Match([IO.File]::ReadAllText($gp), '<ExecutableName>([^<]+)<')).Groups[1].Value } else { '' }
@@ -123,7 +112,8 @@ function Invoke-AmGameDoctor($games) {
       }
 
       $exe = [IO.Path]::GetFileName($path); $folder = [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($path))
-      $hits = @($index[$exe.ToLower()] | Where-Object { $_ -and [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($_)) -eq $folder -and (Test-AmProgramFile $_) })
+      # moved: a folder with the same name somewhere under the game folders that holds the same program file
+      $hits = @(@((& $dirIx)[$folder.ToLower()]) | Where-Object { $_ } | ForEach-Object { Join-Path $_ $exe } | Where-Object { (Test-Path -LiteralPath $_ -PathType Leaf) -and (Test-AmProgramFile $_) })
       if ($hits.Count -ge 1) {
         $new = $hits | Sort-Object { $_.Length } | Select-Object -First 1   # the shallowest copy (not a tools\32\ duplicate)
         $v.problem = 'moved'; $stats.moved++
@@ -138,7 +128,7 @@ function Invoke-AmGameDoctor($games) {
       $dir = [IO.Path]::GetDirectoryName($path)
       if (-not (Test-Path -LiteralPath $dir)) {
         # the folder may be elsewhere without its program file (a partial copy): look for it by name
-        $same = @((& $dirIx)[$folder.ToLower()]) | Where-Object { $_ } | Select-Object -First 1
+        $same = @(@((& $dirIx)[$folder.ToLower()]) | Where-Object { $_ }) | Select-Object -First 1
         if ($same) { $dir = $same }
       }
       if (Test-Path -LiteralPath $dir) {
