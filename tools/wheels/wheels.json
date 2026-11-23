@@ -1,0 +1,6 @@
+{
+  "_help": "Racing wheels New-RealWheelArt can show on the main menu. key: cache name. match: pieces of the name Windows reports (case-insensitive). usb: VID:PID. ghub: Logitech G HUB picture folder (used first when G HUB is installed). image: the maker's front-view picture, downloaded once into C:\\ProgramData\\ArcadeMaster\\wheels on the cabinet that has the wheel - never into the repo.",
+  "wheels": [
+    { "key": "g29", "model": "Logitech G29 Driving Force", "maker": "Logitech", "match": ["G29"], "usb": ["046D:C24F", "046D:C260"], "ghub": "g29", "image": "" }
+  ]
+}

@@ -123,7 +123,7 @@
       <set duration="1.6"><animate type="angle" to="-100" algorithm="easeInOutSine"/></set>
     </onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="am_spinner" mode="layout" liveSteer="450" liveDevice="wheel" x="center" y="480" xOrigin="center" yOrigin="center" width="380" height="380" layer="15">
+  <reloadableImage type="am_spinner" mode="layout" x="center" y="480" xOrigin="center" yOrigin="center" width="380" height="380" layer="15">
     <onMenuScroll><set duration=".12"><animate type="angle" to="42" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".45"><animate type="angle" to="-9" algorithm="easeOutCubic"/></set>
@@ -135,6 +135,8 @@
       <set duration="1"><animate type="nop"/></set>
     </onMenuIdle>
   </reloadableImage>
+  <!-- the cabinet's real wheel (New-RealWheelArt): straight up when the wheel is centred, turns only with the wheel - no decorative swing. Empty unless the cabinet has one; am_spinner is then empty instead -->
+  <reloadableImage type="am_realwheel" mode="layout" liveSteer="450" liveDevice="wheel" x="center" y="480" xOrigin="center" yOrigin="center" width="380" height="380" layer="15"></reloadableImage>
   <reloadableImage type="am_gauge2_face" mode="layout" x="1360" y="500" xOrigin="center" yOrigin="center" width="250" height="250" layer="14"/>
   <reloadableImage type="am_gauge2_over" mode="layout" x="1360" y="500" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
     <onMenuScroll><set duration=".1"><animate type="angle" to="128" algorithm="easeOutQuadratic"/></set></onMenuScroll>

@@ -132,7 +132,7 @@
   </reloadableImage>
 
   <!-- spinner: steering wheel (racing) / yoke (flight) / crosshair (lightgun) - a real driving line, not a metronome -->
-  <reloadableImage type="am_spinner" mode="systemlayout" liveSteer="450" liveDevice="wheel" x="1340" y="900" xOrigin="center" yOrigin="center" width="330" height="330" layer="14">
+  <reloadableImage type="am_spinner" mode="systemlayout" x="1340" y="900" xOrigin="center" yOrigin="center" width="330" height="330" layer="14">
     <onMenuScroll><set duration=".12"><animate type="angle" to="42" algorithm="easeOutQuadratic"/><animate type="y" to="892"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".45"><animate type="angle" to="-9" algorithm="easeOutCubic"/><animate type="y" to="902"/></set>
@@ -149,6 +149,11 @@
     </onMenuIdle>
     <onGameEnter><set duration="1"><animate type="angle" to="720" algorithm="easeInCubic"/><animate type="width" to="520"/><animate type="height" to="520"/></set></onGameEnter>
     <onGameExit><set duration=".6"><animate type="angle" to="0" algorithm="easeOutCubic"/><animate type="width" to="330"/><animate type="height" to="330"/></set></onGameExit>
+  </reloadableImage>
+  <!-- the cabinet's real wheel (New-RealWheelArt): straight up when the wheel is centred, turns only with the wheel - no decorative swing. Empty unless the cabinet has one; am_spinner is then empty instead -->
+  <reloadableImage type="am_realwheel" mode="systemlayout" liveSteer="450" liveDevice="wheel" x="1340" y="900" xOrigin="center" yOrigin="center" width="330" height="330" layer="14">
+    <onGameEnter><set duration="1"><animate type="width" to="520"/><animate type="height" to="520"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="width" to="330"/><animate type="height" to="330"/></set></onGameExit>
   </reloadableImage>
 
   <!-- burst: speed lines (racing) / muzzle flash (lightgun) on every scroll -->

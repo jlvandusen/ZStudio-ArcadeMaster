@@ -57,7 +57,7 @@ if ($skinFile -and (Test-Path $skinFile) -and $cfg.PSObject.Properties['skins'])
   }
 }
 function Resolve-Skin([string]$t) { if ($skinOf.ContainsKey($t)) { $skinOf[$t] } else { $t } }
-$styleKey = (Resolve-Skin $CabinetTheme) + $(if ($skinOf.Count) { '|' + (($skinOf.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" }) -join ',') } else { '' }) + $(if (Test-Path $realWheel) { "+realwheel:$((Get-Item $realWheel).LastWriteTimeUtc.Ticks)" } else { '' })
+$styleKey = (Resolve-Skin $CabinetTheme) + $(if ($skinOf.Count) { '|' + (($skinOf.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" }) -join ',') } else { '' }) + $(if (Test-Path $realWheel) { "+realwheel2:$((Get-Item $realWheel).LastWriteTimeUtc.Ticks)" } else { '+slots2' })   # bump the number when the slot set changes: every cabinet refreshes once
 if ($skinOf.Count) { Write-Host ("skins: " + (($skinOf.GetEnumerator() | ForEach-Object { "$($_.Name) -> $($_.Value)" }) -join ', ')) }
 if ($BackgroundsOnly -and $styleFile) {
   $last = if (Test-Path $styleFile) { (Get-Content $styleFile -Raw).Trim() } else { '' }
@@ -122,10 +122,14 @@ foreach ($col in $map.Keys) {
   if (-not $BackgroundsOnly) {
     foreach ($slot in $theme.PSObject.Properties) {
       $src = Join-Path $LayoutDir "images\$($slot.Value)"
-      if ($slot.Name -eq 'am_spinner' -and $themeName -like 'racing*' -and (Test-Path $realWheel)) { $src = $realWheel }   # every racing skin keeps the real wheel
       if (-not (Test-Path $src)) { throw "missing art $src (run tools\New-LayoutArt.ps1)" }
       Copy-Item $src (Join-Path $dst "$($slot.Name).png") -Force
     }
+    # the real wheel has its own element (am_realwheel: no decorative swing, turns only with the wheel, straight up at
+    # centre). Every racing skin shows it when the cabinet has one, and its decorative am_spinner is left empty.
+    $useReal = $themeName -like 'racing*' -and (Test-Path $realWheel)
+    Copy-Item $(if ($useReal) { $realWheel } else { Join-Path $LayoutDir 'images\blank.png' }) (Join-Path $dst 'am_realwheel.png') -Force
+    if ($useReal) { Copy-Item (Join-Path $LayoutDir 'images\blank.png') (Join-Path $dst 'am_spinner.png') -Force }
   }
   # rotating backdrop slots
   $pool = @(Get-BgPool $col $themeName)   # @(): a one-fanart collection would otherwise unroll to a string
