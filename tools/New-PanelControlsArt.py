@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 3          # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 4         # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -82,10 +82,20 @@ STICK_TEXT = {'8': '8-WAY STICK', '4': '4-WAY STICK', '2h': '2-WAY STICK', '2v':
 
 
 # ------------------------------------------------------------------ control signature
-class Sig:
-    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels')
+WHEEL_LABELS = ('GAS', 'BRAKE', 'GEAR +', 'GEAR −', 'VIEW')
 
-    def __init__(self, players=0, alt=False, stick=None, buttons=0, extras=(), labels=()):
+
+class Sig:
+    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels', 'emu')
+
+    def __init__(self, players=0, alt=False, stick=None, buttons=0, extras=(), labels=(), emu=''):
+        self.emu = emu
+        ex0 = set(extras)
+        # a racer on a stick panel: the stick steers and the pedals land on buttons 1 + 2 (gas, brake), then the
+        # game's own buttons (gear up / down, view). Without this a wheel game showed "1 button".
+        if ('wheel' in ex0 or ('pedal' in ex0 and ex0 & {'paddle', 'spinner'})) and not labels and buttons < 6:
+            n = min(buttons + 2, 5)
+            labels, buttons = WHEEL_LABELS[:n], n
         ex = set(extras)
         # fold variants that look the same on this panel, so 16k games share few cards
         if 'keypad' in ex:                                   # mahjong / casino / keyboard: the panel cannot play them
@@ -109,7 +119,16 @@ class Sig:
         k += ''.join('-' + e for e in self.extras)
         if self.labels:
             k += '-L' + hashlib.sha1('|'.join(self.labels).encode()).hexdigest()[:8]
+        if self.emu:
+            k += '-E' + hashlib.sha1(self.emu.encode()).hexdigest()[:8]
         return k
+
+    def with_emu(self, emu: str) -> 'Sig':
+        s = Sig.__new__(Sig)
+        for a in Sig.__slots__:
+            setattr(s, a, getattr(self, a))
+        s.emu = emu
+        return s
 
 
 def to_int(v, default=0) -> int:
@@ -503,7 +522,12 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
         c.text((x1 - wdt / 2, y + 1), label, f, col + (255,), 'mm')
     # extras chips
     x = x0
-    y = 248
+    y = 236 if sig.emu else 248
+    if sig.emu:                                # which emulator runs it: the first thing to know when a game will not start
+        f = font('semi', 20)
+        c.text((x0, 276), 'RUNS ON', f, DIM + (255,), 'lm')
+        c.text((x0 + c.width('RUNS ON', f) + 12, 276), fit_label(c, sig.emu, x1 - x0 - 110, 20), font('semi', 20),
+               TEXT + (255,), 'lm')
     # chips for the special controls not already named on the stick line
     shown = [e for e in sig.extras if e != 'twinstick'] if sig.stick else list(sig.extras[1:])
     for e in shown:
@@ -545,6 +569,67 @@ def read_list(p: Path) -> list[str]:
 
 BAD = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 SKIP_DEFAULT = re.compile(r'^(_|zzz|main$)', re.I)
+
+
+class Emulators:
+    """What runs a game, for the card's RUNS ON line: the collection's launcher (launchers.windows/<launcher>.conf),
+    the RetroArch core from its arguments, TeknoParrot's emulator type from the game's profile, and for PC .bat
+    games the program the .bat starts."""
+
+    def __init__(self, root: Path):
+        self.root = root
+        self.cols: dict = {}
+
+    def collection(self, col: str):
+        if col in self.cols:
+            return self.cols[col]
+        conf = read_conf(self.root / 'collections' / col / 'settings.conf')
+        ln = (conf.get('launcher') or '').replace('%ITEM_COLLECTION_NAME%', col)
+        lc = read_conf(self.root / 'launchers.windows' / f'{ln}.conf') if ln else {}
+        exe, args = lc.get('executable', '').replace('/', '\\'), lc.get('arguments', '')
+        label, kind, base = ln, None, None
+        if exe:
+            p = Path(exe)
+            stem, folder = p.stem.lower(), p.parent.name
+            if 'retroarch' in stem:
+                m = re.search(r'([\w\-]+?)_libretro', args, re.I)
+                label = f'{folder} · {m.group(1)}' if m else folder
+            elif 'teknoparrot' in stem:
+                label, kind, base = 'TeknoParrot', 'tp', self.root / p.parent
+            elif stem == 'cmd':
+                if p.parent.parts[:1] and p.parent.parts[0].lower() == 'collections':
+                    label, kind = 'PC', 'pc'
+                else:
+                    label = folder or ln
+            else:
+                label = f'{folder} · {p.name}' if folder and folder.lower() != stem else p.name
+        self.cols[col] = (label, kind, base, conf)
+        return self.cols[col]
+
+    def item(self, col: str, item: str) -> str:
+        label, kind, base, conf = self.collection(col)
+        try:
+            if kind == 'pc':
+                lp = conf.get('list.path')
+                ldir = (self.root / lp) if lp else (self.root / 'collections' / col / 'roms')
+                for ext in ('.bat', '.cmd'):
+                    f = ldir / f'{item}{ext}'
+                    if f.exists():
+                        txt = f.read_text(encoding='utf-8', errors='replace')
+                        m = re.search(r'GAMENAME=([^"\r\n]+)', txt, re.I) or re.search(r'([\w .\-]+\.exe)', txt, re.I)
+                        if m:
+                            return f'PC · {m.group(1).strip()}'
+            elif kind == 'tp':
+                for sub in ('UserProfiles', 'GameProfiles'):
+                    f = base / sub / f'{item}.xml'
+                    if f.exists():
+                        m = re.search(r'<EmulatorType>([^<]+)</EmulatorType>', f.read_text(encoding='utf-8', errors='replace'))
+                        if m and m.group(1).strip().lower() != 'teknoparrot':
+                            return f'TeknoParrot · {m.group(1).strip()}'
+                        break
+        except OSError:
+            pass
+        return label
 
 
 def norm(s: str) -> str:
@@ -666,6 +751,14 @@ def main(argv=None):
             for k in keys:
                 if k:
                     by_norm.setdefault(norm(k), sig)
+    # ---- data: hand-written controls for games no database knows (PC ports ...): "<collection>/<item>" -> controls
+    overrides = {}
+    for of in (Path(__file__).with_name('panel-controls-overrides.json'), man / 'panel-controls-overrides.json'):
+        if of.exists():
+            for k, c in json.loads(of.read_text(encoding='utf-8-sig')).items():
+                if not k.startswith('_') and isinstance(c, dict):
+                    overrides[k.lower()] = sig_from_games_json(c)
+    emus = Emulators(root)
     # ---- data: meta.db
     meta, meta_names = {}, {}
     mdb = root / 'meta.db'
@@ -711,16 +804,33 @@ def main(argv=None):
     src_count = {'games.json': 0, 'meta.db': 0, 'mame': 0}
     unknown: dict[str, int] = {}
     unknown_examples: dict[str, list] = {}
+    def mtype_of(c):
+        if c not in mtypes:
+            mtypes[c] = read_conf(fe.cdir / c / 'settings.conf').get('metadata.type', c).replace('%ITEM_COLLECTION_NAME%', c)
+        return mtypes[c]
+
     for col in cols:
-        items = fe.items(col, meta_names, catalog_items)
-        mt = mtypes[col].lower()
+        # a game list that also merges other systems in (LEGENDS' Arcades has TeknoParrot.sub, Naomi.sub ...) shows
+        # those games with ITS OWN art folder first: they need their card here too, or a stale one wins
+        pairs, seen_items = [], set()
+        for it in fe.items(col, meta_names, catalog_items):
+            seen_items.add(it.lower()); pairs.append((col, it))
+        for sf in sorted((fe.cdir / col).glob('*.sub')):
+            sc = sf.stem
+            if sc.lower() == col.lower() or SKIP_DEFAULT.match(sc) or not (fe.cdir / sc).is_dir() or not fe.is_game_collection(sc):
+                continue
+            only = {x.lower() for x in read_list(sf)}
+            for it in fe.items(sc, meta_names, catalog_items):
+                if (not only or it.lower() in only) and it.lower() not in seen_items:
+                    seen_items.add(it.lower()); pairs.append((sc, it))
         lst = plan.setdefault(col, [])
-        for it in items:
+        for scol, it in pairs:
+            mt = mtype_of(scol).lower()
             k = it.lower()
-            s = by_item.get((col.lower(), k)) or by_norm.get(norm(it))
+            s = overrides.get(f'{scol.lower()}/{k}') or by_item.get((scol.lower(), k)) or by_norm.get(norm(it))
             src = 'games.json'
             if s is None:
-                s = meta.get((mt, k)) or meta.get((col.lower(), k))
+                s = meta.get((mt, k)) or meta.get((scol.lower(), k))
                 src = 'meta.db'
                 if s is not None and not s.known() and mt == 'mame' and k in mame:
                     s = None
@@ -733,6 +843,7 @@ def main(argv=None):
                     ex.append(it)
                 continue
             src_count[src] += 1
+            s = s.with_emu(emus.item(scol, it))
             key = s.key()
             sigs.setdefault(key, s)
             lst.append((it, key))
@@ -788,7 +899,7 @@ def main(argv=None):
             lst.append([q, st.st_nlink])
 
     # ---- link items
-    linked = already = foreign = copied = relinked = 0
+    linked = already = foreign = copied = relinked = stale = 0
     per_col = {}
     for col, lst in plan.items():
         if not lst:
@@ -835,6 +946,20 @@ def main(argv=None):
                 copied += 1
             linked += 1
             n_col += 1
+        # cards of ours that no listed game uses any more (an earlier run saw other items): a stale card would win
+        # over the right one, so remove it. Files that are not ours are left alone.
+        planned = {item.lower() for item, _ in lst}
+        for name, e in existing.items():
+            if name in planned:
+                continue
+            try:
+                if e.inode() in ours_ino or str(adir / e.name).lower() in copies:
+                    if not a.dry_run:
+                        os.unlink(e.path)
+                        copies.pop(str(adir / e.name).lower(), None)
+                    stale += 1
+            except OSError:
+                pass
         per_col[col] = (len(lst), n_col)
 
     # ---- state + preview
@@ -876,7 +1001,7 @@ def main(argv=None):
                 + (f'  e.g. {", ".join(unknown_examples[col][:3])}' if unknown.get(col) else ''))
     log(f'signatures: {len(sigs)} ({rendered} rendered)  sources: {src_count}')
     log(f'items: {linked} linked ({copied} as copies), {relinked} replaced, {already} already linked, '
-        f'{foreign} skipped (not ours; --force replaces), {sum(unknown.values())} unknown controls')
+        f'{foreign} skipped (not ours; --force replaces), {stale} stale removed, {sum(unknown.values())} unknown controls')
     log(f'disk: {disk / 1024:.0f} KB in {cards_dir} ({nshard} link-limit shards; links add no data)')
     log(f'time: data {t_data - t0:.1f}s, resolve {t_resolve - t_data:.1f}s, render {t_render - t_resolve:.1f}s, '
         f'link {t_end - t_render:.1f}s, total {t_end - t0:.1f}s' + ('  [dry run]' if a.dry_run else ''))

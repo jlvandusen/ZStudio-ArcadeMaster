@@ -1,0 +1,6 @@
+{
+  "_comment": "Controls for games no database knows (PC ports, homebrew). Key = '<RetroFE collection>/<item>' as the game list names it. Fields are games.json 'controls' fields: players, ways, joystick, buttons, labels, wheel, trackball, spinner, lightgun, flightStick. A wheel game gets GAS / BRAKE on buttons 1-2 automatically (stick steers), then its own buttons. A cabinet can add its own <manifest>\\panel-controls-overrides.json. Re-run tools\\New-PanelControlsArt.py after editing.",
+  "PC Gamer/Alex Kidd in Miracle World DX": { "players": 1, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Jump", "Punch", "Item"] },
+  "PC Gamer/Battle Gear 4 Tuned": { "players": 1, "wheel": true, "buttons": 3 },
+  "PC Gamer/daytona": { "players": 1, "wheel": true, "buttons": 3 }
+}
