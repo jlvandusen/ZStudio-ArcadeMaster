@@ -130,11 +130,24 @@ if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-H
 $deck = Join-Path $PSScriptRoot 'streamdeck\amdeck.py'
 $pyw = (Get-Command pythonw.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source   # not the Store stub
 $deckOk = Join-Path $ManifestDir 'amdeck-packages.ok'   # first boot on a cabinet: install the deck's Python packages once, then never check again (no Python start on every boot)
-if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk)) {
-  $py = Join-Path (Split-Path $pyw) 'python.exe'
-  & $py -c "import StreamDeck, PIL" 2>$null
-  if ($LASTEXITCODE) { $o = & $py -m pip install --user --quiet -r (Join-Path $PSScriptRoot 'streamdeck\requirements.txt') 2>&1 | Out-String; Write-Log "Stream Deck packages installed (exit $LASTEXITCODE) $($o.Trim())"; & $py -c "import StreamDeck, PIL" 2>$null }
-  if (-not $LASTEXITCODE) { Set-Content $deckOk (Get-Date).ToString('s') }
+$deckTried = Join-Path $ManifestDir 'amdeck-packages.tried'   # a failed install is retried once a day, not on every boot
+$deckRetry = -not (Test-Path $deckTried) -or ((Get-Date) - (Get-Item $deckTried).LastWriteTime).TotalHours -ge 24
+if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
+  # Python writes to stderr when a package is missing. Under 'Stop', Windows PowerShell turns that into a fatal error
+  # (even with 2>$null) - it ended the launcher before RetroFE started on a cabinet without the deck packages.
+  # The deck is optional: nothing here may stop the boot.
+  $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try {
+    $py = Join-Path (Split-Path $pyw) 'python.exe'
+    & $py -c "import StreamDeck, PIL" 2>&1 | Out-Null
+    if ($LASTEXITCODE) {
+      $o = & $py -m pip install --user --quiet -r (Join-Path $PSScriptRoot 'streamdeck\requirements.txt') 2>&1 | Out-String
+      Write-Log "Stream Deck packages install (exit $LASTEXITCODE) $($o.Trim())"
+      & $py -c "import StreamDeck, PIL" 2>&1 | Out-Null
+    }
+    if (-not $LASTEXITCODE) { Set-Content $deckOk (Get-Date).ToString('s') } else { Set-Content $deckTried (Get-Date).ToString('s'); Write-Log 'Stream Deck packages not available - deck skipped, retried in a day' }
+  } catch { Set-Content $deckTried (Get-Date).ToString('s'); Write-Log "Stream Deck package check failed: $($_.Exception.Message)" }
+  finally { $ErrorActionPreference = $eap }
 }
 if ($pyw -and (Test-Path $deck)) {
   try { Start-Process $pyw -ArgumentList @("`"$deck`"", '--retrofe', "`"$Root`"", '--manifest', "`"$ManifestDir`"") -WindowStyle Hidden; Write-Log 'Stream Deck controller started' } catch { Write-Log "Stream Deck controller failed: $($_.Exception.Message)" }
