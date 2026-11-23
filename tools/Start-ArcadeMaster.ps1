@@ -79,6 +79,9 @@ if (-not $NoDeviceCheck) {
   } catch { Write-Log "device check failed: $($_.Exception.Message)" }   # never block boot on diagnostics
 }
 
+# the main menu's wheel shows the wheel this cabinet really has (G HUB's picture of it); redrawn only when it changed
+try { $rw = Invoke-Tool 'New-RealWheelArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout); if ($rw -match '->|removed') { Write-Log (($rw -split "`r?`n" | Where-Object { $_ -match 'real wheel' }) -join ' ') } } catch { Write-Log "real wheel art failed: $($_.Exception.Message)" }
+
 if (-not $NoShuffle) {
   try {
     $sw = [Diagnostics.Stopwatch]::StartNew()

@@ -40,9 +40,12 @@ if (-not (Test-Theme $CabinetTheme)) { Write-Warning "style '$CabinetTheme' has 
 # the boot path refreshes only backdrops; when the cabinet's style changed (a wheel plugged in, a new cabinet type),
 # copy the slot art as well, once
 $styleFile = if ($ManifestDir) { Join-Path $ManifestDir 'layout-style.txt' } else { $null }
+# the cabinet's real wheel (New-RealWheelArt: G HUB's picture of the detected wheel) replaces the drawn one in its slot
+$realWheel = Join-Path $LayoutDir 'images\racing_wheel_real.png'
+$styleKey = $CabinetTheme + $(if (Test-Path $realWheel) { "+realwheel:$((Get-Item $realWheel).LastWriteTimeUtc.Ticks)" } else { '' })
 if ($BackgroundsOnly -and $styleFile) {
   $last = if (Test-Path $styleFile) { (Get-Content $styleFile -Raw).Trim() } else { '' }
-  if ($last -ne $CabinetTheme) { Write-Host "cabinet style '$last' -> '$CabinetTheme': refreshing the slot art"; $BackgroundsOnly = $false }
+  if ($last -ne $styleKey) { Write-Host "cabinet style '$last' -> '$styleKey': refreshing the slot art"; $BackgroundsOnly = $false }
 }
 
 $map = @{}
@@ -103,6 +106,7 @@ foreach ($col in $map.Keys) {
   if (-not $BackgroundsOnly) {
     foreach ($slot in $theme.PSObject.Properties) {
       $src = Join-Path $LayoutDir "images\$($slot.Value)"
+      if ($slot.Value -eq 'racing_wheel.png' -and (Test-Path $realWheel)) { $src = $realWheel }
       if (-not (Test-Path $src)) { throw "missing art $src (run tools\New-LayoutArt.ps1)" }
       Copy-Item $src (Join-Path $dst "$($slot.Name).png") -Force
     }
@@ -118,4 +122,4 @@ foreach ($col in $map.Keys) {
   }
   Write-Host ("{0,-20} -> {1,-8} bg: {2}" -f $col, $themeName, (($pool | Select-Object -First $BgSlots | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) }) -join ', '))
 }
-if ($styleFile -and -not $BackgroundsOnly) { Set-Content $styleFile $CabinetTheme -Encoding ascii }
+if ($styleFile -and -not $BackgroundsOnly) { Set-Content $styleFile $styleKey -Encoding ascii }

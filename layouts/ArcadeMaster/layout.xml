@@ -132,7 +132,7 @@
   </reloadableImage>
 
   <!-- spinner: steering wheel (racing) / yoke (flight) / crosshair (lightgun) - a real driving line, not a metronome -->
-  <reloadableImage type="am_spinner" mode="systemlayout" x="1340" y="900" xOrigin="center" yOrigin="center" width="330" height="330" layer="14">
+  <reloadableImage type="am_spinner" mode="systemlayout" liveSteer="450" liveDevice="wheel" x="1340" y="900" xOrigin="center" yOrigin="center" width="330" height="330" layer="14">
     <onMenuScroll><set duration=".12"><animate type="angle" to="42" algorithm="easeOutQuadratic"/><animate type="y" to="892"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".45"><animate type="angle" to="-9" algorithm="easeOutCubic"/><animate type="y" to="902"/></set>
