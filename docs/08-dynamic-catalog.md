@@ -264,13 +264,21 @@ Every catalog build (`Build-Manifest`, Tools → Rebuild Game Menus) runs `tools
 | moved | the program file is in another folder on this PC, with the same file name and the same folder name | PC games: the catalog points there and the game is back in the menu. TeknoParrot: the health check repairs the profile. |
 | incomplete | the game's folder is here but its program file isn't (a partial copy) | listed: copy the game in again |
 | not installed | neither the file nor its folder is on this PC | listed |
-| not set up | TeknoParrot has never been set up for the game (no profile) | listed |
+| not set up | TeknoParrot has never been set up for the game (no profile) | looks for a folder named after the game (its TeknoParrot name, its title, or the usual short names of arcade dumps such as `FFSB` and `SNOTP`). It reports either **ready to set up**, with the `Add-TPGame.ps1` line to run, or **data only** (program files missing). |
+
+**Program files are not always `.exe`.** Linux-based boards (Sega Lindbergh / Nu, Taito Type X3, some Raw Thrills) start from a Linux program file: `.elf` or no extension at all (`abc`, `Jennifer`, `car`). 16 working TeknoParrot profiles here point at one. The doctor searches by the exact file name, whatever the extension, and tells a program from data by its header (`.exe`, or a Linux file starting with `ELF`).
+
+**Setting a game up:** `tools\Add-TPGame.ps1 -Id <TeknoParrot name> -GamePath <program file> [-Apply]` does what TeknoParrotUI's "add game" does, with this cabinet's controls already bound by the wheel tool (pedals clutch LEFT, brake MIDDLE, gas RIGHT). It does a dry run by default, never replaces an existing profile, and accepts `.exe` or Linux program files. Then run Tools → Rebuild Game Menus.
 
 Games that can't start are never shown in the menus. First run on DESKTOP-RACE1:
 - Road Fighters 3D moved (`D:\Arcade PC\PC\...` → `D:\Arcade PC\Konami\...`) and is back.
 - Nicktoons Nitro, Fast & Furious Drift and Fast & Furious SuperCars had broken relative paths in the frontend's own TeknoParrot copy, left over from copying the frontend from E: to D:. They were repaired.
-- Chaos Code and Guitar Hero Arcade are incomplete copies: the data is there, the program files are missing.
-- 7 PC games are not installed, and 7 TeknoParrot games were never set up.
+- Valve Limit R (`VirtuaRLimit`, Taito Type X) was installed at `D:\Arcade PC\Taito Type X\Valve Limit R` but never set up. It was set up with `Add-TPGame.ps1` and is in the Racing menu.
+- These have their data but none of their program files (no `.exe` and no Linux program), although each was set up and run once (a `teknoparrot.ini` is there):
+  - Chaos Code, Guitar Hero Arcade, Under Defeat (Windows boards)
+  - Fast & Furious, Super Bikes 1 and 2, SnoCross (`Raw Thrills\FF`, `FFSB`, `FFSB2`, `SNOTP`; the working Raw Thrills games keep `sdaemon.exe` in `rawart\`)
+  - Missing program files with the data left behind usually means an antivirus removed them.
+- 7 PC games are not installed, and Blazing Angels is not on this cabinet.
 
 ## Boot speed (2026-11-22)
 

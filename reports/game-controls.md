@@ -51,8 +51,8 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Gaelco Championship Tuning Race | racing | wheel, pedals, paddles | 3 | 2 | teknoparrot (ElfLdr2) | native | supports 2 players; this cabinet has 1 station(s) |
 | getbass | racing | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
 | getbassur | racing | wheel, pedals | 2 | 1 | supermodel | native | emulation status: preliminary |
-| GRID | racing | wheel, pedals, hpattern | 4 | 2 | teknoparrot (OpenParrot) | native | uses an H-pattern shifter: map gears to buttons, or confirm the shifter with WheelMap -Capture; supports 2 players; this cabinet has 1 station(s) |
 | GRID | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
+| GRID | racing | wheel, pedals, hpattern | 4 | 2 | teknoparrot (OpenParrot) | native | uses an H-pattern shifter: map gears to buttons, or confirm the shifter with WheelMap -Capture; supports 2 players; this cabinet has 1 station(s) |
 | GRID 2 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | GRID Autosport | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | GRID Race Driver | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
@@ -77,10 +77,10 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | Mario Kart: Arcade GP DX | racing | wheel, pedals | 3 | 1 | teknoparrot (TeknoParrot) | native |  |
 | NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
 | NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
-| NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| NA | racing | wheel, pedals | 8 | 1 | supermodel | native | emulation status: preliminary |
+| NA | racing | wheel, pedals | 3 | 1 | supermodel | native | emulation status: preliminary |
 | NASCAR Heat 5 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | Need for Speed: Most Wanted | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
 | Need for Speed: Most Wanted 2012 | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
@@ -116,7 +116,7 @@ Cabinet: wheel, ffb, pedals, clutch, handbrake, shifterPaddles, mice, displays, 
 | The Fast and the Furious Drift | racing | wheel, pedals, paddles | 4 | 1 | teknoparrot (OpenParrot) | native |  |
 | The Fast and the Furious SuperCars | racing | wheel, pedals, paddles | 4 | 2 | teknoparrot (TeknoParrot) | native | supports 2 players; this cabinet has 1 station(s) |
 | The Fast and the Furious: Super Bikes | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
-| Valve Limit R | racing | wheel, pedals, paddles | 0 | 1 | - | native |  |
+| Valve Limit R | racing | wheel, pedals, paddles, handbrake | 1 | 1 | teknoparrot (OpenParrot) | native | handbrake supported |
 | Virtua Racing | racing | wheel, pedals | 6 | 1 | mame | native |  |
 | V-Rally 4 | racing | wheel, pedals, paddles | 0 | 1 | pc-native | native |  |
 | Wacky Races | racing | wheel, pedals | 0 | 1 | teknoparrot (OpenParrot) | native | set wheel rotation to 270 deg |
