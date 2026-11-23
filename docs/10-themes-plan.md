@@ -22,6 +22,26 @@ A CoinOPS theme is a RetroFE layout, and our fork is CoinOPS-compatible, so thes
 - "Random theme each boot" option, handled by `Start-ArcadeMaster`.
 - ArcadeMaster stays the fallback. **Done (2026-11-22):** at boot, a theme that is missing its `layout.xml` is reset by the health check. In a crash loop, the watchdog first restores the last-known-good settings. If RetroFE still crashes, it sets `layout = ArcadeMaster` (keeping `settings.conf.before-theme-fallback`) and tries again before giving up. Tested with a fake frontend that always crashes.
 
+## Styles: many looks, no speed cost (2026-11-23)
+
+The ArcadeMaster layout has picture slots: the centre wheel or yoke, two dials and their needle, the flight horizon and HUD sight, and the select flash. A **style** is a different set of pictures for those slots, at the same sizes. The layout, its layers and animations don't change, so every style loads and draws exactly as fast as the original.
+
+| Racing | Flight |
+|---|---|
+| Neon Night (original) | Classic Cockpit (original) |
+| Rally Stage: cream dials, orange needles, gravel spray | Fighter HUD: green head-up display, side stick |
+| GT Carbon: carbon-fibre dials, red needles | Warbird: brass and olive 1940s instruments, bomber wheel |
+| Pit Wall: LED shift-light dials, teal | Glass Cockpit: airliner flight display, magenta guidance |
+| Tokyo Drift: violet neon, tyre smoke | Starfighter: violet space horizon, star streaks |
+| Vintage Chrome: ivory dials, brass needles | Night Ops: night-vision green |
+| Le Mans Night: night-lit green dials, rain | |
+| Dragstrip: white dials, shift light, flames | |
+
+- **Making them:** `tools\New-ThemeSkins.ps1` draws them (System.Drawing with Segoe UI, original art) into `images\skins\` and registers them in `themes.json` (`themes` and `skins`). All 12 styles together take 3.2 MB.
+- **Left out:** soft effects are drawn at half size. `am_drift` has no element in any layout, so no style makes a picture for it.
+- **Picking:** Tools → Themes lists the styles for the cabinet's mode first, then **Surprise me** (a different style every start), then the whole layouts (imported themes). The choice is stored per family in `manifest\skins.json`.
+- **Real wheel:** every racing style keeps the cabinet's real wheel in the centre (`New-RealWheelArt`, from Logitech G HUB's picture). The centre wheel on the main menu and on the game list turns with the real wheel (`liveSteer`, patch 0007).
+
 ## 3. BigBox themes: two routes
 
 BigBox themes are WPF / XAML, which RetroFE can't run.

@@ -214,15 +214,40 @@ switch ($Tool) {
     $list = @($list | Where-Object { Test-Path (Join-Path $RetroFE "layouts\$($_.name)\layout.xml") })
     $cur = Get-Setting 'layout'; $mode = $null; $mf = Join-Path $ManifestDir 'cabinet-mode.json'; if (Test-Path $mf) { $mode = ((Get-Content $mf -Raw | ConvertFrom-Json).effective -split '\+')[0] }
     Banner "THEMES - now: $cur$(if ($mode) { " (cabinet mode: $mode)" })"
-    if (-not $Choice -and (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not $list)) { $list | ForEach-Object { Write-Host ("  {0,-20} coverage {1}%" -f $_.name, $_.score) }; break }
+    # ArcadeMaster styles (New-ThemeSkins) for this mode's family: same layout, different dials / wheel / colours - as fast
+    # as the original. Chosen per family in manifest\skins.json; "random" deals a new one at every start.
+    $fam = switch ($mode) { 'flight' { 'flight' } { $_ -in 'racing', 'simulation' } { 'racing' } default { $null } }
+    $amDir = Join-Path $RetroFE 'layouts\ArcadeMaster'; $skinFile = Join-Path $ManifestDir 'skins.json'
+    $skinCfg = $null; if (Test-Path (Join-Path $amDir 'themes.json')) { $skinCfg = (Get-Content (Join-Path $amDir 'themes.json') -Raw | ConvertFrom-Json).skins }
+    $skinNow = if ($fam -and (Test-Path $skinFile)) { [string](Get-Content $skinFile -Raw | ConvertFrom-Json).$fam } else { '' }; if (-not $skinNow) { $skinNow = $fam }
+    $skinOpts = @(); $skinLabel = @{}
+    if ($fam -and $skinCfg -and $skinCfg.$fam) {
+      foreach ($sp in $skinCfg.$fam.PSObject.Properties) {
+        $skinLabel[$sp.Name] = $sp.Value.label; $inUse = $cur -eq 'ArcadeMaster' -and $skinNow -eq $sp.Name
+        $pvf = Join-Path $amDir "images\skins\$($sp.Name)_preview.png"
+        $skinOpts += @{ id = "skin:$($sp.Name)"; label = $sp.Value.label; sub = $(if ($inUse) { "IN USE - $($sp.Value.about)" } else { $sp.Value.about }); preview = $(if (Test-Path $pvf) { $pvf } else { $null }); icons = @(); color = $(if ($inUse) { '3ddc84' } else { 'ff2fa0' }); color2 = '2ec8ff' }
+      }
+      $skinOpts += @{ id = 'skin:random'; label = 'Surprise me'; sub = $(if ($skinNow -eq 'random') { 'IN USE - a different style every start' } else { "a different $fam style every start" }); preview = $null; icons = @(); color = $(if ($skinNow -eq 'random') { '3ddc84' } else { 'ffb000' }); color2 = '2ec8ff' }
+    }
+    if (-not $Choice -and (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not ($list -or $skinOpts))) { $skinOpts | ForEach-Object { Write-Host ("  {0,-24} {1}" -f $_.id, $_.label) }; $list | ForEach-Object { Write-Host ("  {0,-24} coverage {1}%" -f $_.name, $_.score) }; break }
     $chosen = $null
     if ($Choice) { $chosen = $Choice } else {
-    $opts = @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
+    $opts = @($skinOpts) + @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
     Emit @{ type = 'choice'; title = "PICK A THEME$(if ($mode) { " FOR $($mode.ToUpper()) MODE" })"; prompt = 'Applied after the frontend restarts'; options = $opts; selected = 0 }
     $deadline = (Get-Date).AddSeconds(180)
     while ((Get-Date) -lt $deadline) { if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) { $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue; if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break } }; Start-Sleep -Milliseconds 100 }
     }
-    if ($chosen -and ($list | Where-Object { $_.name -eq $chosen })) {
+    if ($chosen -like 'skin:*' -and $fam) {
+      $sk = $chosen.Substring(5)
+      $sel = [ordered]@{}; if (Test-Path $skinFile) { (Get-Content $skinFile -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $sel[$_.Name] = $_.Value } }
+      $sel[$fam] = $sk; $sel | ConvertTo-Json | Set-Content $skinFile -Encoding UTF8
+      Set-Setting 'layout' 'ArcadeMaster'; if ($mode) { Set-Setting "cabinetTheme.$mode" 'ArcadeMaster' }
+      Run 'Set-LayoutThemes.ps1' @('-LayoutDir', $amDir, '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle') | Out-Null
+      $name = if ($sk -eq 'random') { 'Surprise me' } else { $skinLabel[$sk] }
+      $pv = Join-Path $amDir "images\skins\${sk}_preview.png"
+      Emit @{ type = 'images'; title = "STYLE: $name - for $fam"; files = @(@($pv) | Where-Object { Test-Path $_ }) }
+      Write-Host "skin ($fam) = $sk"
+    } elseif ($chosen -and ($list | Where-Object { $_.name -eq $chosen })) {
       Set-Setting 'layout' $chosen
       if ($mode) { Set-Setting "cabinetTheme.$mode" $chosen }   # this mode keeps the theme across boots (Set-CabinetMode)
       Run 'New-CabinetIntro.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir, '-Layout', $chosen) | Out-Null

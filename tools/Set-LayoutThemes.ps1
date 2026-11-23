@@ -42,7 +42,23 @@ if (-not (Test-Theme $CabinetTheme)) { Write-Warning "style '$CabinetTheme' has 
 $styleFile = if ($ManifestDir) { Join-Path $ManifestDir 'layout-style.txt' } else { $null }
 # the cabinet's real wheel (New-RealWheelArt: G HUB's picture of the detected wheel) replaces the drawn one in its slot
 $realWheel = Join-Path $LayoutDir 'images\racing_wheel_real.png'
-$styleKey = $CabinetTheme + $(if (Test-Path $realWheel) { "+realwheel:$((Get-Item $realWheel).LastWriteTimeUtc.Ticks)" } else { '' })
+# skins (New-ThemeSkins): the look chosen for each family in Tools > Themes, manifest\skins.json { "racing": "racing-rally",
+# "flight": "random" }. "random" deals a different skin of that family at every start. Collections themed "racing" or
+# "flight" (and "auto" on such a cabinet) get the chosen skin; every skin uses the same slots, so it costs nothing extra.
+$skinOf = @{}
+$skinFile = if ($ManifestDir) { Join-Path $ManifestDir 'skins.json' } else { $null }
+if ($skinFile -and (Test-Path $skinFile) -and $cfg.PSObject.Properties['skins']) {
+  $pick = Get-Content $skinFile -Raw | ConvertFrom-Json
+  foreach ($fam in $cfg.skins.PSObject.Properties.Name) {
+    $want = [string]$pick.$fam; if (-not $want -or $want -eq $fam) { continue }
+    $all = @($cfg.skins.$fam.PSObject.Properties.Name | Where-Object { Test-Theme $_ })
+    if ($want -eq 'random') { if ($all.Count) { $skinOf[$fam] = $all[(New-Object Random).Next(0, $all.Count)] } }
+    elseif ($all -contains $want) { $skinOf[$fam] = $want }
+  }
+}
+function Resolve-Skin([string]$t) { if ($skinOf.ContainsKey($t)) { $skinOf[$t] } else { $t } }
+$styleKey = (Resolve-Skin $CabinetTheme) + $(if ($skinOf.Count) { '|' + (($skinOf.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name)=$($_.Value)" }) -join ',') } else { '' }) + $(if (Test-Path $realWheel) { "+realwheel:$((Get-Item $realWheel).LastWriteTimeUtc.Ticks)" } else { '' })
+if ($skinOf.Count) { Write-Host ("skins: " + (($skinOf.GetEnumerator() | ForEach-Object { "$($_.Name) -> $($_.Value)" }) -join ', ')) }
 if ($BackgroundsOnly -and $styleFile) {
   $last = if (Test-Path $styleFile) { (Get-Content $styleFile -Raw).Trim() } else { '' }
   if ($last -ne $styleKey) { Write-Host "cabinet style '$last' -> '$styleKey': refreshing the slot art"; $BackgroundsOnly = $false }
@@ -90,15 +106,15 @@ function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = 
 function Get-BgPool([string]$col, [string]$themeName) {
   $fan = @(Get-CollectionFanart $col)
   if ($fan.Count -gt 0) { return $fan }
-  $key = if ($col -eq 'Main') { 'main' } else { $themeName }
+  $key = if ($col -eq 'Main') { 'main' } else { ($themeName -split '-')[0] }   # a skin (racing-rally) uses its family's scenes
   $pool = @($cfg.backgrounds.$key); if ($pool -contains '*') { $pool = @($cfg.backgrounds.$CabinetTheme) }   # main menu: the cabinet's own scenes
   if (-not $pool -or $pool -contains '*') { $pool = $allBg }
   return @($pool | ForEach-Object { Join-Path $LayoutDir ("images\" + ($_ -replace '/', '\')) })
 }
 
 foreach ($col in $map.Keys) {
-  $themeName = $map[$col]
-  if (-not (Test-Theme $themeName)) { $themeName = $CabinetTheme }
+  $themeName = Resolve-Skin $map[$col]
+  if (-not (Test-Theme $themeName)) { $themeName = Resolve-Skin $CabinetTheme }
   $theme = $cfg.themes.$themeName
   if (-not $theme) { Write-Warning "collection '$col': unknown theme '$themeName'"; continue }
   $dst = Join-Path $LayoutDir "collections\$col\system_artwork"
@@ -106,7 +122,7 @@ foreach ($col in $map.Keys) {
   if (-not $BackgroundsOnly) {
     foreach ($slot in $theme.PSObject.Properties) {
       $src = Join-Path $LayoutDir "images\$($slot.Value)"
-      if ($slot.Value -eq 'racing_wheel.png' -and (Test-Path $realWheel)) { $src = $realWheel }
+      if ($slot.Name -eq 'am_spinner' -and $themeName -like 'racing*' -and (Test-Path $realWheel)) { $src = $realWheel }   # every racing skin keeps the real wheel
       if (-not (Test-Path $src)) { throw "missing art $src (run tools\New-LayoutArt.ps1)" }
       Copy-Item $src (Join-Path $dst "$($slot.Name).png") -Force
     }

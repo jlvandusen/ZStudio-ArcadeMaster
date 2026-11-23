@@ -6,6 +6,8 @@ reports/**/*.dmp
 # --- generated at install / build time ---
 layouts/ArcadeMaster/_gridframes/
 layouts/ArcadeMaster/collections/*/system_artwork/
+# Logitech G HUB's picture of the cabinet's wheel (New-RealWheelArt): made on each cabinet, never committed
+layouts/ArcadeMaster/images/racing_wheel_real.png
 
 # --- never commit games, emulators, third-party binaries or secrets ---
 *.iso
