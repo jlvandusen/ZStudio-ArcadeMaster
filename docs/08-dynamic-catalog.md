@@ -269,3 +269,4 @@ On DESKTOP-RACE1, boot prep went from **9.6 s to 5.5 s**:
 | The intro and the Tools art render side by side | ~0.8 s |
 | The Tools art finishes in the background at low priority while RetroFE starts. It only shows inside Tools, never during the intro. Its images are swapped in atomically (temp file, then replace). | ~1.1 s |
 | The health check only starts the touch re-check when there is a touch board or a touch setting | ~0.4 s |
+| Boot tools run inside the launcher's own PowerShell instead of one new `powershell.exe` each. Each still gets its own script scope, and `exit` in a tool ends only that tool. `Get-CabinetDevices` also runs the controller scan in-process. Set `AM_BOOT_SEPARATE=1` to go back to separate processes when a tool misbehaves. | 6.1 s -> 4.6 s here; about 1.2 s per tool on the pedestal's i3 |

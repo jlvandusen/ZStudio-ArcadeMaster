@@ -27,11 +27,28 @@ $log = Join-Path $Root 'arcademaster-launcher.log'
 function Write-Log($m) { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) }
 
 $bootClock = [Diagnostics.Stopwatch]::StartNew(); $script:timings = New-Object System.Collections.Generic.List[string]
+# Boot tools run inside this PowerShell, not one new powershell.exe each: a PowerShell start costs ~0.3 s on the racing
+# PC and ~1.2 s on the pedestal's i3, and compiled helper types (Add-AmCachedType) stay loaded for the next tool.
+# Each tool still gets its own script scope; 'exit N' in a tool ends only that tool. AM_BOOT_SEPARATE=1 goes back to
+# one process per tool (to rule this out when a tool misbehaves).
+$separate = $env:AM_BOOT_SEPARATE -eq '1'
 function Invoke-Tool([string]$name, [string[]]$toolArgs) {
-  $sw = [Diagnostics.Stopwatch]::StartNew()
-  $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot $name) @toolArgs 2>&1 | Out-String
+  $sw = [Diagnostics.Stopwatch]::StartNew(); $path = Join-Path $PSScriptRoot $name
+  if ($separate) {
+    $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $path @toolArgs 2>&1 | Out-String; $code = $LASTEXITCODE
+  } else {
+    # '-Name value' / '-Switch' string list -> named parameters
+    $named = @{}; for ($i = 0; $i -lt $toolArgs.Count; $i++) {
+      $k = $toolArgs[$i].TrimStart('-')
+      if ($i + 1 -lt $toolArgs.Count -and -not $toolArgs[$i + 1].StartsWith('-')) { $named[$k] = $toolArgs[$i + 1]; $i++ } else { $named[$k] = $true }
+    }
+    $ErrorActionPreference = 'Continue'   # a tool that sets none gets PowerShell's default, as in its own process
+    $global:LASTEXITCODE = 0; $code = 0
+    try { $out = & $path @named *>&1 | Out-String; $code = $global:LASTEXITCODE }
+    catch { $out = "$($_.Exception.Message)"; $code = 1 }
+  }
   $script:timings.Add(('{0} {1:N1}s' -f ($name -replace '\.ps1$'), $sw.Elapsed.TotalSeconds))
-  if ($LASTEXITCODE) { Write-Log "$name failed ($LASTEXITCODE): $($out.Trim())" }
+  if ($code) { Write-Log "$name failed ($code): $($out.Trim())" }
   return $out
 }
 
