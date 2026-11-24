@@ -82,7 +82,24 @@ else {
 # controls
 Emit @{ type = 'step'; id = 'controls'; label = $checks.controls; status = 'run' }
 $cc = Join-Path $RetroFE 'controls.conf'
-if (Test-Path $cc) { Add-Result 'controls' $checks.controls 'OK' 'present' }
+if (Test-Path $cc) {
+  # The ArcadeMaster game list scrolls UP/DOWN. CoinOPS builds switch playlists (filters) with Up/Down because their
+  # lists scroll sideways; under our layout that leaves the filters unreachable. Move them to Left/Right (+ stick).
+  $lines = [Collections.Generic.List[string]](Get-Content $cc); $moved = $false
+  if ((Get-Setting 'layout') -eq 'ArcadeMaster') {
+    $want = @{ nextPlaylist = 'Right,joyHat0Right,joyAxis0+'; prevPlaylist = 'Left,joyHat0Left,joyAxis0-' }
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+      if ($lines[$i] -match '^\s*(nextPlaylist|prevPlaylist)\s*=\s*(.*)$') {
+        $key = $Matches[1]; $val = $Matches[2]          # keep them: the next -match overwrites $Matches
+        if ($val -match '\b(Up|Down)\b') { $lines[$i] = "$key = $($want[$key])"; $moved = $true }
+      }
+    }
+  }
+  if ($moved -and $fix) {
+    if (-not (Test-Path "$cc.am-playlist-keys")) { Copy-Item $cc "$cc.am-playlist-keys" }
+    Set-Content $cc $lines -Encoding ascii; Add-Result 'controls' $checks.controls 'FIXED' 'filters (playlists) moved to Left/Right: the ArcadeMaster list scrolls up/down'
+  } else { Add-Result 'controls' $checks.controls 'OK' 'present' }
+}
 else {
   $cand = @((Get-ChildItem $lkgRoot -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'controls.conf' }) + @("$cc.bak") | Where-Object { Test-Path $_ } | Select-Object -First 1)
   if ($fix -and $cand) { Copy-Item $cand[0] $cc; Add-Result 'controls' $checks.controls 'FIXED' "restored from $($cand[0])" } else { Add-Result 'controls' $checks.controls 'WARN' 'controls.conf missing' }
@@ -211,6 +228,8 @@ Emit @{ type = 'step'; id = 'art'; label = $checks.art; status = 'run' }
 $did = @(); $lay = Get-Setting 'layout'
 if (-not (Test-Path (Join-Path $RetroFE "layouts\$lay\images\intro\intro_title.png")) -and $fix) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-CabinetIntro.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -Layout $lay | Out-Null; $did += 'boot intro regenerated' }
 $tools = Join-Path $RetroFE 'collections\Tools'
+# every cabinet needs a way into its settings from the game menu: install the Tools list when a build has none
+if (-not (Test-Path $tools) -and $fix -and (Test-Path (Join-Path $RetroFE 'collections\Main\menu.txt'))) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-CabinetToolsCollection.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools (settings) list installed on the main menu' }
 if ((Test-Path (Join-Path $tools 'ARCADEMASTER-TOOLS.txt')) -and -not (Get-ChildItem (Join-Path $tools 'medium_artwork\video') -File -ErrorAction SilentlyContinue) -and $fix) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-ToolsArt.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools art regenerated' }
 if ($did) { Add-Result 'art' $checks.art 'FIXED' ($did -join '; ') } else { Add-Result 'art' $checks.art 'OK' 'present' }
 

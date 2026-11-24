@@ -43,7 +43,7 @@
   <menu type="custom" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
     <itemDefaults x="400" y="470" xOrigin="center" yOrigin="center" width="460" maxHeight="130" alpha="0" layer="10" fontColor="ffffff" fontSize="44" loadFontSize="44"/>
     <item yOffset="-520" width="300" maxHeight="80"  alpha="0"/>
-    <item yOffset="-390" width="330" maxHeight="90"  alpha=".25"/>
+    <item yOffset="-390" width="330" maxHeight="90"  alpha=".12"/>
     <item yOffset="-260" width="370" maxHeight="100" alpha=".45"/>
     <item yOffset="-140" width="410" maxHeight="115" alpha=".7"/>
     <item selected="true" width="520" maxHeight="140" alpha="1"/>
@@ -166,6 +166,53 @@
 
   <!-- ================= SCREEN FX ================= -->
   <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".45" layer="16"/>
+
+  <!-- ================= FILTER BAR: the active playlist (LEFT / RIGHT switch it) + position in the list ================= -->
+  <!-- banners: layouts/ArcadeMaster/collections/_common/medium_artwork/playlist/<playlist>.png (tools/New-PanelControlsArt.py) -->
+  <reloadableImage type="playlist" mode="commonlayout" x="400" y="34" xOrigin="center" yOrigin="center" width="600" height="58" alpha="1" layer="11">
+    <onPlaylistEnter>
+      <set duration=".08"><animate type="width" to="660"/><animate type="height" to="64"/></set>
+      <set duration=".25"><animate type="width" to="600" algorithm="easeOutCubic"/><animate type="height" to="58" algorithm="easeOutCubic"/></set>
+    </onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="400" y="82" xOrigin="center" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="9aa3b2" alpha=".9" layer="11"/>
+
+  <!-- ================= GAME STORY: what made it special (tools/New-GameStories.py -> medium_artwork/am_story/<item>.txt) ================= -->
+  <!-- after 8 s on one game a glass panel covers the video and the story scrolls; any move hides it again -->
+  <image src="images/black.png" x="1340" y="372" xOrigin="center" yOrigin="center" width="1040" height="585" alpha="0" layer="8">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="alpha" to=".84" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
+  <reloadableScrollingText type="am_story" menuScrollReload="true" x="850" y="170" width="980" height="500" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="16" startPosition="0" startTime="10" endTime="5" alpha="0" layer="9">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="8.2"><animate type="nop"/></set>
+      <set duration=".6"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableScrollingText>
+
+  <!-- ================= SPECIAL-CONTROL REMINDER: trackball / spinner / gun / wheel / 4-way (am_hint, only those games) ================= -->
+  <reloadableImage type="am_hint" x="1340" y="104" xOrigin="center" yOrigin="center" width="980" height="92" alpha="0" layer="17">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="1.1"><animate type="nop"/></set>
+      <set duration=".18"><animate type="alpha" to="1"/><animate type="width" to="1060" algorithm="easeOutCubic"/><animate type="height" to="100" algorithm="easeOutCubic"/></set>
+      <set duration=".3"><animate type="width" to="980" algorithm="easeOutBounce"/><animate type="height" to="92" algorithm="easeOutBounce"/></set>
+    </onMenuIdle>
+    <onIdle>
+      <set duration="1.1"><animate type="width" to="1004" algorithm="easeInOutSine"/><animate type="height" to="95" algorithm="easeInOutSine"/></set>
+      <set duration="1.1"><animate type="width" to="980" algorithm="easeInOutSine"/><animate type="height" to="92" algorithm="easeInOutSine"/></set>
+    </onIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
 
   <!-- ================= CONTROLS CARD: what every control does in the highlighted game (tools/New-GameControlsArt.ps1) ================= -->
   <reloadableImage type="am_controls" x="1345" y="905" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="17">

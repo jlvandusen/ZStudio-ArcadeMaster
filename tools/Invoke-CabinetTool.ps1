@@ -127,6 +127,12 @@ switch ($Tool) {
       & $py (Join-Path $t 'New-PanelControlsArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'panelcards' 'Button layout cards' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
+    # every cabinet: the story panel's text for each game (history.dat, the build's story files, games.json)
+    if ($py) {
+      Step 'stories' 'Game stories' 'run'
+      & $py (Join-Path $t 'New-GameStories.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'stories' 'Game stories' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+    }
     Emit-Collections
   }
   'ToggleFfb' {

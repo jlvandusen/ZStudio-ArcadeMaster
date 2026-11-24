@@ -23,6 +23,9 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1')
 $exe = Get-AmRetroFEExe $Root   # retrofe\retrofe.exe, core\retrofe.exe (CoinOPS LEGENDS / CORE) or <root>\retrofe.exe
 if (-not $exe) { throw "RetroFE not found under $Root (looked in retrofe\, core\ and the root)" }
+# CoinOPS builds (core\retrofe.exe) run from the build's root folder, like their own CabinetLauncher.exe: their launchers
+# use paths relative to it (emulators\MAME\mame64.exe). Started inside core\, every game failed to start.
+$exeDir = if ((Split-Path (Split-Path $exe) -Leaf) -eq 'core') { $Root } else { Split-Path $exe }
 $log = Join-Path $Root 'arcademaster-launcher.log'
 function Write-Log($m) { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) }
 
@@ -168,7 +171,7 @@ $crashes = New-Object System.Collections.Generic.List[datetime]
 $snapshotDone = $false; $lkgRestored = $false; $themeFallback = $false
 while ($true) {
   Write-Log 'starting RetroFE'
-  $p = Start-Process $exe -WorkingDirectory (Split-Path $exe) -PassThru
+  $p = Start-Process $exe -WorkingDirectory $exeDir -PassThru
   # stable for 3 minutes -> remember this configuration as last-known-good (once per boot)
   if (-not $snapshotDone -and -not $p.WaitForExit(180000)) {
     try { Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Snapshot', '-NoFix') | Out-Null; Write-Log 'stable 3 min - last-known-good configs saved' } catch { }
