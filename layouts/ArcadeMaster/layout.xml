@@ -98,7 +98,7 @@
     <onMenuScroll><set duration=".08"><animate type="width" to="292"/><animate type="height" to="292"/></set></onMenuScroll>
     <onMenuIdle><set duration=".25"><animate type="width" to="280" algorithm="easeOutCubic"/><animate type="height" to="280" algorithm="easeOutCubic"/></set></onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="am_gauge_over" mode="systemlayout" x="950" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
+  <reloadableImage type="am_gauge_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="230" liveNeedleSmooth="0.92" mode="systemlayout" x="950" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
     <!-- speedo needle: floor it on scroll, settle into an idle flutter -->
     <onMenuScroll><set duration=".16"><animate type="angle" to="112" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
@@ -118,7 +118,7 @@
       <set duration="2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_gauge2_over" mode="systemlayout" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
+  <reloadableImage type="am_gauge2_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="215" liveNeedleSmooth="0.7" mode="systemlayout" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
     <!-- tacho: bang off the limiter on scroll, drop like an upshift, then idle -->
     <onMenuScroll><set duration=".1"><animate type="angle" to="128" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>

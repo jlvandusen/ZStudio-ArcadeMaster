@@ -114,7 +114,7 @@
     </onMenuIdle>
   </reloadableImage>
   <reloadableImage type="am_gauge_face" mode="layout" x="560" y="500" xOrigin="center" yOrigin="center" width="250" height="250" layer="14"/>
-  <reloadableImage type="am_gauge_over" mode="layout" x="560" y="500" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
+  <reloadableImage type="am_gauge_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="230" liveNeedleSmooth="0.92" mode="layout" x="560" y="500" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
     <onMenuScroll><set duration=".16"><animate type="angle" to="112" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".55"><animate type="angle" to="-70" algorithm="easeOutCubic"/></set>
@@ -138,7 +138,7 @@
   <!-- the cabinet's real wheel (New-RealWheelArt): straight up when the wheel is centred, turns only with the wheel - no decorative swing. Empty unless the cabinet has one; am_spinner is then empty instead -->
   <reloadableImage type="am_realwheel" mode="layout" liveSteer="450" liveDevice="wheel" x="center" y="480" xOrigin="center" yOrigin="center" width="380" height="380" layer="15"></reloadableImage>
   <reloadableImage type="am_gauge2_face" mode="layout" x="1360" y="500" xOrigin="center" yOrigin="center" width="250" height="250" layer="14"/>
-  <reloadableImage type="am_gauge2_over" mode="layout" x="1360" y="500" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
+  <reloadableImage type="am_gauge2_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="215" liveNeedleSmooth="0.7" mode="layout" x="1360" y="500" xOrigin="center" yOrigin="center" width="250" height="250" angle="-135" layer="15">
     <onMenuScroll><set duration=".1"><animate type="angle" to="128" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".3"><animate type="angle" to="-20" algorithm="easeOutCubic"/></set>
