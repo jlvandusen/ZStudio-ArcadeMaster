@@ -122,6 +122,10 @@ switch ($Tool) {
       Step 'stories' 'Game stories' 'run'
       & $py (Join-Path $t 'New-GameStories.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'stories' 'Game stories' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # light preview videos + video backdrops for games added since the last run (skips everything up to date)
+      Step 'previews' 'Preview videos and backdrops' 'run'
+      & $py (Join-Path $t 'New-PreviewMedia.py') --retrofe $RetroFE 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'previews' 'Preview videos and backdrops' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }
