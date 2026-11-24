@@ -1,0 +1,110 @@
+From aaea4a3c5967d0f7742ce5df28993da83b20cf64 Mon Sep 17 00:00:00 2001
+From: James VanDusen <jlvandusen@msn.com>
+Date: Tue, 24 Nov 2026 07:33:29 -0500
+Subject: [PATCH] Dial needles can follow a pedal (rev it in the menu)
+
+New layout attribute liveNeedle="<axis>": the picture's angle also rises with
+that axis, from 0 at rest to liveNeedleSpan degrees fully pressed, smoothed by
+liveNeedleSmooth (0 = jumps with the pedal, 0.9 = lags like a real needle). It
+adds on top of the needle's own animations. A pedal counts as released until it
+sends its first report, because SDL holds a stale half-travel value until then.
+---
+ .../Source/Graphics/Component/Component.cpp   | 23 +++++++++++++++++--
+ RetroFE/Source/Graphics/Component/Component.h |  7 ++++++
+ RetroFE/Source/Graphics/PageBuilder.cpp       |  2 ++
+ 3 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/RetroFE/Source/Graphics/Component/Component.cpp b/RetroFE/Source/Graphics/Component/Component.cpp
+index 53129fa9..b05ef5ab 100644
+--- a/RetroFE/Source/Graphics/Component/Component.cpp
++++ b/RetroFE/Source/Graphics/Component/Component.cpp
+@@ -15,6 +15,7 @@
+  */
+ #include "Component.h"
+ #include <map>
++#include <cmath>
+ #include "../Animate/Tween.h"
+ #include "../../Graphics/ViewInfo.h"
+ #include "../../Utility/Log.h"
+@@ -459,13 +460,13 @@ static SDL_Joystick* liveJoystick(const std::string& want) {
+ }
+ 
+ void Component::liveBegin() {
+-    if ((liveKind == LiveNone && liveSteer == 0.f) || !liveStarted_) return;
++    if ((liveKind == LiveNone && liveSteer == 0.f && liveNeedle < 0) || !liveStarted_) return;
+     baseViewInfo.Angle = liveAngleBase_;                                    // undo last frame's live offset
+     baseViewInfo.Alpha = liveAlphaBase_;
+ }
+ 
+ void Component::liveEnd() {
+-    if (liveKind == LiveNone && liveSteer == 0.f) return;
++    if (liveKind == LiveNone && liveSteer == 0.f && liveNeedle < 0) return;
+     liveAngleBase_ = baseViewInfo.Angle; liveAlphaBase_ = baseViewInfo.Alpha; liveStarted_ = true;
+     SDL_Joystick* j = liveJoystick(liveDevice);
+     if (liveSteer != 0.f) {
+@@ -483,6 +484,24 @@ void Component::liveEnd() {
+         }
+         baseViewInfo.Angle = liveAngleBase_ + v * liveSteer;
+     }
++    if (liveNeedle >= 0) {
++        // a dial needle that rises with a pedal ("rev it in the menu"). Until that pedal sends its first report SDL
++        // holds a stale value (0 = half travel), so it counts as released until the reading first changes.
++        static std::map<std::pair<SDL_JoystickID, int>, std::pair<Sint16, bool>> pedalSeen;
++        float t = 0.f;
++        if (j && liveTo != liveFrom && liveNeedle < SDL_JoystickNumAxes(j)) {
++            const Sint16 raw = SDL_JoystickGetAxis(j, liveNeedle);
++            const auto key = std::make_pair(SDL_JoystickInstanceID(j), liveNeedle);
++            auto it = pedalSeen.find(key);
++            if (it == pedalSeen.end()) it = pedalSeen.emplace(key, std::make_pair(raw, false)).first;
++            if (raw != it->second.first) it->second.second = true;
++            if (it->second.second) t = std::min(1.f, std::max(0.f, (static_cast<float>(raw) - liveFrom) / (liveTo - liveFrom)));
++        }
++        const float target = t * liveNeedleSpan, k = std::min(0.99f, std::max(0.f, liveNeedleSmooth));
++        liveNeedleCur_ = liveNeedleCur_ * k + target * (1.f - k);
++        if (std::fabs(liveNeedleCur_ - target) < 0.05f) liveNeedleCur_ = target;
++        baseViewInfo.Angle += liveNeedleCur_;
++    }
+     switch (liveKind) {
+     case LiveButton:
+         baseViewInfo.Alpha = (j && SDL_JoystickGetButton(j, liveIndex)) ? liveAlphaBase_ : 0.f;
+diff --git a/RetroFE/Source/Graphics/Component/Component.h b/RetroFE/Source/Graphics/Component/Component.h
+index 4a71ba04..742ca41d 100644
+--- a/RetroFE/Source/Graphics/Component/Component.h
++++ b/RetroFE/Source/Graphics/Component/Component.h
+@@ -84,6 +84,12 @@ public:
+ 	int liveIndex = 0;
+ 	float liveSteer = 0.f, liveFrom = 0.f, liveTo = 0.f;
+ 	std::string liveDevice;
++	//   liveNeedle="1"           the angle ALSO rises with that axis (a pedal): 0 at rest, +liveNeedleSpan fully pressed
++	//   liveNeedleSpan="270"     degrees at full travel (a 270-degree dial sweep)
++	//   liveNeedleSmooth="0.85"  0 = jumps with the pedal, 0.9 = lags like a real needle (per frame)
++	//   (uses liveFrom / liveTo as the pedal's rest / pressed values, like liveAxis)
++	int liveNeedle = -1;
++	float liveNeedleSpan = 270.f, liveNeedleSmooth = 0.f;
+ 	void liveBegin();
+ 	void liveEnd();
+ 	void setMenuScrollReload(bool menuScrollReload);
+@@ -124,6 +130,7 @@ private:
+     float        liveAngleBase_ = 0.f, liveAlphaBase_ = 1.f;
+     bool         liveStarted_ = false;
+     bool         liveAxisMoved_ = false;   // SDL reports 0 until a DirectInput axis first moves: dark until then
++    float        liveNeedleCur_ = 0.f;     // smoothed needle offset (degrees)
+     unsigned int currentTweenIndex_;
+     bool         currentTweenComplete_;
+     double       elapsedTweenTime_;
+diff --git a/RetroFE/Source/Graphics/PageBuilder.cpp b/RetroFE/Source/Graphics/PageBuilder.cpp
+index 25d90927..07611a66 100644
+--- a/RetroFE/Source/Graphics/PageBuilder.cpp
++++ b/RetroFE/Source/Graphics/PageBuilder.cpp
+@@ -52,6 +52,8 @@ static void buildLive(rapidxml::xml_node<>* xml, Component* c) {
+     auto num = [&](const char* name, float& out) { rapidxml::xml_attribute<>* a = xml->first_attribute(name); if (!a) return false; try { out = std::stof(a->value()); return true; } catch (...) { return false; } };
+     float v = 0.f;
+     if (num("liveSteer", v))       c->liveSteer = v;                   // can be combined with one of the next three
++    if (num("liveNeedle", v))      { c->liveNeedle = static_cast<int>(v); c->liveFrom = 32767.f; c->liveTo = -32768.f; num("liveFrom", c->liveFrom); num("liveTo", c->liveTo);
++                                     num("liveNeedleSpan", c->liveNeedleSpan); num("liveNeedleSmooth", c->liveNeedleSmooth); }
+     if (num("liveButton", v)) { c->liveKind = Component::LiveButton; c->liveIndex = static_cast<int>(v); }
+     else if (num("liveHat", v))    { c->liveKind = Component::LiveHat;    c->liveIndex = static_cast<int>(v); }
+     else if (num("liveAxis", v))   { c->liveKind = Component::LiveAxis;   c->liveIndex = static_cast<int>(v);
+-- 
+2.56.1.windows.1
+
