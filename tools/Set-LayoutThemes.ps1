@@ -82,22 +82,31 @@ $allBg = @($cfg.backgrounds.PSObject.Properties | Where-Object { $_.Name -notlik
 $rng = New-Object Random
 
 # Game fanart of a collection, following merged sub-collections (<name>.sub) and Main's menu entries.
+# Folder listings are cached for the run: the 22 menus share collections (Main includes Racing, which merges a dozen
+# collections) and listing the same folders again for each was most of the boot "Shuffle" time. Only the disk reads are
+# cached; the walk itself (and its loop guard) is unchanged.
+$script:dirMemo = @{}
+function Get-Listing([string]$dir, [string]$filter) {
+  $k = "$dir|$filter"
+  if (-not $script:dirMemo.ContainsKey($k)) { $script:dirMemo[$k] = @(Get-ChildItem $dir -Filter $filter -File -ErrorAction SilentlyContinue) }
+  $script:dirMemo[$k]
+}
 function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = @{}, [string[]]$only = $null) {
   if (-not $CollectionsDir -or $depth -gt 3) { return @() }
   $key = "$col|$($only -join ',')"; if ($seen.ContainsKey($key)) { return @() }; $seen[$key] = $true
   $dir = Join-Path $CollectionsDir $col
-  $files = @(Get-ChildItem (Join-Path $dir 'medium_artwork\fanart') -File -ErrorAction SilentlyContinue |
+  $files = @(Get-Listing (Join-Path $dir 'medium_artwork\fanart') '*' |
              Where-Object { $_.Extension -match '^\.(jpe?g|png)$' -and $_.BaseName -ne 'default' -and (-not $only -or $only -contains $_.BaseName) } |
              ForEach-Object { $_.FullName })
   # merged collections: a .sub that LISTS items means "only these games"; an empty .sub means "the whole collection"
-  foreach ($sf in Get-ChildItem $dir -Filter *.sub -File -ErrorAction SilentlyContinue) {
+  foreach ($sf in Get-Listing $dir '*.sub') {
     $list = @(Get-Content $sf.FullName | ForEach-Object { $_.Trim() } | Where-Object { $_ })
     $files += Get-CollectionFanart $sf.BaseName ($depth + 1) $seen ($(if ($list.Count) { $list } else { $null }))
   }
   $menus = @()
   $menuTxt = Join-Path $dir 'menu.txt'
   if (Test-Path $menuTxt) { $menus += @(Get-Content $menuTxt | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) }
-  $menus += @(Get-ChildItem (Join-Path $dir 'menu') -File -ErrorAction SilentlyContinue | ForEach-Object { $_.BaseName })
+  $menus += @(Get-Listing (Join-Path $dir 'menu') '*' | ForEach-Object { $_.BaseName })
   foreach ($s in $menus | Sort-Object -Unique) { $files += Get-CollectionFanart $s ($depth + 1) $seen }
   return @($files | Sort-Object -Unique)
 }
