@@ -1,0 +1,13 @@
+{
+  "_comment": "ARCADE-PEDESTAL control panel, as James described it (2026-11-24). New-PanelControlsArt.py draws the button cards from this. A cabinet can override it with <manifest>\\panel.json. Re-run the card tool (Tools > Rebuild Game Menus) after editing.",
+  "players": [
+    { "position": "P1", "buttons": 8, "rows": 2, "cols": 4, "start": true, "coin": true },
+    { "position": "P2", "buttons": 8, "rows": 2, "cols": 4, "start": true, "coin": true },
+    { "position": "P3", "buttons": 6, "rows": 2, "cols": 3, "start": true, "coin": true },
+    { "position": "P4", "buttons": 6, "rows": 2, "cols": 3, "start": true, "coin": true }
+  ],
+  "flightStick": { "name": "Flight stick", "buttons": 3, "count": 2, "players": ["P1", "P2"] },
+  "trackball":   { "name": "Rollerball", "buttons": 2 },
+  "spinner":     { "name": "Dial", "buttons": 2 },
+  "twinStick":   { "left": "P1 stick", "right": "P2 stick", "leftDoes": "Move", "rightDoes": "Fire" }
+}
