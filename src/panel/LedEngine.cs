@@ -122,7 +122,7 @@ class LedEngine
         bool was = StopAnim();
         if (string.IsNullOrEmpty(kind) || kind == "stop") { if (was) RestoreBase(); return "animation stopped"; }
         if (!open) return "LED boards not open";
-        if (kind != "breathe" && kind != "chase") return "unknown animation '" + kind + "' (breathe, chase, stop)";
+        if (kind != "breathe" && kind != "chase" && kind != "audio") return "unknown animation '" + kind + "' (breathe, chase, audio, stop)";
         var labels = new List<string>(pins.Keys); labels.Sort(StringComparer.OrdinalIgnoreCase);
         animRun = true; Animation = kind;
         anim = new System.Threading.Thread(delegate () { AnimLoop(kind, labels); }) { IsBackground = true, Name = "led-anim" };
@@ -144,17 +144,38 @@ class LedEngine
         Flush();
     }
 
+    public float AudioLevelNow;   // the smoothed level the "audio" animation shows (pipe status, tests)
+
     void AnimLoop(string kind, List<string> labels)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
+        bool audio = kind == "audio" && AudioLevel.Open();
+        if (kind == "audio" && !audio) { LastError = "audio: " + AudioLevel.LastError; kind = "breathe"; }   // no sound device: breathe instead
+        double env = 0;
         while (animRun)
         {
             double t = sw.Elapsed.TotalSeconds;
+            if (audio)
+            {
+                // fast attack, slow release: the panel jumps with a beat and falls back smoothly (no flicker)
+                double p = Math.Min(1.0, Math.Sqrt(AudioLevel.Peak()) * 1.15);   // sqrt: quiet music still moves the meter
+                env = p > env ? p : env * 0.90 + p * 0.10;
+                AudioLevelNow = (float)env;
+            }
             foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
             for (int i = 0; i < labels.Count; i++)
             {
                 int[] rgb;
-                if (kind == "breathe")
+                if (audio)
+                {
+                    // a VU meter across the panel (buttons in label order) in the game's colours, green -> red where it
+                    // has none; the lit part's brightness follows the level too, unlit buttons keep a faint glow
+                    double pos = (i + 0.5) / labels.Count;
+                    int[] b; if (!baseColor.TryGetValue(labels[i], out b)) b = Hue(0.33 * (1 - pos));
+                    double k = pos <= env ? 0.35 + 0.65 * env : 0.06;
+                    rgb = new[] { (int)(b[0] * k), (int)(b[1] * k), (int)(b[2] * k) };
+                }
+                else if (kind == "breathe")
                 {
                     // the game's own colours pulsing (soft white where the game has none), 2.5 s per breath
                     int[] b; if (!baseColor.TryGetValue(labels[i], out b)) b = new[] { 24, 24, 24 };
@@ -172,6 +193,7 @@ class LedEngine
             Flush();
             System.Threading.Thread.Sleep(33);   // ~30 frames a second: one SDK call per board per frame
         }
+        if (audio) { AudioLevel.Close(); AudioLevelNow = 0; }
     }
 
     static int[] Hue(double h)

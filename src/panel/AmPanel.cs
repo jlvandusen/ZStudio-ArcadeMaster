@@ -316,6 +316,12 @@ static class AmPanel
                 rep["ok"] = true;
             }
             else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
+            else if (cmd == "attract")   // {"cmd":"attract","kind":"audio"} - the idle animation from now on (Cabinet Settings)
+            {
+                string k = req.ContainsKey("kind") ? Convert.ToString(req["kind"]).ToLowerInvariant() : "";
+                if (k == "chase" || k == "breathe" || k == "audio") { attractAnimation = k; rep["ok"] = true; rep["attract"] = k; }
+                else { rep["ok"] = false; rep["error"] = "attract: chase, breathe or audio"; }
+            }
             else if (cmd == "devicechange") { if (devices != null) devices.Poke(); rep["ok"] = devices != null; }   // as if a controller was plugged in
             else if (cmd == "sticks")   // {"cmd":"sticks"} status + maps; {"cmd":"sticks","map":"Joy4Way"} or {"rom":"pacman"} loads now
             {
@@ -375,9 +381,10 @@ static class AmPanel
                 }
                 rep["does"] = rules != null ? rules.Describe(o, g) : "-"; rep["ok"] = true;
             }
-            else if (cmd == "animate")   // {"cmd":"animate","kind":"chase"|"breathe"|"stop"}
+            else if (cmd == "animate")   // {"cmd":"animate","kind":"chase"|"breathe"|"audio"|"stop"}; "level" only reports
             {
                 if (leds == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
+                else if (req.ContainsKey("kind") && Convert.ToString(req["kind"]) == "level") { rep["animation"] = leds.Animation; rep["level"] = leds.AudioLevelNow; rep["error"] = leds.LastError; rep["ok"] = true; }
                 else { string res; lock (Gate) { res = leds.Animate(req.ContainsKey("kind") ? Convert.ToString(req["kind"]) : "chase"); State["lights"] = res; } rep["result"] = res; rep["ok"] = true; }
             }
             else if (cmd == "outputs")   // live emulator outputs: {"connected":true,"outputs":{"led0":1,...}}
