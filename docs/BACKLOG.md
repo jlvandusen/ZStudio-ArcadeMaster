@@ -82,7 +82,12 @@ The loop works like this (James, 2026-11-25):
 
 ## 5. Game stories
 - [ ] Stories for the games that still lack one (2,474 written so far).
-- [ ] Quality pass: no wrong years, makers or claims. Check against MAME's history and info data where it exists.
+- [x] Quality pass, wrong matches (2026-11-25). A history.dat entry found by title, or a non-MAME id taken as a rom
+      name, must now agree with the catalog's year (within 2) and title. 9 games had another game's history:
+      Batman 2013 had Data East's 1990 trivia, and GRID had Midway's The Grid. Garbled UTF-8 ("PokkÃ©n") is repaired.
+- [ ] Write real stories for the ~60 TeknoParrot games that only have a one-line "A 2010 racing game…" story
+      (Battle Pod, Tekken 7 FR, Initial D 6, OutRun 2 SP, House of the Dead 4, Let's Go Jungle…). Put them in a repo
+      file the story tool reads as a source, and keep the claims ones a player would recognise.
 - [ ] Stories for merged-list (.sub) items and TeknoParrot and light-gun games.
 
 ## 6. Tooling

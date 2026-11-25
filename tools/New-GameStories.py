@@ -81,6 +81,14 @@ ASCII_MAP = {
 
 
 def to_ascii(s: str) -> str:
+    # UTF-8 that was read as Latin-1 / cp1252 somewhere upstream ("PokkÃ©n" -> "Pokkén"), before transliterating
+    if re.search('[ÂÃ][\u0080-¿]', s):
+        for enc in ('cp1252', 'latin-1'):
+            try:
+                s = s.encode(enc).decode('utf-8')
+                break
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
     s = ''.join(ASCII_MAP.get(ch, ch) for ch in s)
     s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
     s = re.sub(r'\(\s*\)|\[\s*\]', '', s)
@@ -318,6 +326,14 @@ def load_history(path: Path | None, cache: Path, force: bool, log) -> tuple[list
                                'keys': keys}, separators=(',', ':')), encoding='utf-8')
     os.replace(tmp, cache)
     return entries, keys, f'parsed-{fmt}'
+
+
+def titles_agree(a: str, b: str) -> bool:
+    """the same game by name: equal, or one title inside the other ("Daytona USA" / "Daytona USA 2")"""
+    na, nb = norm_base(a), norm_base(b)
+    if not na or not nb:
+        return False
+    return na == nb or (min(len(na), len(nb)) >= 4 and (na in nb or nb in na))
 
 
 class History:
@@ -806,6 +822,10 @@ def main(argv=None):
         item_title = re.sub(r'[_ ](amiga|aga|ocs|ecs|cd32|c64|snes|n64|psx)$', '', item, flags=re.I).replace('_', ' ')
         if h is None and not is_mame(scol):
             h = hist.key('info', item) if scol.lower() in ARCADE_LIKE else None
+            # a TeknoParrot / PC id is not a MAME rom name: "AAA" (America's Army Arcade, 2007) hit MAME's "aaa"
+            # (Ambassador, 1981). Taken by name only when the titles agree.
+            if h is not None and mtitle and not titles_agree(h.get('title', ''), mtitle):
+                h = None
             systems = SOFTLISTS.get(scol.lower(), [])
             for t in (mtitle, item_title):
                 if h is None and t and systems:
@@ -816,6 +836,14 @@ def main(argv=None):
             for t in (mtitle, item_title if re.search(r'[A-Z ]', item) else ''):
                 if h is None and t:
                     h = hist.title(['info'], t)
+        # the same title is not the same game: "GRID" (Codemasters, 2009) is not Midway's "The Grid" (2000), and the
+        # Tomb Raider gun game is not JPM's 2002 fruit machine. A MAME rom-name hit is exact; any other hit must agree
+        # with the catalog's year (within 2) when both are known.
+        if h is not None and not (is_mame(scol) and hist.key('info', item) is h):
+            gy = str(g.get('year') or md.get('year') or '')[:4]
+            hy = str(h.get('year') or '')[:4]
+            if gy.isdigit() and hy.isdigit() and abs(int(gy) - int(hy)) > 2:
+                h = None
         ref = hist.resolve_ref(h) if h else None
         # 2. story files in the build (this collection's, then the ones of the collection games.json names)
         story = ''
