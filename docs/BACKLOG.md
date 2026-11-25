@@ -69,7 +69,9 @@ The loop works like this (James, 2026-11-25):
               `AmPanel.exe choose <item> [collection]`, which waits and prints the pick. Picks go to controller-picks.json,
               and the picked stick map wins over the game's own at game start. Picture: docs/img/ampanel-choose.png.
               Tested: no answer -> best fit after 8 s; a game with no choice answers in 274 ms.
-        - [ ] Show the real title (library items have the rom name as their games.json title).
+        - [x] Polished and themed (James: "pretty up that screen ... based on the theme"): ChooserScreen.cs.
+              - The game's backdrop (softened) and logo, the active layout's font and accent colours.
+              - Drawn controller pictures, a gliding, breathing highlight, a countdown bar, a fade-in, the theme's sounds.
         - [ ] The fork's Launcher.cpp calls `AmPanel.exe choose` before starting the emulator. The design:
               - The ZStudio-retrofe fork's Launcher.cpp makes a blocking pipe call to AmPanel (`choose <game>`, 15 s cap)
                 before the emulator starts, and only for games in the file.
