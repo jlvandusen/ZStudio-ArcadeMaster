@@ -21,10 +21,17 @@ The loop works like this (James, 2026-11-25):
 ## 2. Game mechanics and controls
 - [ ] Learn buttons on cabinets where LEDBlinky only drives the marquee. Read the I-PAC/Ultimarc config if there
       is one, otherwise add a "press each button" capture tool in Tools that writes `panel.json`.
-- [ ] Map the dial's 2 buttons, which are missing from the LEDBlinky input map. Let `panel-controls-overrides.json`
-      add devices.
-- [ ] Key clashes found by the importer (LFLIPPER/P1B4 = LSHIFT, SETUP/TEST = TAB): report them in System Health
-      and suggest a fix.
+- [x] The dial's 2 buttons: the importer now starts from `tools/panels/<host>.json`. A device LEDBlinky doesn't
+      light (the dial, the twin-stick roles) is kept and no longer wiped. (2026-11-25)
+- [ ] The dial's keys: find what the 2 dial buttons send (button capture), then add them to `panels/ARCADE-PEDESTAL.json`.
+- [x] Key clashes found by the importer (LFLIPPER/P1B4 = LSHIFT, SETUP/TEST = TAB) show in System Health, with
+      the fix. (2026-11-25)
+- [x] TeknoParrot profiles: the health check repairs paths from where the catalog found the game, and a generic
+      folder (`Game\RingGame.exe`) no longer counts as the same game. XML-escaped paths (`Let&apos;s`) no longer look
+      broken. 2,563 → 2,580 of 2,601 games can start. (2026-11-25)
+- [ ] The 16 games still "moved": profiles want a different release than the copy found (GGXrd Revelator vs SIGN).
+      Look for the right copy in the other builds, or point the profile at the release we have when TeknoParrot has
+      a profile for it.
 - [ ] Cards: check that the 20 most-played games show the right button names and LEDBlinky colours, and fix the
       overrides where they don't.
 - [ ] Per-game "special controls" hints (trackball, spinner, dial, twin-stick): show them on more games, using

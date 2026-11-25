@@ -4,6 +4,7 @@
   Dry run by default; -Apply backs up UserProfiles first, then edits only the GamePath line.
   Resolution order for a broken path:
     1. same profile in each -HintDirs install, if its GamePath exists
+    1b. where the catalog found the game (-Catalog games.json: "foundAt", written by lib\AmGameDoctor.ps1)
     2. remap rules (old relative/absent roots -> real roots), preferring SSD (D:) copies
     3. search for the exe file name under the candidate game folders
 #>
@@ -11,9 +12,21 @@ param(
   [string]$TpDir = 'D:\Emulators\TeknoParrot',
   [string[]]$HintDirs = @('D:\Emulators\TeknoParrot - Copy', 'E:\DRIVE Collection\emulators\TeknoParrot'),
   [string]$BackupRoot = 'D:\ArcadeMaster\_backup',
+  [string]$Catalog,                 # games.json: profile id -> where the catalog found the game's program file
   [switch]$Apply
 )
 $ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot 'lib\AmGameDoctor.ps1')   # Test-AmSameGamePath
+$foundAt = @{}
+if ($Catalog -and (Test-Path -LiteralPath $Catalog)) {
+  foreach ($g in (Get-Content -LiteralPath $Catalog -Raw | ConvertFrom-Json).games) {
+    foreach ($vp in $g.variants.PSObject.Properties) {
+      $v = $vp.Value
+      if ($v.emulator -eq 'teknoparrot' -and $v.profile -and $v.foundAt -and -not $foundAt.ContainsKey([string]$v.profile) -and (Test-Path -LiteralPath $v.foundAt -PathType Leaf)) { $foundAt[[string]$v.profile] = [string]$v.foundAt }
+    }
+  }
+}
 
 function Resolve-GamePath([string]$tp, [string]$p) {
   if ([IO.Path]::IsPathRooted($p)) { return $p }
@@ -21,7 +34,7 @@ function Resolve-GamePath([string]$tp, [string]$p) {
 }
 function Get-GamePath([string]$xmlFile) {
   $m = Select-String -LiteralPath $xmlFile -Pattern '<GamePath>(.*)</GamePath>' | Select-Object -First 1
-  if ($m) { return $m.Matches[0].Groups[1].Value }
+  if ($m) { return [Net.WebUtility]::HtmlDecode($m.Matches[0].Groups[1].Value) }   # the file is XML: Let&apos;s Go -> Let's Go
 }
 
 # old root -> ordered candidate roots (first existing hit wins)
@@ -44,6 +57,9 @@ $results = foreach ($f in Get-ChildItem (Join-Path $TpDir 'UserProfiles') -Filte
       $c = Resolve-GamePath $h (Get-GamePath $hp)
       if ($c -and (Test-Path -LiteralPath $c)) { $new = $c; $how = "hint:$(Split-Path $h -Leaf)"; break }
     }
+  }
+  if (-not $new -and $foundAt.ContainsKey($f.BaseName) -and (Test-AmSameGamePath $full $foundAt[$f.BaseName])) {
+    $new = $foundAt[$f.BaseName]; $how = 'catalog'          # found by the catalog; the paths agree up to a folder that names the game
   }
   if (-not $new) {
     foreach ($r in $remap) {

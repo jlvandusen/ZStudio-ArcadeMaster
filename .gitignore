@@ -32,3 +32,4 @@ desktop.ini
 
 # --- one-time backups written next to a settings file before its first change (tools/lib/AmSettings.ps1) ---
 *.am-bak
+__pycache__/
