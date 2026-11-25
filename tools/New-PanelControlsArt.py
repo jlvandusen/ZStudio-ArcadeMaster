@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 4         # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 5        # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -106,7 +106,7 @@ class Sig:
         if 'pedal' in ex and (stick or len(ex) > 1):
             ex.discard('pedal')                              # throttle pedals of flight / wheel games
         self.players = min(max(1, players or 1), 5)          # 5 = "4+": all four positions can join
-        self.alt, self.stick, self.buttons = alt, stick, min(buttons, 7)   # 7 = "7+"
+        self.alt, self.stick, self.buttons = alt, stick, min(buttons, 9)   # 9 = "9+" (8-button panels exist)
         self.extras = tuple(e for e in EXTRA_ORDER if e in ex)
         self.labels = tuple(labels)
 
@@ -326,51 +326,39 @@ def tri(cx, cy, ang, size):
     return pts
 
 
-def draw_stick(c: Card, cx, cy, stick, color_on):
+def draw_stick(c: Card, cx, cy, stick, color_on, k=1.0):
+    """one joystick: gate plate, direction arrows, balltop. k scales it around (cx, cy) - twin-stick cards use ~.6"""
     import math
     on = stick is not None
-    ring = CYAN if on else FAINT
-    # gate plate + base
-    c.d.ellipse(c.r(cx - 86, cy - 86, cx + 86, cy + 86), fill=CARD + (255,), outline=FAINT + (255,), width=2 * S)
-    if stick == '4':
-        dirs = [0, 90, 180, 270]
-    elif stick == '2h':
-        dirs = [0, 180]
-    elif stick == '2v':
-        dirs = [90, 270]
-    elif stick in ('8',):
-        dirs = list(range(0, 360, 45))
-    else:
-        dirs = []
+
+    def R(*xy):
+        return [((cx if i % 2 == 0 else cy) + (v - (cx if i % 2 == 0 else cy)) * k) * S for i, v in enumerate(xy)]
+    c.d.ellipse(R(cx - 86, cy - 86, cx + 86, cy + 86), fill=CARD + (255,), outline=FAINT + (255,), width=2 * S)
+    dirs = {'4': [0, 90, 180, 270], '2h': [0, 180], '2v': [90, 270], '8': list(range(0, 360, 45))}.get(stick, [])
     if stick == 'analog':
-        c.d.ellipse(c.r(cx - 70, cy - 70, cx + 70, cy + 70), outline=CYAN + (255,), width=4 * S)
-        c.g.ellipse(c.r(cx - 70, cy - 70, cx + 70, cy + 70), outline=CYAN + (255,), width=6 * S)
+        c.d.ellipse(R(cx - 70, cy - 70, cx + 70, cy + 70), outline=CYAN + (255,), width=4 * S)
+        c.g.ellipse(R(cx - 70, cy - 70, cx + 70, cy + 70), outline=CYAN + (255,), width=6 * S)
         for a in range(0, 360, 30):
             x, y = cx + 70 * math.cos(math.radians(a)), cy + 70 * math.sin(math.radians(a))
-            c.d.ellipse(c.r(x - 4, y - 4, x + 4, y + 4), fill=CYAN + (255,))
+            c.d.ellipse(R(x - 4, y - 4, x + 4, y + 4), fill=CYAN + (255,))
     for a in range(0, 360, 45):
         lit = a in dirs
         x, y = cx + 70 * math.cos(math.radians(a)), cy + 70 * math.sin(math.radians(a))
-        size = 15 if lit else 9
-        pts = [(px * S, py * S) for px, py in tri(x, y, a, size)]
+        pts = [tuple(R(px, py)) for px, py in tri(x, y, a, 15 if lit else 9)]
         if lit:
             c.d.polygon(pts, fill=CYAN + (255,))
             c.g.polygon(pts, fill=CYAN + (255,))
         elif stick != 'analog':
             c.d.polygon(pts, fill=FAINT + (150,))
     if stick in ('2h', '2v'):        # slot gate
-        if stick == '2h':
-            box = (cx - 54, cy - 8, cx + 54, cy + 8)
-        else:
-            box = (cx - 8, cy - 54, cx + 8, cy + 54)
-        c.d.rounded_rectangle(c.r(*box), radius=8 * S, outline=CYAN + (200,), width=2 * S)
-    # shaft + balltop
-    c.d.ellipse(c.r(cx - 12, cy - 12, cx + 12, cy + 12), fill=(40, 44, 58, 255))
+        box = (cx - 54, cy - 8, cx + 54, cy + 8) if stick == '2h' else (cx - 8, cy - 54, cx + 8, cy + 54)
+        c.d.rounded_rectangle(R(*box), radius=8 * k * S, outline=CYAN + (200,), width=2 * S)
+    c.d.ellipse(R(cx - 12, cy - 12, cx + 12, cy + 12), fill=(40, 44, 58, 255))
     bt = color_on if on else FAINT
-    c.d.ellipse(c.r(cx - 34, cy - 34, cx + 34, cy + 34), fill=bt + (255,))
+    c.d.ellipse(R(cx - 34, cy - 34, cx + 34, cy + 34), fill=bt + (255,))
     if on:
-        c.g.ellipse(c.r(cx - 34, cy - 34, cx + 34, cy + 34), fill=bt + (200,))
-    c.d.ellipse(c.r(cx - 22, cy - 26, cx - 2, cy - 10), fill=(255, 255, 255, 110 if on else 40))
+        c.g.ellipse(R(cx - 34, cy - 34, cx + 34, cy + 34), fill=bt + (200,))
+    c.d.ellipse(R(cx - 22, cy - 26, cx - 2, cy - 10), fill=(255, 255, 255, 110 if on else 40))
 
 
 def fit_label(c: Card, s, maxw, px=22):
@@ -382,11 +370,13 @@ def fit_label(c: Card, s, maxw, px=22):
     return s + '…'
 
 
-def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols):
+def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None):
     n = rows * cols
     labels = sig.labels
     rad = (27 if labels else 33) if rows <= 2 else 24
-    gapx = 92 if cols <= 3 else max(60, 280 // cols)
+    if cols > 3:
+        rad = min(rad, 28)
+    gapx = 92 if cols <= 3 else int((x_max - x0 - rad - 14) / (cols - 1))
     gapy = 112 if labels else 96
     if labels and rows <= 2:
         y0 -= 26
@@ -410,7 +400,7 @@ def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols):
         if lit and i < len(labels) and labels[i]:
             c.text((cx, cy + rad + 15), fit_label(c, labels[i].upper(), gapx - 4), font('semi', 22), TEXT + (255,), 'mm')
     if sig.buttons > n:
-        c.text((x0 + (cols - 1) * gapx + rad + 6, y0 + (rows - 1) * gapy + rad), '+' if sig.buttons >= 7 else f'+{sig.buttons - n}',
+        c.text((x0 + (cols - 1) * gapx + rad + 6, y0 + (rows - 1) * gapy + rad), '+' if sig.buttons >= 9 else f'+{sig.buttons - n}',
                font('black', 34), AMBER + (255,), 'ls')
 
 
@@ -471,6 +461,50 @@ def draw_icon(c: Card, kind, cx, cy, col, size=24):
         g.rectangle(c.r(cx - s, cy - s, cx + s, cy + s), fill=rgba)
 
 
+# ------------------------------------------------------------------ the cabinet's control panel
+# <manifest>/panel.json (else tools/panels/<COMPUTERNAME>.json, else these defaults): buttons per player position and the
+# special devices with their own buttons. The cards draw THIS hardware, not a generic panel.
+PANEL = {
+    'players': [{'buttons': 6, 'rows': 2, 'cols': 3}] * 4,
+    'trackball': {'name': 'Rollerball', 'buttons': 2},
+    'spinner': {'name': 'Dial', 'buttons': 2},
+    'flightStick': {'name': 'Flight stick', 'buttons': 3},
+    'twinStick': {'left': 'P1 stick', 'right': 'P2 stick', 'leftDoes': 'Move', 'rightDoes': 'Fire'},
+}
+
+
+def load_panel(man: Path, log) -> str:
+    """fills PANEL; returns a short hash so a changed panel re-renders every card"""
+    for f in (man / 'panel.json', Path(__file__).parent / 'panels' / f'{os.environ.get("COMPUTERNAME", "")}.json'):
+        if f.exists():
+            try:
+                data = json.loads(f.read_text(encoding='utf-8-sig'))
+            except ValueError as ex:
+                log(f'panel file {f} unreadable: {ex}')
+                continue
+            for k, v in data.items():
+                if k.startswith('_'):
+                    continue
+                PANEL[k] = {**PANEL[k], **v} if isinstance(v, dict) and isinstance(PANEL.get(k), dict) else v
+            log(f'panel: {f}')
+            break
+    return hashlib.sha1(json.dumps(PANEL, sort_keys=True).encode()).hexdigest()[:8]
+
+
+def device_of(s: Sig):
+    """the special device a game is played with instead of a stick (None = stick + panel buttons)"""
+    ex = set(s.extras)
+    if s.stick and s.stick != 'analog':
+        return None
+    if 'trackball' in ex:
+        return 'trackball'
+    if ex & {'spinner', 'paddle'}:
+        return 'spinner'
+    if 'flightstick' in ex or s.stick == 'analog':
+        return 'flightStick'
+    return None
+
+
 def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
     c = Card()
     # ---- left: one player's panel
@@ -478,12 +512,44 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
                           width=2 * S)
     c.d.rounded_rectangle(c.r(18, 18, 552, 24), radius=3 * S, fill=PLAYER[0] + (255,))
     c.text((36, 50), 'P1', font('black', 26), PLAYER[0] + (255,), 'lm', glow=PLAYER[0] + (160,))
-    if not sig.stick and sig.extras:          # the game's own control takes the stick's place
-        c.d.ellipse(c.r(50, 80, 222, 252), fill=CARD + (255,), outline=FAINT + (255,), width=2 * S)
-        draw_icon(c, sig.extras[0], 136, 166, GREEN, 54)
+    dev = device_of(sig)
+    if 'twinstick' in sig.extras:
+        # two sticks side by side, what each one does, which panel stick it is
+        ts = PANEL['twinStick']
+        for cx, does, which, pc in ((112, ts['leftDoes'], ts['left'], PLAYER[0]), (282, ts['rightDoes'], ts['right'], PLAYER[1])):
+            draw_stick(c, cx, 134, sig.stick or '8', pc, k=.72)
+            c.text((cx, 214), does.upper(), font('black', 24), CYAN + (255,), 'mm', glow=CYAN + (90,))
+            c.text((cx, 244), which.upper(), font('semi', 19), DIM + (255,), 'mm')
+        c.d.line(c.r(197, 92, 197, 252), fill=FAINT + (255,), width=2 * S)
+        if sig.buttons:
+            draw_buttons(c, 400, 108, sig, 2, 2, x_max=540)
+    elif dev:
+        # a rollerball / dial / flight stick game: the device and ITS OWN buttons, as they sit on the cabinet
+        d = PANEL[dev]
+        icon = {'trackball': 'trackball', 'spinner': 'spinner', 'flightStick': 'flightstick'}[dev]
+        c.d.ellipse(c.r(44, 64, 228, 248), fill=CARD + (255,), outline=GREEN + (160,), width=3 * S)
+        draw_icon(c, icon if not (dev == 'spinner' and 'paddle' in sig.extras) else 'paddle', 136, 156, GREEN, 60)
+        c.text((136, 268), d['name'].upper(), font('black', 22), GREEN + (255,), 'mm', glow=GREEN + (80,))
+        nb = int(d['buttons'])
+        ds = Sig.__new__(Sig)
+        for a_ in Sig.__slots__:
+            setattr(ds, a_, getattr(sig, a_))
+        ds.buttons = min(sig.buttons, nb)
+        draw_buttons(c, 300, 140, ds, 1, max(nb, 1), x_max=520 if nb > 2 else 470)
+        c.text((394, 216), f'NEXT TO THE {d["name"].upper()}', font('semi', 19), DIM + (255,), 'mm')
+        if sig.buttons > nb:
+            c.text((394, 246), f'BUTTONS {nb + 1}+ ON THE PANEL', font('semi', 19), AMBER + (255,), 'mm')
     else:
-        draw_stick(c, 136, 166, sig.stick, PLAYER[0])
-    draw_buttons(c, 300, 108 if rows <= 2 else 80, sig, rows, cols)
+        if not sig.stick and sig.extras:          # gun / wheel / keypad: the game's own control takes the stick's place
+            c.d.ellipse(c.r(50, 80, 222, 252), fill=CARD + (255,), outline=FAINT + (255,), width=2 * S)
+            draw_icon(c, sig.extras[0], 136, 166, GREEN, 54)
+        else:
+            draw_stick(c, 136, 166, sig.stick, PLAYER[0])
+        draw_buttons(c, 282 if cols > 3 else 300, 108 if rows <= 2 else 80, sig, rows, cols, x_max=528)
+    # P3 / P4 have fewer buttons than P1 / P2 on some cabinets
+    p34 = min(int(p.get('buttons', 6)) for p in PANEL['players'][2:4]) if len(PANEL['players']) > 2 else 99
+    if sig.players >= 3 and sig.buttons > p34 and not dev:
+        c.text((W - 26, 92), f'P3 / P4 HAVE {p34} BUTTONS', font('semi', 20), AMBER + (255,), 'rm')
     # ---- right: facts
     x0, x1 = 584, W - 26
     p = max(1, sig.players or 1)
@@ -502,17 +568,22 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
     if sig.alt:
         c.text((x1, 92), 'TAKE TURNS', font('semi', 22), AMBER + (255,), 'rm')
     # stick + buttons lines
-    if sig.stick:
+    if dev:
+        st, scol = PANEL[dev]['name'].upper() + ' GAME', GREEN
+    elif 'twinstick' in sig.extras:
+        st, scol = 'TWIN STICKS', CYAN
+    elif sig.stick:
         st, scol = STICK_TEXT[sig.stick], CYAN
-        if 'twinstick' in sig.extras:
-            st = 'TWIN 8-WAY STICKS' if sig.stick == '8' else 'TWIN STICKS'
     elif sig.extras:
         st, scol = EXTRA_LABEL[sig.extras[0]] + ' GAME', GREEN
     else:
         st, scol = 'NO STICK', DIM
-    c.text((x0, 136), st, font('black', 38), scol + (255,), 'lm', glow=scol + (90,))
+    fs = 38
+    while fs > 26 and c.width(st, font('black', fs)) > 370:     # keep clear of the START pill
+        fs -= 2
+    c.text((x0, 136), st, font('black', fs), scol + (255,), 'lm', glow=scol + (90,))
     b = sig.buttons
-    bt = 'NO BUTTONS' if b == 0 else ('1 BUTTON' if b == 1 else ('7+ BUTTONS' if b >= 7 else f'{b} BUTTONS'))
+    bt = 'NO BUTTONS' if b == 0 else ('1 BUTTON' if b == 1 else ('9+ BUTTONS' if b >= 9 else f'{b} BUTTONS'))
     if 'keypad' in sig.extras:
         bt = 'NO KEYPAD HERE'
     c.text((x0, 188), bt, font('black', 38), (MAGENTA if b else DIM) + (255,), 'lm', glow=(MAGENTA + (90,)) if b else None)
@@ -532,6 +603,8 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
                TEXT + (255,), 'lm')
     # chips for the special controls not already named on the stick line
     shown = [e for e in sig.extras if e != 'twinstick'] if sig.stick else list(sig.extras[1:])
+    if dev or 'twinstick' in sig.extras:          # the left panel already shows the device: one plain line instead
+        shown = []
     for e in shown:
         lab = EXTRA_LABEL[e]
         f = font('black', 28)
@@ -541,10 +614,18 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
         draw_icon(c, e, x + 17, y, GREEN, 17)
         c.text((x + 44, y + 1), lab, f, GREEN + (255,), 'lm')
         x += wdt + 26
-    if not shown:
+    if not shown or dev or 'twinstick' in sig.extras:
         hint = 'JOYSTICK + BUTTONS' if sig.stick else ('BUTTONS ONLY' if sig.buttons else '')
         if not sig.stick and sig.extras:
             hint = HOW_TO.get(sig.extras[0], '')
+        if dev == 'trackball':
+            hint = f'ROLL THE {PANEL["trackball"]["name"].upper()}'
+        elif dev == 'spinner':
+            hint = f'{"TURN" if "paddle" in sig.extras else "SPIN"} THE {PANEL["spinner"]["name"].upper()}'
+        elif dev == 'flightStick':
+            hint = f'FLY WITH THE {PANEL["flightStick"]["name"].upper()}'
+        elif 'twinstick' in sig.extras:
+            hint = 'ONE STICK IN EACH HAND'
         c.text((x0, y), hint, font('semi', 24), DIM + (255,), 'lm')
     return c.finish()
 
@@ -565,14 +646,15 @@ def hint_of(s: Sig):
         return 'wheel', 'STICK STEERS  ·  1 = GAS  ·  2 = BRAKE'
     if 'trackball' in ex:
         if s.stick:
-            return 'trackball', 'STICK MOVES  +  TRACKBALL AIMS'
-        return 'trackball', 'ROLL THE TRACKBALL' + ('  +  PRESS 1' if b else '')
+            return 'trackball', f'STICK MOVES  +  {PANEL["trackball"]["name"].upper()} AIMS'
+        return 'trackball', f'ROLL THE {PANEL["trackball"]["name"].upper()}' + ('  +  PRESS 1' if b else '')
     if ex & {'spinner', 'paddle'}:
-        return 'spinner', 'SPIN THE TRACKBALL LEFT / RIGHT' + ('  +  PRESS 1' if b else '')
+        return 'spinner', f'SPIN THE {PANEL["spinner"]["name"].upper()}' + ('  +  PRESS 1' if b else '')
     if 'flightstick' in ex:
-        return 'flightstick', 'FLY WITH THE ANALOG STICK'
+        return 'flightstick', f'FLY WITH THE {PANEL["flightStick"]["name"].upper()}'
     if 'twinstick' in ex:
-        return 'twinstick', 'TWIN STICKS  ·  ONE STICK IN EACH HAND'
+        ts = PANEL['twinStick']
+        return 'twinstick', f'{ts["left"]} {ts["leftDoes"]}  ·  {ts["right"]} {ts["rightDoes"]}'.upper()
     if s.stick == '4':
         return '4way', '4-WAY GAME  ·  STICK SWITCHES ITSELF'
     return None
@@ -582,7 +664,10 @@ LIGHTGUN_HINT = 'AIM AT THE SCREEN  +  PULL THE TRIGGER'
 
 
 def hint_key(h) -> str:
-    return 'hint-' + hashlib.sha1(('|'.join(h) + f'|{CARD_VERSION}').encode()).hexdigest()[:10]
+    return 'hint-' + hashlib.sha1(('|'.join(h) + f'|{CARD_VERSION}|{PANEL_HASH}').encode()).hexdigest()[:10]
+
+
+PANEL_HASH = ''
 
 
 def render_hint(kind: str, text: str) -> Image.Image:
@@ -851,6 +936,11 @@ def main(argv=None):
     log = lambda m: print(m, flush=True)
     root, man = a.retrofe.resolve(), a.manifest.resolve()
     fe = Frontend(root)
+    global PANEL_HASH
+    PANEL_HASH = load_panel(man, log)
+    p1 = PANEL['players'][0] if PANEL['players'] else {}
+    if p1.get('rows') and p1.get('cols') and a.rows == 2 and a.cols == 3:    # no --rows/--cols given: the cabinet's P1 panel
+        a.rows, a.cols = int(p1['rows']), int(p1['cols'])
     cards_dir = man / 'controls-cards'
     state_file = cards_dir / 'index.json'
     state = {}
@@ -989,7 +1079,7 @@ def main(argv=None):
     old_ver = state.get('version')
     for key, s in sigs.items():
         p = cards_dir / f'{key}.png'
-        if p.exists() and not a.force and old_ver == CARD_VERSION:
+        if p.exists() and not a.force and old_ver == CARD_VERSION and state.get('panel') == PANEL_HASH:
             continue
         if a.dry_run:
             continue
@@ -1153,7 +1243,7 @@ def main(argv=None):
         for _, k, _s in lst:
             counts[k] = counts.get(k, 0) + 1
     if not a.dry_run:
-        state = {'version': CARD_VERSION, 'rows': a.rows, 'cols': a.cols, 'copies': copies,
+        state = {'version': CARD_VERSION, 'panel': PANEL_HASH, 'rows': a.rows, 'cols': a.cols, 'copies': copies,
                  'signatures': {k: counts.get(k, 0) for k in sorted(sigs)}}
         state_file.write_text(json.dumps(state, indent=1), encoding='utf-8')
     if a.preview:
