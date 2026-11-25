@@ -88,7 +88,11 @@ The loop works like this (James, 2026-11-25):
 - [x] Get-CabinetDevices 1.3–1.5 s → 0.3 s at boot. The DirectInput scan (1.1 s) is kept in
       `manifest\directinput-scan.txt`, keyed on every present USB/HID device, so plugging anything in or out forces a
       new scan. The display helper now uses the type cache. (2026-11-25)
-- [ ] Boot time, next: Shuffle 1.7 s (now the largest).
+- [x] Shuffle 1.7 s → 0.7 s at boot. Plain loops replace the Where-Object/ForEach-Object pipelines, HashSet/List
+      replace array += and Sort-Object -Unique, each folder's art is read once, and the slots are listed once per menu.
+      Tool tiles no longer reach Main's backgrounds. **Boot prep 1.8 s** (6.9 s this morning). (2026-11-25)
+- [ ] Boot time, next: Repair-ArcadeHealth 0.6 s and Get-CabinetDevices 0.3 s are left; most of the rest is
+      PowerShell itself.
 - [x] `Test-ArcadeMaster.ps1 -Cabinet` runs the health check (`-NoFix`) and the panel learn (`--dry-run`) against
       this cabinet's frontend, and fails on any error. It refuses a protected live frontend. A planted bug was caught
       (2026-11-25).
