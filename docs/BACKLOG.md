@@ -95,11 +95,34 @@ The loop works like this (James, 2026-11-25):
       `AM_PROTECTED`, else `ProtectedPaths` in ArcadeMaster.config.json, else the whole E: drive. (2026-11-25)
 - [ ] Self-test: add checks for the new tools (marquees, themes, library mover dry run).
 
+## 7. Racing and flight cabinet (DESKTOP-RACE1 takes these first)
+Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets never do the same one.
+- [x] Performance: boot steps are timed in the launcher log; the title card is skipped when unchanged (PR 29).
+      RACE1 boot prep 4.5 s, every step under 1 s.
+- [ ] [RACE1] Performance: menu frame time with the live wheel, needles and moving backdrops on. Fix any drop below 60 fps.
+- [ ] Performance: Build-Manifest / Rebuild Game Menus. Time each part and remove the repeated scans.
+- [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
+- [ ] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).
+- [ ] Graphics: game launch screen with the game's own art full screen and that game's wheel and pedal controls.
+- [ ] Controls: check the wheel, pedals and paddles in every TeknoParrot racing profile (clutch L, brake M, gas R).
+- [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
+- [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
+- [ ] Controls: set up the "ready to set up" games from games-cant-start.txt with Add-TPGame (dry run first).
+- [ ] Stories: every racing and flight game has a story line (year, maker, cabinet, what makes it special).
+- [ ] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
+- [ ] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
+- [ ] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
+- [ ] Bass shakers: telemetry on in every PC racing game that has it, beyond the 6 Codemasters games.
+- [ ] Reliability: the health check notices a game whose last start crashed and says why in plain words.
+
 ## Needs James (skip, never wait)
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.
 - Azure sign-in (device code) at a browser.
+- RACE1: install SimHub (D:\ArcadeMaster\installers\SimHubSetup_9.13.5.exe, accept the admin prompt).
+- RACE1: plug in the USB sound card for the bass shakers.
+- RACE1: test the live wheel, needles, gear lights, moving backdrops and D-pad menu at the cabinet; merge PR #3.
 
 ## Done
 - 2026-11-25: PRs #17â€“#23 merged (LEDBlinky panel, button names, marquees, five themes, all settings with a 15 s
