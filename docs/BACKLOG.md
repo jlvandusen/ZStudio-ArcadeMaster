@@ -38,6 +38,10 @@ The loop works like this (James, 2026-11-25):
       - [x] Step 1: `Get-UltimarcBoards.ps1` lists the boards through the SDK. Read-only, writes manifest\ultimarc.json.
             Pedestal: 2 × I-PAC Ultimate I/O (D209:0410 / 0411, 96 LEDs each) + 1 ServoStik (D209:1700).
             The two Ultimate I/O boards are also 2 of the 3 "Ultimarc mice" (their trackball/spinner inputs).
+      - **Now AmPanel (docs/13-panel-service.md, James 2026-11-25):** a tray service that accepts LEDBlinky's documented
+        command line, talks to the frontend over \\.\pipe\ArcadeMaster.Panel, and drives LEDs + ServoStik (PacDrive32)
+        and UltraStik maps (UltraStik32). Steps 1–8 are in that doc; the old steps below fold into them.
+      - [ ] AmPanel step 1: tray + pipe + LEDBlinky-compatible command line + panel-state.json.
       - [ ] Step 2: an LED test in Tools. Light each button in turn and in each player's colour. Only while LEDBlinky is
             not running (they would fight over the boards).
       - [ ] Step 3: per-game colours on game select (Colors.ini + InputMap), from the RetroFE launcher hook that now
