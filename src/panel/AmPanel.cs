@@ -49,6 +49,8 @@ static class AmPanel
     static TriggerRules rules;         // step 10: output -> activity
     static ReactiveKeys glow;          // step 5: held buttons glow ("Reactive": false turns it off)
     static DeviceWatcher devices;      // hot-plug: a controller plugged in / pulled updates the cabinet (Update-Controllers.ps1)
+    static Sticks sticks;              // UltraStik maps per game: AmPanel.json "Sticks": "own" (default: on when Lights = own)
+    static bool sticksOwn;
     static string toolsDir, retroFERoot;
     static bool reactive = true;
     static string attractAnimation = "chase";   // step 6: AmPanel.json "AttractAnimation": chase | breathe
@@ -78,6 +80,12 @@ static class AmPanel
                                          : "own, but LED boards not opened: " + leds.LastError;
                     if (!ok) leds = null;
                 }
+                if (sticksOwn)
+                {
+                    sticks = new Sticks(manifestDir, ledBlinkyDir, Log);
+                    State["sticks"] = sticks.Count + " UltraStik(s)" + (sticks.LastError != null ? " - " + sticks.LastError : "");
+                    if (sticks.Count == 0) { sticks.Close(); sticks = null; }
+                }
                 State["ledBlinkyRunning"] = Process.GetProcessesByName("LEDBlinky").Length > 0;
                 State["guns"] = Guns.Find();   // step 7: light guns plugged in (AimTrak / Sinden / Gun4IR)
             }
@@ -86,6 +94,7 @@ static class AmPanel
             RunTray();
             quitting = true;
             if (leds != null) leds.Close();
+            if (sticks != null) sticks.Close();
             Log("AmPanel stopped");
             return 0;
         }
@@ -133,6 +142,9 @@ static class AmPanel
             leds.LoadOverrides(Path.Combine(manifestDir, "led-colors.json"));   // this cabinet's own colours (step 11)
             passThrough = false;       // two programs must never drive the same boards
         }
+        // the sticks follow the lights unless AmPanel.json says otherwise ("Sticks": "own" | "ledblinky")
+        string st = Str(cfg, "Sticks");
+        sticksOwn = st != null ? st.Equals("own", StringComparison.OrdinalIgnoreCase) : leds != null;
     }
 
     // ---------------------------------------------------------------- boards (PacDrive SDK)
@@ -195,6 +207,16 @@ static class AmPanel
                 else if (c == "5") State["lights"] = "attract: " + leds.Animate(attractAnimation);
                 else if (c == "6") State["lights"] = leds.Animate("stop");
                 else if (what == "game start") State["lights"] = leds.LightGame(c);
+                else if (c == "14") State["lights"] = leds.SetPorts(string.Join(",", a, 1, a.Length - 1));
+                else if (c == "16") State["lights"] = leds.Dim(true);
+                else if (c == "17") State["lights"] = leds.Dim(false);
+            }
+            // UltraStik: the game's map at start (written only when it changes), 8-way back in the menus, 13 = this map now
+            if (sticks != null)
+            {
+                if (what == "game start") State["stick"] = sticks.Load(null, c, false);
+                else if (c == "13") State["stick"] = sticks.Load(arg1, null, true);
+                else if (what == "game stop" || what == "frontend start") State["stick"] = sticks.Load(null, null, false);
             }
             // hot-plug refreshes wait while a game runs (James: no effect on game performance)
             if (devices != null)
@@ -295,6 +317,19 @@ static class AmPanel
             }
             else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
             else if (cmd == "devicechange") { if (devices != null) devices.Poke(); rep["ok"] = devices != null; }   // as if a controller was plugged in
+            else if (cmd == "sticks")   // {"cmd":"sticks"} status + maps; {"cmd":"sticks","map":"Joy4Way"} or {"rom":"pacman"} loads now
+            {
+                if (sticks == null) { rep["ok"] = false; rep["error"] = sticksOwn ? "no UltraStik found" : "sticks are not AmPanel's (AmPanel.json Sticks = own)"; }
+                else
+                {
+                    string map = req.ContainsKey("map") ? Convert.ToString(req["map"]) : null, rom = req.ContainsKey("rom") ? Convert.ToString(req["rom"]) : null;
+                    if (map != null || rom != null) { string r = sticks.Load(map, rom, true); lock (Gate) State["stick"] = r; rep["result"] = r; }
+                    if (req.ContainsKey("reload")) sticks.Reload();
+                    rep["count"] = sticks.Count; rep["current"] = sticks.Current; rep["maps"] = sticks.Maps();
+                    if (rom != null) rep["mapFor"] = sticks.MapFor(rom);
+                    rep["ok"] = true;
+                }
+            }
             else if (cmd == "guns") { var g = Guns.Find(); lock (Gate) State["guns"] = g; rep["guns"] = g; rep["ok"] = true; }
             else if (cmd == "boards") { var b = ReadBoards(); lock (Gate) State["boards"] = b; rep["boards"] = b; rep["ok"] = true; }
             else if (cmd == "light")   // {"cmd":"light","rom":"sf2"} - light a game's controls now (tests, Tools)

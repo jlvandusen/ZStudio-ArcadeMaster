@@ -142,7 +142,17 @@ One "BUTTON LIGHTS & OUTPUTS" screen (Tools, and the tray window on a desktop), 
 2. Per-game lights: `9`/`15`/game start light the game's buttons in its Colors.ini colours; unused buttons dim.
 3. ServoStik: 4-way games (controls.dat P1Controls `4-way`, MAME `ways=4`) get 4-way on select / start, else 8-way.
    A Cabinet Settings option: auto / always 8 / always 4.
-4. UltraStik maps per game (`13 <map>` semantics, auto from controls.dat).
+4. UltraStik maps per game (`13 <map>` semantics). **Done (2026-11-25):** `src/panel/Sticks.cs` loads
+   `UltraStik_LoadMapFile(id, file)` (checked against the DLL: stdcall, two arguments) onto every stick. It loads the
+   game's map at game start and Joy8Way on game stop / frontend start, and writes only when the map changes (9-13 ms
+   for both sticks). `tools/New-StickMaps.py` writes `<manifest>\stick-maps.json` from MAME's controls (joy 4 -> Joy4Way,
+   2 -> Joy2Way, vertical2 -> vJoy2Way, analog stick only -> Analog; 1917 games off the 8-way default) plus
+   `tools/stick-maps-overrides.json` (Q*bert -> JoyDiag). It also writes ArcadeMaster's own `.um` set to
+   `<manifest>\ultrastik`; all six match LEDBlinky's jdr maps line for line. AmPanel.json `"Sticks": "own" | "ledblinky"`
+   (default: follows Lights). Pipe `{"cmd":"sticks"}` gives status and the map list; add `map` or `rom` to load one.
+   The pedestal has 2 UltraStik 360s (D209:0511, both set to UltraStik ID 1).
+   Also done: `14 port,intensity,...` (a label, a colour name, `board:port`, or a plain port number where 97+ continues
+   on board 2), and `16`/`17` dim the game's colours to 25% while paused.
 5. Reactive buttons: a held button glows brighter (keyboard hook, panel.json key -> LED pin).
 6. Attract: breathe / chase in the selected game's colours while idle, screensaver on `5`.
 7. Light guns: AimTrak / Sinden / Gun4IR presence and count in the tray and Detect Controllers. Calibration stays
