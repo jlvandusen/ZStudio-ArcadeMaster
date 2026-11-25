@@ -97,6 +97,8 @@ foreach ($tp in $TeknoParrot) {
 }
 
 # ---------------- TeknoParrot installs
+# TeknoParrot id <-> title from the owner-curated tags (finds art named by the id when a profile was renamed)
+$script:tagIds = @(); try { $tj = Get-Content $Tags -Raw | ConvertFrom-Json; $script:tagIds = @($tj.games.PSObject.Properties | Where-Object { $_.Value.title } | ForEach-Object { [pscustomobject]@{ id = $_.Name; title = $_.Value.title } }) } catch { }
 foreach ($tp in $TeknoParrot) {
   if (-not (Test-Path $tp.Path)) { continue }
   foreach ($up in Get-ChildItem (Join-Path $tp.Path 'UserProfiles') -Filter *.xml -File -ErrorAction SilentlyContinue) {
@@ -125,6 +127,22 @@ foreach ($tp in $TeknoParrot) {
     if ($tp.Collection) {
       $g.sources += [ordered]@{ frontend = 'retrofe'; collection = $tp.Collection; item = $id }
       foreach ($kv in (Find-Media $tp.Collection $id).GetEnumerator()) { if (-not $g.media.Contains($kv.Key)) { $g.media[$kv.Key] = $kv.Value } }
+    } else {
+      # a TeknoParrot that belongs to ANOTHER frontend (D:\FLIGHT Collection\emulators\TeknoParrot): its art sits in that
+      # frontend's Collections\TeknoParrot\medium_artwork, named by profile, by game name, or by TeknoParrot's own id
+      # (abc = After Burner Climax, StarWars = Battle Pod: catalog\tags.json knows the id for each title)
+      $ma = Join-Path (Split-Path (Split-Path $tp.Path)) 'Collections\TeknoParrot\medium_artwork'
+      if (Test-Path -LiteralPath $ma) {
+        $norm = { param($s) ("$s" -replace '[^A-Za-z0-9]', '').ToLower() }
+        $names = @($id, ($g.title -replace '[\\/:*?"<>|]', '').Trim()) + @($script:tagIds | Where-Object { (& $norm $_.title) -eq (& $norm $g.title) } | ForEach-Object { $_.id })
+        foreach ($t in 'fanart', 'logo', 'video', 'artwork_front', 'artwork_3d', 'medium_front', 'story') {
+          if ($g.media.Contains($t)) { continue }
+          foreach ($n in ($names | Where-Object { $_ } | Select-Object -Unique)) {
+            $f = Get-ChildItem -LiteralPath (Join-Path $ma $t) -File -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -ieq $n -and $_.Extension -notmatch '(?i)\.(old|bak)$' } | Select-Object -First 1
+            if ($f) { $g.media[$t] = $f.FullName; break }
+          }
+        }
+      }
     }
   }
 }

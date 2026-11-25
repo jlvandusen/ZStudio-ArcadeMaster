@@ -46,6 +46,8 @@ if (Test-Path $cabFile) {
   if ($cap -and -not $cap.wheel) { $items.Remove('1 Wheel Setup'); if (-not $cap.ffb) { $items.Remove('5 Force Feedback On-Off') }; $items.Remove('5a Bass Shakers On-Off') }
   # a control-panel cabinet gets the panel's counterpart of Wheel Setup: see what every button and stick sends
   if ($cap -and $cap.controlPanel) { $items.Insert(2, '1 Panel Test', @('PanelTest', 'ff2fa0')) }
+  # a flight stick / HOTAS plugged in: its own setup wizard (the boot rebuilds this list when one appears or goes)
+  if ($cap -and $cap.flightStick) { $items.Insert(2, '1a Flight Stick Setup', @('FlightSetup', '2ec8ff')) }
 }
 
 if (Test-Path $col) { Remove-Item $col -Recurse -Force }
@@ -59,7 +61,7 @@ Set-Content (Join-Path $RetroFE 'launchers.windows\AM_TOOLS.conf') "executable =
 
 foreach ($name in $items.Keys) {
   $id = $items[$name][0]
-  $label = ($name -replace '^\d+\s+', '').ToUpper()
+  $label = ($name -replace '^\d+[a-z]?\s+', '').ToUpper()
   # the .bat shows the tool on a full-screen visual page (scaled to the display) and returns when it is closed
   Set-Content (Join-Path $col "roms\$name.bat") ("@echo off`r`npowershell -NoProfile -ExecutionPolicy Bypass -File `"$ToolsDir\Show-ToolScreen.ps1`" -Tool $id -Title `"$label`" -RetroFE `"$RetroFE`" -ManifestDir `"$ManifestDir`"`r`n") -Encoding ascii
 }

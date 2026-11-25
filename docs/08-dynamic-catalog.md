@@ -258,6 +258,14 @@ RetroFE has no runtime flags, and no `settings.conf` key for menu sounds or vide
 
 **What the boot does with the mode:**
 - The **main menu shows only the plugged-in modes' collections** (Racing / Flight / Lightgun / Arcade). Settings, Tools, GAMES and the rest always stay. Hidden entries are kept in `manifest\main-menu-full.txt` and come back with their controller. `cabinetShowAllModes = yes` shows everything.
+- **Flight needs real flight controls.** A wheel alone never adds Flight.
+  - **What counts as a flight stick:** a device named as one (HOTAS, T.Flight, X52/X56, Extreme 3D, yoke, flight stick), a DirectInput Flight device, a Joystick with 3 or more axes, or a 2-axis device from a flight-only maker (Thrustmaster 044F, Saitek/Logitech flight 06A3, Mad Catz 0738).
+  - **Throttles:** a separate throttle (HOTAS throttle, TWCS, quadrant) is recorded as `throttle`. On its own it isn't a stick.
+  - **What doesn't count:** a 2-axis "USB Joystick" (an arcade-panel encoder) and Ultimarc sticks. Flight sticks don't count as stand-up arcade sticks or gamepads.
+- `cabinet.json` keeps `modesSeen`, every mode this cabinet has ever had controls for, and Rebuild Game Menus builds those.
+  - **When a flight stick is plugged in:** the next boot sees the modes change, rebuilds the menus and the Tools list, and Flight appears together with **Tools → Flight Stick Setup**. Flight Stick Setup runs the WheelMap flight wizard into the `HOTAS` profile.
+  - **When it is unplugged:** Flight stays built but hidden.
+- A TeknoParrot that belongs to another frontend, such as `D:\FLIGHT Collection\emulators\TeknoParrot`, takes its games' art from that frontend's `Collections\TeknoParrot\medium_artwork`. Files are matched by profile name, by game name, or by the TeknoParrot id that `catalog\tags.json` gives for the title.
 - The mode's collection moves to the top of the menu, and `cabinetTheme.<mode> = <layout>` switches the theme per mode.
 - The boot intro shows the effective type. A custom `cabinetTitle` is only used while the configured type is active.
 - The decision is recorded in `manifest\cabinet-mode.json`.

@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -74,6 +74,16 @@ switch ($Tool) {
     Banner 'WHEEL SETUP - follow the prompts (turn, press, release)'
     Emit @{ type = 'wizard'; state = 'start' }
     Run 'wheelmap\WheelMap.ps1' @('-Capture', '-Name', 'G29') | Out-Null
+    Emit @{ type = 'wizard'; state = 'end'; ok = ($script:lastExit -eq 0) }
+    Run 'Get-CabinetDevices.ps1' @('-Out', $cab, '-History', $hist) | Out-Null
+    Emit-Devices
+  }
+  'FlightSetup' {
+    # the flight stick / HOTAS counterpart of Wheel Setup: WheelMap's flight wizard (roll, pitch, twist, throttle,
+    # fire, missile ...) into the HOTAS profile, which the flight games' controls are generated from
+    Banner 'FLIGHT STICK SETUP - follow the prompts (stick, twist, throttle, buttons)'
+    Emit @{ type = 'wizard'; state = 'start' }
+    Run 'wheelmap\WheelMap.ps1' @('-Capture', '-Name', 'HOTAS', '-CabinetType', 'flight') | Out-Null
     Emit @{ type = 'wizard'; state = 'end'; ok = ($script:lastExit -eq 0) }
     Run 'Get-CabinetDevices.ps1' @('-Out', $cab, '-History', $hist) | Out-Null
     Emit-Devices

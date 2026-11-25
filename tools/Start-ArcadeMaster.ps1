@@ -92,6 +92,8 @@ if (-not $NoDeviceCheck) {
     if ($modesNow -ne $modesLast) {
       Write-Log "cabinet modes changed ('$modesLast' -> '$modesNow') - regenerating menus"
       Invoke-Tool 'New-RetroFECollections.ps1' @('-RetroFE', $Root, '-Cabinet', $cabFile, '-Manifest', (Join-Path $ManifestDir 'games.json'), '-RebuildDatabase') | Out-Null
+      # the Tools list follows the controls too (Flight Stick Setup only while a flight stick is plugged in)
+      if (Test-Path (Join-Path $Root 'collections\Tools')) { Invoke-Tool 'New-CabinetToolsCollection.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir) | Out-Null }
       Set-Content $modesFile $modesNow
     }
   } catch { Write-Log "device check failed: $($_.Exception.Message)" }   # never block boot on diagnostics

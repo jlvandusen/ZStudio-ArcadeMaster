@@ -54,7 +54,8 @@ if ($Remove) {
 }
 
 $m = Get-Content $Manifest -Raw | ConvertFrom-Json
-if (-not $Modes -and (Test-Path $Cabinet)) { $Modes = @((Get-Content $Cabinet -Raw | ConvertFrom-Json).capabilities.modes) }
+# every mode the cabinet has ever had controls for (modesSeen): the boot hides the ones not plugged in right now
+if (-not $Modes -and (Test-Path $Cabinet)) { $cc = (Get-Content $Cabinet -Raw | ConvertFrom-Json).capabilities; $Modes = @(if ($cc.modesSeen) { $cc.modesSeen } else { $cc.modes }) }
 if (-not $Modes) { $Modes = $Order }
 Write-Host ("cabinet modes: " + ($Modes -join ', '))
 function New-Collection([string]$name, [string]$settings) {
