@@ -48,7 +48,13 @@ The loop works like this (James, 2026-11-25):
 - [x] Background shuffle: 1.7–1.9 s → 1.6 s, while it now reads every game's backdrop too. It uses .NET folder
       listings, a partial shuffle and hard links (the helper DLL is compiled once, cached in %LOCALAPPDATA%). Boot prep
       4.2 s. (2026-11-25)
-- [ ] Boot time, next: the health check (2.0 s). Run its slow parts after RetroFE is up, or cache what it reads.
+- [x] Health check at boot 2.0 s → 0.4 s. The touch-screen step (a PowerShell of its own, 1.65 s) runs only when the
+      touch hardware or controls.conf changed (`touch-key.txt`). The games summary (10 MB games.json, 1.7 s) is kept in
+      `games-summary.txt`. Boot prep 6.9 s → **2.7 s** today. Also fixed: since #27 a comment had swallowed the
+      TeknoParrot path check, which then errored on every profile. (2026-11-25)
+- [ ] Boot time, next: Shuffle 1.7 s (now the largest), and Get-CabinetDevices on a cold start (1.3 s).
+- [ ] Self-test: run Repair-ArcadeHealth -NoFix against the R: copy and fail on any PowerShell error. It would have
+      caught the #27 comment bug.
 - [ ] Menu scrolling: turn on the perf log, measure frame time on Main and Arcades, and find the heavy layers.
 - [ ] Backdrops and marquees: no texture bigger than it is drawn. Downscale anything over 1920x1080 and check memory
       before and after.
