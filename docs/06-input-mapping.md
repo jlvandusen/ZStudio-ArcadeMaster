@@ -405,6 +405,22 @@ Light-gun TeknoParrot games covered by `templates\lightgun.json` (untested): HOT
   - Supermodel `InputGunX/Y`
 - **G HUB profiles:** if G HUB has a per-game profile with remapped buttons or a different rotation, captured numbers apply only while that G HUB profile is active. Capture with the G HUB profile you'll actually play with.
 
+## Brake on the clutch pedal (fixed 2026-11-22): `tools\Repair-TPPedals.ps1`
+
+The G29 reports gas on the Y axis, brake on RotationZ and clutch on Slider 0. Nine TeknoParrot profiles in `D:\Emulators\TeknoParrot` had Brake on Slider 0, so the clutch (left pedal) braked and the brake did nothing. BattleGear4Tuned also had the clutch on the brake. The nine were BattleGear4Tuned, GaelcoChampionshipTuningRace, GRID, GtiClub3, ID5, ID7, ID8, IDZ and KODrive.
+
+`Repair-TPPedals.ps1` fixes only those two entries:
+- it touches only profiles whose Gas is on the same wheel's Y axis (the Logitech pedal layout)
+- it does a dry run unless you give `-Apply`
+- with `-Apply`, it first backs up `UserProfiles` to `D:\ArcadeMaster\_backup\TP-UserProfiles-<install>-pedals-<time>`
+
+Re-generating the whole profile (`WheelMap.ps1 -Generate`) would also fix it, but it changes more, such as the steering direction label, so it needs a test drive first.
+
+```powershell
+tools\Repair-TPPedals.ps1                                         # list wrong pedals
+tools\Repair-TPPedals.ps1 -TpDir D:\Emulators\TeknoParrot -Apply  # back up + fix
+```
+
 ## Legacy emulators (2026-11-22): generated from the profile, not copied
 
 The previous owner's per-wheel sets were copied unchanged. They encode that machine's driver layout, and on this cabinet (G29 on G HUB) they were wrong:
