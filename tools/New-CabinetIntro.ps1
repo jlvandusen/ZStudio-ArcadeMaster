@@ -16,14 +16,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\AmVisual.ps1'); . (Join-Path $PSScriptRoot 'lib\CabinetTypes.ps1')
-function Get-Setting([string]$key) { $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern "^\s*$([regex]::Escape($key))\s*=\s*(.*)$" -ErrorAction SilentlyContinue | Select-Object -Last 1; if ($m) { $m.Matches[0].Groups[1].Value.Trim() } }
-$cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$setting = if ($Type) { $Type } else { Get-Setting 'cabinetType' }
-$follow = (Get-Setting 'cabinetFollowHardware') -notmatch '^(no|false|0)$'
-$eff = if ($Type) { @{ id = $Type; switched = $false } } else { Get-AmEffectiveCabinetType $setting $cab $follow }
-# a custom title belongs to the configured type - not shown when the cabinet switched to another mode
-$ct = Resolve-AmCabinetType $eff.id $cab $(if ($eff.switched) { '' } else { Get-Setting 'cabinetTitle' }) $(if ($eff.switched) { '' } else { Get-Setting 'cabinetTagline' })
-if ($eff.switched) { $ct.auto = $false }
+# type, title, tagline, icons and the key that tells Start-ArcadeMaster whether a re-render is needed (lib\CabinetTypes.ps1)
+$spec = Get-AmIntroSpec $RetroFE $ManifestDir $Type
+$ct = $spec.ct; $setting = $spec.setting
 if (-not $OutDir) { $OutDir = Join-Path $RetroFE "layouts\$Layout\images\intro" }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 $c1 = [AmPal]::Hex($ct.color); $c2 = [AmPal]::Hex($ct.color2)
@@ -75,5 +70,5 @@ $spaced = (($ct.tagline -split ' ') | ForEach-Object { $_.ToCharArray() -join ' 
 [AmDraw]::Text($g, $spaced, (New-Object Drawing.Font('Segoe UI Semibold', 44, [Drawing.GraphicsUnit]::Pixel)), [AmPal]::Text, (RectF 0 0 1600 90), 'Center', 'Center')
 Save $b $g 'intro_tagline.png'
 
-Set-Content (Join-Path $OutDir 'intro.txt') ("type={0}`r`nsetting={1}`r`ntitle={2}`r`ntagline={3}`r`nicons={4}" -f $ct.id, $(if ($setting) { $setting } else { 'auto' }), $ct.title, $ct.tagline, ($ct.icons -join ',')) -Encoding ascii
+Set-Content (Join-Path $OutDir 'intro.txt') ("type={0}`r`nsetting={1}`r`ntitle={2}`r`ntagline={3}`r`nicons={4}`r`nkey={5}" -f $ct.id, $(if ($setting) { $setting } else { 'auto' }), $ct.title, $ct.tagline, ($ct.icons -join ','), $spec.key) -Encoding ascii
 Write-Host ("intro: {0}  ({1}{2})  icons: {3}" -f $ct.title, $ct.id, $(if ($ct.auto) { ', auto-detected' } else { '' }), ($ct.icons -join ', '))

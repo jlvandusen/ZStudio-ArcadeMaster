@@ -107,7 +107,11 @@ $active = ((Select-String -Path (Join-Path $Root 'settings.conf') -Pattern '^\s*
 # render side by side, each in its own powershell. The boot waits for the intro (max 60 s); the Tools art is only seen
 # inside Tools (never during the intro), so it finishes in the background at low priority while RetroFE starts - its
 # images are swapped in atomically
-$parallel = @(@{ name = 'New-CabinetIntro'; wait = $true; args = @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $active) })
+# the intro is only redrawn when its key changed (type, title, hardware or the drawing scripts): a PowerShell start and
+# the C# drawing helpers cost ~2 s of every boot for a card that is usually the same as last time
+$introCurrent = $false
+try { . (Join-Path $PSScriptRoot 'lib\CabinetTypes.ps1'); $introCurrent = Test-AmIntroCurrent (Join-Path $Root "layouts\$active\images\intro") (Get-AmIntroSpec $Root $ManifestDir '') } catch { Write-Log "intro check failed: $($_.Exception.Message)" }
+$parallel = @(if (-not $introCurrent) { @{ name = 'New-CabinetIntro'; wait = $true; args = @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $active) } })
 if (Test-Path (Join-Path $Root 'collections\Tools\ARCADEMASTER-TOOLS.txt')) { $parallel += @{ name = 'New-ToolsArt'; wait = $false; args = @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-NoFanart') } }
 $sw = [Diagnostics.Stopwatch]::StartNew()
 $procs = foreach ($t in $parallel) {
@@ -125,6 +129,7 @@ foreach ($x in @($procs | Where-Object { $_.wait })) {
   if ($x.p.ExitCode) { Write-Log "$($x.name) failed ($($x.p.ExitCode)): $((Get-Content $x.err -Raw -ErrorAction SilentlyContinue))" }
 }
 $script:timings.Add(('{0} {1:N1}s' -f (($parallel | ForEach-Object { if ($_.wait) { $_.name } else { $_.name + '(bg)' } }) -join '+'), $sw.Elapsed.TotalSeconds))
+if ($introCurrent) { $script:timings.Add('intro unchanged') }
 $bgArt = @($procs | Where-Object { -not $_.wait })
 
 $jtk = Join-Path $Root 'JoyToKey\JoyToKey.exe'
