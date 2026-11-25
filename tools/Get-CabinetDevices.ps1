@@ -61,7 +61,7 @@ $cap = [ordered]@{
 }
 # keyboard encoders (Ultimarc I-PAC = VID D209 keyboard device) mean a stand-up control panel
 # one PnP enumeration for every check below (each Get-PnpDevice call costs ~0.4 s at boot)
-$allPnp = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue)
+. (Join-Path $PSScriptRoot 'lib\AmPnp.ps1'); $allPnp = @(Get-AmPnpDevices)   # setup API: ~0.07 s instead of WMI's ~0.6 s (falls back to Get-PnpDevice)
 $encoders = @($allPnp | Where-Object { $_.Class -eq 'Keyboard' } | Where-Object { $_.InstanceId -match 'VID_D209' })
 $ultraStiks = @($devices | Where-Object { $_.id -match 'VID_D209&PID_05' -or $_.name -match '(?i)ultra-?stik' })
 $cap['controlPanel'] = ($encoders.Count -gt 0) -or ($ultraStiks.Count -gt 0)
