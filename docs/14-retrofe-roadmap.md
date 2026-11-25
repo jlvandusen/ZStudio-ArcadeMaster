@@ -96,6 +96,10 @@ menus once in the background after boot; (b) start decoding a menu's first-scree
 the menu before, so the wait is already done; (c) wait only for the pictures on the first screen, not every job in the
 pool. Only 9 of 431 racing pictures are bigger than 1920x1080 (worst: Burnout Paradise logo 4096x2048, 5 MB), so
 shrinking art helps little here.
+**Done (2026-11-25):** RetroFE decodes pictures on at most 3 threads (`ThreadPool.cpp`, `min(3, cores)`), and this PC
+has 16. Start-ArcadeMaster now sets `RETROFE_THREADPOOL_SIZE` to half the cores (3 to 8; a value set by hand wins).
+Two runs each on RACE1: 91.4 / 93.1 ms at 3 threads, 83.8 / 83.8 ms at 8. A 9 % cut, so most of the wait is not
+the thread count: fixes (a)-(c) above are still the way to get under 33 ms.
 **Now:** entering a list spends 44 ms in `logic` on the main thread building the first item. Startup also waits for
 the thread pool to drain (`ThreadPool::wait()` in RetroFE.cpp) before the menu draws.
 **Do:** draw the menu with placeholders and fill items as they finish; the pool already exists.

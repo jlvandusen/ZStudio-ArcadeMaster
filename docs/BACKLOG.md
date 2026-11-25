@@ -172,6 +172,7 @@ The loop works like this (James, 2026-11-25):
   - [ ] 5. Entering a list costs one 100-136 ms frame on RACE1: menu read 29-49 ms (12 sub-collections), page 6-14,
         wait for all picture decodes 60-64. Keep built collections, decode the next menu's first screen while its tile is
         highlighted, wait only for first-screen pictures. Then a page-switch line in the perf log (A4).
+      - [x] [RACE1] More picture threads: RETROFE_THREADPOOL_SIZE = half the cores (3-8) at start. Racing entry 92 -> 84 ms.
   - [ ] 3. Picture cache with a size limit (LRU + use count, `textureCacheMB`): today it never lets go of anything.
   - [ ] 4b. Load the next / previous 3 items' art when the list moves (cold-cache hitches of 116-359 ms).
   - [ ] 2. Video frames stay on the graphics card (D3D11 memory into SDL), dropping two copies per frame.
