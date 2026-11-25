@@ -95,10 +95,41 @@ if (Test-Path $cc) {
       }
     }
   }
-  if ($moved -and $fix) {
-    if (-not (Test-Path "$cc.am-playlist-keys")) { Copy-Item $cc "$cc.am-playlist-keys" }
-    Set-Content $cc $lines -Encoding ascii; Add-Result 'controls' $checks.controls 'FIXED' 'filters (playlists) moved to Left/Right: the ArcadeMaster list scrolls up/down'
-  } else { Add-Result 'controls' $checks.controls 'OK' 'present' }
+  # Esc must go BACK, never quit: CoinOPS builds ship quit = Escape, so one press closed the whole frontend. Take the
+  # quit key from the cabinet's controls profile (retrofe\controls\controls-<type>.conf: all say quit = Q) and make sure
+  # back has Escape. Only these two keys change; back keeps the build's own keys (Escape is added in front), because a
+  # profile's touch / mouse tokens are unknown to stock CoinOPS RetroFE builds. Other keys (wheel mappings) are untouched.
+  $profDir = Join-Path (Split-Path $PSScriptRoot) 'retrofe\controls'
+  $modeFile = if ($ManifestDir) { Join-Path $ManifestDir 'cabinet-mode.json' } else { '' }
+  $mode = if ($modeFile -and (Test-Path $modeFile)) { (((Get-Content $modeFile -Raw | ConvertFrom-Json).effective) -split '\+')[0] } else { '' }
+  $profName = @{ racing = 'racing-wheel'; simulation = 'racing-wheel'; lightgun = 'lightgun'; touch = 'touch-kiosk' }[$mode]
+  if (-not $profName) { $profName = 'pedestal-4p' }
+  $prof = Join-Path $profDir "controls-$profName.conf"
+  $profQuit = 'Q'
+  if (Test-Path $prof) { $pq = Select-String -Path $prof -Pattern '^\s*quit\s*=\s*(.+)$' | Select-Object -First 1; if ($pq) { $profQuit = $pq.Matches[0].Groups[1].Value.Trim() } }
+  $escFix = @()
+  for ($i = 0; $i -lt $lines.Count; $i++) {
+    if ($lines[$i] -match '^\s*quit\s*=\s*(.*)$') {
+      $qv = $Matches[1]
+      if (@($qv -split ',' | ForEach-Object { $_.Trim() }) -contains 'Escape') { $lines[$i] = "quit = $profQuit"; $escFix += "quit '$($qv.Trim())' -> '$profQuit'" }
+    }
+    elseif ($lines[$i] -match '^\s*back\s*=\s*(.*)$') {
+      $bv = $Matches[1]
+      if (@($bv -split ',' | ForEach-Object { $_.Trim() }) -notcontains 'Escape') {
+        $nb = (@('Escape') + @($bv -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })) -join ', '
+        $lines[$i] = "back = $nb"; $escFix += "back '$($bv.Trim())' -> '$nb'"
+      }
+    }
+  }
+  if (($moved -or $escFix) -and $fix) {
+    if ($moved -and -not (Test-Path "$cc.am-playlist-keys")) { Copy-Item $cc "$cc.am-playlist-keys" }
+    if ($escFix) { Copy-Item $cc "$cc.bak" -Force }
+    Set-Content $cc $lines -Encoding ascii
+    $what = @(); if ($moved) { $what += 'filters (playlists) moved to Left/Right: the ArcadeMaster list scrolls up/down' }
+    if ($escFix) { $what += "Esc goes back instead of quitting ($($escFix -join '; '); profile $profName)" }
+    Add-Result 'controls' $checks.controls 'FIXED' ($what -join '; ')
+  } elseif ($escFix) { Add-Result 'controls' $checks.controls 'WARN' "Esc quits the frontend ($($escFix -join '; '))" }
+  else { Add-Result 'controls' $checks.controls 'OK' 'present; Esc goes back' }
 }
 else {
   $cand = @((Get-ChildItem $lkgRoot -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'controls.conf' }) + @("$cc.bak") | Where-Object { Test-Path $_ } | Select-Object -First 1)
@@ -230,6 +261,20 @@ if (-not (Test-Path (Join-Path $RetroFE "layouts\$lay\images\intro\intro_title.p
 $tools = Join-Path $RetroFE 'collections\Tools'
 # every cabinet needs a way into its settings from the game menu: install the Tools list when a build has none
 if (-not (Test-Path $tools) -and $fix -and (Test-Path (Join-Path $RetroFE 'collections\Main\menu.txt'))) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-CabinetToolsCollection.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools (settings) list installed on the main menu' }
+# button lights: a copied build still points LEDBlinky at the build it was copied from (often the live frontend, which
+# LEDBlinky then writes to). When the build has its own LEDBlinky folder, use it, and point its Settings.ini there too.
+$lbDir = Get-Setting 'LEDBlinkyDirectory'; $ownLb = Join-Path $RetroFE 'LEDBlinky'
+if ($fix -and $lbDir -and (Test-Path (Join-Path $ownLb 'LEDBlinky.exe')) -and ([IO.Path]::GetFullPath($lbDir).TrimEnd('\') -ne [IO.Path]::GetFullPath($ownLb).TrimEnd('\'))) {
+  $oldRoot = Split-Path ([IO.Path]::GetFullPath($lbDir).TrimEnd('\'))
+  Set-Setting 'LEDBlinkyDirectory' $ownLb
+  $ini = Join-Path $ownLb 'Settings.ini'
+  if (Test-Path $ini) {
+    if (-not (Test-Path "$ini.am-ledblinky")) { Copy-Item $ini "$ini.am-ledblinky" }
+    $txt = [IO.File]::ReadAllText($ini, [Text.Encoding]::Default)
+    [IO.File]::WriteAllText($ini, $txt.Replace($oldRoot, $RetroFE.TrimEnd('\')), [Text.Encoding]::Default)
+  }
+  $did += "button lights use this build's own LEDBlinky (was $lbDir)"
+}
 if ((Test-Path (Join-Path $tools 'ARCADEMASTER-TOOLS.txt')) -and -not (Get-ChildItem (Join-Path $tools 'medium_artwork\video') -File -ErrorAction SilentlyContinue) -and $fix) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-ToolsArt.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools art regenerated' }
 if ($did) { Add-Result 'art' $checks.art 'FIXED' ($did -join '; ') } else { Add-Result 'art' $checks.art 'OK' 'present' }
 

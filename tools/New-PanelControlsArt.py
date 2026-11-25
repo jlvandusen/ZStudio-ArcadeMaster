@@ -86,10 +86,11 @@ WHEEL_LABELS = ('GAS', 'BRAKE', 'GEAR +', 'GEAR −', 'VIEW')
 
 
 class Sig:
-    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels', 'emu')
+    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels', 'emu', 'leds')
 
     def __init__(self, players=0, alt=False, stick=None, buttons=0, extras=(), labels=(), emu=''):
         self.emu = emu
+        self.leds = ()      # the game's real button colours (LEDBlinky Colors.ini): (stick, b1, b2 ...) as RGB or None
         ex0 = set(extras)
         # a racer on a stick panel: the stick steers and the pedals land on buttons 1 + 2 (gas, brake), then the
         # game's own buttons (gear up / down, view). Without this a wheel game showed "1 button".
@@ -121,14 +122,54 @@ class Sig:
             k += '-L' + hashlib.sha1('|'.join(self.labels).encode()).hexdigest()[:8]
         if self.emu:
             k += '-E' + hashlib.sha1(self.emu.encode()).hexdigest()[:8]
+        if self.leds:
+            k += '-C' + hashlib.sha1(repr(self.leds).encode()).hexdigest()[:8]
         return k
 
-    def with_emu(self, emu: str) -> 'Sig':
+    def with_emu(self, emu: str, leds=()) -> 'Sig':
         s = Sig.__new__(Sig)
         for a in Sig.__slots__:
             setattr(s, a, getattr(self, a))
         s.emu = emu
+        s.leds = tuple(leds)
         return s
+
+
+# ------------------------------------------------------------------ the panel's real button colours (LEDBlinky)
+# LEDBlinky lights each game's buttons in that game's own colours (Colors.ini, ~1,400 arcade games: 1942 fire = red,
+# bomb = white ...). The card draws the same colours, so what glows on the panel is what the screen shows.
+class LedColors:
+    def __init__(self, root: Path, log):
+        self.games: dict = {}
+        self.rgb: dict = {}
+        lb = read_conf(root / 'settings.conf').get('ledblinkydirectory')
+        d = Path(lb) if lb else root / 'LEDBlinky'
+        if not d.is_absolute():
+            d = root / d
+        if not (d / 'Colors.ini').exists():
+            return
+        for line in (d / 'Color-RGB.ini').read_text(encoding='utf-8', errors='replace').splitlines() if (d / 'Color-RGB.ini').exists() else ():
+            m = re.match(r'^\s*([^;=\[\]]+?)\s*=\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)', line)
+            if m:   # LEDBlinky intensity 0-48 -> 0-255; "Black" (5,5,5) still reads as a dark button on the card
+                self.rgb[m.group(1).strip().lower()] = tuple(min(255, int(int(v) * 255 / 48)) for v in m.groups()[1:])
+        cur = None
+        for line in (d / 'Colors.ini').read_text(encoding='utf-8', errors='replace').splitlines():
+            line = line.strip()
+            if line.startswith('[') and line.endswith(']'):
+                cur = self.games.setdefault(line[1:-1].strip().lower(), {})
+            elif cur is not None and '=' in line:
+                k, v = line.split('=', 1)
+                cur[k.strip().upper()] = v.strip().lower()
+        log(f'button colours: {len(self.games)} games from {d / "Colors.ini"}')
+
+    def of(self, item: str, buttons: int) -> tuple:
+        g = self.games.get(item.lower())
+        if not g:
+            return ()
+        out = [self.rgb.get(g.get('P1_JOYSTICK', ''), None)]
+        for i in range(1, max(buttons, 0) + 1):
+            out.append(self.rgb.get(g.get(f'P1_BUTTON{i}', ''), None))
+        return tuple(out) if any(out) else ()
 
 
 def to_int(v, default=0) -> int:
@@ -388,13 +429,19 @@ def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None)
         cy = y0 + r_ * gapy
         lit = i < sig.buttons
         col = BTN_COLORS[i % len(BTN_COLORS)]
+        led = sig.leds[i + 1] if len(sig.leds) > i + 1 and sig.leds[i + 1] else None
+        if led:                                   # the colour this button really lights up in for this game
+            col = led
+        dark = sum(col) < 140                     # a "black" button: dark cap with a light rim and number
         box = c.r(cx - rad, cy - rad, cx + rad, cy + rad)
         if lit:
             c.d.ellipse(c.r(cx - rad - 5, cy - rad - 5, cx + rad + 5, cy + rad + 5), fill=(0, 0, 0, 255))
-            c.d.ellipse(box, fill=col + (255,))
-            c.g.ellipse(box, fill=col + (255,))
+            c.d.ellipse(box, fill=col + (255,), outline=(TEXT + (255,)) if dark else None, width=3 * S)
+            if not dark:
+                c.g.ellipse(box, fill=col + (255,))
             c.d.ellipse(c.r(cx - rad + 8, cy - rad + 6, cx + rad - 8, cy - 4), fill=(255, 255, 255, 60))
-            c.text((cx, cy + 1), str(i + 1), font('black', 34), BG + (255,), 'mm')
+            light = (col[0] * 299 + col[1] * 587 + col[2] * 114) / 1000 > 150
+            c.text((cx, cy + 1), str(i + 1), font('black', 34), (BG if light else TEXT) + (255,), 'mm')
         else:
             c.d.ellipse(box, fill=CARD2 + (255,), outline=FAINT + (255,), width=3 * S)
         if lit and i < len(labels) and labels[i]:
@@ -544,7 +591,7 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
             c.d.ellipse(c.r(50, 80, 222, 252), fill=CARD + (255,), outline=FAINT + (255,), width=2 * S)
             draw_icon(c, sig.extras[0], 136, 166, GREEN, 54)
         else:
-            draw_stick(c, 136, 166, sig.stick, PLAYER[0])
+            draw_stick(c, 136, 166, sig.stick, (sig.leds[0] if sig.leds and sig.leds[0] else PLAYER[0]))
         draw_buttons(c, 282 if cols > 3 else 300, 108 if rows <= 2 else 80, sig, rows, cols, x_max=528)
     # P3 / P4 have fewer buttons than P1 / P2 on some cabinets
     p34 = min(int(p.get('buttons', 6)) for p in PANEL['players'][2:4]) if len(PANEL['players']) > 2 else 99
@@ -983,6 +1030,7 @@ def main(argv=None):
                 if not k.startswith('_') and isinstance(c, dict):
                     overrides[k.lower()] = sig_from_games_json(c)
     emus = Emulators(root)
+    leds = LedColors(root, log)
     # ---- data: meta.db
     meta, meta_names = {}, {}
     mdb = root / 'meta.db'
@@ -1051,8 +1099,16 @@ def main(argv=None):
         for scol, it in pairs:
             mt = mtype_of(scol).lower()
             k = it.lower()
-            s = overrides.get(f'{scol.lower()}/{k}') or by_item.get((scol.lower(), k)) or by_norm.get(norm(it))
+            ov = overrides.get(f'{scol.lower()}/{k}')
+            s = ov or by_item.get((scol.lower(), k)) or by_norm.get(norm(it))
             src = 'games.json'
+            # MAME games: MAME's own -listxml knows the real players / buttons / controls. games.json only wins with
+            # hand-made detail (an override or named buttons); its generic rows said "1 player, no buttons" for 1942.
+            # (the same for meta.db, which Rebuild Game Menus fills from games.json)
+            if not ov and not (s is not None and s.labels) and mt == 'mame' and k in mame:
+                ms = sig_from_mame(mame[k])
+                if ms is not None and ms.known():
+                    s, src = ms, 'mame'
             if s is None:
                 s = meta.get((mt, k)) or meta.get((scol.lower(), k))
                 src = 'meta.db'
@@ -1067,7 +1123,7 @@ def main(argv=None):
                     ex.append(it)
                 continue
             src_count[src] += 1
-            s = s.with_emu(emus.item(scol, it))
+            s = s.with_emu(emus.item(scol, it), leds.of(it, s.buttons))
             key = s.key()
             sigs.setdefault(key, s)
             lst.append((it, key, scol))
