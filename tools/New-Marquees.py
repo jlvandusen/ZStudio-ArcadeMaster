@@ -1037,7 +1037,7 @@ def main_menu(run: Run, fe, root: Path, man: Path, log) -> dict:
                 if cands:
                     bg = cands[0]
                     break
-            title = re.sub(r'^\d+\s+', '', n).strip()
+            title = re.sub(r'^\d+[a-z]?\s+', '', n).strip()
             img, how = render_placeholder(title, f'Main/{n}', logo, None, bg)
             dst = tdir / f'{n}.png'
             run.write_image(img, dst, 'PNG')

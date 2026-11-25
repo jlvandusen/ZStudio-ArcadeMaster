@@ -35,6 +35,7 @@ $state = @{
 
 $meta = @{
   WheelSetup         = @{ icon = 'setup'; color = 'ff2fa0'; what = 'Turn, press and release each control once. Every game gets a best-practice mapping for this wheel.' }
+  FlightSetup        = @{ icon = 'joystick'; color = '2ec8ff'; what = 'Move the stick, twist it, slide the throttle and press each button once. The flight games get a mapping for this stick.' }
   PanelTest          = @{ icon = 'buttons'; color = 'ff2fa0'; what = 'Press every button, move every stick, spin the dial: each control lights up on screen with its name and the key it sends.' }
   DetectControllers  = @{ icon = 'detect'; color = '2ec8ff'; what = 'See everything plugged in: wheel, pedals, handbrake, pads, guns, trackball, screens.' }
   RepairIds          = @{ icon = 'repair'; color = '2ec8ff'; what = 'Controller moved to another USB port? Re-point every game to the controllers plugged in now.' }
@@ -163,6 +164,18 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
         [AmDraw]::Text($g, 'Not set up yet', $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
       }
     }
+    'FlightSetup' {
+      $pf = Join-Path $PSScriptRoot 'wheelmap\profiles\HOTAS.json'
+      $p = if (Test-Path $pf) { Get-Content $pf -Raw | ConvertFrom-Json }
+      if ($p) {
+        $mapped = @($p.controls.PSObject.Properties | Where-Object { $_.Value.type -and $_.Value.type -ne 'none' }).Count
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 2, 0)
+        [AmDraw]::Text($g, "$mapped controls captured", $val, [AmPal]::Text, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+      } else {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 0, 0)
+        [AmDraw]::Text($g, 'Not set up yet', $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+      }
+    }
   }
 }
 
@@ -170,7 +183,7 @@ $made = 0
 foreach ($bat in Get-ChildItem (Join-Path $col 'roms') -Filter *.bat -File) {
   $m0 = Select-String -Path $bat.FullName -Pattern '-Tool\s+(\w+)' | Select-Object -First 1; if (-not $m0) { continue }
   $tool = $m0.Matches[0].Groups[1].Value; $m = $meta[$tool]; if (-not $m) { continue }
-  $name = $bat.BaseName; $acc = [AmPal]::Hex($m.color); $label = ($name -replace '^\d+\s+', '' -replace '\s+On-Off$', '').ToUpper()
+  $name = $bat.BaseName; $acc = [AmPal]::Hex($m.color); $label = ($name -replace '^\d+[a-z]?\s+', '' -replace '\s+On-Off$', '').ToUpper()
 
   # ---- logo (1000x200): neon label, plus a live switch for toggles
   $bmp = New-Object Drawing.Bitmap 1000, 200; $g = [Drawing.Graphics]::FromImage($bmp); [AmDraw]::Hq($g); $g.Clear([Drawing.Color]::Transparent)

@@ -907,7 +907,7 @@ def write_filters(fe, plan, sigs, dry) -> dict:
 
 
 def friendly_playlist(name: str) -> str:
-    n = re.sub(r'^\d+\s+', '', name).strip()
+    n = re.sub(r'^\d+[a-z]?\s+', '', name).strip()
     return {'all': 'ALL GAMES', 'favorites': 'FAVORITES', 'lastplayed': 'LAST PLAYED'}.get(n.lower(), n.upper())
 
 

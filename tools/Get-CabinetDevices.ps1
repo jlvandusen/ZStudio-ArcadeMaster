@@ -51,6 +51,7 @@ foreach ($b in $blocks) {
 $mice = @([regex]::Matches($text, 'HID#VID_([0-9A-F]{4})&PID_([0-9A-F]{4})') | ForEach-Object { "$($_.Groups[1].Value):$($_.Groups[2].Value)" } | Sort-Object -Unique)
 $xinput = if ($text -match 'XInput pads connected:\s*none') { 0 } else { ([regex]::Matches($text, '(?m)^\s+XInput\s*\d')).Count }
 
+$flightDevs = @($devices | Where-Object { $_.role -eq 'throttle' -or ($_.role -notmatch 'wheel|handbrake|pedals|throttle|gun' -and $_.type -ne 'Driving' -and $_.id -notmatch 'VID_D209' -and $_.name -notmatch '(?i)ultra-?stik|servostik|i-?pac|arcade|xin-?mo|zero delay|dragonrise' -and ($_.role -eq 'stick' -or $_.type -eq 'Flight' -or ($_.type -eq 'Joystick' -and @($_.axes).Count -ge 3) -or ($_.id -match 'VID_(044F|06A3|0738)' -and @($_.axes).Count -ge 2))) })
 $guns = @($mice | ForEach-Object { $id = $_; $vid = $id.Split(':')[0]; $hit = $gunIds.Keys | Where-Object { $id -like "$_*" -or $_ -eq $id } | Select-Object -First 1; if ($hit) { $gunIds[$hit] } })
 $wheel = @($devices | Where-Object { $_.role -eq 'wheel' -or $_.type -eq 'Driving' })
 $allAxes = ($devices | ForEach-Object { $_.axes }) -join '|'
@@ -62,9 +63,14 @@ $cap = [ordered]@{
   handbrake    = @($devices | Where-Object { $_.role -eq 'handbrake' }).Count -gt 0
   shifterPaddles = $wheel.Count -gt 0                                                   # every supported wheel has paddles/sequential buttons
   hShifter     = $null                                                                  # G29 shifter shares the wheel's USB id: confirm with WheelMap -Capture
-  # Ultimarc (VID D209: UltraStik, ServoStik, encoders) and other arcade-panel sticks are NOT flight sticks
-  flightStick  = @($devices | Where-Object { $_.type -match 'Flight|Joystick' -and $_.role -notmatch 'wheel|handbrake' -and $_.id -notmatch 'VID_D209' -and $_.name -notmatch '(?i)ultra-?stik|servostik|i-?pac|arcade|xin-?mo|zero delay|dragonrise' }).Count -gt 0
-  gamepads     = $xinput + @($devices | Where-Object { $_.type -eq 'Gamepad' }).Count
+  # A flight stick: named as one (role 'stick' from WheelMap: HOTAS, T.Flight, X52/X56, Extreme 3D ...), or a DirectInput
+  # Flight device, a Joystick with 3+ axes (a 2-axis "USB Joystick" is an arcade-panel encoder), or any 2+ axis non-wheel device from a flight-only maker (Thrustmaster 044F, Saitek/Logitech
+  # flight 06A3, Mad Catz X56 0738) - PlayStation HOTAS sets can report as a joystick with no telling type.
+  # Ultimarc (VID D209: UltraStik, ServoStik, encoders) and other arcade-panel sticks are NOT flight sticks.
+  flightStick  = @($flightDevs | Where-Object { $_.role -ne 'throttle' }).Count -gt 0
+  # a separate throttle (HOTAS throttle half, TWCS, throttle quadrant): flight controls, but not a stick on its own
+  throttle     = @($devices | Where-Object { $_.role -eq 'throttle' }).Count -gt 0
+  gamepads     = $xinput + @($devices | Where-Object { $_.type -eq 'Gamepad' -and $flightDevs -notcontains $_ }).Count
   lightguns    = $guns.Count
   lightgunModels = $guns
   trackball    = @($mice | Where-Object { $trackballVids.ContainsKey($_.Split(':')[0]) }).Count -gt 0
@@ -128,11 +134,12 @@ foreach ($k in 'wiimotes', 'wiiUPro', 'joycons', 'switchPro') { for ($n = 0; $n 
     id = 'VID_057E'; type = 'Nintendo'; role = @{ wiimotes = 'wiimote'; wiiUPro = 'gamepad'; joycons = 'gamepad'; switchPro = 'gamepad' }[$k]; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) } }
 if ($nintendo.gcAdapter) { $devices.Add([ordered]@{ joy = 0; name = 'GameCube controller adapter'; id = 'VID_057E&PID_0337'; type = 'Nintendo'; role = 'gcadapter'; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) }
 $cap['gamepads'] = [int]$cap.gamepads + [int]$nintendo.wiiUPro + [int]$nintendo.switchPro + [Math]::Floor([int]$nintendo.joycons / 2)
-$sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' }).Count   # incl. UltraStiks (panel sticks)
+$sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' -and $flightDevs -notcontains $_ }).Count   # incl. UltraStiks (panel sticks), not flight sticks
 # each I-PAC board serves 2 players (an I-PAC 4 / two I-PAC 2s = 4-player pedestal)
 $cap['players'] = if ($Players -gt 0) { $Players } elseif ($cap.encoders -ge 2) { [Math]::Max(4, 2 * $cap.encoders) } else { [Math]::Max(1, [Math]::Max($sticks + $cap.gamepads, [Math]::Max($cap.lightguns, $(if ($cap.controlPanel) { 2 } else { 1 })))) }
+# flight only with real flight controls (a stick): a wheel does not fly
 $cap['modes'] = if ($Modes) { $Modes } else {
-  @(if ($cap.wheel) { 'racing' }; if ($cap.flightStick -or $cap.wheel) { 'flight' }; if ($cap.lightguns -gt 0) { 'lightgun' }; if ($cap.controlPanel -or $sticks -gt 0 -or $cap.gamepads -gt 0) { 'standup' })
+  @(if ($cap.wheel) { 'racing' }; if ($cap.flightStick) { 'flight' }; if ($cap.lightguns -gt 0) { 'lightgun' }; if ($cap.controlPanel -or $sticks -gt 0 -or $cap.gamepads -gt 0) { 'standup' })
 }
 
 # device-ID history: DirectInput instance GUIDs change when a device moves USB port / Windows re-enumerates.
@@ -152,6 +159,12 @@ foreach ($d in $devices) {
 New-Item -ItemType Directory -Force (Split-Path $History) | Out-Null
 [pscustomobject]@{ devices = $hlist } | ConvertTo-Json -Depth 5 | Set-Content $History -Encoding UTF8
 
+# every mode this cabinet has ever had controls for (kept across scans): the menu builder builds those collections, and
+# the boot (Set-CabinetMode) shows or hides each one by what is plugged in NOW - so a flight stick plugged in later
+# brings Flight back without a rebuild. Modes from before this list existed: the wheel used to add 'flight' by itself,
+# so an old cabinet.json's list is not trusted for flight.
+$prevSeen = @(); if (Test-Path $Out) { try { $pc = (Get-Content $Out -Raw | ConvertFrom-Json).capabilities; if ($pc.modesSeen) { $prevSeen = @($pc.modesSeen) } } catch { } }
+$cap['modesSeen'] = @(@($prevSeen) + @($cap.modes) | Where-Object { $_ } | Select-Object -Unique)
 New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 [ordered]@{ machine = $env:COMPUTERNAME; detected = (Get-Date).ToString('s'); capabilities = $cap; devices = $devices; rawMice = $mice } |
   ConvertTo-Json -Depth 6 | Set-Content $Out -Encoding UTF8

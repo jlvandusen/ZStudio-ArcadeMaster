@@ -88,6 +88,10 @@ function Get-WMRoleGuess($d) {
     if ($n -match 'handbrake|hand brake|e-brake') { return 'handbrake' }
     if ($n -match 'shifter') { return 'shifter' }
     if ($n -match 'pedal') { return 'pedals' }
+    # flight controls by name: a HOTAS's throttle is often its own USB device, and PlayStation HOTAS sets can report as
+    # a gamepad or plain joystick - the name is the only reliable clue
+    if ($n -match 'throttle|twcs|quadrant') { return 'throttle' }
+    if ($n -match 'hotas|flight ?stick|flight control|t\.?flight|t\.?16000|warthog|x-?5[256]|extreme 3d|yoke|flight') { return 'stick' }
     switch ($d.TypeName) {
         'Driving'      { return 'wheel' }
         'Flight'       { return 'stick' }
