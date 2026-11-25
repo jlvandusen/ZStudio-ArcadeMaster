@@ -1,0 +1,43 @@
+{
+  "_comment": "Per-game MAME input mappings for ARCADE-PEDESTAL's special-control games, applied by tools/Set-MameControls.ps1 into <frontend>/emulators/mame/cfg/<game>.cfg. Port tag / mask / defvalue come from MAME 0.196 itself (headless -autoboot_script dump, 2026-11-25). Every input is an OR of all the ways this panel can send it, so a game works whichever device the flight sticks turn out to be: the 8-way stick keys (P1 arrows, P2 R/F/D/G), the joysticks Windows sees (JOYCODE_1 / JOYCODE_2), and the flight-stick buttons' I-PAC keys from LEDBlinky (P1 F1/F2/F3, P2 F4/F11/F12).",
+  "_seq": {
+    "L_UP": "KEYCODE_UP OR JOYCODE_1_YAXIS_UP_SWITCH", "L_DOWN": "KEYCODE_DOWN OR JOYCODE_1_YAXIS_DOWN_SWITCH",
+    "L_LEFT": "KEYCODE_LEFT OR JOYCODE_1_XAXIS_LEFT_SWITCH", "L_RIGHT": "KEYCODE_RIGHT OR JOYCODE_1_XAXIS_RIGHT_SWITCH",
+    "R_UP": "KEYCODE_R OR JOYCODE_2_YAXIS_UP_SWITCH", "R_DOWN": "KEYCODE_F OR JOYCODE_2_YAXIS_DOWN_SWITCH",
+    "R_LEFT": "KEYCODE_D OR JOYCODE_2_XAXIS_LEFT_SWITCH", "R_RIGHT": "KEYCODE_G OR JOYCODE_2_XAXIS_RIGHT_SWITCH",
+    "L_TRIGGER": "KEYCODE_LCONTROL OR KEYCODE_F1 OR JOYCODE_1_BUTTON1", "L_THUMB": "KEYCODE_LALT OR KEYCODE_F2 OR JOYCODE_1_BUTTON2",
+    "R_TRIGGER": "KEYCODE_A OR KEYCODE_F4 OR JOYCODE_2_BUTTON1", "R_THUMB": "KEYCODE_S OR KEYCODE_F11 OR JOYCODE_2_BUTTON2",
+    "ANY_TRIGGER": "KEYCODE_LCONTROL OR KEYCODE_F1 OR JOYCODE_1_BUTTON1 OR KEYCODE_A OR KEYCODE_F4 OR JOYCODE_2_BUTTON1"
+  },
+  "assault": { "about": "tank treads: left stick = left tread, right stick = right tread (4-way: sideways is a quick roll), either trigger fires",
+    "ports": [
+      { "tag": ":MCUB",   "type": "P1_JOYSTICKLEFT_UP",     "mask": 32,  "defvalue": 32,  "seq": "L_UP" },
+      { "tag": ":MCUB",   "type": "P1_JOYSTICKLEFT_DOWN",   "mask": 8,   "defvalue": 8,   "seq": "L_DOWN" },
+      { "tag": ":MCUB",   "type": "P1_JOYSTICKLEFT_LEFT",   "mask": 2,   "defvalue": 2,   "seq": "L_LEFT" },
+      { "tag": ":MCUH",   "type": "P1_JOYSTICKLEFT_RIGHT",  "mask": 128, "defvalue": 128, "seq": "L_RIGHT" },
+      { "tag": ":MCUH",   "type": "P1_JOYSTICKRIGHT_UP",    "mask": 8,   "defvalue": 8,   "seq": "R_UP" },
+      { "tag": ":MCUH",   "type": "P1_JOYSTICKRIGHT_DOWN",  "mask": 2,   "defvalue": 2,   "seq": "R_DOWN" },
+      { "tag": ":MCUDI0", "type": "P1_JOYSTICKRIGHT_LEFT",  "mask": 8,   "defvalue": 8,   "seq": "R_LEFT" },
+      { "tag": ":MCUDI0", "type": "P1_JOYSTICKRIGHT_RIGHT", "mask": 2,   "defvalue": 2,   "seq": "R_RIGHT" },
+      { "tag": ":MCUH",   "type": "P1_BUTTON1",             "mask": 32,  "defvalue": 32,  "seq": "ANY_TRIGGER" }
+    ] },
+  "bzone": { "about": "tank treads on 2-way vertical sticks, either trigger fires",
+    "ports": [
+      { "tag": ":IN3", "type": "P1_JOYSTICKLEFT_UP",    "mask": 8,  "defvalue": 0, "seq": "L_UP" },
+      { "tag": ":IN3", "type": "P1_JOYSTICKLEFT_DOWN",  "mask": 4,  "defvalue": 0, "seq": "L_DOWN" },
+      { "tag": ":IN3", "type": "P1_JOYSTICKRIGHT_UP",   "mask": 2,  "defvalue": 0, "seq": "R_UP" },
+      { "tag": ":IN3", "type": "P1_JOYSTICKRIGHT_DOWN", "mask": 1,  "defvalue": 0, "seq": "R_DOWN" },
+      { "tag": ":IN3", "type": "P1_BUTTON1",            "mask": 16, "defvalue": 0, "seq": "ANY_TRIGGER" }
+    ] },
+  "vindictr": { "about": "tank treads; left trigger = special, left thumb = turret left, right trigger = fire, right thumb = turret right",
+    "ports": [
+      { "tag": ":260000", "type": "P1_JOYSTICKLEFT_UP",    "mask": 4096,  "defvalue": 4096,  "seq": "L_UP" },
+      { "tag": ":260000", "type": "P1_JOYSTICKLEFT_DOWN",  "mask": 16384, "defvalue": 16384, "seq": "L_DOWN" },
+      { "tag": ":260000", "type": "P1_JOYSTICKRIGHT_UP",   "mask": 8192,  "defvalue": 8192,  "seq": "R_UP" },
+      { "tag": ":260000", "type": "P1_JOYSTICKRIGHT_DOWN", "mask": 32768, "defvalue": 32768, "seq": "R_DOWN" },
+      { "tag": ":260000", "type": "P1_BUTTON1",            "mask": 256,   "defvalue": 256,   "seq": "L_TRIGGER" },
+      { "tag": ":260000", "type": "P1_BUTTON2",            "mask": 1024,  "defvalue": 1024,  "seq": "L_THUMB" },
+      { "tag": ":260000", "type": "P1_BUTTON3",            "mask": 512,   "defvalue": 512,   "seq": "R_TRIGGER" },
+      { "tag": ":260000", "type": "P1_BUTTON4",            "mask": 2048,  "defvalue": 2048,  "seq": "R_THUMB" }
+    ] }
+}
