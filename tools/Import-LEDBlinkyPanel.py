@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -220,7 +221,18 @@ def main(argv=None):
         except ValueError:
             cur = {}
     drives = learned.pop('_drives', [])
-    out = {k: v for k, v in cur.items() if k not in learned and k != '_learned'}   # keep hand-made keys (twinStick ...)
+    # the panel as described for this machine (tools/panels/<COMPUTERNAME>.json) is the base: devices LEDBlinky does
+    # not light (the dial, the twin-stick roles) survive the first learn and every re-run
+    hp = Path(__file__).resolve().parent / 'panels' / f"{os.environ.get('COMPUTERNAME', '')}.json"
+    base = {}
+    if hp.exists():
+        try:
+            base = {k: v for k, v in json.loads(hp.read_text(encoding='utf-8-sig')).items() if not k.startswith('_')}
+        except ValueError:
+            base = {}
+    cur = {**base, **cur}
+    # keep hand-made keys (twinStick ...) and anything LEDBlinky knows nothing about (learned value None)
+    out = {k: v for k, v in cur.items() if k != '_learned' and (k not in learned or learned[k] is None)}
     for k, v in learned.items():
         if v is None:
             continue

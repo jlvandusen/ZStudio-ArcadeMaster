@@ -1114,8 +1114,10 @@ def build(theme: Theme, root: Path):
 
 def guard(p: Path):
     r = p.resolve()
-    if r.drive.upper() == 'E:':
-        sys.exit(f'refusing to write on E: (the live cabinet): {r}')
+    sys.path.insert(0, str(Path(__file__).resolve().parent / 'lib'))
+    from am_guard import is_protected      # the live frontend: ProtectedPaths in the config, else E:
+    if is_protected(r):
+        sys.exit(f'refusing to write inside the live frontend (ProtectedPaths, default E:): {r}')
 
 
 def install(theme: Theme, root: Path, retrofe: Path, manifest: Path, samples: Samples | None):

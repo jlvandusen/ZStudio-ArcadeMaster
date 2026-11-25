@@ -49,7 +49,8 @@ FFMPEG_FALLBACK = (r'C:\Users\vdfgamer\AppData\Local\Microsoft\WinGet\Packages'
                    r'\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.1-full_build\bin')
 VIDEO_EXTS = ['.mp4', '.mkv', '.webm', '.flv', '.avi', '.mov', '.m4v', '.wmv', '.mpg', '.mpeg']
 SKIP_NAMES = {'main', 'tools'}
-FORBIDDEN_DRIVES = {'E:'}
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'lib'))
+from am_guard import is_protected  # noqa: E402  (the live frontend: ProtectedPaths in the config, else E:)
 
 MAX_W, MAX_H, MAX_FPS, MAX_SECONDS = 1280, 720, 30.0, 60
 COPY_MAX_BPS = 4_000_000
@@ -68,7 +69,7 @@ def is_reparse(p: str) -> bool:
 
 
 def on_forbidden_drive(p: str) -> bool:
-    return os.path.splitdrive(os.path.realpath(p))[0].upper() in FORBIDDEN_DRIVES
+    return is_protected(p, MANIFEST_DIR)
 
 
 class Unsafe(Exception):

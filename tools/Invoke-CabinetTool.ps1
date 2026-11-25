@@ -260,6 +260,12 @@ switch ($Tool) {
     $reg = Join-Path $ManifestDir 'themes.json'
     $list = @(); if (Test-Path $reg) { $list = @((Get-Content $reg -Raw | ConvertFrom-Json).themes | ForEach-Object { $_ }) }
     $list = @($list | Where-Object { Test-Path (Join-Path $RetroFE "layouts\$($_.name)\layout.xml") })
+    # a layout's own theme.json (New-ArcadeThemes.py writes one) gives the picker a real name ("Tile Wall"), a line about it and a preview
+    $tmeta = @{}
+    foreach ($th in $list) { $tj = Join-Path $RetroFE "layouts\$($th.name)\theme.json"; if (Test-Path $tj) { try { $tmeta[$th.name] = Get-Content $tj -Raw | ConvertFrom-Json } catch { } } }
+    $tLabel = { param($n) if ($tmeta[$n] -and $tmeta[$n].label) { [string]$tmeta[$n].label } elseif ($n -like 'CO-*') { (($n -replace '^CO-', '') -replace '-\+-', ' + ' -replace '-', ' ') + ' (imported)' } else { $n } }
+    $tAbout = { param($n) if ($tmeta[$n] -and $tmeta[$n].about) { " - $($tmeta[$n].about)" } else { '' } }
+    $tPreview = { param($th) if ($th.preview) { $th.preview } else { $p = Join-Path $RetroFE "layouts\$($th.name)\preview.png"; if (Test-Path $p) { $p } else { $null } } }
     $cur = Get-Setting 'layout'; $mode = $null; $mf = Join-Path $ManifestDir 'cabinet-mode.json'; if (Test-Path $mf) { $mode = ((Get-Content $mf -Raw | ConvertFrom-Json).effective -split '\+')[0] }
     Banner "THEMES - now: $cur$(if ($mode) { " (cabinet mode: $mode)" })"
     # ArcadeMaster styles (New-ThemeSkins) for this mode's family: same layout, different dials / wheel / colours - as fast
@@ -277,10 +283,10 @@ switch ($Tool) {
       }
       $skinOpts += @{ id = 'skin:random'; label = 'Surprise me'; sub = $(if ($skinNow -eq 'random') { 'IN USE - a different style every start' } else { "a different $fam style every start" }); preview = $null; icons = @(); color = $(if ($skinNow -eq 'random') { '3ddc84' } else { 'ffb000' }); color2 = '2ec8ff' }
     }
-    if (-not $Choice -and (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not ($list -or $skinOpts))) { $skinOpts | ForEach-Object { Write-Host ("  {0,-24} {1}" -f $_.id, $_.label) }; $list | ForEach-Object { Write-Host ("  {0,-24} coverage {1}%" -f $_.name, $_.score) }; break }
+    if (-not $Choice -and (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not ($list -or $skinOpts))) { $skinOpts | ForEach-Object { Write-Host ("  {0,-24} {1}" -f $_.id, $_.label) }; $list | ForEach-Object { Write-Host ("  {0,-24} {1,-22} coverage {2}%" -f $_.name, (& $tLabel $_.name), $_.score) }; break }
     $chosen = $null
     if ($Choice) { $chosen = $Choice } else {
-    $opts = @($skinOpts) + @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
+    $opts = @($skinOpts) + @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = (& $tLabel $_.name); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%$(& $tAbout $_.name)" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })$(& $tAbout $_.name)" }); preview = (& $tPreview $_); icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
     Emit @{ type = 'choice'; title = "PICK A THEME$(if ($mode) { " FOR $($mode.ToUpper()) MODE" })"; prompt = 'After the restart press START or button 1 within 15 s to keep it'; options = $opts; selected = 0 }
     $deadline = (Get-Date).AddSeconds(180)
     while ((Get-Date) -lt $deadline) { if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) { $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue; if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break } }; Start-Sleep -Milliseconds 100 }

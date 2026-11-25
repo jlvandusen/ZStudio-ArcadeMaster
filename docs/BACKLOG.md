@@ -21,12 +21,24 @@ The loop works like this (James, 2026-11-25):
 ## 2. Game mechanics and controls
 - [ ] Learn buttons on cabinets where LEDBlinky only drives the marquee. Read the I-PAC/Ultimarc config if there
       is one, otherwise add a "press each button" capture tool in Tools that writes `panel.json`.
-- [ ] Map the dial's 2 buttons, which are missing from the LEDBlinky input map. Let `panel-controls-overrides.json`
-      add devices.
-- [ ] Key clashes found by the importer (LFLIPPER/P1B4 = LSHIFT, SETUP/TEST = TAB): report them in System Health
-      and suggest a fix.
-- [ ] Cards: check that the 20 most-played games show the right button names and LEDBlinky colours, and fix the
-      overrides where they don't.
+- [x] The dial's 2 buttons: the importer now starts from `tools/panels/<host>.json`. A device LEDBlinky doesn't
+      light (the dial, the twin-stick roles) is kept and no longer wiped. (2026-11-25)
+- [ ] The dial's keys: find what the 2 dial buttons send (button capture), then add them to `panels/ARCADE-PEDESTAL.json`.
+- [x] Key clashes found by the importer (LFLIPPER/P1B4 = LSHIFT, SETUP/TEST = TAB) show in System Health, with
+      the fix. (2026-11-25)
+- [x] TeknoParrot profiles: the health check repairs paths from where the catalog found the game, and a generic
+      folder (`Game\RingGame.exe`) no longer counts as the same game. XML-escaped paths (`Let&apos;s`) no longer look
+      broken. 2,563 → 2,580 of 2,601 games can start. (2026-11-25)
+- [ ] The 16 games still "moved": profiles want a different release than the copy found (GGXrd Revelator vs SIGN).
+      Look for the right copy in the other builds, or point the profile at the release we have when TeknoParrot has
+      a profile for it.
+- [x] Cards: checked 20 classics (no play history on the cabinet). Three changes (2026-11-25):
+      - controls.dat's real cabinet now beats MAME's list of every input (Centipede: rollerball game, not a stick;
+        2 players taking turns; MK: 5 buttons).
+      - Neo Geo names (Metal Slug, KOF 94–2002) come from `*/item` overrides.
+      - Long labels shrink, then hyphenate, then abbreviate, before being cut short.
+- [ ] Neo Geo and other games missing from controls.dat: add names for the most popular (Samurai Shodown, Fatal
+      Fury, Garou, Blazing Star, Puzzle Bobble).
 - [ ] Per-game "special controls" hints (trackball, spinner, dial, twin-stick): show them on more games, using
       MAME's `-listxml` control types.
 
@@ -41,7 +53,7 @@ The loop works like this (James, 2026-11-25):
       launcher repoint).
 
 ## 4. Graphics
-- [ ] Theme picker shows the label ("Tile Wall"), not the folder name.
+- [x] Theme picker shows the label ("Tile Wall"), not the folder name. (2026-11-25)
 - [ ] Polish the five AM themes: spacing, text fitting long names, and a check at 1080p and 4K.
 - [ ] Marquees: replace placeholders with real art wherever any build has it, and improve the placeholder design.
 - [ ] Low-resolution backdrops: find them, then upscale them or pick a better still from the video.
@@ -54,8 +66,8 @@ The loop works like this (James, 2026-11-25):
 - [ ] Stories for merged-list (.sub) items and TeknoParrot and light-gun games.
 
 ## 6. Tooling
-- [ ] The E: refusal in the preview and marquee tools should come from the cabinet's live-frontend setting, not a
-      hard-coded drive.
+- [x] The E: refusal in the preview, marquee and theme tools comes from `tools/lib/am_guard.py`. It reads
+      `AM_PROTECTED`, else `ProtectedPaths` in ArcadeMaster.config.json, else the whole E: drive. (2026-11-25)
 - [ ] Self-test: add checks for the new tools (marquees, themes, library mover dry run).
 
 ## 7. Racing and flight cabinet (DESKTOP-RACE1 takes these first)
