@@ -17,7 +17,7 @@
   <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
   <!-- the game's own backdrop: a blurred, darkened frame of its video (tools/New-PreviewMedia.py -> am_backdrop),
        so games without fanart (most of MAME) still get their own mood; real fanart draws over it -->
-  <reloadableImage type="am_backdrop" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+  <reloadableImage type="am_backdrop" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".5"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
@@ -27,7 +27,7 @@
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
   </reloadableImage>
   <!-- fanart: fades out while scrolling, fades in on the new game and drifts slowly (Ken Burns) -->
-  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+  <reloadableImage type="fanart" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".45"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="width" from="1920" to="1932"/><animate type="height" from="1080" to="1087"/></set>
