@@ -107,6 +107,24 @@ if ($hasFfb -or (IsYes (Conf 'ffb'))) {
   $S.ffb = @{ group = 'MENUS'; label = 'FORCE FEEDBACK IN MENUS'; detail = 'Centre spring, detent ticks and a thunk on select - released when a game starts'; kind = 'switch'
     get = { IsYes (Conf 'ffb') }
     set = { param($on) SetConf 'ffb' $(if ($on) { 'yes' } else { 'no' }); if ($on -and -not (Conf 'ffbDevice')) { SetConf 'ffbDevice' 'G29'; 'ffbDevice = G29' } else { '' } } }
+  # bass shakers from the game sound (tools\tactile\Set-ShakerAudio.ps1, state in manifest\tactile.json)
+  $tj = Join-Path $ManifestDir 'tactile.json'
+  $sa = Join-Path $t 'tactile\Set-ShakerAudio.ps1'
+  $S.shakers = @{ group = 'MENUS'; label = 'BASS SHAKERS'; detail = 'Game sound to the shaker amp as well as the speakers (needs the shakers'' USB sound card)'; kind = 'switch'
+    get = { (Test-Path $tj) -and [bool]((Get-Content $tj -Raw | ConvertFrom-Json).on) }
+    set = { param($on)
+      $st = if (Test-Path $tj) { Get-Content $tj -Raw | ConvertFrom-Json } else { $null }
+      $str = if ($st -and $st.strength) { [int]$st.strength } else { 70 }
+      $o = if ($on) { & powershell -NoProfile -ExecutionPolicy Bypass -File $sa -Apply -Strength $str -ManifestDir $ManifestDir 2>&1 } else { & powershell -NoProfile -ExecutionPolicy Bypass -File $sa -Off -ManifestDir $ManifestDir 2>&1 }
+      (($o | Select-Object -Last 1) -replace '^.*?:\s*', '') } }
+  $S.shakerStrength = @{ group = 'MENUS'; label = 'BASS SHAKER STRENGTH'; detail = 'How hard the shakers kick (shaker amp gain set in VoiceMeeter)'; kind = 'cycle'; presets = @(100, 70, 50, 30); default = 70
+    get = { if (Test-Path $tj) { $s = Get-Content $tj -Raw | ConvertFrom-Json; if ($s.strength) { [int]$s.strength } else { 70 } } else { 70 } }
+    show = { param($v) "$v %" }
+    set = { param($v)
+      $st = if (Test-Path $tj) { Get-Content $tj -Raw | ConvertFrom-Json } else { [pscustomobject]@{ on = $false } }
+      $st | Add-Member -Force -NotePropertyName strength -NotePropertyValue ([int]$v)
+      if ($st.on) { $o = & powershell -NoProfile -ExecutionPolicy Bypass -File $sa -Apply -Strength ([int]$v) -ManifestDir $ManifestDir 2>&1; (($o | Select-Object -Last 1) -replace '^.*?:\s*', '') }
+      else { New-Item -ItemType Directory -Force $ManifestDir | Out-Null; $st | ConvertTo-Json | Set-Content $tj -Encoding utf8; "kept for when the shakers are switched on" } } }
 }
 $S.perfLog = @{ group = 'MENUS'; label = 'PERFORMANCE LOG'; detail = 'Frame times, p99 and hitches written to log.txt every 10 s'; kind = 'switch'; default = $false
   get = { [int]("0" + (Conf 'perfLog')) -gt 0 }

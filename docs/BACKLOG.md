@@ -322,7 +322,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [x] [RACE1] Health: 'Game preview videos' - per menu, games with a preview (RACE1: Racing 92/103, Flight 1/3); WARN when a
       menu has none at all. It found Flight 0/3: After Burner Climax now plays its own attract movie (.sfd, silent - ffmpeg can't
       read its ADX audio; New-GameClips retries without sound). MachStorm and Star Wars Battle Pod pack their movies in archives.
-- [ ] Tools: bass-shaker strength in the menu (Cabinet Settings or a Tools item), using ToggleTactile -Choice strength:NN.
+- [x] [RACE1] Tools: bass-shaker strength in the menu - Cabinet Settings > MENUS: BASS SHAKERS (on / off) and BASS SHAKER
+      STRENGTH (100 / 70 / 50 / 30 %, kept in tactile.json, applied at once when the shakers are on).
 - [ ] Self-test: fails 8 of 9 now and then, only right after heavy work (video encoding, menu rebuilds; twice on 2026-11-25),
       never when idle (8 of 8 runs). Probably a timing-based watchdog check under load. Capture the FAIL lines next time
       (RACE1's merge step now stops and keeps them) and give that check more time.
