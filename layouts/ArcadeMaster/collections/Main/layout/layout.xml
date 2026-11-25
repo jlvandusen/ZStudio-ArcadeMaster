@@ -5,9 +5,11 @@
 -->
 <layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
 
+  <!--am-ui:menuSounds-->
   <sound type="select"    src="../../../sounds/select.wav"/>
   <sound type="highlight" src="../../../sounds/highlight.wav"/>
   <sound type="load"      src="../../../sounds/load.wav"/>
+  <!--/am-ui:menuSounds-->
 
   <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
   <!-- BACKDROP: random fanart of the games in the HIGHLIGHTED collection (am_bg1..6, mode="layout", reshuffled every boot by Set-LayoutThemes -Shuffle); 20 s each, cross-fade + Ken Burns; restarts on highlight change -->

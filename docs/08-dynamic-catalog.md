@@ -134,6 +134,9 @@ DirectInput instance GUIDs change when a device moves USB port or Windows re-enu
 | Rebuild Game Menus | devices → catalog → controls → collections → backdrops | an animated checklist, then Racing / Flight / Arcade / Lightgun game counts |
 | Force Feedback, Second Screen, Performance Log | toggle `ffb` / `numScreens` / `perfLog` | a large animated ON/OFF switch (Second Screen also draws the connected displays) |
 | Shuffle Backgrounds | `Set-LayoutThemes.ps1 -Shuffle -BackgroundsOnly` | the new main-menu backdrops as thumbnails |
+| Cabinet Settings | `Set-CabinetSettings.ps1` + `Set-CabinetSystem.ps1` | every cabinet setting, grouped, with its value (see below) |
+| Themes | `Invoke-CabinetTool -Tool Themes` | the theme picker; the new theme must be confirmed after the restart (docs/10) |
+| Reset Theme | `Reset-Theme.ps1` | ArcadeMaster layout, original style, per-mode themes removed |
 
 How it fits together:
 
@@ -180,7 +183,49 @@ cabinetTagline = ...      # optional custom tagline
   - otherwise: 3+ players → pedestal, trackball → multicade, else stand-up
 - **Rendering:** `tools/New-CabinetIntro.ps1` draws `images/intro/*.png`. Definitions live in `tools/lib/CabinetTypes.ps1`. `Start-ArcadeMaster.ps1` re-renders it every boot.
 - **Tools → Cabinet Type** is a visual picker. Turn the wheel or a joystick (or use the hat or arrow keys) to move, press a button or Enter to confirm, or tap a card. It saves `cabinetType`, re-renders the intro and plays a preview of the new title card.
-## System settings (Tools → System Settings)
+## Cabinet settings (Tools → Cabinet Settings, 2026-11-24)
+
+One list with every setting of the cabinet, grouped, each with its current value. Tool id stays `SystemSettings`. On/off settings flip with one press. Settings with a value step to the next preset on every press. Windows switches and **Restore defaults** need a second press to confirm.
+
+| Group | Setting | Stored in | Presses |
+|---|---|---|---|
+| CABINET | Cabinet type | `settings.conf cabinetType` | auto → racing → flight → … → standup+lightgun |
+| | Mode in use | `manifest\cabinet-mode.json` (shown only, decided at each start) | — |
+| | Follow the hardware | `cabinetFollowHardware` | on / off |
+| | Show every mode | `cabinetShowAllModes` | on / off |
+| SCREEN AND SOUND | Second screen | `numScreens` (through `Set-RetroFEScreens.ps1`) | on / off |
+| | Preview videos | `videoEnable` | on / off |
+| | Video volume | `manifest\ui.json videoVolume` → `volume=` on the game list's `am_video` | 100 / 50 / 25 / muted |
+| | Menu sounds | `ui.json menuSounds` → the `<sound>` lines of the layout, Main and Tools | on / off |
+| MENUS | Game story panel | `ui.json story` | on / off |
+| | Special-control reminders | `ui.json controlHints` | on / off |
+| | Attract mode | `attractModeTime` | off / 20 / 60 / 120 s |
+| | Attract mode next game | `attractModeNextTime` | 10 / 20 / 60 / 120 s |
+| | Force feedback in menus | `ffb` (only listed with an FFB wheel) | on / off |
+| | Performance log | `perfLog` | on (10) / off (0) |
+| LIGHTS AND DECK | Button lights (LEDBlinky) | `LEDBlinkyDirectory`: off comments the line out, so the path stays in the file | on / off |
+| | Lights off when the arcade closes | `LEDBlinkyCloseOnExit` | on / off |
+| | Stream Deck | `ui.json streamDeck`: off stops the helper and `Start-ArcadeMaster` no longer starts it | on / off |
+| | Stream Deck idle dim | `tools\streamdeck\deck.json idleDimMinutes` | never / 5 / 10 / 30 min |
+| RESET | Restore defaults | attract 20 s / next game 20 s, videos, sounds, story, reminders, deck on, video 100 %, type auto, follow hardware on, show every mode off, perf log off, lights-off-on-exit off, idle dim 10 min. Screens, button lights and FFB depend on the hardware and stay as they are. | press twice |
+| WINDOWS | the switches below | `Set-CabinetSystem.ps1` | press twice |
+
+- **Scripts:** `tools/Set-CabinetSettings.ps1 -List` (JSON: id, group, label, detail, kind, value, on), `-Set id=toggle|next|<value>[,...]`, `-Defaults`. `-NoProcess` never starts or stops the Stream Deck helper. Windows switches stay in `Set-CabinetSystem.ps1`; the tool merges both lists and sends each change to the script that owns it.
+- **Safe writes** (`tools/lib/AmSettings.ps1`): each file is backed up once next to itself (`settings.conf.am-bak`, `deck.json.am-bak`, `ui.json.am-bak`, `layout.xml.am-bak`). The first copy is never overwritten. Only the one key's line changes, and the file's encoding and line endings stay as they were. A write that changes nothing is skipped.
+- **Page protocol:** still `TOGGLE:<id>` in `AM_WIZ_KEYFILE`. For a value setting it means "next preset". `TOGGLE:<id>=<value>` sets a value directly. The `settings` event's items may carry `group`, `kind` (`switch` / `cycle` / `info` / `action`), `value` and `confirm`. Without them a row draws as before: a switch that needs a second press. The page scrolls, with group headers and a scroll bar.
+- After the page closes, RetroFE restarts (the Tools launcher has `reboot = yes`), so `settings.conf` changes apply right away.
+
+### Layout options (manifest\ui.json → tools/Set-LayoutUi.ps1)
+
+RetroFE has no runtime flags, and no `settings.conf` key for menu sounds or video volume. `volume` is only a layout attribute. So the layout itself changes, and the change is kept as small and reversible as possible:
+
+- The repo layouts mark each optional part with comment markers, `<!--am-ui:story-->` … `<!--/am-ui:story-->` (also `controlHints` and `menuSounds`). Switching a part off wraps what is between the markers in one more comment (`<!--am-ui-off … am-ui-off-->`). Switching it on unwraps it. Nothing else in the file changes, the result is checked to be valid XML before it is written, and running it again changes nothing.
+- A frontend copy made before the markers existed gets them added around the **same elements**, matched by exact text against the repo copy. A layout edited by hand is left alone, with a warning.
+- Video volume sets `volume="0.5"` (or 0.25 / 0) on the `am_video` element. At 100 % the attribute is removed.
+- `Start-ArcadeMaster` re-applies `ui.json` at every boot, but only on a cabinet that has a `ui.json`. A layout updated from the repo therefore keeps the cabinet's choices.
+- Why not regenerate the whole layout from the repo copy? Because that would throw away anything else changed in the frontend's copy. Why not rename a folder (for example the story text)? Because the glass panel behind the story would still fade in, empty.
+
+## System settings (Windows switches, part of Cabinet Settings)
 
 `tools/Set-CabinetSystem.ps1` holds reversible cabinet switches. Previous Windows values are saved under `HKCU\Software\ArcadeMaster\Saved` and restored when a switch is turned off.
 

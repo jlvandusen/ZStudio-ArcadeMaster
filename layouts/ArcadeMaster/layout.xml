@@ -5,12 +5,16 @@
   (CoinOPS RetroFE builds a fresh page per collection, so menuIndex filters are not used.)
   Per-collection chrome (wheel/yoke/crosshair, gauges, fx) comes from theme slots:
     layouts/ArcadeMaster/collections/<collection>/system_artwork/am_*.png   (tools/Set-LayoutThemes.ps1)
+  Blocks between the am-ui:NAME and /am-ui:NAME marker comments are switched on / off from Tools > Cabinet Settings
+  (manifest\ui.json, tools/Set-LayoutUi.ps1 comments them out). Keep comments out of those blocks.
 -->
 <layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
 
+  <!--am-ui:menuSounds-->
   <sound type="select"    src="sounds/select.wav"/>
   <sound type="highlight" src="sounds/highlight.wav"/>
   <sound type="load"      src="sounds/load.wav"/>
+  <!--/am-ui:menuSounds-->
 
   <!-- ================= PER-GAME BACKDROP: the selected game's own fanart, full screen ================= -->
   <!-- neutral fallback for games without fanart -->
@@ -227,6 +231,7 @@
 
   <!-- ================= GAME STORY: what made it special (tools/New-GameStories.py -> medium_artwork/am_story/<item>.txt) ================= -->
   <!-- after 8 s on one game a glass panel covers the video and the story scrolls; any move hides it again -->
+  <!--am-ui:story-->
   <image src="images/black.png" x="1340" y="372" xOrigin="center" yOrigin="center" width="1040" height="585" alpha="0" layer="8">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
@@ -245,8 +250,10 @@
     <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
   </reloadableScrollingText>
+  <!--/am-ui:story-->
 
   <!-- ================= SPECIAL-CONTROL REMINDER: trackball / spinner / gun / wheel / 4-way (am_hint, only those games) ================= -->
+  <!--am-ui:controlHints-->
   <reloadableImage type="am_hint" x="1340" y="104" xOrigin="center" yOrigin="center" width="980" height="92" alpha="0" layer="17">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
@@ -261,6 +268,7 @@
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
   </reloadableImage>
+  <!--/am-ui:controlHints-->
 
   <!-- ================= CONTROLS CARD: what every control does in the highlighted game (tools/New-GameControlsArt.ps1) ================= -->
   <reloadableImage type="am_controls" x="1345" y="905" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="17">

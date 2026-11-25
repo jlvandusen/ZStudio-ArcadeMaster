@@ -17,10 +17,13 @@ param(
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
   [int]$WaitForWheelSec = 30,          # USB wheels often finish enumerating after logon
   [switch]$NoDeviceCheck,
-  [switch]$PrepOnly                    # run every boot step and log the timings, but do not start RetroFE
+  [switch]$PrepOnly,                   # run every boot step and log the timings, but do not start RetroFE
+  [int]$ThemeConfirmSec = 15,          # a new theme must be confirmed on screen within this time, or it is undone
+  [int]$ThemeSettleSec = 8             # ... asked once RetroFE has run this long and nothing it started is still open
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1')
+. (Join-Path $PSScriptRoot 'lib\AmSettings.ps1'); . (Join-Path $PSScriptRoot 'lib\AmTheme.ps1')
 $exe = Get-AmRetroFEExe $Root   # retrofe\retrofe.exe, core\retrofe.exe (CoinOPS LEGENDS / CORE) or <root>\retrofe.exe
 if (-not $exe) { throw "RetroFE not found under $Root (looked in retrofe\, core\ and the root)" }
 # CoinOPS builds (core\retrofe.exe) run from the build's root folder, like their own CabinetLauncher.exe: their launchers
@@ -96,6 +99,9 @@ if (-not $NoShuffle) {
 # boot intro: render the cabinet-type title card (settings.conf cabinetType, auto = detected hardware)
 # cabinet mode follows the hardware (racing stays racing with a wheel; flight stick instead -> flight cab ...)
 try { $mode = Invoke-Tool 'Set-CabinetMode.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log (($mode -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "cabinet mode failed: $($_.Exception.Message)" }
+# layout options from Tools > Cabinet Settings (story panel, control reminders, menu sounds, video volume): only on a
+# cabinet that changed one (manifest\ui.json); re-applied every boot so a layout updated from the repo keeps them
+if (Test-Path (Join-Path $ManifestDir 'ui.json')) { try { $lu = Invoke-Tool 'Set-LayoutUi.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); if ($lu -match 'updated|WARNING') { Write-Log (($lu -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } } catch { Write-Log "layout options failed: $($_.Exception.Message)" } }
 $active = ((Select-String -Path (Join-Path $Root 'settings.conf') -Pattern '^\s*layout\s*=\s*(.+)$' | Select-Object -Last 1).Matches[0].Groups[1].Value).Trim()
 # the intro card and the Tools list art (live state: devices, switches, game counts) write different files, so they
 # render side by side, each in its own powershell. The boot waits for the intro (max 60 s); the Tools art is only seen
@@ -157,7 +163,9 @@ if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
   } catch { Set-Content $deckTried (Get-Date).ToString('s'); Write-Log "Stream Deck package check failed: $($_.Exception.Message)" }
   finally { $ErrorActionPreference = $eap }
 }
-if ($pyw -and (Test-Path $deck)) {
+$deckOn = [bool](Read-AmUi $ManifestDir).streamDeck   # Tools > Cabinet Settings > Stream Deck
+if (-not $deckOn -and (Test-Path $deck)) { Write-Log 'Stream Deck controller off (Cabinet Settings)' }
+if ($deckOn -and $pyw -and (Test-Path $deck)) {
   try { Start-Process $pyw -ArgumentList @("`"$deck`"", '--retrofe', "`"$Root`"", '--manifest', "`"$ManifestDir`"") -WindowStyle Hidden; Write-Log 'Stream Deck controller started' } catch { Write-Log "Stream Deck controller failed: $($_.Exception.Message)" }
 }
 
@@ -171,25 +179,51 @@ $exitFlag = Join-Path $Root 'exit.request'
 Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
 $crashes = New-Object System.Collections.Generic.List[datetime]
 $snapshotDone = $false; $lkgRestored = $false; $themeFallback = $false
+# <ManifestDir>\theme-pending.json: Tools > Themes or the Stream Deck changed the theme. Once RetroFE shows it (running
+# for ThemeSettleSec, nothing it started - the Tools page, a game - open for 6 s), Confirm-ThemeChange asks to keep it.
+# No answer / Escape: it reverts, writes restart.request and ends RetroFE -> restarted below with the old theme.
+# RetroFE closing or crashing while the change is unconfirmed reverts it here.
+$pendingFile = Get-AmPendingPath $ManifestDir
+function Get-BusyChildren([int]$id) { @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $id" -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch '^(conhost|LEDBlinky|WerFault)\.exe$' }) }
+function Start-ThemeConfirm([int]$id) {
+  $a = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'Confirm-ThemeChange.ps1'), '-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-TimeoutSec', "$ThemeConfirmSec", '-RetroFEPid', "$id")
+  if ($env:AM_THEME_CONFIRM_NOUI -eq '1') { $a += '-NoUi' }   # tests: no window, the countdown runs out
+  $q = $a | ForEach-Object { if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ } }
+  $cp = Start-Process powershell -ArgumentList ($q -join ' ') -WindowStyle Hidden -PassThru; [void]$cp.Handle
+  Write-Log 'theme change waiting - asking to keep it'; return $cp
+}
 while ($true) {
   Write-Log 'starting RetroFE'
-  $p = Start-Process $exe -WorkingDirectory $exeDir -PassThru
-  # stable for 3 minutes -> remember this configuration as last-known-good (once per boot)
-  if (-not $snapshotDone -and -not $p.WaitForExit(180000)) {
-    try { Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Snapshot', '-NoFix') | Out-Null; Write-Log 'stable 3 min - last-known-good configs saved' } catch { }
-    $snapshotDone = $true
+  $p = Start-Process $exe -WorkingDirectory $exeDir -PassThru; [void]$p.Handle
+  $startedAt = Get-Date; $quietSince = $startedAt; $confirm = $null
+  while (-not $p.WaitForExit(1000)) {
+    $now = Get-Date; $pendingNow = Test-Path -LiteralPath $pendingFile
+    # stable for 3 minutes -> remember this configuration as last-known-good (once per boot; never an unconfirmed theme)
+    if (-not $snapshotDone -and -not $pendingNow -and ($now - $startedAt).TotalSeconds -ge 180) {
+      try { Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Snapshot', '-NoFix') | Out-Null; Write-Log 'stable 3 min - last-known-good configs saved' } catch { }
+      $snapshotDone = $true
+    }
+    if ($confirm -and $confirm.HasExited) { $confirm = $null; $quietSince = $now }
+    if (-not $pendingNow -or $confirm) { continue }
+    if (@(Get-BusyChildren $p.Id).Count) { $quietSince = $now; continue }
+    if (($now - $startedAt).TotalSeconds -ge $ThemeSettleSec -and ($now - $quietSince).TotalSeconds -ge 6) { $confirm = Start-ThemeConfirm $p.Id }
   }
-  $p.WaitForExit()
   $code = $p.ExitCode
+  if ($confirm -and -not $confirm.HasExited) { [void]$confirm.WaitForExit(3000); if (-not $confirm.HasExited) { & taskkill.exe /PID $confirm.Id /T /F 2>$null | Out-Null } }
   if (Test-Path -LiteralPath $restartFlag) {
     $why = (Get-Content -LiteralPath $restartFlag -Raw -ErrorAction SilentlyContinue); Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
-    Write-Log "restart requested ($("$why".Trim())) - RetroFE exit $code"; continue
+    Write-Log "restart requested ($("$why".Trim())) - RetroFE exit $code"; continue   # a waiting theme change is asked about after the restart
+  }
+  if (Test-Path -LiteralPath $pendingFile) {
+    try { [void](Restore-AmThemePending $Root $ManifestDir "the frontend closed before it was confirmed (exit $code)") } catch { Write-Log "theme revert failed: $($_.Exception.Message)" }
   }
   if (Test-Path -LiteralPath $exitFlag) {
     Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
     Write-Log "Exit chosen in the menu - RetroFE closed (exit $code), not restarting"; break
   }
-  $crashed = ($code -ne 0) -or (Select-String -Path (Join-Path $Root 'log.txt') -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue)
+  # (Select-String on a missing log.txt stops the script even with SilentlyContinue: check that it exists first)
+  $rlog = Join-Path $Root 'log.txt'
+  $crashed = ($code -ne 0) -or ((Test-Path -LiteralPath $rlog) -and (Select-String -LiteralPath $rlog -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue))
   if (-not $crashed) { Write-Log "RetroFE exited cleanly ($code)"; break }
   $now = Get-Date; $crashes.Add($now); $recent = @($crashes | Where-Object { ($now - $_).TotalSeconds -le $CrashWindowSec })
   # milliseconds + -Force: after a settings restore the retry is immediate, and two crashes in the same second used to
