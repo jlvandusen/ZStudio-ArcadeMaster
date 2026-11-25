@@ -29,7 +29,7 @@ $names = @{ racing = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup
 # --- clean previous generation
 # only the launchers of collections made here (AM_PC, AM_TP_*): AM_TOOLS belongs to New-CabinetToolsCollection, and
 # deleting every AM_*.conf broke the Tools menu after each Rebuild Game Menus
-# The game stories (medium_artwork\am_story, written by New-GameStories.py on Rebuild Game Menus) are set aside and put
+# The art other tools make (medium_artwork\am_*: stories, preview videos, backdrops, controls cards) is set aside and put
 # back once the collection is made again below: this runs at every boot, and deleting them left the PC and extra
 # TeknoParrot games without a story until the next Rebuild Game Menus.
 $storyKeep = Join-Path $RetroFE 'am-story-keep'
@@ -38,8 +38,12 @@ $ownLaunchers = @(foreach ($d in Get-ChildItem $cols -Directory) {
   if (-not (Test-Path (Join-Path $d.FullName $marker))) { continue }
   $l = Select-String -LiteralPath (Join-Path $d.FullName 'settings.conf') -Pattern '^\s*launcher\s*=\s*(AM_\S+)\s*$' -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($l) { $l.Matches[0].Groups[1].Value }
-  $st = Join-Path $d.FullName 'medium_artwork\am_story'
-  if (-not $Remove -and (Test-Path -LiteralPath $st)) { New-Item -ItemType Directory -Force $storyKeep | Out-Null; Move-Item -LiteralPath $st (Join-Path $storyKeep $d.Name) }
+  # every art folder other tools make here (am_story, am_video previews, am_backdrop, am_controls cards ...): set aside
+  if (-not $Remove) {
+    foreach ($st in Get-ChildItem -LiteralPath (Join-Path $d.FullName 'medium_artwork') -Directory -Filter 'am_*' -ErrorAction SilentlyContinue) {
+      $to = Join-Path $storyKeep "$($d.Name)\$($st.Name)"; New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null; Move-Item -LiteralPath $st.FullName $to
+    }
+  }
   Remove-Item $d.FullName -Recurse -Force
 })
 foreach ($l in $ownLaunchers) { Remove-Item (Join-Path $RetroFE "launchers.windows\$l.conf") -Force -ErrorAction SilentlyContinue }
@@ -186,6 +190,9 @@ if (Test-Path $aliasFile) {
   $aliases = (Get-Content $aliasFile -Raw | ConvertFrom-Json).aliases
   # single files: { "<collection>/<item>": { "<art type>": "<file>" } } - e.g. a PC game's own intro movie as its video
   $files = (Get-Content $aliasFile -Raw | ConvertFrom-Json).files
+  # clips: a game's own movie made into a menu video by tools\New-GameClips.ps1 (D:\ArcadeMaster\media\clips\<collection>\<item>.mp4), used as its video
+  $clipCfg = (Get-Content $aliasFile -Raw | ConvertFrom-Json).clips
+  if ($clipCfg) { $fx = [ordered]@{}; if ($files) { foreach ($q in $files.PSObject.Properties) { $fx[$q.Name] = $q.Value } }; foreach ($q in $clipCfg.PSObject.Properties) { $cf = Join-Path 'D:\ArcadeMaster\media\clips' (($q.Name -replace '/', '\') + '.mp4'); if (-not $fx.Contains($q.Name) -and (Test-Path -LiteralPath $cf)) { $fx[$q.Name] = [pscustomobject]@{ video = $cf } } }; $files = [pscustomobject]$fx }
   foreach ($a in @(if ($files) { $files.PSObject.Properties })) {
     $dstCol, $dstItem = $a.Name -split '/', 2
     if (-not (Test-Path -LiteralPath (Join-Path $cols $dstCol))) { continue }
@@ -228,11 +235,14 @@ if (Test-Path -LiteralPath $storyKeep) {
   foreach ($k in Get-ChildItem -LiteralPath $storyKeep -Directory) {
     $art = Join-Path $cols "$($k.Name)\medium_artwork"
     if (-not (Test-Path -LiteralPath (Join-Path $cols $k.Name))) { continue }
-    New-Item -ItemType Directory -Force $art | Out-Null
-    if (-not (Test-Path -LiteralPath (Join-Path $art 'am_story'))) { Move-Item -LiteralPath $k.FullName (Join-Path $art 'am_story'); $kept += @(Get-ChildItem -LiteralPath (Join-Path $art 'am_story') -File).Count }
+    foreach ($typeDir in Get-ChildItem -LiteralPath $k.FullName -Directory) {
+      $dst = Join-Path $art $typeDir.Name; New-Item -ItemType Directory -Force $dst | Out-Null
+      # files the rebuild made again (e.g. linked by art-aliases) win; everything else comes back
+      foreach ($f in Get-ChildItem -LiteralPath $typeDir.FullName -File) { if (-not (Test-Path -LiteralPath (Join-Path $dst $f.Name))) { Move-Item -LiteralPath $f.FullName $dst; $kept++ } }
+    }
   }
   Remove-Item -LiteralPath $storyKeep -Recurse -Force -ErrorAction SilentlyContinue
-  if ($kept) { Write-Host "stories: $kept kept for the rebuilt PC / TeknoParrot lists" }
+  if ($kept) { Write-Host "art: $kept file(s) kept for the rebuilt PC / TeknoParrot lists (stories, previews, backdrops, controls cards)" }
 }
 
 # --- category collections (merged .sub views)

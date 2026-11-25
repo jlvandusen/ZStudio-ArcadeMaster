@@ -268,7 +268,7 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
       Today: MinForce 0 everywhere, MaxForce 100 in most, 90 / 75 / 45 in a few.
 - [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
-- [ ] Controls: set up the "ready to set up" games from games-cant-start.txt with Add-TPGame (dry run first).
+- [x] [RACE1] Controls: set up the "ready to set up" games from games-cant-start.txt - none left (2026-11-25); the rest need their program files.
 - [ ] Stories: every racing and flight game has a story line (year, maker, cabinet, what makes it special).
       [RACE1] 2026-11-25: 73 of 106 racing/flight games had a one-line or no story -> 31 (stories tool run for every
       list + 15 hand-written: Initial D 4/5/7/8/Zero, Wangan Midnight 5, Battle Gear 4, GTI Club 3, After Burner Climax,
@@ -294,8 +294,12 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 
 - [x] [RACE1] Daytona Championship USA single and linked versions: clear names, the full Daytona video and art, and
       stories saying which to pick; Crazy Taxi 3 plays the game's own Glitter Oasis movie (catalog/art-aliases.json).
-- [ ] Video: 20 racing games still have none (7 PC games, 12 TeknoParrot short names such as ID5, SRC, WMMT5, and
-      IDTA). No clip for them anywhere on RACE1. Look in the game folders for their own movies first (as Crazy Taxi 3).
+- [x] [RACE1] Video: racing games without a preview 21 -> 11. tools\New-GameClips.ps1 makes menu videos from the games' own
+      attract / intro movies (Bink, CRI USM, WMV, MP4; art-aliases.json 'clips'), e.g. Initial D 7/8/Zero/The Arcade from
+      their ADVERTISE folders. Left: ATS, Burnout Paradise, Wreckfest, Battle Gear 4, Gaelco Tuning Race, GRID (TP), ID4, ID5,
+      K.O. Drive, Sega Racing Classic, Valve Limit R (no movies in their folders).
+- [x] [RACE1] Generated lists (AM_PC, AM_TP_*) lost their preview videos, backdrops and controls cards at every boot;
+      every am_* art folder is now kept through the rebuild (was: stories only).
 - [x] [RACE1] Stories: AM_PC and AM_TP_* lists are rebuilt at every boot, which emptied their am_story folders. The
       menu tool now sets the stories aside and puts them back: 26 of 26 kept over two rebuilds (before: 0 after one).
 - [x] [RACE1] Wheel on the game list's controls card followed the handbrake, not the G29: 26 live elements had no
