@@ -100,9 +100,10 @@ static class AmPanel
         {
             LoadConfig();
             var db = new ControllerChoices(manifestDir); string id = db.Find(args[1], null);
-            using (var f = new ControllerChooser(db.Title(id), db.Choices(id), db.LastPick(id), 60))
+            string sc = id != null && id.IndexOf(':') > 0 ? id.Substring(0, id.IndexOf(':')) : null;
+            using (var f = new ControllerChooser(db.Title(id), db.Choices(id), db.LastPick(id), 8, ChooserTheme.Load(retroFERoot, sc, args[1])))
             {
-                f.WindowState = FormWindowState.Normal; f.TopMost = false; f.Bounds = new System.Drawing.Rectangle(-20000, -20000, 1600, 900);
+                f.TopMost = false; f.Bounds = new System.Drawing.Rectangle(-20000, -20000, 1920, 1080);
                 f.Show(); Application.DoEvents();
                 using (var bmp = new System.Drawing.Bitmap(f.Width, f.Height)) { f.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, f.Width, f.Height)); bmp.Save(args[2]); }
             }
@@ -387,7 +388,9 @@ static class AmPanel
                 {
                     string picked = null;
                     ui.Invoke((MethodInvoker)delegate {
-                        using (var f = new ControllerChooser(choicesDb.Title(id), ch, choicesDb.LastPick(id), secs)) { f.ShowDialog(); picked = f.Picked; }
+                        string artColl = coll ?? (id.IndexOf(':') > 0 ? id.Substring(0, id.IndexOf(':')) : null);
+                        var theme = ChooserTheme.Load(retroFERoot, artColl, game);
+                        using (var f = new ControllerChooser(choicesDb.Title(id), ch, choicesDb.LastPick(id), secs, theme)) { f.ShowDialog(); picked = f.Picked; }
                     });
                     if (picked != null)
                     {
