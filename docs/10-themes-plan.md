@@ -42,6 +42,38 @@ The ArcadeMaster layout has picture slots: the centre wheel or yoke, two dials a
 - **Picking:** Tools → Themes lists the styles for the cabinet's mode first, then **Surprise me** (a different style every start), then the whole layouts (imported themes). The choice is stored per family in `manifest\skins.json`.
 - **Real wheel:** every racing style keeps the cabinet's real wheel in the centre (`New-RealWheelArt`, from Logitech G HUB's picture). The centre wheel on the main menu and on the game list turns with the real wheel (`liveSteer`, patch 0007).
 
+## Arcade layouts: five new arrangements (2026-11-24)
+
+Styles change the pictures; these change the **arrangement**. Each is a complete RetroFE layout in `layouts\AM-<Name>\` that shows the same per-game media as ArcadeMaster: `am_video`, `am_backdrop`, `am_controls`, `am_hint`, `am_story`, logo, marquee, the playlist banner and the list position (`collectionIndexSize`). The placement ideas come from the CoinOPS and CORE layouts on R:. Their pictures, logos and names are not used: every picture is drawn by one script, `tools\New-ArcadeThemes.py` (Pillow).
+
+| Layout | Idea | Borrowed from |
+|---|---|---|
+| **AM-Wall** (Tile Wall) | A staggered two-column wall of logo tiles on the left. The chosen game opens big on the right: video, title bar, controls card, hint, and the story after 6 s. | CoinOPS Wall / Night Wall |
+| **AM-Marquee** (Cabinet) | The screen is a cabinet: a lit marquee lightbox on top (`type="marquee"`), the video in a CRT bezel with scanline glass, the controls card on the control-panel deck. Logos are on the left side panel; title and story are on the right one. | CoinOPS Marquee / Marquee + Bezel |
+| **AM-Wheel** (Spin Wheel) | Logos on a curved, tilted wheel at the right, over a neon arc. The video is big on the left, and the story runs as a ticker along the bottom. | CoinOPS Wheel Ani, CORE TYPE R |
+| **AM-Poster** (Box Art) | A box-art (`cover`) carousel with tilted neighbours along the bottom, over the game's full-bleed backdrop. The video is top right and the controls card top left. | CoinOPS Poster / Bottom Spin |
+| **AM-Neon** (Neon Lite) | A centred neon **text** list under one huge logo. It has no list pictures to load and the fewest layers, so it's the theme for weak PCs. | CoinOPS Vertical / Fast |
+
+- **Keys:** every game-list menu is `orientation="vertical"`, so UP / DOWN move through the games and LEFT / RIGHT stay on the playlists. This holds even where the items are laid out sideways (Poster, Wall): there, UP / DOWN mean previous / next. The main-menu row stays horizontal like ArcadeMaster's, so the wheel steers it.
+- **Speed:**
+  - Every generated picture is made at the size the layout draws it.
+  - Each theme has two full-screen layers: one opaque, pre-scaled JPEG background and the game's `am_backdrop`. The backdrop is darkened by its alpha, not by a scrim layer, and has no resize animation.
+  - The tile wall is baked into one picture; only the logos move between the fixed tiles.
+  - The video has one fixed size (`width` + `maxHeight`, so 4:3 and 16:9 both fit), and only its alpha animates.
+  - Each theme's own art is 0.1 to 0.9 MB.
+- **Each folder also has:**
+  - `layout - 1.xml`, the second screen (`monitor="1"`): the marquee in the theme's frame, the logo under it and ArcadeMaster's touch bar.
+  - The main menu, `collections\Main\layout\layout.xml` and its `layout - 1.xml`.
+  - ArcadeMaster's Tools screen, boot intro, sounds, font and collection logos.
+  - `theme.json`, with the label, idea and keys.
+- **Install** with `python tools\New-ArcadeThemes.py --install <RetroFE root> --manifest <manifest dir>`. This:
+  - copies each folder to `<RetroFE>\layouts\AM-<Name>`. It refuses E: and never replaces a folder it did not make.
+  - adds the cabinet's own playlist banners and intro card.
+  - draws a preview mock-up from sample media into `<manifest>\themes\AM-<Name>.png`.
+  - registers each theme in `<manifest>\themes.json` and scores its artwork coverage with `Import-RetroFETheme.ps1` (in place, `-NoPreview`), so Tools → Themes lists it.
+  - It does not touch `settings.conf`.
+- **Tested** on the LEGENDS-am copy (2026-11-24): RetroFE started on each theme with `firstCollection = Arcades` and loaded every layout file with no errors in `log.txt`. `settings.conf` was restored byte for byte afterwards. One quirk on that machine: the 4K primary is display 0 at 200 %, and parts of the second-screen layout show on the primary. Stock ArcadeMaster does the same, so the new layouts don't cause it.
+
 ## 3. BigBox themes: two routes
 
 BigBox themes are WPF / XAML, which RetroFE can't run.

@@ -1,0 +1,10 @@
+{
+  "name": "AM-Neon",
+  "label": "Neon Lite",
+  "about": "a centred neon text list under a huge logo: the lightest theme, for weak PCs",
+  "idea": "CoinOPS \"Vertical\" / \"Fast\" (a plain list, little else) - here a centred neon TEXT list (no list pictures to load), one huge logo, the fewest layers of all five themes",
+  "keys": "UP / DOWN: games   LEFT / RIGHT: playlists   SELECT: play   BACK: main menu",
+  "madeBy": "tools/New-ArcadeThemes.py",
+  "resolution": "1920x1080",
+  "monitors": 2
+}

@@ -1,0 +1,87 @@
+<!--
+  AM-Poster - GAME LIST (c) The Real Z Studios - all art drawn by tools/New-ArcadeThemes.py
+  Idea: the cover carousel of CoinOPS Poster / Bottom Spin (tilted neighbours, the chosen box in front), over the
+  game's own full-bleed backdrop (am_backdrop at full strength), video top right, controls card top left.
+  KEYS: the row is laid out sideways but the menu is orientation="vertical": UP / DOWN = previous / next box,
+  LEFT / RIGHT stay on the playlists. Games without a cover show their title as text.
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+  <sound type="select"    src="sounds/select.wav"/>
+  <sound type="highlight" src="sounds/highlight.wav"/>
+  <sound type="load"      src="sounds/load.wav"/>
+  <image src="images/pst_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
+  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/pst_top.png" x="0" y="0" width="1920" height="300" alpha="1" layer="2"/>
+  <image src="images/pst_shade.png" x="0" y="520" width="1920" height="560" alpha="1" layer="2"/>
+  <image src="images/pst_spot.png" x="960" y="985" xOrigin="center" yOrigin="center" width="760" height="220" alpha=".8" layer="3">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to=".35"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".4"><animate type="alpha" to=".8" algorithm="easeOutCubic"/></set></onMenuIdle>
+  </image>
+  <image src="images/pst_rail.png" x="0" y="990" width="1920" height="16" alpha="1" layer="4"/>
+  <menu type="custom" imageType="cover" scrollTime=".2" scrollAcceleration=".04" minScrollTime=".06" orientation="vertical">
+    <itemDefaults x="960" y="845" xOrigin="center" yOrigin="center" width="200" maxHeight="185" alpha="0" layer="10" fontColor="ffffff" fontSize="30" loadFontSize="30"/>
+    <item xOffset="-1110" yOffset="60" angle="-12" width="150" maxHeight="140" alpha="0" layer="9"/>
+    <item xOffset="-935" yOffset="54" angle="-10" width="150" maxHeight="140" alpha="0.3" layer="10"/>
+    <item xOffset="-750" yOffset="44" angle="-8" width="175" maxHeight="160" alpha="0.5" layer="11"/>
+    <item xOffset="-540" yOffset="32" angle="-6" width="200" maxHeight="185" alpha="0.7" layer="12"/>
+    <item xOffset="-300" yOffset="18" angle="-4" width="230" maxHeight="215" alpha="0.9" layer="13"/>
+    <item selected="true" xOffset="0" yOffset="0" angle="0" width="300" maxHeight="280" alpha="1" layer="14"/>
+    <item xOffset="300" yOffset="18" angle="4" width="230" maxHeight="215" alpha="0.9" layer="13"/>
+    <item xOffset="540" yOffset="32" angle="6" width="200" maxHeight="185" alpha="0.7" layer="12"/>
+    <item xOffset="750" yOffset="44" angle="8" width="175" maxHeight="160" alpha="0.5" layer="11"/>
+    <item xOffset="935" yOffset="54" angle="10" width="150" maxHeight="140" alpha="0.3" layer="10"/>
+    <item xOffset="1110" yOffset="60" angle="12" width="150" maxHeight="140" alpha="0" layer="9"/>
+  </menu>
+  <reloadableText type="title" menuScrollReload="true" x="960" y="1040" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="ffffff" alpha="0" layer="12">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <reloadableImage type="playlist" mode="commonlayout" x="1500" y="38" xOrigin="center" yOrigin="center" width="600" height="58" alpha="1" layer="11">
+    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="1500" y="548" xOrigin="center" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <reloadableImage type="logo" x="565" y="170" xOrigin="center" yOrigin="center" width="500" maxHeight="150" alpha="0" layer="6">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="x" to="535"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="x" to="565" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/pst_video_frame.png" x="1500" y="300" xOrigin="center" yOrigin="center" width="808" height="472" alpha="1" layer="5"/>
+  <reloadableVideo type="am_video" imageType="logo" x="1500" y="300" xOrigin="center" yOrigin="center" width="768" maxHeight="432" alpha="0" layer="6">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableVideo>
+  <image src="images/pst_story.png" x="1500" y="645" xOrigin="center" yOrigin="center" width="768" height="150" alpha="1" layer="5"/>
+  <reloadableScrollingText type="am_story" menuScrollReload="true" x="1126" y="578" width="740" height="134" fontSize="22" loadFontSize="22" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="12" startPosition="0" startTime="4" endTime="4" alpha="0" layer="7">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="1.4"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableScrollingText>
+  <reloadableImage type="am_controls" x="565" y="410" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="12">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".9"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="am_hint" x="565" y="605" xOrigin="center" yOrigin="center" width="980" height="92" alpha="0" layer="17">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="y" to="605"/></set></onMenuScroll>
+    <onMenuIdle><set duration="1.1"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="615" algorithm="easeOutBounce"/></set></onMenuIdle>
+    <onIdle><set duration="1.2"><animate type="alpha" to=".8" algorithm="easeInOutSine"/></set><set duration="1.2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set></onIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">
+    <onGameEnter><set duration=".2"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to="1"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
+  </image>
+  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="700" maxHeight="360" alpha="0" layer="19">
+    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="1"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
+  </reloadableImage>
+</layout>

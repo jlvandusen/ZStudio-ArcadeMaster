@@ -1,0 +1,10 @@
+{
+  "name": "AM-Marquee",
+  "label": "Cabinet",
+  "about": "a whole arcade cabinet: lit marquee, CRT bezel, controls card on the control panel",
+  "idea": "CoinOPS \"Marquee\" / \"Marquee + Bezel\" (marquee art beside a bezel-framed screen) - here the screen IS the cabinet: marquee lightbox on top, video in a CRT bezel, the controls card on the control-panel deck",
+  "keys": "UP / DOWN: games   LEFT / RIGHT: playlists   SELECT: play   BACK: main menu",
+  "madeBy": "tools/New-ArcadeThemes.py",
+  "resolution": "1920x1080",
+  "monitors": 2
+}

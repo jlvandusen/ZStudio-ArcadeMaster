@@ -1,0 +1,38 @@
+<!--
+  AM-Neon - SECOND SCREEN (RetroFE monitor 1), game lists: the game's marquee (type="marquee") lit in
+  the theme's frame, its logo under it, and ArcadeMaster's touch bar in row 3 of 3
+  (BACK | PREV | START | NEXT | RANDOM, controls.conf touch1Column<n>of5Row3of3). Art: tools/New-ArcadeThemes.py
+  Enable with settings.conf: numScreens = 2, screenNum1 = <display index>, fullscreen1 = yes
+-->
+<layout monitor="1" width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
+  <image src="images/neon_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
+  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.45" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/neon_m2_frame.png" x="960" y="268" xOrigin="center" yOrigin="center" width="1660" height="530" alpha="1" layer="4"/>
+  <reloadableImage type="marquee" x="960" y="268" xOrigin="center" yOrigin="center" width="1600" maxHeight="488" alpha="0" layer="3">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="2.4"><animate type="alpha" to=".86" algorithm="easeInOutSine"/></set><set duration="2.4"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set></onMenuIdle>
+  </reloadableImage>
+  <reloadableImage type="logo" x="960" y="610" xOrigin="center" yOrigin="center" width="560" maxHeight="140" alpha="0" layer="5">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+  </reloadableImage>
+  <reloadableText type="title" menuScrollReload="true" x="960" y="698" xOrigin="center" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="c9ced8" alpha="0" layer="5">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <image src="images/ui_touchbar.png" x="0" y="720" width="1920" height="360" alpha="1" layer="7"/>
+  <image src="images/studio_realz.png" x="1760" y="20" width="110" height="110" alpha=".85" layer="8"/>
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">
+    <onGameEnter><set duration=".2"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to="1"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
+  </image>
+  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="700" maxHeight="360" alpha="0" layer="19">
+    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="1"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
+  </reloadableImage>
+</layout>
