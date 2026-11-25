@@ -110,6 +110,7 @@ switch ($Tool) {
       collections = @('Build Racing / Flight / Arcade menus', 'New-RetroFECollections.ps1', @('-Manifest', $games, '-RetroFE', $RetroFE, '-Cabinet', $cab, '-RebuildDatabase'))
       # the menu builder lists every mode that has games; the cabinet mode then hides the ones whose controls are not
       # plugged in (as at boot) - without this, Flight showed on a wheel-only cabinet until the next boot
+      series      = @('Group racing games by series', 'New-SeriesPlaylists.ps1', @('-RetroFE', $RetroFE))
       mode        = @('Show only what this cabinet can play', 'Set-CabinetMode.ps1', @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir))
       backdrops   = @('Deal new game backdrops', 'Set-LayoutThemes.ps1', @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle'))
     }
