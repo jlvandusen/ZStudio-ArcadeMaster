@@ -151,7 +151,10 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [ ] Graphics: the main menu's Exit page has no backdrop (plain black). Give it art of its own.
 - [ ] Performance: Build-Manifest / Rebuild Game Menus. Time each part and remove the repeated scans.
 - [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
-- [ ] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).
+- [x] [RACE1] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).
+      G25, Driving Force GT and MOMO now have pictures (Newegg product photos, rim crop). 34 of 35 wheels have one.
+- [ ] Graphics: Driving Force Pro picture: only small photos with the pedals in frame were found (wheel ~150 px).
+      Look for a bigger front view. The MOMO cut-out keeps a light edge along its base (small source photo).
 - [ ] Graphics: game launch screen with the game's own art full screen and that game's wheel and pedal controls.
 - [ ] Controls: check the wheel, pedals and paddles in every TeknoParrot racing profile (clutch L, brake M, gas R).
 - [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
