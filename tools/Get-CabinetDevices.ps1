@@ -12,8 +12,20 @@ param(
   [string[]]$Modes                       # override: racing, flight, standup, lightgun (default: derived from hardware)
 )
 $ErrorActionPreference = 'Stop'
-# in this PowerShell, not a new one (~0.35 s here, ~1.2 s on the pedestal's i3); same text either way
-$text = & (Join-Path $PSScriptRoot 'wheelmap\WheelMap.ps1') -Detect *>&1 | Out-String
+# one PnP enumeration for every check below (each Get-PnpDevice call costs ~0.4 s at boot)
+. (Join-Path $PSScriptRoot 'lib\AmPnp.ps1'); $allPnp = @(Get-AmPnpDevices)   # setup API: ~0.07 s instead of WMI's ~0.6 s (falls back to Get-PnpDevice)
+# The DirectInput scan (WheelMap -Detect, 1.1 s on the pedestal's i3) only changes when the USB / HID devices do: it
+# is kept with a key of every present USB / HID device (plug or unplug anything -> new key -> a fresh scan).
+$diKeyText = (@($allPnp | Where-Object { $_.InstanceId -match '^(HID|USB)\\' } | ForEach-Object { "$($_.InstanceId)|$($_.Status)" } | Sort-Object) -join "`n") + "`n" + (Get-Item (Join-Path $PSScriptRoot 'wheelmap\WheelMap.ps1')).LastWriteTimeUtc.Ticks
+$diKey = -join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($diKeyText))[0..11] | ForEach-Object { $_.ToString('x2') })
+$diCache = Join-Path (Split-Path $Out) 'directinput-scan.txt'
+$cached = if (Test-Path $diCache) { [IO.File]::ReadAllText($diCache) } else { '' }
+if ($cached.StartsWith("key=$diKey`n")) { $text = $cached.Substring("key=$diKey`n".Length) }
+else {
+  # in this PowerShell, not a new one (~0.35 s here, ~1.2 s on the pedestal's i3); same text either way
+  $text = & (Join-Path $PSScriptRoot 'wheelmap\WheelMap.ps1') -Detect *>&1 | Out-String
+  try { New-Item -ItemType Directory -Force (Split-Path $diCache) | Out-Null; [IO.File]::WriteAllText($diCache, "key=$diKey`n$text") } catch { }
+}
 
 # known lightgun / trackball vendors (USB VID[:PID])
 $gunIds = @{ '16C0:0F38' = 'Sinden'; '16C0:0F39' = 'Sinden'; '16C0:0F01' = 'Sinden'; '16C0:0F02' = 'Sinden'; '2341:8042' = 'Gun4IR'; '2341:8043' = 'Gun4IR'; '2341:8044' = 'Gun4IR'; '2341:8045' = 'Gun4IR'; 'D209:16' = 'Ultimarc AimTrak' }
@@ -60,8 +72,6 @@ $cap = [ordered]@{
   mice         = $mice.Count
 }
 # keyboard encoders (Ultimarc I-PAC = VID D209 keyboard device) mean a stand-up control panel
-# one PnP enumeration for every check below (each Get-PnpDevice call costs ~0.4 s at boot)
-. (Join-Path $PSScriptRoot 'lib\AmPnp.ps1'); $allPnp = @(Get-AmPnpDevices)   # setup API: ~0.07 s instead of WMI's ~0.6 s (falls back to Get-PnpDevice)
 $encoders = @($allPnp | Where-Object { $_.Class -eq 'Keyboard' } | Where-Object { $_.InstanceId -match 'VID_D209' })
 $ultraStiks = @($devices | Where-Object { $_.id -match 'VID_D209&PID_05' -or $_.name -match '(?i)ultra-?stik' })
 $cap['controlPanel'] = ($encoders.Count -gt 0) -or ($ultraStiks.Count -gt 0)
@@ -71,12 +81,16 @@ $cap['arcadeSticks'] = $ultraStiks.Count
 Add-Type -AssemblyName System.Windows.Forms
 # which graphics adapter drives each display: a USB display (DisplayLink / MCT / SiliconMotion / Fresco ...) is the
 # pedestal's USB-connected second screen - Set-RetroFEScreens puts screen 1 there
-Add-Type -Namespace AmDisp -Name Enum -MemberDefinition @"
+# compiled once into %LOCALAPPDATA%\ArcadeMaster\typecache (lib\AmTypeCache.ps1): Add-Type compiled it at every boot
+. (Join-Path $PSScriptRoot 'lib\AmTypeCache.ps1')
+Add-AmCachedType -ProbeType 'AmDisp.Enum' -Source @"
+namespace AmDisp { public static class Enum {
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
 public struct DISPLAY_DEVICE { public int cb; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)] public string DeviceName; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceString; public int StateFlags; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceID; [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 128)] public string DeviceKey; }
 [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] public static extern bool EnumDisplayDevices(string dev, uint i, ref DISPLAY_DEVICE dd, uint flags);
 public static string Adapter(string name) { var d = new DISPLAY_DEVICE(); d.cb = System.Runtime.InteropServices.Marshal.SizeOf(d); for (uint i = 0; EnumDisplayDevices(null, i, ref d, 0); i++) { if (d.DeviceName == name) return d.DeviceString + "|" + d.DeviceID; d.cb = System.Runtime.InteropServices.Marshal.SizeOf(d); } return ""; }
-"@ -ErrorAction SilentlyContinue
+} }
+"@
 $usbRx = '(?i)displaylink|usb display|usb graphics|usb mobile monitor|mct|trigger|siliconmotion|smi usb|fresco|VID_17E9|VID_0711|VID_090C|VID_1D5C'
 $cap['displays'] = @([Windows.Forms.Screen]::AllScreens | ForEach-Object {
   $ad = [AmDisp.Enum]::Adapter($_.DeviceName); $adName = ($ad -split '\|')[0]

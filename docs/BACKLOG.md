@@ -85,7 +85,10 @@ The loop works like this (James, 2026-11-25):
       touch hardware or controls.conf changed (`touch-key.txt`). The games summary (10 MB games.json, 1.7 s) is kept in
       `games-summary.txt`. Boot prep 6.9 s → **2.7 s** today. Also fixed: since #27 a comment had swallowed the
       TeknoParrot path check, which then errored on every profile. (2026-11-25)
-- [ ] Boot time, next: Shuffle 1.7 s (now the largest), and Get-CabinetDevices on a cold start (1.3 s).
+- [x] Get-CabinetDevices 1.3–1.5 s → 0.3 s at boot. The DirectInput scan (1.1 s) is kept in
+      `manifest\directinput-scan.txt`, keyed on every present USB/HID device, so plugging anything in or out forces a
+      new scan. The display helper now uses the type cache. (2026-11-25)
+- [ ] Boot time, next: Shuffle 1.7 s (now the largest).
 - [x] `Test-ArcadeMaster.ps1 -Cabinet` runs the health check (`-NoFix`) and the panel learn (`--dry-run`) against
       this cabinet's frontend, and fails on any error. It refuses a protected live frontend. A planted bug was caught
       (2026-11-25).
