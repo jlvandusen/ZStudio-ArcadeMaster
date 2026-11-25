@@ -168,6 +168,11 @@ if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
   } catch { Set-Content $deckTried (Get-Date).ToString('s'); Write-Log "Stream Deck package check failed: $($_.Exception.Message)" }
   finally { $ErrorActionPreference = $eap }
 }
+# AmPanel (docs/13-panel-service.md): the panel service in the tray - lights, outputs, triggers. Installed next to the
+# launcher (Build-AmPanel.ps1 -InstallTo); single instance, so a second start just hands it "frontend start". In
+# shadow mode it passes everything on to LEDBlinky, so having it running never changes the lights by itself.
+$amPanel = Join-Path (Split-Path $ManifestDir) 'AmPanel.exe'
+if (Test-Path $amPanel) { try { Start-Process $amPanel -ArgumentList '1' -WorkingDirectory (Split-Path $amPanel); Write-Log 'AmPanel started (tray)' } catch { Write-Log "AmPanel failed to start: $($_.Exception.Message)" } }
 $deckOn = [bool](Read-AmUi $ManifestDir).streamDeck   # Tools > Cabinet Settings > Stream Deck
 if (-not $deckOn -and (Test-Path $deck)) { Write-Log 'Stream Deck controller off (Cabinet Settings)' }
 if ($deckOn -and $pyw -and (Test-Path $deck)) {
