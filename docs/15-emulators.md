@@ -34,6 +34,8 @@ Many other folders (winuae, hatari, mednafen, dosbox, ...) are empty placeholder
 | C64 | MAME `C64 -flop` (1 game) | 72 (.zip) | RetroArch VICE x64sc | MAME's C64 is slow to load disks. VICE autostarts, and joystick port 2 is the default most games use. |
 | Others in RetroBat with games | none | 3DO 34, Atari 2600/5200/7800 69/63/33, Jaguar 29, Lynx 42, ColecoVision 30, Master System 72, Game Gear 64, GB/GBC 176/81, NDS 84, N64 218, Saturn 180, Dreamcast 195, Naomi 32, Atomiswave 51, Neo Geo 155, FBNeo 4020, Switch 48, ... | as RetroBat picks | All reachable the same way (next section). |
 
+**Real game counts:** the "RetroBat games" column above counted every file under a system's folder, including its scraped images and videos. `Import-RetroBatSystems.py` counts only games in the system's extensions: Xbox 36, Wii 7, Wii U 27, GameCube 103, NES 50, SNES 150, Mega Drive 151, Master System 25, PC Engine 11, PS1 68, N64 73, Saturn 57, Dreamcast 54, Amiga 500 50, C64 30, Atari 2600 23. 47 of RetroBat's 237 systems have games, and all 47 have an installed emulator.
+
 ## How to support every system dynamically
 
 RetroBat has already solved per-emulator setup. `emulatorLauncher.exe -system <s> -emulator <e> -core <c> -rom <file>` writes that emulator's config fresh for this PC at every launch: paths, BIOS, controllers, shaders, fullscreen. It then starts the emulator and waits. `es_systems.cfg` lists about 150 systems with their file extensions and emulator / core choices.
@@ -84,7 +86,12 @@ Adding a system later is then only a matter of putting its ROMs in a RetroBat fo
 
 ## Next steps (in order)
 
-1. Write `Import-RetroBatSystems.py` (systems.json, collections and launchers for systems with games), off by default per cabinet. Start with C64, Amiga 500, NES, SNES, Mega Drive, Wii and Xbox.
+1. **Done (2026-11-25):** `tools/Import-RetroBatSystems.py`, a Rebuild Menus step that skips itself without RetroBat.
+   - On the pedestal: 16 systems under a new **Classic Systems** main-menu entry, with 4,339 art links and launchers through emulatorLauncher.
+   - The build's own GameCube / N64 / Dreamcast / C64 collections are untouched; ours are named "... (RetroBat)".
+   - `--all` imports all 47 systems that have games.
+   - `New-RetroFECollections.ps1` keeps `Main\am-extra-menu.txt` entries in the main menu.
+   - Still open: real titles from `gamelist.xml` into meta.db (lists show file names for now).
 2. Controller config pass-through to emulatorLauncher, and a panel-to-XInput bridge (ViGEm) for Xbox / PS2 / Wii U / GameCube.
 3. Exit and the hot-plug / AmPanel game events for emulatorLauncher games (game start / stop, lights, stick maps).
 4. xemu per-game compatibility and performance list on the pedestal and RACE1.

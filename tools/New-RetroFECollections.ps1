@@ -192,8 +192,9 @@ if (Test-Path $aliasFile) {
   # single files: { "<collection>/<item>": { "<art type>": "<file>" } } - e.g. a PC game's own intro movie as its video
   $files = (Get-Content $aliasFile -Raw | ConvertFrom-Json).files
   # clips: a game's own movie made into a menu video by tools\New-GameClips.ps1 (D:\ArcadeMaster\media\clips\<collection>\<item>.mp4), used as its video
+  # [IO.Path]::Combine, not Join-Path: Windows PowerShell 5.1 throws on a cabinet without a D: drive (the pedestal)
   $clipCfg = (Get-Content $aliasFile -Raw | ConvertFrom-Json).clips
-  if ($clipCfg) { $fx = [ordered]@{}; if ($files) { foreach ($q in $files.PSObject.Properties) { $fx[$q.Name] = $q.Value } }; foreach ($q in $clipCfg.PSObject.Properties) { $cf = Join-Path 'D:\ArcadeMaster\media\clips' (($q.Name -replace '/', '\') + '.mp4'); if (-not $fx.Contains($q.Name) -and (Test-Path -LiteralPath $cf)) { $fx[$q.Name] = [pscustomobject]@{ video = $cf } } }; $files = [pscustomobject]$fx }
+  if ($clipCfg) { $fx = [ordered]@{}; if ($files) { foreach ($q in $files.PSObject.Properties) { $fx[$q.Name] = $q.Value } }; foreach ($q in $clipCfg.PSObject.Properties) { $cf = [IO.Path]::Combine('D:\ArcadeMaster\media\clips', (($q.Name -replace '/', '\') + '.mp4')); if (-not $fx.Contains($q.Name) -and (Test-Path -LiteralPath $cf)) { $fx[$q.Name] = [pscustomobject]@{ video = $cf } } }; $files = [pscustomobject]$fx }
   foreach ($a in @(if ($files) { $files.PSObject.Properties })) {
     $dstCol, $dstItem = $a.Name -split '/', 2
     if (-not (Test-Path -LiteralPath (Join-Path $cols $dstCol))) { continue }
@@ -258,6 +259,9 @@ foreach ($cat in $Order) {
   Write-Host ("{0,-9} {1,3} entries from {2}" -f $name, $n, (($subs[$cat].Keys | Sort-Object) -join ', '))
 }
 foreach ($e in $ExtraMenu) { if (Test-Path (Join-Path $cols $e)) { $menu.Add($e) } }
+# entries other tools add (Import-RetroBatSystems.py: "Classic Systems"), one per line, kept across rebuilds
+$extraFile = Join-Path $cols 'Main\am-extra-menu.txt'
+if (Test-Path $extraFile) { foreach ($e in Get-Content $extraFile) { $e = $e.Trim(); if ($e -and (Test-Path (Join-Path $cols $e)) -and $menu -notcontains $e) { $menu.Add($e) } } }
 
 if ((Test-Path $menuTxt) -and -not (Test-Path "$menuTxt.am-backup")) { Copy-Item $menuTxt "$menuTxt.am-backup" }
 # A CoinOPS build (LEGENDS, CORE ...) has no Main menu: its library starts at settings.conf firstCollection (e.g. Arcades).

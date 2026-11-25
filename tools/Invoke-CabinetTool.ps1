@@ -183,6 +183,11 @@ switch ($Tool) {
       Step 'choices' 'Controller choices per game' 'run'
       & $py (Join-Path $t 'New-ControllerChoices.py') --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'choices' 'Controller choices per game' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # classic systems from RetroBat (C64, Amiga, NES ... Xbox) through its emulatorLauncher (docs/15); skips itself
+      # on a cabinet without RetroBat
+      Step 'retrobat' 'Classic systems (RetroBat)' 'run'
+      & $py (Join-Path $t 'Import-RetroBatSystems.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'retrobat' 'Classic systems (RetroBat)' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }
