@@ -75,10 +75,51 @@ class LedEngine
         return d;
     }
     readonly Dictionary<string, string> inputCodes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    public string InputCodesOf(string label) { string c; return label != null && inputCodes.TryGetValue(label, out c) ? c : ""; }
+
+    // ---------------------------------------------------------------- Buttons window: learn which light is which
+    // <manifest>\LEDBlinkyInputMap-learned.xml (written by the Buttons window, LEDBlinky's own format) is used instead
+    // of LEDBlinky's input map when it exists: no more GenLEDBlinkyInputMap wizard.
+    public static string LearnedMap;
+    public string InputMapUsed { get; private set; }
+    public List<int> BoardIds { get { var l = new List<int>(frame.Keys); l.Sort(); return l; } }
+
+    // light exactly these ports (everything else off) - one button's R/G/B at a time while learning
+    public void LightRaw(int board, int firstPort, int count, int level)
+    {
+        if (!open) return;
+        StopAnim();
+        foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
+        byte[] fr;
+        if (frame.TryGetValue(board, out fr))
+            for (int p = firstPort; p < firstPort + count && p <= fr.Length; p++) if (p >= 1) fr[p - 1] = (byte)(Math.Max(0, Math.Min(48, level)) * 255 / 48);
+        Flush();
+    }
+
+    public string LabelAt(int board, int port)
+    {
+        foreach (var kv in pins) foreach (var p in kv.Value) if (p.Board == board && p.Port == port) return kv.Key;
+        return null;
+    }
+
+    // what the input map says about every port now: board -> port -> (label, channel)
+    public Dictionary<int, SortedDictionary<int, KeyValuePair<string, char>>> PortTable()
+    {
+        var d = new Dictionary<int, SortedDictionary<int, KeyValuePair<string, char>>>();
+        foreach (var kv in pins)
+            foreach (var p in kv.Value)
+            {
+                SortedDictionary<int, KeyValuePair<string, char>> b;
+                if (!d.TryGetValue(p.Board, out b)) { b = new SortedDictionary<int, KeyValuePair<string, char>>(); d[p.Board] = b; }
+                b[p.Port] = new KeyValuePair<string, char>(kv.Key, p.Channel);
+            }
+        return d;
+    }
 
     public LedEngine(string ledBlinkyDir)
     {
-        LoadInputMap(Path.Combine(ledBlinkyDir, "LEDBlinkyInputMap.xml"));
+        InputMapUsed = LearnedMap != null && File.Exists(LearnedMap) ? LearnedMap : Path.Combine(ledBlinkyDir, "LEDBlinkyInputMap.xml");
+        LoadInputMap(InputMapUsed);
         LoadIni(Path.Combine(ledBlinkyDir, "Color-RGB.ini"), delegate (string sec, string k, string v) {
             if (!sec.Equals("Colors", StringComparison.OrdinalIgnoreCase)) return;
             var p = v.Split(',');

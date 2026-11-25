@@ -192,6 +192,7 @@ static class AmPanel
         Speech.Init(manifestDir);
         if (ledBlinkyDir != null && Directory.Exists(ledBlinkyDir)) SetDllDirectory(ledBlinkyDir);   // PacDrive32.dll lives there
         if (string.Equals(Str(cfg, "Lights"), "own", StringComparison.OrdinalIgnoreCase) && ledBlinkyDir != null) {
+            LedEngine.LearnedMap = Path.Combine(manifestDir, "LEDBlinkyInputMap-learned.xml");   // the Buttons window's map wins
             leds = new LedEngine(ledBlinkyDir);
             leds.LoadOverrides(Path.Combine(manifestDir, "led-colors.json"));   // this cabinet's own colours (step 11)
             leds.LwaDir = Path.Combine(ledBlinkyDir, "lwa");                     // LEDBlinky's .lwax animations
@@ -223,6 +224,14 @@ static class AmPanel
         }
         catch (Exception e) { Log("boards: PacDrive SDK not available (" + e.Message + ")"); }
         return list;
+    }
+
+    static void OpenButtons()
+    {
+        var f = new ButtonStudio(leds, Gate, manifestDir, delegate {
+            lock (Gate) leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null));   // normal lights again
+        });
+        f.Show(); f.Activate();
     }
 
     // ---------------------------------------------------------------- LEDBlinky's documented command line
@@ -437,6 +446,11 @@ static class AmPanel
                     }
                 }
             }
+            else if (cmd == "buttons")   // {"cmd":"buttons"} - open the Buttons window on the cabinet (Tools)
+            {
+                if (leds == null || ui == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
+                else { ui.BeginInvoke((MethodInvoker)OpenButtons); rep["ok"] = true; }
+            }
             else if (cmd == "attract")   // {"cmd":"attract","kind":"audio"} - the idle animation from now on (Cabinet Settings)
             {
                 string k = req.ContainsKey("kind") ? Convert.ToString(req["kind"]).ToLowerInvariant() : "";
@@ -573,6 +587,8 @@ static class AmPanel
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
+        if (leds != null)
+            menu.Items.Add("Buttons (which light is which)...", null, delegate { OpenButtons(); });
         if (leds != null)
             menu.Items.Add("Lights && Colours...", null, delegate {
                 string g; lock (Gate) g = State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : "";

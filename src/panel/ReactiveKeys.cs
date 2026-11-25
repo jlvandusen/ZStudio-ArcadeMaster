@@ -45,6 +45,13 @@ class ReactiveKeys
         return d;
     }
 
+    // a MAME KEYCODE name ("KEYCODE_LCONTROL" or "LCONTROL") -> its Windows virtual key, 0 when unknown
+    public static int VkOf(string keycode)
+    {
+        string n = keycode.StartsWith("KEYCODE_", StringComparison.OrdinalIgnoreCase) ? keycode.Substring(8) : keycode;
+        int vk; return Vk.TryGetValue(n, out vk) ? vk : 0;
+    }
+
     public ReactiveKeys(Dictionary<string, List<string>> keyLabels, Action<string, bool> apply)
     {
         this.apply = apply;
