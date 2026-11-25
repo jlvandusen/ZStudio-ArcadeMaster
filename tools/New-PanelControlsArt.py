@@ -142,6 +142,7 @@ class LedColors:
     def __init__(self, root: Path, log):
         self.games: dict = {}
         self.rgb: dict = {}
+        self.names: dict = {}
         lb = read_conf(root / 'settings.conf').get('ledblinkydirectory')
         d = Path(lb) if lb else root / 'LEDBlinky'
         if not d.is_absolute():
@@ -161,6 +162,31 @@ class LedColors:
                 k, v = line.split('=', 1)
                 cur[k.strip().upper()] = v.strip().lower()
         log(f'button colours: {len(self.games)} games from {d / "Colors.ini"}')
+        # what each button DOES in each game (LEDBlinky Controls.ini, the controls.dat data: sf2 = Light Punch ...)
+        ci = d / 'Controls.ini'
+        if ci.exists():
+            cur = None
+            for line in ci.read_text(encoding='utf-8', errors='replace').splitlines():
+                line = line.strip()
+                if line.startswith('[') and line.endswith(']'):
+                    cur = self.names.setdefault(line[1:-1].strip().lower(), {})
+                elif cur is not None and line.upper().startswith('P1_BUTTON') and '=' in line:
+                    k, v = line.split('=', 1)
+                    m = re.match(r'P1_BUTTON(\d+)$', k.strip().upper())
+                    if m:
+                        cur[int(m.group(1))] = v.strip()
+            log(f'button names: {sum(1 for g in self.names.values() if g)} games from {ci}')
+
+    def labels_of(self, item: str, buttons: int) -> tuple:
+        """the game's button names, only when they say something ("A" / "B" / "Button 1" do not)"""
+        g = self.names.get(item.lower())
+        if not g or buttons <= 0:
+            return ()
+        out = []
+        for i in range(1, buttons + 1):
+            v = g.get(i, '')
+            out.append('' if (len(v) <= 1 or re.fullmatch(r'(?i)(button|btn|b)\s*\d+', v)) else v)
+        return tuple(out) if any(out) else ()
 
     def of(self, item: str, buttons: int) -> tuple:
         g = self.games.get(item.lower())
@@ -411,6 +437,27 @@ def fit_label(c: Card, s, maxw, px=22):
     return s + '…'
 
 
+def draw_label(c: Card, cx, cy, s, maxw):
+    """a button's name under it: shrink to fit, else two lines (LIGHT / PUNCH), else shorten"""
+    for px in (22, 20, 18, 16):
+        if c.width(s, font('semi', px)) <= maxw:
+            c.text((cx, cy), s, font('semi', px), TEXT + (255,), 'mm')
+            return
+    words = s.split()
+    if len(words) > 1:
+        best = None
+        for k in range(1, len(words)):
+            a, b = ' '.join(words[:k]), ' '.join(words[k:])
+            w = max(c.width(a, font('semi', 16)), c.width(b, font('semi', 16)))
+            if best is None or w < best[0]:
+                best = (w, a, b)
+        _, a, b = best
+        c.text((cx, cy - 8), fit_label(c, a, maxw, 16), font('semi', 16), TEXT + (255,), 'mm')
+        c.text((cx, cy + 10), fit_label(c, b, maxw, 16), font('semi', 16), TEXT + (255,), 'mm')
+        return
+    c.text((cx, cy), fit_label(c, s, maxw, 16), font('semi', 16), TEXT + (255,), 'mm')
+
+
 def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None):
     n = rows * cols
     labels = sig.labels
@@ -445,7 +492,7 @@ def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None)
         else:
             c.d.ellipse(box, fill=CARD2 + (255,), outline=FAINT + (255,), width=3 * S)
         if lit and i < len(labels) and labels[i]:
-            c.text((cx, cy + rad + 15), fit_label(c, labels[i].upper(), gapx - 4), font('semi', 22), TEXT + (255,), 'mm')
+            draw_label(c, cx, cy + rad + 15, labels[i].upper(), gapx - 4)
     if sig.buttons > n:
         c.text((x0 + (cols - 1) * gapx + rad + 6, y0 + (rows - 1) * gapy + rad), '+' if sig.buttons >= 9 else f'+{sig.buttons - n}',
                font('black', 34), AMBER + (255,), 'ls')
@@ -1124,6 +1171,10 @@ def main(argv=None):
                 continue
             src_count[src] += 1
             s = s.with_emu(emus.item(scol, it), leds.of(it, s.buttons))
+            if not s.labels and 'wheel' not in s.extras:          # the game's own button names (Fire, Light Punch ...)
+                nm = leds.labels_of(it, s.buttons)
+                if nm:
+                    s.labels = nm
             key = s.key()
             sigs.setdefault(key, s)
             lst.append((it, key, scol))
