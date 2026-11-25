@@ -23,7 +23,19 @@ $clips = (Get-Content $Catalog -Raw | ConvertFrom-Json).clips
 if (-not $clips) { Write-Host 'no clips in the catalog'; return }
 $made = 0; $same = 0; $missing = 0; $failed = 0
 # NVENC when the graphics card has it, else the CPU encoder
-$enc = if ((& $FFmpeg -hide_banner -encoders 2>$null) -match 'h264_nvenc') { @('-c:v', 'h264_nvenc', '-preset', 'p5', '-b:v', '4M') } else { @('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22') }
+# (a test encode, not just the encoder list: every ffmpeg build lists h264_nvenc, but an older driver - DESKTOP-RACE2's
+# GTX 1060 - rejects it with "Invalid argument" and every clip failed)
+$nvOk = $false
+if ((& $FFmpeg -hide_banner -encoders 2>$null) -match 'h264_nvenc') {
+  $probe = Join-Path $env:TEMP "am-nvenc-$PID.mp4"
+  # its "driver too old" message goes to stderr, which PowerShell 5.1 under 'Stop' would turn into a terminating error
+  $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  & cmd /c "`"$FFmpeg`" -hide_banner -v error -y -f lavfi -i testsrc2=s=320x240:d=0.5 -c:v h264_nvenc -preset p5 `"$probe`" 2>nul" | Out-Null
+  $ErrorActionPreference = $eap
+  $nvOk = ($LASTEXITCODE -eq 0) -and (Test-Path $probe) -and ((Get-Item $probe).Length -gt 0)
+  Remove-Item $probe -ErrorAction SilentlyContinue
+}
+$enc = if ($nvOk) { @('-c:v', 'h264_nvenc', '-preset', 'p5', '-b:v', '4M') } else { @('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22') }
 foreach ($e in $clips.PSObject.Properties) {
   $col, $item = $e.Name -split '/', 2
   $src = [string]$e.Value.from; $start = [double]("0" + $e.Value.start)
