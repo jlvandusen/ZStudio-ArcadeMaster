@@ -29,3 +29,6 @@ layouts/ArcadeMaster/images/racing_wheel_real.png
 Thumbs.db
 desktop.ini
 !tools/streamdeck/bin/hidapi.dll
+
+# --- one-time backups written next to a settings file before its first change (tools/lib/AmSettings.ps1) ---
+*.am-bak

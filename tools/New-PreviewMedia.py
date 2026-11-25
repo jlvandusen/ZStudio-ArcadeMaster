@@ -375,6 +375,8 @@ def main() -> int:
     ap.add_argument('--ffmpeg', help='ffmpeg.exe or its folder')
     ap.add_argument('--encoder', choices=['auto', 'nvenc', 'x264'], default='auto')
     ap.add_argument('--manifest', default=MANIFEST_DIR)
+    ap.add_argument('--max-minutes', type=float, default=0,
+                    help='start no new conversion after N minutes (the rest continue next run); 0 = no limit')
     a = ap.parse_args()
 
     t0 = time.time()
@@ -429,6 +431,39 @@ def main() -> int:
             print(f'REFUSED {ma}: {err}', flush=True)
         dirs_ok[ma] = err
 
+    # ---- stand-ins first: the layout plays am_video (type="am_video") and RetroFE cannot fall back to another video
+    # type, so EVERY game needs a file there before any conversion starts. A stand-in is the original video itself:
+    # a hard link (same drive, no space) or a copy (the original is on another drive, e.g. behind a junction).
+    # Stand-ins have the original's size, so the conversion below still picks them up - now or on a later run.
+    standins = 0
+    if do_video and not a.dry_run:
+        for it in items:
+            if dirs_ok.get(it['ma']):
+                continue
+            ov = os.path.join(it['ma'], 'am_video', it['item'] + '.mp4')
+            if os.path.exists(ov):
+                continue
+            try:
+                check_write_file(ov, root)
+                part = ov[:-4] + '.part.mp4'
+                try:
+                    os.link(it['src'], part)
+                except OSError:
+                    shutil.copyfile(it['src'], part)
+                os.replace(part, ov)
+                standins += 1
+            except Exception as e:
+                print(f'stand-in failed for {it["collection"]} / {it["item"]}: {e}', flush=True)
+        if standins:
+            print(f'stand-ins: {standins} game(s) got their original video in am_video until converted', flush=True)
+    deadline = (t0 + a.max_minutes * 60) if a.max_minutes else 0
+
+    def is_standin(ov: str, src_size: int) -> bool:
+        try:
+            return os.path.getsize(ov) == src_size
+        except OSError:
+            return False
+
     lock = threading.Lock()
     # --jobs caps the concurrent video encodes (NVENC sessions); two extra workers keep the CPU-side work
     # (probing, backdrop frames, Pillow) going while the encoder slots are busy.
@@ -448,15 +483,22 @@ def main() -> int:
             rec['src_bytes'] = st.st_size
             ov = os.path.join(it['ma'], 'am_video', it['item'] + '.mp4')
             ob = os.path.join(it['ma'], 'am_backdrop', it['item'] + '.jpg')
-            need_v = do_video and (a.force or not up_to_date(ov, st.st_mtime))
+            need_v = do_video and (a.force or not up_to_date(ov, st.st_mtime) or is_standin(ov, st.st_size))
             need_b = do_bd and (a.force or not up_to_date(ob, st.st_mtime))
+            if deadline and time.time() > deadline and (need_v or need_b):
+                rec['video'] = rec['backdrop'] = 'later'    # time budget used up: the next run continues here
+                return rec
             rec['video'] = ('todo' if need_v else 'skip') if do_video else None
             rec['backdrop'] = ('todo' if need_b else 'skip') if do_bd else None
             info = None
-            if need_v or need_b or not a.dry_run:
+            if need_v or need_b:                    # up to date: no probing (a re-run of 1,700 games takes seconds)
                 info = media_info(ffprobe(ffprobe_exe, src), st.st_size)
                 rec['src_info'] = {k: info[k] for k in ('vcodec', 'width', 'height', 'fps', 'duration',
                                                        'vbitrate', 'bitrate', 'acodec')}
+                # a stand-in of a source that is already light (<=1280 wide, low bitrate) is as good as a remux
+                if need_v and not a.force and info and can_copy(info) and is_standin(ov, st.st_size):
+                    need_v = False
+                    rec['video'] = 'skip'
             if a.dry_run:
                 if need_v and info:
                     rec['video'] = 'would-copy' if can_copy(info) else f'would-encode {target_size(info)}'
@@ -477,7 +519,8 @@ def main() -> int:
                         if os.path.exists(part):
                             os.remove(part)
                         tail = ' | '.join((r.stderr or '').strip().splitlines()[-3:])
-                        raise RuntimeError(f'ffmpeg video failed: {tail}')
+                        # the stand-in (the original video) stays in am_video, so the game still shows a video
+                        raise RuntimeError(f'ffmpeg video failed (original kept as the preview): {tail}')
                 os.replace(part, ov)
                 rec['video'] = mode
             if need_b:
@@ -493,6 +536,7 @@ def main() -> int:
                 rec['backdrop'] = 'made'
             if do_video and os.path.isfile(ov):
                 rec['out_bytes'] = os.path.getsize(ov)
+            if do_video and os.path.isfile(ov) and rec.get('video') not in ('skip', None):
                 try:
                     oi = media_info(ffprobe(ffprobe_exe, ov), rec['out_bytes'])
                     rec['out_info'] = {k: oi[k] for k in ('vcodec', 'width', 'height', 'fps', 'duration',

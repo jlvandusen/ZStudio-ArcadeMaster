@@ -42,7 +42,8 @@ $meta = @{
   ShuffleBackgrounds = @{ icon = 'shuffle'; color = '7b5cff'; what = 'Deal a fresh random set of game backdrops for the main menu.' }
   Themes             = @{ icon = 'shuffle'; color = '7b5cff'; what = 'Change the whole look - ArcadeMaster or a theme imported from CoinOPS / Core. Kept per cabinet mode.' }
   SystemHealth       = @{ icon = 'repair'; color = '3ddc84'; what = 'Check and repair the install: runtime, settings, controls, screens, menus, launchers, logs, disk, art.' }
-  SystemSettings     = @{ icon = 'buttons'; color = 'ffb000'; what = 'Auto login, start the arcade at logon, quiet startup, no Windows pop-ups, game bezels, screen always on.' }
+  SystemSettings     = @{ icon = 'buttons'; color = 'ffb000'; what = 'Every cabinet setting in one list: type, screens, sounds, story panel, attract mode, button lights, Stream Deck, Windows switches.' }
+  ResetTheme         = @{ icon = 'repair'; color = '7b5cff'; what = 'A theme gone wrong? Back to the ArcadeMaster layout with its original style, no per-mode themes.' }
   CabinetType        = @{ icon = 'cabinet'; color = '2ec8ff'; what = 'Tell the arcade what it is - racing, flight, light gun, stand-up, multicade, or a combo. Shown in the boot intro.' }
   TogglePerfLog      = @{ icon = 'perf'; color = '9aa3b2'; what = 'Write frame times, p99 and hitches to log.txt every 10 seconds.'; toggle = 'perf' }
 }
@@ -120,12 +121,16 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
     }
 
     'SystemSettings' {
-      $st = @(); try { $st = @((& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-CabinetSystem.ps1') -List -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String) | ConvertFrom-Json | ForEach-Object { $_ }) } catch { }   # PS 5.1 returns a JSON array as ONE object - unroll
+      $st = @(); try { $st = @((& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-CabinetSettings.ps1') -List -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String) | ConvertFrom-Json | ForEach-Object { $_ }) } catch { }   # PS 5.1 returns a JSON array as ONE object - unroll
+      $pick = 'attractModeTime', 'menuSounds', 'story', 'controlHints', 'buttonLights', 'streamDeck'
+      $st = @($pick | ForEach-Object { $id = $_; $st | Where-Object { $_.id -eq $id } } | Select-Object -First 6)
       $x = $r.X; $y = $r.Y; $i = 0
       foreach ($s in $st) {
         $cx = $r.X + ($i % 3) * 316; $cy = $r.Y + [Math]::Floor($i / 3) * 62
-        [AmDraw]::Toggle($g, (RectF $cx ($cy + 8) 84 40), [bool]$s.on, [AmPal]::Green, $null)
-        [AmDraw]::Text($g, "$($s.label)", (PxFont 'Segoe UI Semibold' 19), $(if ($s.on) { [AmPal]::Text } else { [AmPal]::Dim }), (RectF ($cx + 94) $cy 220 56), 'Near', 'Center'); $i++
+        $lit = if ($s.kind -eq 'switch') { [bool]$s.on } else { $true }
+        if ($s.kind -eq 'switch') { [AmDraw]::Toggle($g, (RectF $cx ($cy + 8) 84 40), [bool]$s.on, [AmPal]::Green, $null) }
+        else { [AmDraw]::Text($g, "$($s.value)", (PxFont 'Segoe UI Black' 22), [AmPal]::Cyan, (RectF $cx $cy 84 56), 'Center', 'Center') }
+        [AmDraw]::Text($g, "$($s.label)", (PxFont 'Segoe UI Semibold' 19), $(if ($lit) { [AmPal]::Text } else { [AmPal]::Dim }), (RectF ($cx + 94) $cy 220 56), 'Near', 'Center'); $i++
       }
     }
     'CabinetType' {

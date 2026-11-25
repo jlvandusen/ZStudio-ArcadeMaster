@@ -2,7 +2,7 @@
 .SYNOPSIS
   Puts the ArcadeMaster maintenance commands into the frontend: a "Tools" collection whose items are
   .bat launchers for Invoke-CabinetTool.ps1 (wheel setup, detect controllers, repair IDs, rebuild menus,
-  FFB / second screen / perf log toggles, shuffle backgrounds). Neon logo per item, RetroFE restarts after
+  FFB / second screen / perf log toggles, shuffle backgrounds, cabinet settings, themes, reset theme). Neon logo per item, RetroFE restarts after
   each tool (launcher reboot = yes) so settings apply. Adds Tools to Main\menu.txt.
   Marked ARCADEMASTER-TOOLS.txt (New-RetroFECollections leaves it alone; Build-Manifest skips it).
 #>
@@ -23,7 +23,7 @@ if ($Remove) {
 }
 
 $items = [ordered]@{
-  '0 System Settings'        = @('SystemSettings', 'ffb000')
+  '0 Cabinet Settings'       = @('SystemSettings', 'ffb000')
   '00 System Health'         = @('SystemHealth', '3ddc84')
   '1 Wheel Setup'            = @('WheelSetup', 'ff2fa0')
   '2 Detect Controllers'     = @('DetectControllers', '2ec8ff')
@@ -35,6 +35,7 @@ $items = [ordered]@{
   '8 Performance Log On-Off' = @('TogglePerfLog', '9aa3b2')
   '9 Cabinet Type'           = @('CabinetType', '2ec8ff')
   '9a Themes'                = @('Themes', '7b5cff')
+  '9b Reset Theme'           = @('ResetTheme', '7b5cff')
 }
 
 # a cabinet with no wheel (pedestal, stand-up) does not need the wheel and force-feedback items

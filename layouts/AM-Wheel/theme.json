@@ -1,0 +1,10 @@
+{
+  "name": "AM-Wheel",
+  "label": "Spin Wheel",
+  "about": "curved logo wheel on the right, a big video on the left, the story as a ticker",
+  "idea": "CoinOPS \"Wheel Ani\" and CORE \"TYPE R\" (logos on a curved, tilted wheel at the screen edge) - here a neon arc on the right with a glass band under the logos, the video big on the left and the story running as a ticker",
+  "keys": "UP / DOWN: games   LEFT / RIGHT: playlists   SELECT: play   BACK: main menu",
+  "madeBy": "tools/New-ArcadeThemes.py",
+  "resolution": "1920x1080",
+  "monitors": 2
+}

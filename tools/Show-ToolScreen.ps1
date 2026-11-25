@@ -43,8 +43,8 @@ public class AmFeed {
 . (Join-Path $PSScriptRoot 'lib\AmTypeCache.ps1'); Add-AmCachedType -Source $amWinSrc -References System.Windows.Forms, System.Drawing -ProbeType AmWin
 [void][AmWin]::SetProcessDPIAware()
 
-$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons'; SystemHealth = 'repair'; Themes = 'shuffle' }[$Tool]
-$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan; SystemSettings = [AmPal]::Amber; SystemHealth = [AmPal]::Green; Themes = [AmPal]::Violet }[$Tool]
+$toolIcon = @{ WheelSetup = 'setup'; DetectControllers = 'detect'; RepairIds = 'repair'; RebuildMenus = 'rebuild'; ToggleFfb = 'ffb'; ToggleSecondScreen = 'screen2'; ShuffleBackgrounds = 'shuffle'; TogglePerfLog = 'perf'; CabinetType = 'cabinet'; SystemSettings = 'buttons'; SystemHealth = 'repair'; Themes = 'shuffle'; ResetTheme = 'repair' }[$Tool]
+$toolColor = @{ WheelSetup = [AmPal]::Magenta; DetectControllers = [AmPal]::Cyan; RepairIds = [AmPal]::Cyan; RebuildMenus = [AmPal]::Amber; ToggleFfb = [AmPal]::Magenta; ToggleSecondScreen = [AmPal]::Hex('9be7ff'); ShuffleBackgrounds = [AmPal]::Violet; TogglePerfLog = [AmPal]::Dim; CabinetType = [AmPal]::Cyan; SystemSettings = [AmPal]::Amber; SystemHealth = [AmPal]::Green; Themes = [AmPal]::Violet; ResetTheme = [AmPal]::Violet }[$Tool]
 if (-not $Title) { $Title = ($Tool -creplace '(?<=[a-z])(?=[A-Z])', ' ').ToUpper() }
 if ($Screen -lt 0) {
   $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*screenNum0\s*=\s*(\d+)' -ErrorAction SilentlyContinue | Select-Object -Last 1
@@ -105,7 +105,8 @@ function On-Event($e) {
     'wiz-result' { if ($M.wiz) { [void]$M.wiz.results.Add($e) } }
     'settings' {
       $idx = if ($M.settings) { $M.settings.idx } else { 0 }
-      $M.settings = @{ items = @($e.items); idx = $idx; message = "$($e.message)"; busy = $false; at = Get-Date; armed = $null; armedAt = [datetime]::MinValue; rest = @{}; moveAt = [datetime]::MinValue; dir = 0; done = $false }
+      $scroll = if ($M.settings) { $M.settings.scroll } else { 0 }
+      $M.settings = @{ items = @($e.items); idx = [Math]::Min($idx, @($e.items).Count); scroll = $scroll; message = "$($e.message)"; busy = $false; at = Get-Date; armed = $null; armedAt = [datetime]::MinValue; rest = @{}; moveAt = [datetime]::MinValue; dir = 0; done = $false }
       if ($M.yielded) { $M.yielded = $false; $form.WindowState = 'Normal'; $form.Bounds = $SB; $form.TopMost = $true; $form.Activate() }
     }
     'yield' { $M.yielded = $true; if ($M.settings) { $M.settings.message = "$($e.message)" }; $form.TopMost = $false; $form.WindowState = 'Minimized' }
@@ -373,38 +374,84 @@ function Paint-Intro($g, [float]$y, [float]$h) {
   $g.Restore($st); $g.DrawPath((New-Object Drawing.Pen ([AmPal]::A([AmPal]::Cyan, 200)), 3), [AmDraw]::Round($box, $SH * 0.012))
   [AmDraw]::Text($g, ("BOOT INTRO PREVIEW   -   cabinetType = {0}" -f $M.intro.setting), $fnt.chip, [AmPal]::Dim, (Rect $px ($y + $ph + $SH * 0.008) $pw ($SH * 0.03)), 'Center', 'Center')
 }
-function Get-SettingRects([float]$y, [float]$h) {
-  $n = @($M.settings.items).Count + 1; $rh = [Math]::Min($SH * 0.085, ($h - $SH * 0.07) / $n)
-  for ($i = 0; $i -lt $n; $i++) { Rect $pad ($y + $SH * 0.06 + $i * $rh) ($SW - 2 * $pad) ($rh * 0.88) }
+# Settings rows. An item may carry (all optional, so the old switch-only list still draws):
+#   group    a header row is drawn where the group changes      kind     switch (default) | cycle | info | action
+#   value    text shown for cycle / info / action rows           confirm  false = no second press (default: true)
+# The list scrolls so the selected row (and the header above it) stays on screen.
+function Get-SettingRows([float]$y, [float]$h) {
+  $st = $M.settings; $items = @($st.items); $rows = New-Object Collections.ArrayList; $grp = $null
+  for ($i = 0; $i -lt $items.Count; $i++) {
+    $g0 = "$($items[$i].group)"; if ($g0 -and $g0 -ne $grp) { [void]$rows.Add(@{ t = 'h'; text = $g0; i = -1 }) }; $grp = $g0
+    [void]$rows.Add(@{ t = 'i'; i = $i })
+  }
+  [void]$rows.Add(@{ t = 'd'; i = $items.Count })
+  $rh = $SH * 0.058; $top = $y + $SH * 0.06; $vis = [Math]::Max(3, [int][Math]::Floor(($h - $SH * 0.06) / $rh))
+  $selRow = 0; for ($r = 0; $r -lt $rows.Count; $r++) { if ($rows[$r].i -eq $st.idx) { $selRow = $r } }
+  $sc = [int]$st.scroll
+  if ($selRow - 1 -lt $sc) { $sc = [Math]::Max(0, $selRow - 1) }
+  if ($selRow -ge $sc + $vis) { $sc = $selRow - $vis + 1 }
+  $sc = [Math]::Max(0, [Math]::Min($sc, $rows.Count - $vis)); $st.scroll = $sc
+  $out = New-Object Collections.ArrayList
+  for ($r = $sc; $r -lt [Math]::Min($rows.Count, $sc + $vis); $r++) { $row = $rows[$r]; $row.rect = Rect $pad ($top + ($r - $sc) * $rh) ($SW - 2 * $pad - $SH * 0.02) ($rh * 0.9); [void]$out.Add($row) }
+  return @{ rows = $out; total = $rows.Count; first = $sc; vis = $vis; top = $top; rh = $rh }
 }
 function Paint-Settings($g, [float]$y, [float]$h) {
   $st = $M.settings; $items = @($st.items)
-  [AmDraw]::Text($g, "$($st.message)", $fnt.textB, $(if ($st.busy) { [AmPal]::Amber } else { [AmPal]::Dim }), (Rect $pad $y ($SW - 2 * $pad) ($SH * 0.05)), 'Near', 'Center')
-  $rects = @(Get-SettingRects $y $h)
-  for ($i = 0; $i -lt $rects.Count; $i++) {
-    $r = $rects[$i]; $sel = $i -eq $st.idx
-    if ($i -eq $items.Count) {
+  [AmDraw]::Text($g, "$($st.message)", $fnt.textB, $(if ($st.busy) { [AmPal]::Amber } elseif ($st.armed) { [AmPal]::Red } else { [AmPal]::Dim }), (Rect $pad $y ($SW - 2 * $pad) ($SH * 0.05)), 'Near', 'Center')
+  $L = Get-SettingRows $y $h
+  foreach ($row in $L.rows) {
+    $r = $row.rect
+    if ($row.t -eq 'h') {
+      [AmDraw]::Text($g, $row.text, $fnt.label, [AmPal]::Magenta, (Rect ($r.X + $r.Height * 0.1) $r.Y ($r.Width * 0.6) $r.Height), 'Near', 'Far')
+      $g.FillRectangle((Brush ([AmPal]::A([AmPal]::Magenta, 120))), (Rect $r.X ($r.Bottom - 2) $r.Width 2)); continue
+    }
+    $sel = $row.i -eq $st.idx
+    if ($row.t -eq 'd') {
       [AmDraw]::Card($g, $r, $(if ($sel) { [AmPal]::Green } else { [AmPal]::Faint }), $r.Height * 0.3, $sel)
       [AmDraw]::Text($g, 'DONE', $fnt.btn, $(if ($sel) { [AmPal]::Green } else { [AmPal]::Dim }), $r, 'Center', 'Center'); continue
     }
-    $it = $items[$i]
+    $it = $items[$row.i]; $kind = if ($it.kind) { "$($it.kind)" } else { 'switch' }
     [AmDraw]::Card($g, $r, $(if ($st.armed -eq $it.id) { [AmPal]::Red } elseif ($sel) { [AmPal]::Amber } else { [AmPal]::Faint }), $r.Height * 0.2, $sel)
-    [AmDraw]::Text($g, "$($it.label)", $fnt.textB, $(if ($sel) { [AmPal]::Text } else { [AmPal]::Dim }), (Rect ($r.X + $r.Height * 0.3) $r.Y ($r.Width * 0.38) $r.Height), 'Near', 'Center')
-    [AmDraw]::Text($g, "$($it.detail)", $fnt.small, [AmPal]::Dim, (Rect ($r.X + $r.Width * 0.38) $r.Y ($r.Width * 0.44) $r.Height), 'Near', 'Center')
-    $tw = $r.Height * 1.9; $tr = Rect ($r.Right - $tw - $r.Height * 0.25) ($r.Y + $r.Height * 0.15) $tw ($r.Height * 0.7)
-    if ($sel -and $st.busy) { [AmDraw]::Check($g, (Rect ($tr.X + ($tw - $tr.Height) / 2) $tr.Y $tr.Height $tr.Height), 1, [float](((Get-Date) - $st.at).TotalMilliseconds / 3 % 360)) }
-    else { [AmDraw]::Toggle($g, $tr, [bool]$it.on, [AmPal]::Green, $fnt.label) }
+    $lw = $r.Width * 0.33; $lf = Fit-Font $g "$($it.label)" @($fnt.textB, $fnt.label, $fnt.chip) ($lw - $r.Height * 0.3)
+    [AmDraw]::Text($g, "$($it.label)", $lf, $(if ($sel) { [AmPal]::Text } else { [AmPal]::Dim }), (Rect ($r.X + $r.Height * 0.3) $r.Y $lw $r.Height), 'Near', 'Center')
+    $cw = $r.Height * 4.2
+    [AmDraw]::Text($g, "$($it.detail)", $fnt.small, [AmPal]::Dim, (Rect ($r.X + $r.Height * 0.3 + $lw) $r.Y ($r.Width - $lw - $cw - $r.Height * 0.8) $r.Height), 'Near', 'Center')
+    $tr = Rect ($r.Right - $cw - $r.Height * 0.2) ($r.Y + $r.Height * 0.14) $cw ($r.Height * 0.72)
+    if ($sel -and $st.busy) { [AmDraw]::Check($g, (Rect ($tr.Right - $tr.Height * 1.6) $tr.Y $tr.Height $tr.Height), 1, [float](((Get-Date) - $st.at).TotalMilliseconds / 3 % 360)); continue }
+    switch ($kind) {
+      'switch' { $tw = $r.Height * 1.7; [AmDraw]::Toggle($g, (Rect ($tr.Right - $tw) $tr.Y $tw $tr.Height), [bool]$it.on, [AmPal]::Green, $fnt.label) }
+      'info' { [AmDraw]::Text($g, "$($it.value)", (Fit-Font $g "$($it.value)" @($fnt.label, $fnt.chip) $cw), [AmPal]::Cyan, $tr, 'Far', 'Center') }
+      default {
+        # cycle: the value in a pill (each press steps to the next preset); action: a button
+        $c = if ($kind -eq 'action') { [AmPal]::Red } else { [AmPal]::Cyan }
+        $p = [AmDraw]::Round($tr, $tr.Height / 2); $g.FillPath((Brush ([AmPal]::A($c, $(if ($sel) { 70 } else { 35 })))), $p); $g.DrawPath((New-Object Drawing.Pen ([AmPal]::A($c, 210)), 2), $p)
+        $txt = "$($it.value)" + $(if ($kind -eq 'cycle') { '  >' } else { '' })
+        [AmDraw]::Text($g, $txt, (Fit-Font $g $txt @($fnt.label, $fnt.chip) ($cw - $tr.Height * 0.5)), $(if ($sel) { [AmPal]::Text } else { $c }), $tr, 'Center', 'Center')
+      }
+    }
+  }
+  # scroll bar when the list is longer than the page
+  if ($L.total -gt $L.vis) {
+    $bx = $SW - $pad - $SH * 0.008; $bh = $L.vis * $L.rh
+    $g.FillRectangle((Brush ([AmPal]::A([AmPal]::Faint, 160))), (Rect $bx $L.top ($SH * 0.006) $bh))
+    $g.FillRectangle((Brush ([AmPal]::A([AmPal]::Amber, 220))), (Rect $bx ($L.top + $bh * $L.first / $L.total) ($SH * 0.006) ([Math]::Max($SH * 0.02, $bh * $L.vis / $L.total))))
   }
 }
 function Activate-Setting {
   $st = $M.settings; if (-not $st -or $st.busy -or $st.done) { return }
   if (((Get-Date) - $st.at).TotalMilliseconds -lt 700) { return }   # ignore presses that arrive while the list (re)loads
   if ($st.idx -ge @($st.items).Count) { $st.done = $true; Send-WizKey 'CHOICE:done'; return }
-  # every system switch needs a confirming second press on the same row within 4 s
-  $it = $st.items[$st.idx]
-  if ($st.armed -ne $it.id -or ((Get-Date) - $st.armedAt).TotalSeconds -gt 4) { $st.armed = $it.id; $st.armedAt = Get-Date; $st.message = ("PRESS AGAIN TO TURN {0} {1}" -f $it.label, $(if ($it.on) { 'OFF' } else { 'ON' })); return }
+  $it = $st.items[$st.idx]; $kind = if ($it.kind) { "$($it.kind)" } else { 'switch' }
+  if ($kind -eq 'info') { $st.message = "$($it.label): $($it.detail)"; return }
+  # Windows switches and actions need a confirming second press on the same row within 4 s (confirm = false: one press)
+  $needs = if ($null -ne $it.confirm) { [bool]$it.confirm } else { $true }
+  if ($needs -and ($st.armed -ne $it.id -or ((Get-Date) - $st.armedAt).TotalSeconds -gt 4)) {
+    $st.armed = $it.id; $st.armedAt = Get-Date
+    $st.message = switch ($kind) { 'switch' { "PRESS AGAIN TO TURN {0} {1}" -f $it.label, $(if ($it.on) { 'OFF' } else { 'ON' }) } 'action' { "PRESS AGAIN TO {0}" -f $it.label } default { "PRESS AGAIN TO CHANGE {0}" -f $it.label } }
+    return
+  }
   $st.armed = $null
-  $st.busy = $true; $st.at = Get-Date; $st.message = "switching $($st.items[$st.idx].label) ..."; Send-WizKey ('TOGGLE:' + $st.items[$st.idx].id)
+  $st.busy = $true; $st.at = Get-Date; $st.message = "changing $($it.label) ..."; Send-WizKey ('TOGGLE:' + $it.id)
 }
 function Paint-Log($g, [float]$y, [float]$h) {
   $lh = $fnt.mono.GetHeight($g); $n = [Math]::Max(1, [int]($h / $lh)); $lines = @($M.log | Select-Object -Last $n); $i = 0
@@ -421,7 +468,7 @@ function Get-ButtonRects {
 function Paint-Footer($g) {
   $now = Get-Date
   if ($M.settings -and -not $M.settings.done -and -not $M.done) {
-    [AmDraw]::Text($g, "TURN THE WHEEL / STICK OR TAP TO PICK   -   PRESS A BUTTON TO SWITCH   -   DONE WHEN FINISHED", $fnt.foot, [AmPal]::Amber, (Rect $pad ($SH * 0.875) ($SW - 2 * $pad) ($SH * 0.075)), 'Center', 'Center'); return
+    [AmDraw]::Text($g, "TURN THE WHEEL / STICK OR TAP TO PICK  -  PRESS A BUTTON TO CHANGE  -  DONE WHEN FINISHED", $fnt.foot, [AmPal]::Amber, (Rect $pad ($SH * 0.875) ($SW - 2 * $pad) ($SH * 0.075)), 'Center', 'Center'); return
   }
   if ($M.choice -and -not $M.choice.confirmed -and -not $M.done) {
     [AmDraw]::Text($g, "TURN THE WHEEL / JOYSTICK OR TAP TO CHOOSE   -   PRESS A BUTTON TO CONFIRM", $fnt.foot, [AmPal]::Amber, (Rect $pad ($SH * 0.875) ($SW - 2 * $pad) ($SH * 0.075)), 'Center', 'Center'); return
@@ -564,7 +611,7 @@ $form.Add_KeyDown({ param($s, $e)
 })
 $form.Add_MouseDown({ param($s, $e)
   if ($M.done) { Close-Screen 'tap/click'; return }
-  if ($M.settings -and -not $M.settings.done) { $rects = @(Get-SettingRects ($SH * 0.2) ($SH * 0.65)); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { $M.settings.idx = $i; Activate-Setting } }; return }
+  if ($M.settings -and -not $M.settings.done) { foreach ($row in (Get-SettingRows ($SH * 0.2) ($SH * 0.65)).rows) { if ($row.t -ne 'h' -and $row.rect.Contains([float]$e.X, [float]$e.Y)) { $M.settings.idx = $row.i; Activate-Setting; break } }; return }
   if ($M.choice -and -not $M.choice.confirmed) { $rects = @(Get-ChoiceRects ($SH * 0.2) ($SH * 0.65)); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { $M.choice.idx = $i; Confirm-Choice } }; return }
   if ($M.wiz -and -not $M.wizEnd) { $rects = @(Get-ButtonRects); for ($i = 0; $i -lt $rects.Count; $i++) { if ($rects[$i].Contains([float]$e.X, [float]$e.Y)) { Send-WizKey $wizButtons[$i].key } } }
 })

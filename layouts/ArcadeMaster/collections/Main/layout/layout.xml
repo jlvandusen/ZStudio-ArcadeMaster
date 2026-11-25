@@ -5,13 +5,15 @@
 -->
 <layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
 
+  <!--am-ui:menuSounds-->
   <sound type="select"    src="../../../sounds/select.wav"/>
   <sound type="highlight" src="../../../sounds/highlight.wav"/>
   <sound type="load"      src="../../../sounds/load.wav"/>
+  <!--/am-ui:menuSounds-->
 
   <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
   <!-- BACKDROP: random fanart of the games in the HIGHLIGHTED collection (am_bg1..6, mode="layout", reshuffled every boot by Set-LayoutThemes -Shuffle); 20 s each, cross-fade + Ken Burns; restarts on highlight change -->
-  <reloadableImage type="am_bg1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg1" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
     <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration=".6"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="width" from="1920" to="1928"/><animate type="height" from="1080" to="1085"/><animate type="x" from="960" to="958"/></set>
@@ -20,7 +22,7 @@
       <set duration="100"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg2" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg2" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
     <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="18"><animate type="nop"/></set>
@@ -30,7 +32,7 @@
       <set duration="80"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg3" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg3" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
     <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="38"><animate type="nop"/></set>
@@ -40,7 +42,7 @@
       <set duration="60"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg4" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg4" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
     <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="58"><animate type="nop"/></set>
@@ -50,7 +52,7 @@
       <set duration="40"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg5" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg5" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
     <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="78"><animate type="nop"/></set>
@@ -60,7 +62,7 @@
       <set duration="20"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_bg6" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
+  <reloadableImage type="am_bg6" liveDevice="wheel" liveShiftX="-50" liveSteer="-1.2" liveZoomAxis="1" liveZoom="0.06" liveCover="1" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="0">
     <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="98"><animate type="nop"/></set>

@@ -1,0 +1,81 @@
+<!--
+  ArcadeMaster TOOLS screen (c) The Real Z Studios
+  The maintenance menu: neon list on the left (toggles carry a live ON/OFF switch), and on the right a big
+  preview card per tool showing what it does and what is true NOW (devices, game counts, backdrops, switch
+  state). All art is drawn by tools/New-ToolsArt.ps1 from the cabinet's current state.
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+
+  <sound type="select"    src="sounds/select.wav"/>
+  <sound type="highlight" src="sounds/highlight.wav"/>
+  <sound type="load"      src="sounds/load.wav"/>
+
+  <!-- tool backdrop: big faint icon in the tool's colour, slow drift -->
+  <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".4"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="12"><animate type="width" to="2010" algorithm="easeInOutSine"/><animate type="height" to="1131" algorithm="easeInOutSine"/><animate type="x" to="930" algorithm="easeInOutSine"/></set>
+      <set duration="12"><animate type="width" to="1920" algorithm="easeInOutSine"/><animate type="height" to="1080" algorithm="easeInOutSine"/><animate type="x" to="960" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+  <image src="images/fx_scrim_gamelist.png" x="0" y="0" width="1920" height="1080" layer="2"/>
+
+  <!-- the list -->
+  <image src="images/ui_select_frame.png" x="400" y="540" xOrigin="center" yOrigin="center" width="640" height="160" alpha="1" layer="9">
+    <onMenuScroll><set duration=".06"><animate type="width" to="680"/><animate type="height" to="176"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".15"><animate type="width" to="640"/><animate type="height" to="160"/></set>
+      <set duration="1.2"><animate type="alpha" to=".55" algorithm="easeInOutSine"/></set>
+      <set duration="1.2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </image>
+  <menu type="custom" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
+    <itemDefaults x="400" y="540" xOrigin="center" yOrigin="center" width="500" maxHeight="120" alpha="0" layer="10" fontColor="ffffff" fontSize="44" loadFontSize="44"/>
+    <item yOffset="-560" width="330" maxHeight="80"  alpha="0"/>
+    <item yOffset="-420" width="380" maxHeight="90"  alpha=".3"/>
+    <item yOffset="-285" width="430" maxHeight="100" alpha=".5"/>
+    <item yOffset="-150" width="480" maxHeight="110" alpha=".75"/>
+    <item selected="true" width="580" maxHeight="130" alpha="1"/>
+    <item yOffset="150"  width="480" maxHeight="110" alpha=".75"/>
+    <item yOffset="285"  width="430" maxHeight="100" alpha=".5"/>
+    <item yOffset="420"  width="380" maxHeight="90"  alpha=".3"/>
+    <item yOffset="560"  width="330" maxHeight="80"  alpha="0"/>
+  </menu>
+
+  <!-- the preview card (medium_artwork/video/<item>.png): slides in from the right on every move -->
+  <reloadableVideo imageType="video" x="1300" y="500" xOrigin="center" yOrigin="center" width="1120" maxHeight="630" alpha="0" layer="6">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="x" to="1360"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="x" to="1300" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableVideo>
+
+  <!-- how to use it -->
+  <text value="SELECT TO RUN      BACK TO LEAVE" x="1300" y="900" xOrigin="center" yOrigin="center" fontSize="38" loadFontSize="38" fontColor="ffb000" alpha="1" layer="10">
+    <onIdle>
+      <set duration="1.4"><animate type="alpha" to=".45" algorithm="easeInOutSine"/></set>
+      <set duration="1.4"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set>
+    </onIdle>
+  </text>
+  <text value="ARCADEMASTER TOOLS" x="1300" y="960" xOrigin="center" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="9aa3b2" alpha=".8" layer="10"/>
+
+  <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".4" layer="16"/>
+
+  <!-- launch: blackout + the tool's logo punches in, then the full-screen tool page takes over -->
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">
+    <onGameEnter><set duration=".25"><animate type="nop"/></set><set duration=".4"><animate type="alpha" to="1"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
+  </image>
+  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="700" maxHeight="340" alpha="0" layer="19">
+    <onGameEnter>
+      <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="1000" algorithm="easeOutCubic"/></set>
+      <set duration=".6"><animate type="nop"/></set>
+      <set duration=".25"><animate type="alpha" to="0"/></set>
+    </onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="700"/></set></onGameExit>
+  </reloadableImage>
+
+</layout>

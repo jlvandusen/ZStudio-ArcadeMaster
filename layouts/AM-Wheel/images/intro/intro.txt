@@ -1,0 +1,5 @@
+type=racing
+setting=auto
+title=RACING CABINET
+tagline=START YOUR ENGINES
+icons=wheel,pedals
