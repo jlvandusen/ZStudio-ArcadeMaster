@@ -67,7 +67,20 @@ namespace ArcadeMaster
         public static string Git = FindGit();
         static string FindGit()
         {
-            foreach (var p in new[] { @"C:\Program Files\Git\cmd\git.exe", @"C:\Program Files (x86)\Git\cmd\git.exe" }) if (File.Exists(p)) return p;
+            // machine-wide, then per-user (winget / Git for Windows "only for me" installs to %LOCALAPPDATA%\Programs\Git)
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            foreach (var p in new[] { @"C:\Program Files\Git\cmd\git.exe", @"C:\Program Files (x86)\Git\cmd\git.exe", Path.Combine(local, @"Programs\Git\cmd\git.exe") })
+                if (File.Exists(p)) return p;
+            // the PATH Windows keeps for the machine and the user: a process started without the user's PATH (from a
+            // tool, a task) still finds git there. Without this the update check failed with "git fetch exit -1".
+            foreach (var scope in new[] { EnvironmentVariableTarget.Machine, EnvironmentVariableTarget.User, EnvironmentVariableTarget.Process })
+            {
+                var path = Environment.GetEnvironmentVariable("Path", scope) ?? "";
+                foreach (var dir in path.Split(';'))
+                {
+                    try { var g = Path.Combine(Environment.ExpandEnvironmentVariables(dir.Trim()), "git.exe"); if (dir.Trim().Length > 0 && File.Exists(g)) return g; } catch { }
+                }
+            }
             return "git.exe";
         }
         public static string PowerShell { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"); } }
