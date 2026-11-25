@@ -33,8 +33,11 @@ The loop works like this (James, 2026-11-25):
         maps this. The cards need the real roles from controls.dat instead of "Move / Fire".
       - Crazy Climber: P1 stick = left arm, P2 stick = right arm (works by default; the card must say so).
       - Tutankham is one stick plus Fire Left / Fire Right / Flash: not a twin-stick game. Drop it from the filter.
-      - Omega Race: the dial rotates, B1 fire, B2 thrust. MAME did not start it headless; check the ROM.
-      - Discs of Tron: 8-way stick moves, the dial aims the disc, B1 fire, B2 shields, B3/B4 aim down/up.
+      - Omega Race: the dial rotates, B1 fire, B2 thrust. NOT IN THIS BUILD (no romset, no menu entry). Add it from
+        another build when the library move reaches MAME.
+      - Discs of Tron: 8-way triggerstick (B1 throw, B2 deflect) plus a push/pull dial (B3 aim up, B4 aim down). The
+        card is fixed (#41: stick + DIAL, no false trackball). In MAME, the dial's 2 panel buttons should be aim up/down.
+      - [x] Cards: roles per stick (#40); Discs of Tron (#41).
       - First, find which device the flight sticks are (`tools/Watch-Inputs.ps1`: move each control, see what it
         sends). Then write each game's cfg on the R: copy, backing up the old one.
 - [ ] Learn buttons on cabinets where LEDBlinky only drives the marquee. Read the I-PAC/Ultimarc config if there
