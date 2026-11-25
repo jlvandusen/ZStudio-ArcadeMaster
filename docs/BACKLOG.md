@@ -164,8 +164,15 @@ The loop works like this (James, 2026-11-25):
 - [ ] Settings errors under the new build: 5 menus have no collection settings.conf (All Trackball, All Twin Stick,
       All Vector, Console Arcade - Retro Arcade PC, Main); hi2txt defaults zip / scores folder missing. TOS GRS "not
       found" is expected (this cabinet has a ServoStik).
-- [ ] Fork history is unrelated to upstream CoinOPS (imported fresh): plan a one-time --allow-unrelated-histories
-      merge before pulling upstream's 1,443 commits.
+- [x] Upstream check (2026-11-25, RACE1): our base caab32e IS the tip of CoinOPS's working branch `current`; nothing
+      to pull. The 1,443 commits are the old `master` line. The fork's history is still unrelated (fresh import), so a
+      future upstream change needs a one-time --allow-unrelated-histories merge.
+- [ ] RetroFE roadmap (docs/14-retrofe-roadmap.md), items in order; each with perfLog before/after:
+  - [ ] 1. vsync on: today a 60 fps timer sleeps then spins the CPU on its own clock, not the screen's (drift, tearing).
+  - [ ] 3. Picture cache with a size limit (LRU + use count, `textureCacheMB`): today it never lets go of anything.
+  - [ ] 4b. Load the next / previous 3 items' art when the list moves (cold-cache hitches of 116-359 ms).
+  - [ ] 2. Video frames stay on the graphics card (D3D11 memory into SDL), dropping two copies per frame.
+  - [ ] 9. Crash dumps to the NAS from the health check; meta.db in WAL mode.
 
 ## 3. Performance
 - [x] Boot time: prep 6.9 s → 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
