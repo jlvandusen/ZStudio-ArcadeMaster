@@ -192,6 +192,7 @@ class LedEngine
         if (rom == null || !games.TryGetValue(rom, out g))
         {
             foreach (var label in pins.Keys) { SetLabel(label, new[] { 16, 16, 16 }); baseColor[label] = new[] { 16, 16, 16 }; }   // no colours known: soft white
+            ApplyOverrides(rom);
             Flush();
             return "no colours for '" + rom + "' - all buttons soft white";
         }
@@ -203,9 +204,95 @@ class LedEngine
             if (label == null || !palette.TryGetValue(kv.Value, out rgb)) continue;
             if (SetLabel(label, rgb)) { lit++; baseColor[label] = rgb; }
         }
+        lit += ApplyOverrides(rom);
         Flush();
         return lit + " controls lit for " + rom;
     }
+
+    // ---------------------------------------------------------------- step 11: the cabinet's own colours
+    // <manifest>\led-colors.json { "sf2": { "P1B1": [48,0,0] }, "*": { "P1START": [48,48,48] } } - a game's own entry
+    // beats "*", both beat Colors.ini. Colors.ini itself is never edited, so "reset" always works.
+    public string OverridesFile;
+    Dictionary<string, Dictionary<string, int[]>> overrides = new Dictionary<string, Dictionary<string, int[]>>(StringComparer.OrdinalIgnoreCase);
+
+    public void LoadOverrides(string file)
+    {
+        OverridesFile = file;
+        overrides = new Dictionary<string, Dictionary<string, int[]>>(StringComparer.OrdinalIgnoreCase);
+        if (file == null || !File.Exists(file)) return;
+        try
+        {
+            var root = new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(file));
+            foreach (var g in root)
+            {
+                var d = g.Value as Dictionary<string, object>; if (d == null) continue;
+                var m = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
+                foreach (var kv in d)
+                {
+                    var a = kv.Value as System.Collections.ArrayList;
+                    if (a != null && a.Count == 3) m[kv.Key] = new[] { Convert.ToInt32(a[0]), Convert.ToInt32(a[1]), Convert.ToInt32(a[2]) };
+                    else { int[] c; if (kv.Value != null && palette.TryGetValue(Convert.ToString(kv.Value), out c)) m[kv.Key] = c; }
+                }
+                overrides[g.Key] = m;
+            }
+        }
+        catch (Exception e) { LastError = "led-colors.json: " + e.Message; }
+    }
+
+    int ApplyOverrides(string rom)
+    {
+        int n = 0;
+        foreach (var key in new[] { "*", rom })
+        {
+            Dictionary<string, int[]> m; if (key == null || !overrides.TryGetValue(key, out m)) continue;
+            foreach (var kv in m) if (SetLabel(kv.Key, kv.Value)) { baseColor[kv.Key] = kv.Value; n++; }
+        }
+        return n;
+    }
+
+    public void SetGameColor(string rom, string label, int[] rgb)   // rgb null = remove this override
+    {
+        Dictionary<string, int[]> m;
+        if (!overrides.TryGetValue(rom, out m)) { m = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase); overrides[rom] = m; }
+        if (rgb == null) m.Remove(label); else m[label] = rgb;
+        if (m.Count == 0) overrides.Remove(rom);
+        SaveOverrides();
+    }
+    public void ResetGame(string rom) { overrides.Remove(rom); SaveOverrides(); }
+    public bool HasOverrides(string rom) { return overrides.ContainsKey(rom); }
+
+    void SaveOverrides()
+    {
+        if (OverridesFile == null) return;
+        var sb = new System.Text.StringBuilder("{\n");
+        bool firstG = true;
+        foreach (var g in overrides)
+        {
+            sb.Append(firstG ? "" : ",\n").Append("  \"").Append(g.Key.Replace("\"", "")).Append("\": {");
+            bool first = true;
+            foreach (var kv in g.Value) { sb.Append(first ? " " : ", ").Append('"').Append(kv.Key.Replace("\"", "")).Append("\": [").Append(kv.Value[0]).Append(',').Append(kv.Value[1]).Append(',').Append(kv.Value[2]).Append(']'); first = false; }
+            sb.Append(" }"); firstG = false;
+        }
+        sb.Append("\n}\n");
+        File.WriteAllText(OverridesFile, sb.ToString(), new System.Text.UTF8Encoding(false));
+    }
+
+    // what the colour screen shows: every mapped button with its colour for this game (after overrides)
+    public SortedDictionary<string, int[]> GameColors(string rom)
+    {
+        var d = new SortedDictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var label in pins.Keys) d[label] = new[] { 0, 0, 0 };
+        Dictionary<string, string> g;
+        if (rom != null && games.TryGetValue(rom, out g))
+            foreach (var kv in g) { string l = ToLabel(kv.Key); int[] c; if (l != null && d.ContainsKey(l) && palette.TryGetValue(kv.Value, out c)) d[l] = c; }
+        foreach (var key in new[] { "*", rom })
+        {
+            Dictionary<string, int[]> m; if (key == null || !overrides.TryGetValue(key, out m)) continue;
+            foreach (var kv in m) if (d.ContainsKey(kv.Key)) d[kv.Key] = kv.Value;
+        }
+        return d;
+    }
+    public bool KnowsGame(string rom) { return rom != null && games.ContainsKey(rom); }
 
     public void AllOff() { StopAnim(); foreach (var f in frame.Values) Array.Clear(f, 0, f.Length); Flush(); }
 
