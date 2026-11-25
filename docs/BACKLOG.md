@@ -51,7 +51,10 @@ The loop works like this (James, 2026-11-25):
         - [x] Command `13` + automatic UltraStik map per game (Sticks.cs, New-StickMaps.py). Tested live on both sticks.
         - [x] `16`/`17`: dim the panel to 25% on pause. Tested live.
         - [ ] Command `12` (load a MAME controller file): pick the game's MAME ctrlr cfg.
-        - [ ] Graphical stick screen: show the stick's 9x9 map, pick or draw one per game (UltraMap replacement).
+        - [x] Graphical stick screen: tray > Sticks & Guns (StickStudio.cs). It draws the 9x9 map, tries a map on the
+              sticks, keeps a pick per game (stick-maps-cabinet.json), has ServoStik 4/8 buttons and the gun list.
+              Picture: docs/img/ampanel-sticks.png.
+        - [ ] Draw your own map in that window (click cells), saved as a new .um.
         - [ ] Speech: announce the game name on select (Windows SAPI), as LEDBlinky's voice option does.
         - [ ] Pixelcade / LED marquee output (the 2-player cabinet uses LEDBlinky only for that).
         - [ ] Other LED boards: LED-Wiz (ledwiz.dll), Howler (HowlerDLL.dll), GPWiz.

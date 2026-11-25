@@ -60,6 +60,18 @@ static class AmPanel
     [STAThread]
     static int Main(string[] args)
     {
+        // AmPanel.exe --snapshot-sticks <rom> <png>: draw the Sticks & Guns window off-screen to a picture (docs, tests)
+        if (args.Length == 3 && args[0] == "--snapshot-sticks")
+        {
+            LoadConfig();
+            using (var f = new StickStudio(null, manifestDir, ledBlinkyDir, Gate, args[1], delegate { }) { StartPosition = FormStartPosition.Manual, Location = new System.Drawing.Point(-20000, -20000), ShowInTaskbar = false })
+            {
+                f.Show(); Application.DoEvents();
+                using (var bmp = new System.Drawing.Bitmap(f.Width, f.Height)) { f.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, f.Width, f.Height)); bmp.Save(args[2]); }
+                f.Close();
+            }
+            return 0;
+        }
         bool created;
         using (var mutex = new Mutex(true, MutexName, out created))
         {
@@ -454,6 +466,10 @@ static class AmPanel
                 string g; lock (Gate) g = State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : "";
                 new ColorStudio(leds, Gate, g).Show();
             });
+        menu.Items.Add("Sticks && Guns...", null, delegate {
+            string g; lock (Gate) g = State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : "";
+            try { new StickStudio(sticks, manifestDir, ledBlinkyDir, Gate, g, Log).Show(); } catch (Exception e) { Log("sticks window: " + e.Message); }
+        });
         menu.Items.Add("Triggers (game outputs)...", null, delegate {
             string g; lock (Gate) g = State.ContainsKey("game") && State["game"] != null ? Convert.ToString(State["game"]) : (State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : "");
             new TriggerStudio(outputs, delegate { return rules; }, ReloadRules, manifestDir, g,

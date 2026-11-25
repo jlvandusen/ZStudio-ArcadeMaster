@@ -42,19 +42,60 @@ class Sticks
         log("sticks: " + Count + " UltraStik(s)" + (LastError != null ? " - " + LastError : "") + ", " + games.Count + " games with their own map, default " + defaultMap);
     }
 
+    // stick-maps.json (generated) then stick-maps-cabinet.json (this cabinet's own picks from the Sticks window; the
+    // generator never touches it, so a pick survives every Rebuild Menus)
+    string LocalFile { get { return Path.Combine(Path.GetDirectoryName(mapsFile), "stick-maps-cabinet.json"); } }
+    Dictionary<string, string> local = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
     public void Reload()
     {
         games = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (!File.Exists(mapsFile)) return;
-        try
+        local = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in new[] { mapsFile, LocalFile })
         {
-            var ser = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
-            var root = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(mapsFile));
-            if (root.ContainsKey("default")) defaultMap = Convert.ToString(root["default"]);
-            var g = root.ContainsKey("games") ? root["games"] as Dictionary<string, object> : null;
-            if (g != null) foreach (var kv in g) games[kv.Key] = Convert.ToString(kv.Value);
+            if (!File.Exists(file)) continue;
+            try
+            {
+                var ser = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
+                var root = ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(file));
+                if (file == mapsFile && root.ContainsKey("default")) defaultMap = Convert.ToString(root["default"]);
+                var g = root.ContainsKey("games") ? root["games"] as Dictionary<string, object> : null;
+                if (g != null) foreach (var kv in g) { games[kv.Key] = Convert.ToString(kv.Value); if (file != mapsFile) local[kv.Key] = Convert.ToString(kv.Value); }
+            }
+            catch (Exception e) { LastError = Path.GetFileName(file) + ": " + e.Message; }
         }
-        catch (Exception e) { LastError = "stick-maps.json: " + e.Message; }
+    }
+
+    public bool IsCabinetPick(string rom) { return rom != null && local.ContainsKey(rom); }
+
+    // the Sticks window: keep a map for one game on this cabinet (null = back to the generated one)
+    public void SetGameMap(string rom, string map)
+    {
+        if (string.IsNullOrEmpty(rom)) return;
+        if (map == null) local.Remove(rom); else local[rom] = map;
+        var sb = new System.Text.StringBuilder("{\"games\":{");
+        bool first = true;
+        foreach (var kv in local) { sb.Append(first ? "" : ",").Append('"').Append(kv.Key.Replace("\"", "")).Append("\":\"").Append(kv.Value.Replace("\"", "")).Append('"'); first = false; }
+        sb.Append("}}\n");
+        File.WriteAllText(LocalFile, sb.ToString(), new System.Text.UTF8Encoding(false));
+        Reload();
+    }
+
+    // a map's 9x9 grid (row 1 = stick pushed fully up), for drawing; null when the file is missing
+    public string[][] Grid(string map)
+    {
+        string file = Find(map); if (file == null) return null;
+        var g = new string[9][];
+        foreach (var line in File.ReadAllLines(file))
+        {
+            if (!line.StartsWith("MapRow", StringComparison.OrdinalIgnoreCase)) continue;
+            int eq = line.IndexOf('='), n;
+            if (eq < 0 || !int.TryParse(line.Substring(6, eq - 6), out n) || n < 1 || n > 9) continue;
+            var cells = line.Substring(eq + 1).Split(',');
+            if (cells.Length == 9) g[n - 1] = cells;
+        }
+        foreach (var r in g) if (r == null) return null;
+        return g;
     }
 
     public string MapFor(string rom)
