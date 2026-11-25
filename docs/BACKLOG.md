@@ -208,8 +208,11 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       IDTA). No clip for them anywhere on RACE1. Look in the game folders for their own movies first (as Crazy Taxi 3).
 - [x] [RACE1] Stories: AM_PC and AM_TP_* lists are rebuilt at every boot, which emptied their am_story folders. The
       menu tool now sets the stories aside and puts them back: 26 of 26 kept over two rebuilds (before: 0 after one).
-- [ ] Main menu wheel picture: James sees it a little left and not turning. RetroFE finds the G29 and draws the
-      picture at the screen centre, angle 0; a run with someone turning the wheel is needed to see the reading.
+- [x] [RACE1] Wheel on the game list's controls card followed the handbrake, not the G29: 26 live elements had no
+      liveDevice, so RetroFE used the first controller it opened (the handbrake on RACE1). All now say liveDevice="wheel".
+- [ ] Wheel picture still sits ~25 degrees left once a game list opens (RACE1, nobody at the wheel): the G29 reports
+      about -1800 after the force feedback starts. Check whether the real wheel is held off centre (G HUB centre /
+      RetroFE's spring and page-change push), with James at the wheel.
 
 ## Needs James (skip, never wait)
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
