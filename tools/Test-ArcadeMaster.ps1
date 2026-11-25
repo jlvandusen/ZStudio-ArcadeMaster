@@ -159,13 +159,21 @@ if ($Cabinet) {
       if ($errs) { $problems += "Repair-ArcadeHealth -NoFix: $($errs.Count) error(s), first: $(($errs[0].ToString() -split "`n")[0])" }
       if (-not ($out | Where-Object { "$_" -match '^health: ' })) { $problems += 'Repair-ArcadeHealth did not reach its summary line' }
       if ($py) {
-        $pOut = & $py -B (Join-Path $PSScriptRoot 'Import-LEDBlinkyPanel.py') --retrofe $cfg.RetroFERoot --manifest $cfg.ManifestDir --dry-run 2>&1
-        if ($LASTEXITCODE) { $problems += "Import-LEDBlinkyPanel --dry-run exited $LASTEXITCODE`: $((@($pOut) | Select-Object -Last 1))" }
+        # the Python tools Rebuild Game Menus runs, each in its write-nothing mode
+        foreach ($tool in @(@('Import-LEDBlinkyPanel.py', '--manifest'), @('New-Marquees.py', '--manifest'), @('New-GameStories.py', '--manifest'))) {
+          $pOut = & $py -B (Join-Path $PSScriptRoot $tool[0]) --retrofe $cfg.RetroFERoot $tool[1] $cfg.ManifestDir --dry-run 2>&1
+          if ($LASTEXITCODE) { $problems += "$($tool[0]) --dry-run exited $LASTEXITCODE`: $((@($pOut) | Select-Object -Last 1))" }
+          elseif (@($pOut) -match '^Traceback') { $problems += "$($tool[0]) --dry-run printed a Python traceback" }
+        }
       }
+      # the MAME per-game mappings: the json reads, every cfg it names parses (dry run writes nothing)
+      $mOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-MameControls.ps1') -RetroFE $cfg.RetroFERoot 2>&1
+      $mErr = @($mOut | Where-Object { $_ -is [Management.Automation.ErrorRecord] })
+      if ($mErr -or $LASTEXITCODE) { $problems += "Set-MameControls (dry run): $(if ($mErr) { ($mErr[0].ToString() -split "`n")[0] } else { "exit $LASTEXITCODE" })" }
       $ErrorActionPreference = 'Stop'
     }
   }
-  Report 'cabinet' $problems "health check and panel learn run clean against $($cfg.RetroFERoot)"
+  Report 'cabinet' $problems "health check, panel, marquees, stories and MAME mappings run clean against $($cfg.RetroFERoot)"
 }
 
 Write-Host ("{0} of {1} checks passed" -f ($checks - $fails), $checks)
