@@ -187,6 +187,8 @@ switch ($Tool) {
       # on a cabinet without RetroBat
       Step 'retrobat' 'Classic systems (RetroBat)' 'run'
       & $py (Join-Path $t 'Import-RetroBatSystems.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      # Xbox (xemu) played on the panel: keyboard -> pad map from panel.json (skips itself without xemu)
+      & $py (Join-Path $t 'Set-XemuPanelMap.py') --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'retrobat' 'Classic systems (RetroBat)' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
