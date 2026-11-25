@@ -45,6 +45,7 @@ static class AmPanel
     static string manifestDir, ledBlinkyDir, logFile;
     static bool passThrough = true;    // AmPanel.json "PassThrough": false = do not hand commands to LEDBlinky.exe (tests)
     static LedEngine leds;             // AmPanel.json "Lights": "own" = AmPanel drives the button LEDs (step 2), not LEDBlinky
+    static OutputListener outputs;     // step 9: MAME-protocol emulator outputs (always on: it only listens)
     static NotifyIcon tray;
     static volatile bool quitting;
 
@@ -91,6 +92,7 @@ static class AmPanel
         manifestDir = Str(cfg, "ManifestDir");
         ledBlinkyDir = Str(cfg, "LEDBlinkyDir");
         if (Str(cfg, "PassThrough") != null) passThrough = Convert.ToBoolean(cfg["PassThrough"]);
+        if (Str(cfg, "TraceOutputs") != null) OutputListener.Trace = Convert.ToBoolean(cfg["TraceOutputs"]);
         if (manifestDir == null)
         {
             // the launcher's config (ArcadeMaster.config.json) next to this exe or one folder up
@@ -272,6 +274,12 @@ static class AmPanel
                 else { string res; lock (Gate) { res = leds.LightGame(req.ContainsKey("rom") ? Convert.ToString(req["rom"]) : null); State["lights"] = res; } rep["result"] = res; rep["ok"] = true; }
             }
             else if (cmd == "off") { if (leds != null) lock (Gate) leds.AllOff(); rep["ok"] = leds != null; }
+            else if (cmd == "outputs")   // live emulator outputs: {"connected":true,"outputs":{"led0":1,...}}
+            {
+                rep["connected"] = outputs != null && outputs.Connected;
+                rep["outputs"] = outputs != null ? outputs.Snapshot() : new Dictionary<string, object>();
+                rep["ok"] = true;
+            }
             else { rep["ok"] = false; rep["error"] = "unknown command '" + cmd + "' (args, status, boards, light, off)"; }
         }
         catch (Exception e) { rep["ok"] = false; rep["error"] = e.Message; }
@@ -282,6 +290,13 @@ static class AmPanel
     static void RunTray()
     {
         Application.EnableVisualStyles();
+        try
+        {
+            outputs = new OutputListener(manifestDir, delegate {
+                lock (Gate) { object g; if (State.TryGetValue("game", out g) && g != null) return Convert.ToString(g); if (State.TryGetValue("selected", out g) && g != null) return Convert.ToString(g); return null; }
+            }, Log);
+        }
+        catch (Exception e) { Log("outputs: listener not started - " + e.Message); }
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
@@ -293,6 +308,7 @@ static class AmPanel
         tray.ContextMenuStrip = menu;
         tray.DoubleClick += delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); };
         Application.Run();
+        if (outputs != null) outputs.Shutdown();
         tray.Visible = false;
     }
 
