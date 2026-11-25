@@ -8,8 +8,8 @@
     {"key":"logipro","fit":"rim:0.86","model":"Logitech PRO Racing Wheel","maker":"Logitech","match":["PRO Racing Wheel"],"usb":["046D:C268","046D:C269"],"image":"https://resource.logitechg.com/content/dam/gaming/en/products/pro-racing/pro-racing-wheel/2025-updates/gallery/for-pc/pro-racing-wheel-pc-front-angle-gallery-1.png"},
     {"key":"logiproxbox","fit":"rim:0.86","model":"Logitech PRO Racing Wheel (Xbox/PC)","maker":"Logitech","match":["PRO Racing Wheel for Xbox"],"usb":["046D:C272"],"image":"https://resource.logitechg.com/content/dam/gaming/en/products/pro-racing/pro-racing-wheel/2025-updates/gallery/for-xbox/pro-racing-wheel-xbox-front-angle-gallery-1.png"},
     {"key":"g27","model":"Logitech G27","maker":"Logitech","match":["G27"],"usb":["046D:C29B"],"ghub":"g27","image":"https://c1.neweggimages.com/ProductImageOriginal/26-104-330-07.jpg","fit":"rim:0.92"},
-    {"key":"g25","model":"Logitech G25","maker":"Logitech","match":["G25"],"usb":["046D:C299"],"image":""},
-    {"key":"dfgt","model":"Logitech Driving Force GT","maker":"Logitech","match":["Driving Force GT","DFGT"],"usb":["046D:C29A"],"image":""},
+    {"key":"g25","model":"Logitech G25","maker":"Logitech","match":["G25"],"usb":["046D:C299"],"image":"https://c1.neweggimages.com/ProductImageOriginal/26-104-028-01.jpg","fit":"rim:0.86"},
+    {"key":"dfgt","model":"Logitech Driving Force GT","maker":"Logitech","match":["Driving Force GT","DFGT"],"usb":["046D:C29A"],"image":"https://c1.neweggimages.com/ProductImageOriginal/79-212-025-04.jpg","fit":"rim:0.86"},
     {"key":"dfp","model":"Logitech Driving Force Pro","maker":"Logitech","match":["Driving Force Pro"],"usb":["046D:C298"],"image":""},
     {"key":"t300","model":"Thrustmaster T300 RS","maker":"Thrustmaster","match":["T300"],"usb":["044F:B66E","044F:B66F","044F:B66D","044F:B65D"],"image":"https://multimedia.bbycastatic.ca/multimedia/products/1500x1500/126/12644/12644654.jpg","fit":"rim:0.97"},
     {"key":"t150","model":"Thrustmaster T150","maker":"Thrustmaster","match":["T150"],"usb":["044F:B677"],"image":"https://i5.walmartimages.com/asr/c70e480f-a551-4765-99c1-960681afd231.c51677dd9e1cba5a73f9f0782c1f88dd.jpeg?format=jpeg"},
@@ -34,7 +34,7 @@
     {"key":"t818","model":"Thrustmaster T818 (EVO Racing 32R rim)","maker":"Thrustmaster","match":["T818","T-818"],"usb":[],"image":"https://i5.walmartimages.com/asr/bb1daf26-9c6a-4247-bcef-50cfd5748757.0da246aaa82379fae9a17ca64e86d219.jpeg?format=jpeg"},
     {"key":"f458","model":"Thrustmaster Ferrari 458 Spider","maker":"Thrustmaster","match":["458 Spider","Ferrari 458"],"usb":[],"image":"https://i5.walmartimages.com/asr/fb974c1d-713a-4d46-85c4-c4bcae21e6b3_1.5819cc6486331fefe478b33c4122fe40.png?format=png"},
     {"key":"dfex","model":"Logitech Driving Force EX / Formula Force GX","maker":"Logitech","match":["Driving Force EX","Formula Force GX"],"usb":[],"image":"https://c1.neweggimages.com/ProductImageOriginal/79-212-002-03.jpg"},
-    {"key":"momo","model":"Logitech MOMO Racing","maker":"Logitech","match":["MOMO"],"usb":["046D:C295"],"image":""},
+    {"key":"momo","model":"Logitech MOMO Racing","maker":"Logitech","match":["MOMO"],"usb":["046D:C295"],"image":"https://c1.neweggimages.com/ProductImageOriginal/26-128-006-01.jpg","fit":"rim:0.86"},
     {"key":"pxnv10","model":"PXN V10","maker":"PXN","match":["PXN V10","PXN-V10"],"usb":[],"image":"https://productimages.microcenter.com/650173_410779_02_front_zoom.jpg","fit":"rim:0.97"}
   ]
 }
