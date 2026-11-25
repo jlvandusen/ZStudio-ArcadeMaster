@@ -40,8 +40,9 @@ The loop works like this (James, 2026-11-25):
         2 players taking turns; MK: 5 buttons).
       - Neo Geo names (Metal Slug, KOF 94–2002) come from `*/item` overrides.
       - Long labels shrink, then hyphenate, then abbreviate, before being cut short.
-- [ ] Neo Geo and other games missing from controls.dat: add names for the most popular (Samurai Shodown, Fatal
-      Fury, Garou, Blazing Star, Puzzle Bobble).
+- [x] [PEDESTAL] Neo Geo names for 17 more games missing from controls.dat: Fatal Fury 2/Special/3, Real Bout 1/Special/2,
+      Garou, Samurai Shodown 1–5 + V Special, Last Blade 1–2, Windjammers. (2026-11-25)
+- [ ] More Neo Geo names when the layout is certain (Art of Fighting, Blazing Star, Shock Troopers, Pulstar…).
 - [ ] Live panel card on the pedestal: ZStudio-retrofe#1 (merged 2026-11-25) adds `liveButton` / `liveHat`, so the
       controls card's buttons can light up while held, as RACE1's G29 card does. Needs a RetroFE build with patch 0007
       on the R: copy first. Then map the panel's keys from panel.json onto the card.
