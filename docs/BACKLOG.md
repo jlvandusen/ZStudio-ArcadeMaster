@@ -21,6 +21,28 @@ The loop works like this (James, 2026-11-25):
 - Open PRs: CI, review comments, conflicts.
 - Delete merged branches and stale worktrees.
 
+## 2a. James 2026-11-25: full settings like the race cabinet, and our own LED engine
+- [ ] **[PEDESTAL] CONTROLS settings group** (the pedestal's counterpart of the race cab's wheel / FFB / pedal
+      settings), in Tools > Cabinet Settings and as Tools items:
+      - PANEL TEST: a full-screen Watch-Inputs. Press anything and see the key / joystick / button it sends, by name.
+      - LEARN THE PANEL: Import-LEDBlinkyPanel, or button capture on marquee-only cabinets.
+      - STICK RESTRICTOR: ServoStik (found: D209:1700) set to auto per game (joyways), always 8-way or always 4-way.
+      - ROLLERBALL / DIAL: separate mice (multimouse) and sensitivity.
+      - BUTTON LIGHTS: brightness, colours on or off, attract animation on or off (LED engine below).
+- [ ] **[PEDESTAL] LED engine: ArcadeMaster drives the panel lights itself.** Built from Ultimarc's published PacDrive
+      SDK (PacDrive32.dll, 32-bit: run through Windows' 32-bit PowerShell) and LEDBlinky's documented files: Colors.ini
+      (per-game colours), Color-RGB.ini, LEDBlinkyInputMap.xml (which LED pin is which button). We do NOT
+      disassemble LEDBlinky.exe; its own files and Ultimarc's SDK give everything needed.
+      - [x] Step 1: `Get-UltimarcBoards.ps1` lists the boards through the SDK. Read-only, writes manifest\ultimarc.json.
+            Pedestal: 2 × I-PAC Ultimate I/O (D209:0410 / 0411, 96 LEDs each) + 1 ServoStik (D209:1700).
+            The two Ultimate I/O boards are also 2 of the 3 "Ultimarc mice" (their trackball/spinner inputs).
+      - [ ] Step 2: an LED test in Tools. Light each button in turn and in each player's colour. Only while LEDBlinky is
+            not running (they would fight over the boards).
+      - [ ] Step 3: per-game colours on game select (Colors.ini + InputMap), from the RetroFE launcher hook that now
+            calls LEDBlinky.exe with "9 <game> mame".
+      - [ ] Step 4: reactive lights: a held button glows brighter (LEDBlinky cannot do this).
+      - [ ] Step 5: attract animations (chase, breathe in the game's colours) while idle. Then LEDBlinky becomes optional.
+
 ## 2. Game mechanics and controls
 - [ ] **[PEDESTAL] Two-stick and special-control games, deep dive** (James 2026-11-25). For each game: the card says
       what each stick, dial and button really does, and MAME maps it to the right physical control. MAME 0.196 port
