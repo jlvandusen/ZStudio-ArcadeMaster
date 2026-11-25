@@ -115,6 +115,9 @@ if (Test-Path $cc) {
         if ($val -match '\b(Up|Down)\b') { $lines[$i] = "$key = $($want[$key])"; $moved = $true }
       }
     }
+    # a build with no playlist keys at all (DRIVE): add them, or the filter bar (All / Game of the Month / Most played /
+    # Last played / Favorites) can never be switched
+    foreach ($k in 'nextPlaylist', 'prevPlaylist') { if (-not @($lines | Where-Object { $_ -match "^\s*$k\s*=" }).Count) { $lines.Add("$k = $($want[$k])"); $moved = $true } }
   }
   # Esc must go BACK, never quit: CoinOPS builds ship quit = Escape, so one press closed the whole frontend. Take the
   # quit key from the cabinet's controls profile (retrofe\controls\controls-<type>.conf: all say quit = Q) and make sure

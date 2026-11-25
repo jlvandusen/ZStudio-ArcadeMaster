@@ -118,6 +118,7 @@ foreach ($r in @($results | Where-Object { $_.newer -and $_.url })) {
   if ($dry) { Write-Host "DRY RUN (AM_SYSTEM_DRYRUN=1): would run elevated: `"$file`" $instArgs"; continue }
   $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
   Write-Host "installing $($r.vendor) $($r.latest) - the screen goes black for a moment; restart afterwards"
-  $p = if ($admin) { Start-Process $file -ArgumentList $instArgs -PassThru -Wait } else { Start-Process $file -ArgumentList $instArgs -Verb RunAs -PassThru -Wait }
+  try { $p = if ($admin) { Start-Process $file -ArgumentList $instArgs -PassThru -Wait } else { Start-Process $file -ArgumentList $instArgs -Verb RunAs -PassThru -Wait } }
+  catch { Write-Warning "not installed: Windows' admin prompt was cancelled or timed out (nobody answered it). The package is kept in $DownloadDir - run Tools > Graphics Driver at the cabinet and press Yes."; continue }
   Write-Host "  installer exit code $($p.ExitCode) $(if ($p.ExitCode -in 0, 1) { '(ok - restart to finish)' } else { '(see %ProgramData%\NVIDIA Corporation\Installer2 logs)' })"
 }
