@@ -66,7 +66,9 @@ if ($WhatIf) { return }
 
 # settings.conf: the playlists the button cycles through (all first); controls.conf: the buttons, when missing
 $sc = Join-Path $RetroFE 'settings.conf'
-$line = 'cyclePlaylist = ' + ((@('all') + $allNames) -join ',')
+# the cabinet-wide lists stay in the cycle: Game of the Month (New-FeaturedPlaylist), Most played (Record-GamePlay),
+# RetroFE's own Last played and Favorites - a cyclePlaylist line names every playlist that can be reached
+$line = 'cyclePlaylist = ' + ((@('all', 'gameofthemonth', 'mostplayed', 'lastplayed', 'favorites') + $allNames) -join ',')
 $lines = [System.Collections.Generic.List[string]](Get-Content $sc); $done = $false
 for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^\s*cyclePlaylist\s*=') { $lines[$i] = $line; $done = $true } }
 if (-not $done) { $lines.Add($line) }; Set-Content $sc $lines -Encoding ascii

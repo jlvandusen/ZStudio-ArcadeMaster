@@ -119,6 +119,8 @@ try { $mode = Invoke-Tool 'Set-CabinetMode.ps1' @('-RetroFE', $Root, '-ManifestD
 # play time, Most played and save backups: start / end hooks in every game launcher (idempotent; menus rebuilt above
 # rewrote some launchers)
 try { $h = & (Join-Path $PSScriptRoot 'Set-GameHooks.ps1') -RetroFE $Root -ManifestDir $ManifestDir -Quiet 6>&1 | Out-String; if ($h.Trim()) { Write-Log $h.Trim() } } catch { Write-Log "game hooks failed: $($_.Exception.Message)" }
+# Game of the Month (A18): a featured playlist per menu, picked once a month (silent when the month has not changed)
+try { $gm = & (Join-Path $PSScriptRoot 'New-FeaturedPlaylist.ps1') -RetroFE $Root -ManifestDir $ManifestDir 6>&1 | Out-String; if ($gm.Trim()) { Write-Log $gm.Trim() } } catch { Write-Log "game of the month failed: $($_.Exception.Message)" }
 # layout options from Tools > Cabinet Settings (story panel, control reminders, menu sounds, video volume): only on a
 # cabinet that changed one (manifest\ui.json); re-applied every boot so a layout updated from the repo keeps them
 if (Test-Path (Join-Path $ManifestDir 'ui.json')) { try { $lu = Invoke-Tool 'Set-LayoutUi.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); if ($lu -match 'updated|WARNING') { Write-Log (($lu -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } } catch { Write-Log "layout options failed: $($_.Exception.Message)" } }

@@ -909,7 +909,7 @@ def write_filters(fe, plan, sigs, dry) -> dict:
 def friendly_playlist(name: str) -> str:
     n = re.sub(r'^\d+[a-z]?\s+', '', name).strip()
     return {'all': 'ALL GAMES', 'favorites': 'FAVORITES', 'lastplayed': 'LAST PLAYED',
-            'mostplayed': 'MOST PLAYED'}.get(n.lower(), n.upper())
+            'mostplayed': 'MOST PLAYED', 'gameofthemonth': 'GAME OF THE MONTH'}.get(n.lower(), n.upper())
 
 
 def render_banner(label: str) -> Image.Image:
@@ -929,7 +929,7 @@ def render_banner(label: str) -> Image.Image:
 
 
 def write_banners(fe, layout_dir: Path, dry, force) -> int:
-    names = {'all', 'favorites', 'lastplayed', 'mostplayed'}   # mostplayed: tools\Record-GamePlay.ps1
+    names = {'all', 'favorites', 'lastplayed', 'mostplayed', 'gameofthemonth'}   # Record-GamePlay / New-FeaturedPlaylist
     for d in fe.cdir.iterdir():
         if d.is_dir() and (d / 'playlists').is_dir():
             names |= {p.stem for p in (d / 'playlists').glob('*.txt')}
