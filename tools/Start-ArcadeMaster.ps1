@@ -116,6 +116,9 @@ if (-not $NoShuffle) {
 # boot intro: render the cabinet-type title card (settings.conf cabinetType, auto = detected hardware)
 # cabinet mode follows the hardware (racing stays racing with a wheel; flight stick instead -> flight cab ...)
 try { $mode = Invoke-Tool 'Set-CabinetMode.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log (($mode -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "cabinet mode failed: $($_.Exception.Message)" }
+# play time, Most played and save backups: start / end hooks in every game launcher (idempotent; menus rebuilt above
+# rewrote some launchers)
+try { $h = & (Join-Path $PSScriptRoot 'Set-GameHooks.ps1') -RetroFE $Root -ManifestDir $ManifestDir -Quiet 6>&1 | Out-String; if ($h.Trim()) { Write-Log $h.Trim() } } catch { Write-Log "game hooks failed: $($_.Exception.Message)" }
 # layout options from Tools > Cabinet Settings (story panel, control reminders, menu sounds, video volume): only on a
 # cabinet that changed one (manifest\ui.json); re-applied every boot so a layout updated from the repo keeps them
 if (Test-Path (Join-Path $ManifestDir 'ui.json')) { try { $lu = Invoke-Tool 'Set-LayoutUi.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); if ($lu -match 'updated|WARNING') { Write-Log (($lu -split "`r?`n" | Where-Object { $_.Trim() }) -join ' | ') } } catch { Write-Log "layout options failed: $($_.Exception.Message)" } }

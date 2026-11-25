@@ -243,6 +243,22 @@ games that have scores, and show the table on the launch screen.
 Count play time per game from the launcher hook (start / exit), feed "Most played" and "Recently played" playlists,
 and copy save folders (RetroArch, Dolphin, PCSX2, TeknoParrot) to the NAS after each game, keeping 5 versions.
 
+**Done (DESKTOP-RACE2, 2026-11-25).**
+- **Hooks:** `tools\Set-GameHooks.ps1` puts a start / end hook into every game launcher (`preexecutable` / `postexecutable` in `launchers.windows\*.conf`).
+  - They run hidden (`conhost --headless`), and RetroFE doesn't wait for them.
+  - The boot and New-RetroFECollections re-apply them. It's idempotent, the first change keeps a `.am-hooks-bak`, and `-Remove` restores the original byte for byte.
+  - A launcher with its own pre or post hook is left alone.
+- **Play time:** `tools\Record-GamePlay.ps1` writes `manifest\playtime.json` (plays, seconds, first and last played per `_<collection>:<item>`).
+- **Most played:** every merged menu (Racing, Flight ...) gets `playlists\mostplayed.txt`, the top 20 with at least a minute played, labelled **MOST PLAYED** in the filter bar (Left / Right).
+  - **Recently played:** RetroFE's own `lastplayed` list (`lastplayedSize`, default 10).
+  - Most played picks up the new order at the next start of the frontend.
+- **Save backups:** the sets in `tools\saves.json` (RetroArch, Dolphin, Triforce card data, PCSX2, MAME nvram/cfg, Supermodel, Model 2, Cemu).
+  - A set is zipped only when its files changed, to `Z:\ArcadeMaster\saves\<PC>\<set>\slot-1..5.zip`. The slots rotate, so old versions are overwritten, never deleted, which respects the NAS recycle-bin rule. `index.json` records each slot's time and game.
+  - **TeknoParrot and PC games:** the files a game wrote in its own folder during play (up to 64 MB each, no logs) are learned per game in `manifest\saves-learned.json` and backed up as `game-<id>`.
+  - **Not backed up:** Triforce `StateSaves`. There they are the collection's 20 MB boot snapshots, not player progress.
+- **Tested on RACE2:** California Speed launched from the Racing list ran the start hook. Closing it ran the end hook: 126 s recorded, Most played written, 6 sets backed up (about 3 MB). A simulated TeknoParrot game learned its save file and left the log out. Seven backups of one set rotated through 5 slots.
+- **Note:** MAME on this frontend didn't close on Escape when the key was sent by a script. Use the cabinet's exit button.
+
 ### A11. Music in the menu
 Optional menu music per collection (the cabinet's own tracks), quieter during video, off by a Tools switch.
 
