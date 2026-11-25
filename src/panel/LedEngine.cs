@@ -47,6 +47,32 @@ class LedEngine
     }
     public int[] Color(string name) { int[] c; return name != null && palette.TryGetValue(name, out c) ? c : null; }
 
+    // step 5: a held button glows - its game colour at full strength, or white when the game leaves it dark
+    public void Glow(string label, bool held)
+    {
+        if (!open || !pins.ContainsKey(label)) return;
+        if (!held) { Override(label, null); return; }
+        int[] b; baseColor.TryGetValue(label, out b);
+        int mx = b == null ? 0 : Math.Max(b[0], Math.Max(b[1], b[2]));
+        int[] g = mx <= 6 ? new[] { 48, 48, 48 } : new[] { b[0] * 48 / mx, b[1] * 48 / mx, b[2] * 48 / mx };
+        if (SetLabel(label, g)) Flush();
+    }
+
+    // which button each key is (InputMap inputCodes, e.g. KEYCODE_LCONTROL|KEYCODE_CONTROL -> P1B1)
+    public Dictionary<string, List<string>> KeyLabels()
+    {
+        var d = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kv in inputCodes)
+            foreach (var code in kv.Value.Split('|'))
+            {
+                string k = code.Trim(); if (k.Length == 0) continue;
+                List<string> l; if (!d.TryGetValue(k, out l)) { l = new List<string>(); d[k] = l; }
+                if (!l.Contains(kv.Key)) l.Add(kv.Key);
+            }
+        return d;
+    }
+    readonly Dictionary<string, string> inputCodes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
     public LedEngine(string ledBlinkyDir)
     {
         LoadInputMap(Path.Combine(ledBlinkyDir, "LEDBlinkyInputMap.xml"));
@@ -155,6 +181,7 @@ class LedEngine
             {
                 string label = p.GetAttribute("label"), type = p.GetAttribute("type");
                 if (string.IsNullOrEmpty(label)) continue;
+                string ic = p.GetAttribute("inputCodes"); if (!string.IsNullOrEmpty(ic)) inputCodes[label] = ic;
                 List<Pin> list;
                 if (!pins.TryGetValue(label, out list)) { list = new List<Pin>(); pins[label] = list; }
                 list.Add(new Pin { Board = board, Port = ToInt(p.GetAttribute("number")), Channel = string.IsNullOrEmpty(type) ? 'S' : char.ToUpperInvariant(type[0]) });

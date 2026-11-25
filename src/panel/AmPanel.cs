@@ -47,6 +47,8 @@ static class AmPanel
     static LedEngine leds;             // AmPanel.json "Lights": "own" = AmPanel drives the button LEDs (step 2), not LEDBlinky
     static OutputListener outputs;     // step 9: MAME-protocol emulator outputs (always on: it only listens)
     static TriggerRules rules;         // step 10: output -> activity
+    static ReactiveKeys glow;          // step 5: held buttons glow ("Reactive": false turns it off)
+    static bool reactive = true;
     static NotifyIcon tray;
     static volatile bool quitting;
 
@@ -94,6 +96,7 @@ static class AmPanel
         ledBlinkyDir = Str(cfg, "LEDBlinkyDir");
         if (Str(cfg, "PassThrough") != null) passThrough = Convert.ToBoolean(cfg["PassThrough"]);
         if (Str(cfg, "TraceOutputs") != null) OutputListener.Trace = Convert.ToBoolean(cfg["TraceOutputs"]);
+        if (Str(cfg, "Reactive") != null) reactive = Convert.ToBoolean(cfg["Reactive"]);
         if (manifestDir == null)
         {
             // the launcher's config (ArcadeMaster.config.json) next to this exe or one folder up
@@ -267,7 +270,7 @@ static class AmPanel
                 Handle(list.ToArray(), true);
                 rep["ok"] = true;
             }
-            else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); rep["ok"] = true; }
+            else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
             else if (cmd == "boards") { var b = ReadBoards(); lock (Gate) State["boards"] = b; rep["boards"] = b; rep["ok"] = true; }
             else if (cmd == "light")   // {"cmd":"light","rom":"sf2"} - light a game's controls now (tests, Tools)
             {
@@ -310,6 +313,17 @@ static class AmPanel
             };
         }
         catch (Exception e) { Log("outputs: listener not started - " + e.Message); }
+        if (leds != null && reactive)
+        {
+            try
+            {
+                // installed on this (the message-loop) thread, as a low-level hook must be
+                glow = new ReactiveKeys(leds.KeyLabels(), delegate (string label, bool held) { lock (Gate) leds.Glow(label, held); });
+                lock (Gate) State["reactive"] = glow.Active ? glow.MappedKeys + " keys glow their button while held" : "keyboard hook not installed";
+                Log("reactive: " + State["reactive"]);
+            }
+            catch (Exception e) { Log("reactive: not started - " + e.Message); }
+        }
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
@@ -321,6 +335,7 @@ static class AmPanel
         tray.ContextMenuStrip = menu;
         tray.DoubleClick += delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); };
         Application.Run();
+        if (glow != null) glow.Stop();
         if (outputs != null) outputs.Shutdown();
         tray.Visible = false;
     }
