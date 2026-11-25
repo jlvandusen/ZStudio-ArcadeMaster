@@ -230,6 +230,20 @@ if (-not (Test-Path (Join-Path $RetroFE "layouts\$lay\images\intro\intro_title.p
 $tools = Join-Path $RetroFE 'collections\Tools'
 # every cabinet needs a way into its settings from the game menu: install the Tools list when a build has none
 if (-not (Test-Path $tools) -and $fix -and (Test-Path (Join-Path $RetroFE 'collections\Main\menu.txt'))) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-CabinetToolsCollection.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools (settings) list installed on the main menu' }
+# button lights: a copied build still points LEDBlinky at the build it was copied from (often the live frontend, which
+# LEDBlinky then writes to). When the build has its own LEDBlinky folder, use it, and point its Settings.ini there too.
+$lbDir = Get-Setting 'LEDBlinkyDirectory'; $ownLb = Join-Path $RetroFE 'LEDBlinky'
+if ($fix -and $lbDir -and (Test-Path (Join-Path $ownLb 'LEDBlinky.exe')) -and ([IO.Path]::GetFullPath($lbDir).TrimEnd('\') -ne [IO.Path]::GetFullPath($ownLb).TrimEnd('\'))) {
+  $oldRoot = Split-Path ([IO.Path]::GetFullPath($lbDir).TrimEnd('\'))
+  Set-Setting 'LEDBlinkyDirectory' $ownLb
+  $ini = Join-Path $ownLb 'Settings.ini'
+  if (Test-Path $ini) {
+    if (-not (Test-Path "$ini.am-ledblinky")) { Copy-Item $ini "$ini.am-ledblinky" }
+    $txt = [IO.File]::ReadAllText($ini, [Text.Encoding]::Default)
+    [IO.File]::WriteAllText($ini, $txt.Replace($oldRoot, $RetroFE.TrimEnd('\')), [Text.Encoding]::Default)
+  }
+  $did += "button lights use this build's own LEDBlinky (was $lbDir)"
+}
 if ((Test-Path (Join-Path $tools 'ARCADEMASTER-TOOLS.txt')) -and -not (Get-ChildItem (Join-Path $tools 'medium_artwork\video') -File -ErrorAction SilentlyContinue) -and $fix) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-ToolsArt.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools art regenerated' }
 if ($did) { Add-Result 'art' $checks.art 'FIXED' ($did -join '; ') } else { Add-Result 'art' $checks.art 'OK' 'present' }
 
