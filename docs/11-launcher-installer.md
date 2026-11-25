@@ -23,6 +23,12 @@
 - **System**: start at logon (a Startup shortcut to this exe), quiet startup, no Windows pop-ups, MAME bezels, screen always on. Auto login opens the Windows dialog. **Only the switches you change are applied**: the current state is read first, and Windows is left alone otherwise.
 - **Updates**: update on every start (fast-forward only, never over local changes or local commits), log-only mode, branch, and a **Check GitHub now** button.
 
+**Before Install / Apply changes a frontend in place** (the COPY box is not ticked), Setup checks whether that frontend is in use and asks first:
+- **Started at logon by something else**: a Startup shortcut or script, a Run key, or the Windows shell names that folder. This is how the pedestal's CoinOPS LEGENDS 4 Max starts. ArcadeMaster's own logon entry doesn't count.
+- **ArcadeMaster was never installed there**: no `layouts\ArcadeMaster`. Copies named `<root>-am` are exempt.
+
+The question has three answers: **Yes** works on a copy (recommended), **No** changes the frontend anyway, **Cancel** does nothing. This was added after Install changed the pedestal's live E: frontend.
+
 **Install / Apply** runs the selected steps with a live log:
 1. repository
 2. copy of the frontend (if ticked)

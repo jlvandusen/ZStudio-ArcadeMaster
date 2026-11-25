@@ -405,6 +405,22 @@ Light-gun TeknoParrot games covered by `templates\lightgun.json` (untested): HOT
   - Supermodel `InputGunX/Y`
 - **G HUB profiles:** if G HUB has a per-game profile with remapped buttons or a different rotation, captured numbers apply only while that G HUB profile is active. Capture with the G HUB profile you'll actually play with.
 
+## Brake on the clutch pedal (fixed 2026-11-22): `tools\Repair-TPPedals.ps1`
+
+The G29 reports gas on the Y axis, brake on RotationZ and clutch on Slider 0. Nine TeknoParrot profiles in `D:\Emulators\TeknoParrot` had Brake on Slider 0, so the clutch (left pedal) braked and the brake did nothing. BattleGear4Tuned also had the clutch on the brake. The nine were BattleGear4Tuned, GaelcoChampionshipTuningRace, GRID, GtiClub3, ID5, ID7, ID8, IDZ and KODrive.
+
+`Repair-TPPedals.ps1` fixes only those two entries:
+- it touches only profiles whose Gas is on the same wheel's Y axis (the Logitech pedal layout)
+- it does a dry run unless you give `-Apply`
+- with `-Apply`, it first backs up `UserProfiles` to `D:\ArcadeMaster\_backup\TP-UserProfiles-<install>-pedals-<time>`
+
+Re-generating the whole profile (`WheelMap.ps1 -Generate`) would also fix it, but it changes more, such as the steering direction label, so it needs a test drive first.
+
+```powershell
+tools\Repair-TPPedals.ps1                                         # list wrong pedals
+tools\Repair-TPPedals.ps1 -TpDir D:\Emulators\TeknoParrot -Apply  # back up + fix
+```
+
 ## Legacy emulators (2026-11-22): generated from the profile, not copied
 
 The previous owner's per-wheel sets were copied unchanged. They encode that machine's driver layout, and on this cabinet (G29 on G HUB) they were wrong:
@@ -445,3 +461,20 @@ How it's made:
 - It also draws one glow picture per button and pedal into `layouts/ArcadeMaster/images/controls/`.
 - RetroFE patch 0007 adds layout settings that tie a picture to the controller: `liveSteer`, `liveButton`, `liveHat` and `liveAxis`.
 - The pedal glows follow G29 axes gas 1, brake 2 and clutch 3. If a pedal lights the wrong bar, swap the `liveAxis` numbers in `layout.xml`.
+## The menu follows your hands (2026-11-24)
+
+On wheel cabinets the main menu and the game lists react to the real controls. This uses RetroFE's live attributes (patches 0007, 0008 and 0010 on the controls card pull request), with `liveDevice="wheel"`, so nothing moves on cabinets without a wheel:
+
+| What you do | What the menu shows | Layout attribute |
+|---|---|---|
+| turn the wheel | the centre wheel turns: upright when centred, G HUB's picture of your wheel (`New-RealWheelArt`) | `am_realwheel`: `liveSteer="450"` |
+| press the gas | both needles rise: the rev counter quickly, the speedo with a lag | `liveNeedle="1" liveNeedleSpan liveNeedleSmooth` |
+| press the brake | red glow around the speedo, brighter the harder you press | `liveAxis="2"` |
+| put the shifter in a gear | 1-6 or R above the rev counter's hub | `liveButton="12"`...`"18"` |
+| pull a shift paddle | up or down arrow beside the hub | `liveButton="4"` / `"5"` |
+
+The overlay pictures come from `tools\New-LiveDashArt.ps1` (about 100 KB in all).
+
+**Wheels and pedals read stale values until their first report.** Until a wheel or pedal sends its first report, SDL holds a stale value (full lock, or half travel). Steering and pedals therefore count as centred or released until the reading first changes.
+
+**Menu clicks in the wheel are off** (`ffbTick = 0`, the default since patch 0009). On the G29, the click on each menu scroll pushed the rim the same way every time, and the wheel stepped round with every scroll. The centring spring is `ffbCenter` (50 on the racing cabinet).

@@ -16,14 +16,37 @@ param(
   [string]$Cabinet = 'D:\ArcadeMaster\manifest\cabinet.json',
   [string]$History = 'D:\ArcadeMaster\manifest\device-history.json',
   [string[]]$TeknoParrot = @('E:\DRIVE Collection\emulators\TeknoParrot', 'E:\DRIVE Collection\emulators\TeknoParrotMulti', 'D:\Emulators\TeknoParrot'),
+  [string]$RetroFE,                  # the frontend being booted: when given, only ITS TeknoParrot install(s) are re-pointed
   [switch]$Apply
 )
 $ErrorActionPreference = 'Stop'
+if (-not $PSBoundParameters.ContainsKey('TeknoParrot')) {
+  . (Join-Path $PSScriptRoot 'lib\AmMachine.ps1')
+  # default list = DESKTOP-RACE1's; elsewhere only what exists. With -RetroFE only that frontend's own install(s),
+  # so booting a test copy never rewrites the live frontend's profiles.
+  # DESKTOP-RACE1 keeps exactly its list (it exists there); other cabinets get only the booted frontend's own install(s)
+  $TeknoParrot = @(@($TeknoParrot | Where-Object { Test-Path -LiteralPath $_ }) + @(if ($RetroFE) { Get-AmTeknoParrotRoots -RetroFE $RetroFE -LocalOnly }) | Select-Object -Unique)
+}
 $SysKeyboard = '6f1d2b61-d5a0-11cf-bfc7-444553540000'
 $SysMouse = '6f1d2b60-d5a0-11cf-bfc7-444553540000'
 $cab = Get-Content $Cabinet -Raw | ConvertFrom-Json
 $present = @($cab.devices)
 $hist = if (Test-Path $History) { @((Get-Content $History -Raw | ConvertFrom-Json).devices) } else { @() }
+
+# Fast path (boot): nothing to re-point unless the controllers' ids or the profiles changed since the last run. The
+# fingerprint is the present devices' GUIDs + each UserProfiles folder's file count and newest write time; reading and
+# rewriting every profile took 0.6-1.3 s at every boot for nothing.
+function Get-IdsFingerprint {
+  $parts = @($present | ForEach-Object { "$($_.guid)|$($_.type)".ToLower() } | Sort-Object)
+  foreach ($tp in $TeknoParrot) {
+    $fs = @(Get-ChildItem (Join-Path $tp 'UserProfiles') -Filter *.xml -File -ErrorAction SilentlyContinue)
+    $newest = 0L; foreach ($f in $fs) { if ($f.LastWriteTimeUtc.Ticks -gt $newest) { $newest = $f.LastWriteTimeUtc.Ticks } }   # (Measure-Object can't take a script block in PowerShell 5.1)
+    $parts += "$tp|$($fs.Count)|$newest"
+  }
+  $parts -join ';'
+}
+$fpFile = Join-Path (Split-Path $Cabinet) 'controller-ids.fingerprint'
+if ($Apply -and (Test-Path $fpFile) -and (Get-Content $fpFile -Raw).Trim() -eq (Get-IdsFingerprint)) { Write-Host 'APPLIED: 0 profile files would change (controllers and profiles unchanged since the last check)'; return }
 
 $byGuid = @{}; foreach ($d in $present) { $byGuid[$d.guid.ToLower()] = $d }
 # old GUID -> currently present device, via history (same physical device key)
@@ -73,6 +96,7 @@ foreach ($tp in $TeknoParrot) {
   }
 }
 Write-Host ("{0}: {1} profile files would change" -f $(if ($Apply) { 'APPLIED' } else { 'DRY RUN' }), $filesChanged)
+if ($Apply) { Set-Content $fpFile (Get-IdsFingerprint) -Encoding ascii }   # after the writes, so the next boot can skip
 $summary.GetEnumerator() | Sort-Object Value -Descending | ForEach-Object { Write-Host ("  {0,4} x {1}" -f $_.Value, $_.Key) }
 if ($unresolved.Count) { Write-Host 'left alone (device not connected / ambiguous):'; $unresolved.GetEnumerator() | Sort-Object Value -Descending | ForEach-Object { Write-Host ("  {0,4} x {1}" -f $_.Value, $_.Key) } }
 if (-not $Apply -and $filesChanged) { Write-Host 're-run with -Apply to write (backups: <file>.ids-<timestamp>.bak)' }

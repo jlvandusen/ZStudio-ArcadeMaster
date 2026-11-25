@@ -84,14 +84,14 @@ switch ($Tool) {
     Run 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir) | Out-Null
     Emit-Devices
     Banner 'CONTROLLER ID CHECK (dry run - use Repair Controller IDs to apply)'
-    $o = Run 'Update-ControllerIds.ps1' @('-Cabinet', $cab, '-History', $hist)
+    $o = Run 'Update-ControllerIds.ps1' @('-RetroFE', $RetroFE, '-Cabinet', $cab, '-History', $hist)
     Emit-IdCheck $o $false
   }
   'RepairIds' {
     Banner 'REPAIR CONTROLLER IDS'
     Run 'Get-CabinetDevices.ps1' @('-Out', $cab, '-History', $hist) | Out-Null
     Emit-Devices
-    $o = Run 'Update-ControllerIds.ps1' @('-Cabinet', $cab, '-History', $hist, '-Apply')
+    $o = Run 'Update-ControllerIds.ps1' @('-RetroFE', $RetroFE, '-Cabinet', $cab, '-History', $hist, '-Apply')
     Emit-IdCheck $o $true
   }
   'RebuildMenus' {
@@ -101,13 +101,41 @@ switch ($Tool) {
       catalog     = @('Scan game library', 'Build-Manifest.ps1', @('-RetroFE', $RetroFE, '-Out', $games))
       controls    = @('Match games to controls', 'Add-GameControls.ps1', @('-Manifest', $games, '-Cabinet', $cab))
       collections = @('Build Racing / Flight / Arcade menus', 'New-RetroFECollections.ps1', @('-Manifest', $games, '-RetroFE', $RetroFE, '-Cabinet', $cab, '-RebuildDatabase'))
-      backdrops   = @('Deal new game backdrops', 'Set-LayoutThemes.ps1', @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-Shuffle'))
+      # the menu builder lists every mode that has games; the cabinet mode then hides the ones whose controls are not
+      # plugged in (as at boot) - without this, Flight showed on a wheel-only cabinet until the next boot
+      mode        = @('Show only what this cabinet can play', 'Set-CabinetMode.ps1', @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir))
+      backdrops   = @('Deal new game backdrops', 'Set-LayoutThemes.ps1', @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle'))
     }
     foreach ($id in $plan.Keys) { Step $id $plan[$id][0] 'pending' }
     foreach ($id in $plan.Keys) {
       Step $id $plan[$id][0] 'run'
       Run $plan[$id][1] $plan[$id][2] | Out-Null
       Step $id $plan[$id][0] $(if ($script:lastExit -eq 0) { 'ok' } else { 'fail' })
+    }
+    # how many games can start, and where the reasons for the others are (Build-Manifest writes games-cant-start.txt)
+    if (Test-Path $games) {
+      $gl = @((Get-Content $games -Raw | ConvertFrom-Json).games)
+      $myModes = @(if (Test-Path $cab) { (Get-Content $cab -Raw | ConvertFrom-Json).capabilities.modes }); if ($myModes) { $gl = @($gl | Where-Object { $myModes -contains $_.category }) }
+      $cantN = @($gl | Where-Object { -not @($_.variants.PSObject.Properties | Where-Object { $_.Value.ok }).Count }).Count
+      Step 'games' ("{0} of {1} games can start{2}" -f ($gl.Count - $cantN), $gl.Count, $(if ($cantN) { " - why the other $cantN can't: manifest\games-cant-start.txt" } else { '' })) 'ok'   # information, not a failure of the rebuild
+    }
+    # joystick-panel cabinets (pedestal / stand-up, no wheel): a button-layout card for every game (tools/New-PanelControlsArt.py)
+    $capNow = if (Test-Path $cab) { (Get-Content $cab -Raw | ConvertFrom-Json).capabilities } else { $null }
+    $py = (Get-Command python.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source
+    if ($capNow -and $capNow.controlPanel -and -not $capNow.wheel -and $py) {
+      Step 'panelcards' 'Button layout cards' 'run'
+      & $py (Join-Path $t 'New-PanelControlsArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'panelcards' 'Button layout cards' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+    }
+    # every cabinet: the story panel's text for each game (history.dat, the build's story files, games.json)
+    if ($py) {
+      Step 'stories' 'Game stories' 'run'
+      & $py (Join-Path $t 'New-GameStories.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'stories' 'Game stories' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # light preview videos + video backdrops for games added since the last run (skips everything up to date)
+      Step 'previews' 'Preview videos and backdrops' 'run'
+      & $py (Join-Path $t 'New-PreviewMedia.py') --retrofe $RetroFE 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'previews' 'Preview videos and backdrops' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }
@@ -129,7 +157,7 @@ switch ($Tool) {
     Emit @{ type = 'displays'; displays = $disp; used = $(if ($now) { 2 } else { 1 }) }
   }
   'ShuffleBackgrounds' {
-    Run 'Set-LayoutThemes.ps1' @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-Shuffle', '-BackgroundsOnly') | Out-Null
+    Run 'Set-LayoutThemes.ps1' @('-LayoutDir', (Join-Path $RetroFE 'layouts\ArcadeMaster'), '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle', '-BackgroundsOnly') | Out-Null
     Banner 'BACKGROUNDS SHUFFLED'
     Emit-Backgrounds
   }
@@ -196,15 +224,40 @@ switch ($Tool) {
     $list = @($list | Where-Object { Test-Path (Join-Path $RetroFE "layouts\$($_.name)\layout.xml") })
     $cur = Get-Setting 'layout'; $mode = $null; $mf = Join-Path $ManifestDir 'cabinet-mode.json'; if (Test-Path $mf) { $mode = ((Get-Content $mf -Raw | ConvertFrom-Json).effective -split '\+')[0] }
     Banner "THEMES - now: $cur$(if ($mode) { " (cabinet mode: $mode)" })"
-    if (-not $Choice -and (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not $list)) { $list | ForEach-Object { Write-Host ("  {0,-20} coverage {1}%" -f $_.name, $_.score) }; break }
+    # ArcadeMaster styles (New-ThemeSkins) for this mode's family: same layout, different dials / wheel / colours - as fast
+    # as the original. Chosen per family in manifest\skins.json; "random" deals a new one at every start.
+    $fam = switch ($mode) { 'flight' { 'flight' } { $_ -in 'racing', 'simulation' } { 'racing' } default { $null } }
+    $amDir = Join-Path $RetroFE 'layouts\ArcadeMaster'; $skinFile = Join-Path $ManifestDir 'skins.json'
+    $skinCfg = $null; if (Test-Path (Join-Path $amDir 'themes.json')) { $skinCfg = (Get-Content (Join-Path $amDir 'themes.json') -Raw | ConvertFrom-Json).skins }
+    $skinNow = if ($fam -and (Test-Path $skinFile)) { [string](Get-Content $skinFile -Raw | ConvertFrom-Json).$fam } else { '' }; if (-not $skinNow) { $skinNow = $fam }
+    $skinOpts = @(); $skinLabel = @{}
+    if ($fam -and $skinCfg -and $skinCfg.$fam) {
+      foreach ($sp in $skinCfg.$fam.PSObject.Properties) {
+        $skinLabel[$sp.Name] = $sp.Value.label; $inUse = $cur -eq 'ArcadeMaster' -and $skinNow -eq $sp.Name
+        $pvf = Join-Path $amDir "images\skins\$($sp.Name)_preview.png"
+        $skinOpts += @{ id = "skin:$($sp.Name)"; label = $sp.Value.label; sub = $(if ($inUse) { "IN USE - $($sp.Value.about)" } else { $sp.Value.about }); preview = $(if (Test-Path $pvf) { $pvf } else { $null }); icons = @(); color = $(if ($inUse) { '3ddc84' } else { 'ff2fa0' }); color2 = '2ec8ff' }
+      }
+      $skinOpts += @{ id = 'skin:random'; label = 'Surprise me'; sub = $(if ($skinNow -eq 'random') { 'IN USE - a different style every start' } else { "a different $fam style every start" }); preview = $null; icons = @(); color = $(if ($skinNow -eq 'random') { '3ddc84' } else { 'ffb000' }); color2 = '2ec8ff' }
+    }
+    if (-not $Choice -and (-not ($visual -and $env:AM_WIZ_KEYFILE) -or -not ($list -or $skinOpts))) { $skinOpts | ForEach-Object { Write-Host ("  {0,-24} {1}" -f $_.id, $_.label) }; $list | ForEach-Object { Write-Host ("  {0,-24} coverage {1}%" -f $_.name, $_.score) }; break }
     $chosen = $null
     if ($Choice) { $chosen = $Choice } else {
-    $opts = @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
+    $opts = @($skinOpts) + @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
     Emit @{ type = 'choice'; title = "PICK A THEME$(if ($mode) { " FOR $($mode.ToUpper()) MODE" })"; prompt = 'Applied after the frontend restarts'; options = $opts; selected = 0 }
     $deadline = (Get-Date).AddSeconds(180)
     while ((Get-Date) -lt $deadline) { if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) { $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue; if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break } }; Start-Sleep -Milliseconds 100 }
     }
-    if ($chosen -and ($list | Where-Object { $_.name -eq $chosen })) {
+    if ($chosen -like 'skin:*' -and $fam) {
+      $sk = $chosen.Substring(5)
+      $sel = [ordered]@{}; if (Test-Path $skinFile) { (Get-Content $skinFile -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $sel[$_.Name] = $_.Value } }
+      $sel[$fam] = $sk; $sel | ConvertTo-Json | Set-Content $skinFile -Encoding UTF8
+      Set-Setting 'layout' 'ArcadeMaster'; if ($mode) { Set-Setting "cabinetTheme.$mode" 'ArcadeMaster' }
+      Run 'Set-LayoutThemes.ps1' @('-LayoutDir', $amDir, '-CollectionsDir', (Join-Path $RetroFE 'collections'), '-ManifestDir', $ManifestDir, '-Shuffle') | Out-Null
+      $name = if ($sk -eq 'random') { 'Surprise me' } else { $skinLabel[$sk] }
+      $pv = Join-Path $amDir "images\skins\${sk}_preview.png"
+      Emit @{ type = 'images'; title = "STYLE: $name - for $fam"; files = @(@($pv) | Where-Object { Test-Path $_ }) }
+      Write-Host "skin ($fam) = $sk"
+    } elseif ($chosen -and ($list | Where-Object { $_.name -eq $chosen })) {
       Set-Setting 'layout' $chosen
       if ($mode) { Set-Setting "cabinetTheme.$mode" $chosen }   # this mode keeps the theme across boots (Set-CabinetMode)
       Run 'New-CabinetIntro.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir, '-Layout', $chosen) | Out-Null

@@ -27,8 +27,15 @@ $marker = 'ARCADEMASTER-GENERATED.txt'
 $names = @{ racing = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup = 'Arcade' }
 
 # --- clean previous generation
-foreach ($d in Get-ChildItem $cols -Directory) { if (Test-Path (Join-Path $d.FullName $marker)) { Remove-Item $d.FullName -Recurse -Force } }
-Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter 'AM_*.conf' -ErrorAction SilentlyContinue | Remove-Item -Force
+# only the launchers of collections made here (AM_PC, AM_TP_*): AM_TOOLS belongs to New-CabinetToolsCollection, and
+# deleting every AM_*.conf broke the Tools menu after each Rebuild Game Menus
+$ownLaunchers = @(foreach ($d in Get-ChildItem $cols -Directory) {
+  if (-not (Test-Path (Join-Path $d.FullName $marker))) { continue }
+  $l = Select-String -LiteralPath (Join-Path $d.FullName 'settings.conf') -Pattern '^\s*launcher\s*=\s*(AM_\S+)\s*$' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($l) { $l.Matches[0].Groups[1].Value }
+  Remove-Item $d.FullName -Recurse -Force
+})
+foreach ($l in $ownLaunchers) { Remove-Item (Join-Path $RetroFE "launchers.windows\$l.conf") -Force -ErrorAction SilentlyContinue }
 $menuTxt = Join-Path $cols 'Main\menu.txt'
 if ($Remove) {
   if (Test-Path "$menuTxt.am-backup") { Move-Item "$menuTxt.am-backup" $menuTxt -Force } elseif (Test-Path $menuTxt) { Remove-Item $menuTxt }
@@ -98,6 +105,29 @@ foreach ($g in $m.games) {
   }
 }
 
+# --- borrowed art: RetroFE finds art by the item's own name (medium_artwork\fanart\scudau.png). A clone whose art the
+# catalog borrowed from its family (Build-Manifest: scudau -> scud) gets a hard link under its own name - same file, no
+# extra space (a copy when linking fails). Only missing files are added, never replaced; every one is listed in
+# medium_artwork\ARCADEMASTER-borrowed-art.txt so it can be removed again.
+$borrowed = 0
+foreach ($srcCol in @($metaItems.Keys)) {
+  foreach ($item in @($metaItems[$srcCol].Keys)) {
+    $g = $metaItems[$srcCol][$item]
+    foreach ($t in @($g.media.PSObject.Properties)) {
+      $src = [string]$t.Value
+      if (-not $src -or [IO.Path]::GetFileNameWithoutExtension($src) -eq $item -or -not (Test-Path -LiteralPath $src)) { continue }
+      if ($src -notlike (Join-Path $cols "$srcCol\medium_artwork\*")) { continue }   # only art from the same collection
+      $dst = Join-Path $cols ("$srcCol\medium_artwork\$($t.Name)\$item" + [IO.Path]::GetExtension($src).ToLower())
+      if (Test-Path -LiteralPath $dst) { continue }
+      if (@(Get-ChildItem (Split-Path $dst) -Filter "$item.*" -File -ErrorAction SilentlyContinue).Count) { continue }   # has its own art in another format
+      try { New-Item -ItemType HardLink -Path $dst -Target $src -ErrorAction Stop | Out-Null } catch { Copy-Item -LiteralPath $src $dst }
+      Add-Content (Join-Path $cols "$srcCol\medium_artwork\ARCADEMASTER-borrowed-art.txt") $dst -Encoding UTF8
+      $borrowed++
+    }
+  }
+}
+if ($borrowed) { Write-Host "art: $borrowed file(s) linked for game versions that had none of their own (list: medium_artwork\ARCADEMASTER-borrowed-art.txt)" }
+
 # --- extra TeknoParrot installs as their own (hidden) source collections
 foreach ($inst in $extraTP.Keys) {
   $colName = 'AM_TP_' + (($inst -replace '^[A-Za-z]:\\', '') -replace '[^A-Za-z0-9]+', '_').Trim('_')
@@ -152,8 +182,28 @@ foreach ($cat in $Order) {
 foreach ($e in $ExtraMenu) { if (Test-Path (Join-Path $cols $e)) { $menu.Add($e) } }
 
 if ((Test-Path $menuTxt) -and -not (Test-Path "$menuTxt.am-backup")) { Copy-Item $menuTxt "$menuTxt.am-backup" }
+# A CoinOPS build (LEGENDS, CORE ...) has no Main menu: its library starts at settings.conf firstCollection (e.g. Arcades).
+# Keep that whole library one press away from the ArcadeMaster main menu, and start the frontend at Main so Back from the
+# library returns to the menu (started inside the library, Back has nowhere to go). The library's name is remembered in
+# Main\am-library.txt because firstCollection says Main after the first run.
+$settingsConf = Join-Path $RetroFE 'settings.conf'
+$libFile = Join-Path (Split-Path $menuTxt) 'am-library.txt'
+$fcLine = Select-String -Path $settingsConf -Pattern '^\s*firstCollection\s*=\s*(.+)$' -ErrorAction SilentlyContinue | Select-Object -Last 1
+$fc = if ($fcLine) { $fcLine.Matches[0].Groups[1].Value.Trim() } else { '' }
+$own = if (Test-Path $libFile) { (Get-Content $libFile -Raw).Trim() } elseif ($fc -ne 'Main') { $fc } else { '' }
+if ($own -and (Test-Path (Join-Path $cols $own))) {
+  if ($menu -notcontains $own) { $menu.Add($own); Write-Host "kept the build's own library in the main menu: $own" }
+} else { $own = '' }
+New-Item -ItemType Directory -Force (Split-Path $menuTxt) | Out-Null
 Set-Content $menuTxt $menu -Encoding ascii
+if ($own) { Set-Content $libFile $own -Encoding ascii }
 Write-Host ("Main menu: " + ($menu -join ' | '))
+if ($own -and $fc -eq $own) {
+  if (-not (Test-Path "$settingsConf.am-firstcollection")) { Copy-Item $settingsConf "$settingsConf.am-firstcollection" }
+  $raw = [IO.File]::ReadAllText($settingsConf)
+  [IO.File]::WriteAllText($settingsConf, ($raw -replace '(?m)^(\s*firstCollection\s*=\s*).+?(\r?)$', '${1}Main$2'))
+  Write-Host "frontend now starts at Main (was $own), so Back returns to the menu"
+}
 if ($skipped.Count) { Write-Host "not listed ($($skipped.Count)):"; $skipped | ForEach-Object { Write-Host "  $_" } }
 
 # --- game metadata for RetroFE: players / ctrltype / buttons / joyways (drives the ServoStik/GRS restrictor per game)
@@ -175,6 +225,13 @@ if ($RebuildDatabase) {
         $node = $doc.CreateElement('game'); $node.SetAttribute('name', $item); [void]$menuNode.AppendChild($node)
         foreach ($kv in @(@('description', $g.title), @('year', $g.year), @('genre', $g.genre))) { if ($kv[1]) { $e = $doc.CreateElement($kv[0]); $e.InnerText = [string]$kv[1]; [void]$node.AppendChild($e) } }
       }
+      # placeholders only (empty, "NA", the raw set name such as "scudau") get the catalog's name / year - a real name
+      # someone wrote stays as it is
+      foreach ($kv in @(@('description', $g.title), @('year', $g.year), @('genre', $g.genre))) {
+        $new = [string]$kv[1]; if (-not $new -or $new -eq 'NA' -or $new -eq $item) { continue }
+        $e = $node.SelectSingleNode($kv[0]); $cur = if ($e) { $e.InnerText.Trim() } else { '' }
+        if ($cur -in '', 'NA', $item) { if (-not $e) { $e = $doc.CreateElement($kv[0]); [void]$node.AppendChild($e) }; $e.InnerText = $new }
+      }
       $vals = [ordered]@{ players = $c.players; ctrltype = $c.ctrltype; buttons = $c.buttons; joyways = $c.ways }
       foreach ($k in $vals.Keys) {
         if ($null -eq $vals[$k] -or "$($vals[$k])" -eq '' -or "$($vals[$k])" -eq '0') { continue }
@@ -185,6 +242,6 @@ if ($RebuildDatabase) {
     $doc.Save($path)
   }
   Write-Host ("metadata written for {0} collections -> rebuilding meta.db" -f $metaItems.Count)
-  $exe = Join-Path $RetroFE 'retrofe\retrofe.exe'
-  if (Test-Path $exe) { $p = Start-Process $exe -ArgumentList '-rebuilddatabase' -WorkingDirectory (Split-Path $exe) -PassThru -WindowStyle Hidden; if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Warning 'meta.db rebuild timed out' } else { Write-Host "meta.db rebuilt (exit $($p.ExitCode))" } }
+  . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $exe = Get-AmRetroFEExe $RetroFE   # retrofe\, core\ (CoinOPS) or the root
+  if ($exe) { $p = Start-Process $exe -ArgumentList '-rebuilddatabase' -WorkingDirectory (Split-Path $exe) -PassThru -WindowStyle Hidden; if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Warning 'meta.db rebuild timed out' } else { Write-Host "meta.db rebuilt (exit $($p.ExitCode))" } }
 }

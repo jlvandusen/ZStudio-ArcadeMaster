@@ -1,6 +1,6 @@
 {
     "schema":  "wheelmap.targets/1",
-    "description":  "ARCADE-PEDESTAL (4-player pedestal: 2x I-PAC Ultimate, 2x UltraStik 360, ServoStik, trackball, Stream Deck). Inventory 2026-11-22: each CoinOPS/Core/ATARASHII/RetroBat build carries its own emulator copies (38 RetroArch, 32 MAME, 13 Dolphin, 11 Supermodel, 10 Cemu, 10 TeknoParrot). Listed here: the live/newest install per build; consolidation onto one shared emulators set on R: is the next step. The cabinet auto-starts E:\\CoinOPS LEGENDS 4 Max.",
+    "description":  "ARCADE-PEDESTAL (4-player pedestal: 2x I-PAC Ultimate, 2x UltraStik 360, ServoStik, trackball, Stream Deck). Inventory 2026-11-22: each CoinOPS/Core/ATARASHII/RetroBat build carries its own emulator copies (38 RetroArch, 32 MAME, 13 Dolphin, 11 Supermodel, 10 Cemu, 10 TeknoParrot). Listed here: the live/newest install per build; consolidation onto one shared emulators set on R: is the next step. The cabinet auto-starts E:\\CoinOPS LEGENDS 4 Max (live, NOT managed by ArcadeMaster: never list it here); its ArcadeMaster test copy is R:\\ArcadeMaster\\frontend\\LEGENDS-am.",
     "teknoparrot":  [
                         {
                             "name":  "R-CoreTypeR-TP-1842",
@@ -29,14 +29,14 @@
                             "onlyExisting":  true
                         },
                         {
-                            "name":  "E-Legends4Max-TP-886",
-                            "root":  "E:\\CoinOPS LEGENDS 4 Max\\emulators\\TeknoParrot",
+                            "name":  "R-LegendsCopy-TP-886",
+                            "root":  "R:\\ArcadeMaster\\frontend\\LEGENDS-am\\emulators\\TeknoParrot",
                             "note":  "the build that auto-starts today",
                             "onlyExisting":  true
                         },
                         {
-                            "name":  "E-Legends4Max-TPAlt-737",
-                            "root":  "E:\\CoinOPS LEGENDS 4 Max\\emulators\\TeknoParrotAlt",
+                            "name":  "R-LegendsCopy-TPAlt-737",
+                            "root":  "R:\\ArcadeMaster\\frontend\\LEGENDS-am\\emulators\\TeknoParrotAlt",
                             "onlyExisting":  true
                         },
                         {
@@ -63,7 +63,7 @@
                     },
                     {
                         "name":  "Legends4Max-DolphinWii",
-                        "user":  "E:\\CoinOPS LEGENDS 4 Max\\emulators\\Bit Wars\\emulators\\Dolphin Wii\\User",
+                        "user":  "R:\\ArcadeMaster\\frontend\\LEGENDS-am\\emulators\\Bit Wars\\emulators\\Dolphin Wii\\User",
                         "axisStyle":  "fullaxis"
                     }
                 ],
@@ -75,10 +75,10 @@
                            "ini":  "R:\\RetroBat\\emulators\\supermodel\\Config\\Supermodel.ini"
                        },
                        {
-                           "ini":  "E:\\CoinOPS LEGENDS 4 Max\\emulators\\Sega Model 3\\Config\\Supermodel.ini"
+                           "ini":  "R:\\ArcadeMaster\\frontend\\LEGENDS-am\\emulators\\Sega Model 3\\Config\\Supermodel.ini"
                        },
                        {
-                           "ini":  "E:\\CoinOPS LEGENDS 4 Max\\emulators\\Sega Model 3 Multi\\Config\\Supermodel.ini"
+                           "ini":  "R:\\ArcadeMaster\\frontend\\LEGENDS-am\\emulators\\Sega Model 3 Multi\\Config\\Supermodel.ini"
                        }
                    ],
     "mame":  [
@@ -91,7 +91,7 @@
                      "note":  "0.241"
                  },
                  {
-                     "root":  "E:\\CoinOPS LEGENDS 4 Max\\emulators\\mame",
+                     "root":  "R:\\ArcadeMaster\\frontend\\LEGENDS-am\\emulators\\mame",
                      "note":  "0.196, auto-start build"
                  }
              ],
@@ -103,7 +103,7 @@
                      "root":  "R:\\RetroBat\\emulators\\cemu"
                  },
                  {
-                     "root":  "E:\\CoinOPS LEGENDS 4 Max\\emulators\\Bit Wars\\emulators\\Cemu"
+                     "root":  "R:\\ArcadeMaster\\frontend\\LEGENDS-am\\emulators\\Bit Wars\\emulators\\Cemu"
                  }
              ],
     "m2emulator":  [

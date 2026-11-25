@@ -8,6 +8,8 @@
     screens    every 'layout - N.xml' declares monitor="N"
     menu       main-menu entries point at real collections
     launchers  each collection's launcher points at an emulator that exists (report only)
+    games      TeknoParrot profiles in this frontend with a missing game path are repaired (backup first); how many
+               catalog games can't start and why (moved / incomplete copy / not installed / never set up)
     logs       log.txt rotated above 20 MB, crash-* evidence folders capped at 10
     disk       free space on the frontend drive
     art        boot intro + Tools art present (regenerated when missing)
@@ -48,12 +50,13 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
 Emit @{ type = 'step'; id = 'runtime'; label = $checks.runtime; status = 'run' }
-$rt = Join-Path $RetroFE 'retrofe'; $need = @('retrofe.exe', 'SDL2.dll', 'gstreamer-1.0-0.dll', 'glib-2.0-0.dll')
+. (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $rexe = Get-AmRetroFEExe $RetroFE   # retrofe\, core\ (CoinOPS) or the root
+$rt = if ($rexe) { Split-Path $rexe } else { Join-Path $RetroFE 'retrofe' }; $need = @('retrofe.exe', 'SDL2.dll', 'gstreamer-1.0-0.dll', 'glib-2.0-0.dll')
 $miss = @($need | Where-Object { -not (Test-Path (Join-Path $rt $_)) })
 if (-not $miss) { Add-Result 'runtime' $checks.runtime 'OK' "$((Get-ChildItem $rt -File -ErrorAction SilentlyContinue).Count) files" }
 else {
@@ -79,7 +82,24 @@ else {
 # controls
 Emit @{ type = 'step'; id = 'controls'; label = $checks.controls; status = 'run' }
 $cc = Join-Path $RetroFE 'controls.conf'
-if (Test-Path $cc) { Add-Result 'controls' $checks.controls 'OK' 'present' }
+if (Test-Path $cc) {
+  # The ArcadeMaster game list scrolls UP/DOWN. CoinOPS builds switch playlists (filters) with Up/Down because their
+  # lists scroll sideways; under our layout that leaves the filters unreachable. Move them to Left/Right (+ stick).
+  $lines = [Collections.Generic.List[string]](Get-Content $cc); $moved = $false
+  if ((Get-Setting 'layout') -eq 'ArcadeMaster') {
+    $want = @{ nextPlaylist = 'Right,joyHat0Right,joyAxis0+'; prevPlaylist = 'Left,joyHat0Left,joyAxis0-' }
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+      if ($lines[$i] -match '^\s*(nextPlaylist|prevPlaylist)\s*=\s*(.*)$') {
+        $key = $Matches[1]; $val = $Matches[2]          # keep them: the next -match overwrites $Matches
+        if ($val -match '\b(Up|Down)\b') { $lines[$i] = "$key = $($want[$key])"; $moved = $true }
+      }
+    }
+  }
+  if ($moved -and $fix) {
+    if (-not (Test-Path "$cc.am-playlist-keys")) { Copy-Item $cc "$cc.am-playlist-keys" }
+    Set-Content $cc $lines -Encoding ascii; Add-Result 'controls' $checks.controls 'FIXED' 'filters (playlists) moved to Left/Right: the ArcadeMaster list scrolls up/down'
+  } else { Add-Result 'controls' $checks.controls 'OK' 'present' }
+}
 else {
   $cand = @((Get-ChildItem $lkgRoot -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'controls.conf' }) + @("$cc.bak") | Where-Object { Test-Path $_ } | Select-Object -First 1)
   if ($fix -and $cand) { Copy-Item $cand[0] $cc; Add-Result 'controls' $checks.controls 'FIXED' "restored from $($cand[0])" } else { Add-Result 'controls' $checks.controls 'WARN' 'controls.conf missing' }
@@ -127,18 +147,67 @@ if (Test-Path $mt) {
 
 # launchers (report only - emulators are never touched)
 Emit @{ type = 'step'; id = 'launchers'; label = $checks.launchers; status = 'run' }
-$broken = @()
+$broken = @(); $toolsLauncherFixed = $false
 foreach ($c in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   $cs = Join-Path $c.FullName 'settings.conf'; if (-not (Test-Path $cs)) { continue }
   $ln = (Select-String -Path $cs -Pattern '^\s*launcher\s*=\s*(.+)$' | Select-Object -First 1); if (-not $ln) { continue }
   $lname = $ln.Matches[0].Groups[1].Value.Trim() -replace '%ITEM_COLLECTION_NAME%', $c.Name; $lc = Join-Path $RetroFE "launchers.windows\$lname.conf"
+  if (-not (Test-Path $lc) -and $lname -eq 'AM_TOOLS' -and $fix -and (Test-Path (Join-Path $c.FullName 'RunHidden.vbs'))) {
+    # ArcadeMaster's own Tools launcher (the one launcher this check may write): same text as New-CabinetToolsCollection
+    Set-Content $lc "executable = C:\Windows\System32\wscript.exe`r`narguments = `"$($c.FullName)\RunHidden.vbs`" `"%ITEM_FILEPATH%`"`r`nreboot = yes" -Encoding ascii
+    $toolsLauncherFixed = $true; continue
+  }
   if (-not (Test-Path $lc)) { $broken += "$($c.Name): launcher '$lname' missing"; continue }
   $ex = (Select-String -Path $lc -Pattern '^\s*executable\s*=\s*(.+)$' | Select-Object -First 1); if (-not $ex) { continue }
   $exe = $ex.Matches[0].Groups[1].Value.Trim().Trim('"'); if ($exe -match '%') { continue }
   $full = if ([IO.Path]::IsPathRooted($exe)) { $exe } else { Join-Path $RetroFE $exe }
   if (-not (Test-Path $full)) { $broken += "$($c.Name): $exe not found" }
 }
-if ($broken) { Add-Result 'launchers' $checks.launchers 'WARN' (($broken | Select-Object -First 4) -join '; ') + $(if ($broken.Count -gt 4) { " (+$($broken.Count - 4) more)" }) } else { Add-Result 'launchers' $checks.launchers 'OK' 'every launcher points at an existing program' }
+if ($toolsLauncherFixed -and -not $broken) { Add-Result 'launchers' $checks.launchers 'FIXED' 'Tools menu launcher (AM_TOOLS) was missing - put back' }
+elseif ($broken) { Add-Result 'launchers' $checks.launchers 'WARN' (($broken | Select-Object -First 4) -join '; ') + $(if ($broken.Count -gt 4) { " (+$($broken.Count - 4) more)" }) } else { Add-Result 'launchers' $checks.launchers 'OK' 'every launcher points at an existing program' }
+
+# games: TeknoParrot profiles inside THIS frontend whose game path is gone get repaired (Repair-TPProfiles: backup
+# first, path taken from the same profile in another TeknoParrot install, or found by file name); then the catalog
+# says how many games can't start and why (lib\AmGameDoctor.ps1 fills that in on every catalog build)
+Emit @{ type = 'step'; id = 'games'; label = $checks.games; status = 'run' }
+$gDid = @(); $gWarn = @()
+. (Join-Path $PSScriptRoot 'lib\AmMachine.ps1')
+foreach ($tpd in Get-ChildItem (Join-Path $RetroFE 'emulators') -Directory -Filter 'TeknoParrot*' -ErrorAction SilentlyContinue) {
+  $up = Join-Path $tpd.FullName 'UserProfiles'; if (-not (Test-Path $up)) { continue }
+  $gone = @(foreach ($f in Get-ChildItem $up -Filter *.xml -File) {
+    $m = [regex]::Match([IO.File]::ReadAllText($f.FullName), '<GamePath>(.+?)</GamePath>'); if (-not $m.Success) { continue }
+    $p = $m.Groups[1].Value; $full = if ([IO.Path]::IsPathRooted($p)) { $p } else { [IO.Path]::GetFullPath((Join-Path $tpd.FullName $p)) }
+    if (-not (Test-Path -LiteralPath $full)) { $f.BaseName } })
+  if (-not $gone) { continue }
+  # the same set already found unfixable last time: don't search the disks again on every boot
+  $memo = Join-Path $ManifestDir ("games-unfixable-{0}.txt" -f $tpd.Name); $key = ($gone | Sort-Object) -join ','
+  if ($fix -and (Test-Path $memo) -and (Get-Content $memo -Raw).Trim() -eq $key) { $gWarn += "$($tpd.Name): game files not found for $($gone -join ', ')"; continue }
+  if ($fix) {
+    $hints = @(Get-AmTeknoParrotRoots -RetroFE $RetroFE | Where-Object { $_.TrimEnd('\') -ne $tpd.FullName.TrimEnd('\') })
+    $rep = Join-Path $PSScriptRoot 'Repair-TPProfiles.ps1'
+    $dry = & $rep -TpDir $tpd.FullName -HintDirs $hints *>&1 | Out-String   # back up + write only when something can be fixed
+    $o = if ($dry -match 'resolvable=([1-9]\d*)') { & $rep -TpDir $tpd.FullName -HintDirs $hints -BackupRoot (Join-Path $ManifestDir 'backup') -Apply *>&1 | Out-String } else { '' }
+    $done = @([regex]::Matches($o, '(?m)^fixed (\S+)\.xml') | ForEach-Object { $_.Groups[1].Value })
+    $left = @($gone | Where-Object { $done -notcontains $_ })
+    if ($left) { Set-Content $memo (($left | Sort-Object) -join ',') } else { Remove-Item $memo -ErrorAction SilentlyContinue }
+    if ($done) { $gDid += "$($tpd.Name): game path repaired for $($done -join ', ')" }
+    if ($left) { $gWarn +="$($tpd.Name): game files not found for $($left -join ', ')" }
+  } else { $gWarn += "$($tpd.Name): game path broken for $($gone -join ', ')" }
+}
+$gInfo = ''
+$gj = Join-Path $ManifestDir 'games.json'
+if (Test-Path $gj) {
+  $glist = @((Get-Content $gj -Raw | ConvertFrom-Json).games)
+  # only the games this cabinet plays (a shooter on the racing cabinet is not its problem)
+  $myModes = @(if ($cab) { $cab.capabilities.modes }); if ($myModes) { $glist = @($glist | Where-Object { $myModes -contains $_.category }) }
+  $cant = @($glist | Where-Object { -not @($_.variants.PSObject.Properties | Where-Object { $_.Value.ok }).Count })
+  $why = @($cant | ForEach-Object { @($_.variants.PSObject.Properties | ForEach-Object { $_.Value.problem } | Where-Object { $_ })[0] }) | Group-Object | ForEach-Object { "$($_.Count) $($_.Name -replace '-', ' ')" }
+  $gInfo = "{0} of {1} games can start" -f ($glist.Count - $cant.Count), $glist.Count
+  if ($cant) { $gInfo += "; $($cant.Count) can't" + $(if ($why) { " ($($why -join ', '))" } else { '' }) + " - list with reasons: manifest\games-cant-start.txt" }
+}
+if ($gWarn) { Add-Result 'games' $checks.games 'WARN' ((@($gWarn) + @($gDid) + @($gInfo) | Where-Object { $_ }) -join '; ') }
+elseif ($gDid) { Add-Result 'games' $checks.games 'FIXED' ((@($gDid) + @($gInfo) | Where-Object { $_ }) -join '; ') }
+else { Add-Result 'games' $checks.games 'OK' $(if ($gInfo) { $gInfo } else { 'every TeknoParrot game path in this frontend exists' }) }
 
 # logs
 Emit @{ type = 'step'; id = 'logs'; label = $checks.logs; status = 'run' }
@@ -159,6 +228,8 @@ Emit @{ type = 'step'; id = 'art'; label = $checks.art; status = 'run' }
 $did = @(); $lay = Get-Setting 'layout'
 if (-not (Test-Path (Join-Path $RetroFE "layouts\$lay\images\intro\intro_title.png")) -and $fix) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-CabinetIntro.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -Layout $lay | Out-Null; $did += 'boot intro regenerated' }
 $tools = Join-Path $RetroFE 'collections\Tools'
+# every cabinet needs a way into its settings from the game menu: install the Tools list when a build has none
+if (-not (Test-Path $tools) -and $fix -and (Test-Path (Join-Path $RetroFE 'collections\Main\menu.txt'))) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-CabinetToolsCollection.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools (settings) list installed on the main menu' }
 if ((Test-Path (Join-Path $tools 'ARCADEMASTER-TOOLS.txt')) -and -not (Get-ChildItem (Join-Path $tools 'medium_artwork\video') -File -ErrorAction SilentlyContinue) -and $fix) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-ToolsArt.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools art regenerated' }
 if ($did) { Add-Result 'art' $checks.art 'FIXED' ($did -join '; ') } else { Add-Result 'art' $checks.art 'OK' 'present' }
 

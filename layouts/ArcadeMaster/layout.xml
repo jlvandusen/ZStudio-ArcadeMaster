@@ -15,6 +15,17 @@
   <!-- ================= PER-GAME BACKDROP: the selected game's own fanart, full screen ================= -->
   <!-- neutral fallback for games without fanart -->
   <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <!-- the game's own backdrop: a blurred, darkened frame of its video (tools/New-PreviewMedia.py -> am_backdrop),
+       so games without fanart (most of MAME) still get their own mood; real fanart draws over it -->
+  <reloadableImage type="am_backdrop" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".5"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="16"><animate type="width" to="2060" algorithm="easeInOutSine"/><animate type="height" to="1159" algorithm="easeInOutSine"/></set>
+      <set duration="16"><animate type="width" to="1920" algorithm="easeInOutSine"/><animate type="height" to="1080" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
   <!-- fanart: fades out while scrolling, fades in on the new game and drifts slowly (Ken Burns) -->
   <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
@@ -43,7 +54,7 @@
   <menu type="custom" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
     <itemDefaults x="400" y="470" xOrigin="center" yOrigin="center" width="460" maxHeight="130" alpha="0" layer="10" fontColor="ffffff" fontSize="44" loadFontSize="44"/>
     <item yOffset="-520" width="300" maxHeight="80"  alpha="0"/>
-    <item yOffset="-390" width="330" maxHeight="90"  alpha=".25"/>
+    <item yOffset="-390" width="330" maxHeight="90"  alpha=".12"/>
     <item yOffset="-260" width="370" maxHeight="100" alpha=".45"/>
     <item yOffset="-140" width="410" maxHeight="115" alpha=".7"/>
     <item selected="true" width="520" maxHeight="140" alpha="1"/>
@@ -55,7 +66,8 @@
 
   <!-- ================= PREVIEW VIDEO in a neon frame ================= -->
   <image src="images/ui_video_frame.png" x="1340" y="372" xOrigin="center" yOrigin="center" width="1120" height="650" alpha="1" layer="7"/>
-<reloadableVideo imageType="video" x="1340" y="372" xOrigin="center" yOrigin="center" width="1040" maxHeight="585" alpha="0" layer="6">
+  <!-- am_video = light 720p copies with a keyframe every second (tools/New-PreviewMedia.py): starts at once, half the decode work -->
+  <reloadableVideo imageType="am_video" x="1340" y="372" xOrigin="center" yOrigin="center" width="1040" maxHeight="585" alpha="0" layer="6">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="width" to="1140"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".35"><animate type="nop"/></set>
@@ -98,7 +110,9 @@
     <onMenuScroll><set duration=".08"><animate type="width" to="292"/><animate type="height" to="292"/></set></onMenuScroll>
     <onMenuIdle><set duration=".25"><animate type="width" to="280" algorithm="easeOutCubic"/><animate type="height" to="280" algorithm="easeOutCubic"/></set></onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="am_gauge_over" mode="systemlayout" x="950" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
+  <!-- live dash: red glow that brightens with the brake pedal -->
+  <image src="images/live/live_brake_glow.png" x="950" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveAxis="2" liveFrom="32767" liveTo="-32768"/>
+  <reloadableImage type="am_gauge_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="230" liveNeedleSmooth="0.92" mode="systemlayout" x="950" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
     <!-- speedo needle: floor it on scroll, settle into an idle flutter -->
     <onMenuScroll><set duration=".16"><animate type="angle" to="112" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
@@ -118,7 +132,17 @@
       <set duration="2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage type="am_gauge2_over" mode="systemlayout" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
+  <!-- live dash (New-LiveDashArt): the gear the shifter is in, and a flash while a shift paddle is pulled -->
+  <image src="images/live/live_gear_1.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="12"/>
+  <image src="images/live/live_gear_2.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="13"/>
+  <image src="images/live/live_gear_3.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="14"/>
+  <image src="images/live/live_gear_4.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="15"/>
+  <image src="images/live/live_gear_5.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="16"/>
+  <image src="images/live/live_gear_6.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="17"/>
+  <image src="images/live/live_gear_R.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="18"/>
+  <image src="images/live/live_shift_up.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="4"/>
+  <image src="images/live/live_shift_down.png" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="5"/>
+  <reloadableImage type="am_gauge2_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="215" liveNeedleSmooth="0.7" mode="systemlayout" x="1730" y="920" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
     <!-- tacho: bang off the limiter on scroll, drop like an upshift, then idle -->
     <onMenuScroll><set duration=".1"><animate type="angle" to="128" algorithm="easeOutQuadratic"/></set></onMenuScroll>
     <onMenuIdle>
@@ -150,6 +174,11 @@
     <onGameEnter><set duration="1"><animate type="angle" to="720" algorithm="easeInCubic"/><animate type="width" to="520"/><animate type="height" to="520"/></set></onGameEnter>
     <onGameExit><set duration=".6"><animate type="angle" to="0" algorithm="easeOutCubic"/><animate type="width" to="330"/><animate type="height" to="330"/></set></onGameExit>
   </reloadableImage>
+  <!-- the cabinet's real wheel (New-RealWheelArt): straight up when the wheel is centred, turns only with the wheel - no decorative swing. Empty unless the cabinet has one; am_spinner is then empty instead -->
+  <reloadableImage type="am_realwheel" mode="systemlayout" liveSteer="450" liveDevice="wheel" x="1340" y="900" xOrigin="center" yOrigin="center" width="330" height="330" layer="14">
+    <onGameEnter><set duration="1"><animate type="width" to="520"/><animate type="height" to="520"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="width" to="330"/><animate type="height" to="330"/></set></onGameExit>
+  </reloadableImage>
 
   <!-- burst: speed lines (racing) / muzzle flash (lightgun) on every scroll -->
   <reloadableImage type="am_burst" mode="systemlayout" x="center" y="center" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="15">
@@ -161,6 +190,53 @@
 
   <!-- ================= SCREEN FX ================= -->
   <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".45" layer="16"/>
+
+  <!-- ================= FILTER BAR: the active playlist (LEFT / RIGHT switch it) + position in the list ================= -->
+  <!-- banners: layouts/ArcadeMaster/collections/_common/medium_artwork/playlist/<playlist>.png (tools/New-PanelControlsArt.py) -->
+  <reloadableImage type="playlist" mode="commonlayout" x="400" y="34" xOrigin="center" yOrigin="center" width="600" height="58" alpha="1" layer="11">
+    <onPlaylistEnter>
+      <set duration=".08"><animate type="width" to="660"/><animate type="height" to="64"/></set>
+      <set duration=".25"><animate type="width" to="600" algorithm="easeOutCubic"/><animate type="height" to="58" algorithm="easeOutCubic"/></set>
+    </onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="400" y="82" xOrigin="center" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="9aa3b2" alpha=".9" layer="11"/>
+
+  <!-- ================= GAME STORY: what made it special (tools/New-GameStories.py -> medium_artwork/am_story/<item>.txt) ================= -->
+  <!-- after 8 s on one game a glass panel covers the video and the story scrolls; any move hides it again -->
+  <image src="images/black.png" x="1340" y="372" xOrigin="center" yOrigin="center" width="1040" height="585" alpha="0" layer="8">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="alpha" to=".84" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
+  <reloadableScrollingText type="am_story" menuScrollReload="true" x="850" y="170" width="980" height="500" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="16" startPosition="0" startTime="10" endTime="5" alpha="0" layer="9">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="8.2"><animate type="nop"/></set>
+      <set duration=".6"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableScrollingText>
+
+  <!-- ================= SPECIAL-CONTROL REMINDER: trackball / spinner / gun / wheel / 4-way (am_hint, only those games) ================= -->
+  <reloadableImage type="am_hint" x="1340" y="104" xOrigin="center" yOrigin="center" width="980" height="92" alpha="0" layer="17">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="1.1"><animate type="nop"/></set>
+      <set duration=".18"><animate type="alpha" to="1"/><animate type="width" to="1060" algorithm="easeOutCubic"/><animate type="height" to="100" algorithm="easeOutCubic"/></set>
+      <set duration=".3"><animate type="width" to="980" algorithm="easeOutBounce"/><animate type="height" to="92" algorithm="easeOutBounce"/></set>
+    </onMenuIdle>
+    <onIdle>
+      <set duration="1.1"><animate type="width" to="1004" algorithm="easeInOutSine"/><animate type="height" to="95" algorithm="easeInOutSine"/></set>
+      <set duration="1.1"><animate type="width" to="980" algorithm="easeInOutSine"/><animate type="height" to="92" algorithm="easeInOutSine"/></set>
+    </onIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
 
   <!-- ================= CONTROLS CARD: what every control does in the highlighted game (tools/New-GameControlsArt.ps1) ================= -->
   <reloadableImage type="am_controls" x="1345" y="905" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="17">
