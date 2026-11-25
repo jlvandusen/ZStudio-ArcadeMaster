@@ -45,7 +45,10 @@ The loop works like this (James, 2026-11-25):
       - **Gaps to 100% LEDBlinky (James asked 2026-11-25; honest list):**
         - [x] Play LEDBlinky's `.lwax` files: the `<file>.lwax` command loops one until `11`. AmPanel.json
               AttractAnimation can name one. Newer (LedHwType) and older (PACLED64) files work. Tested live 2026-11-25.
-        - [ ] `.lwax` leftovers: `random.lwax`, the S/N options, the `lwa\GameSpecific` folders (CabGameStart, CabGamePause...).
+        - [x] `random` / `random.lwax` and the `lwa\GameSpecific` GameStart / GamePlay / GamePause folders, with
+              AmPanel.json GameStartAnimation / GamePauseAnimation defaults. Game stop ends any game animation.
+              Tested live 2026-11-25.
+        - [ ] Still open: the `Cab*` folders (cabinet LEDs: none on this cabinet), the S/N options, the `*Audio` variants.
         - [x] Audio-reactive animation: `audio` (AudioLevel.cs, the Windows peak meter) is a VU meter in the game's
               colours. Cabinet Settings > ATTRACT LIGHTS picks chase / breathe / to the music. Tested live 2026-11-25.
         - [ ] Audio "via triggers": a trigger rule action `audio` (a lamp or the music drives a button group).
