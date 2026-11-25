@@ -15,6 +15,7 @@
     art        boot intro + Tools art present (regenerated when missing)
     wheel      every TeknoParrot driving game's wheel / pedals / paddles / gears on the G29 (report only)
     updates    the "ArcadeMaster Update" task exists (put back when missing) and the last pull / build did not fail
+    previews   how many games in each menu have a preview video (am_video); WARN when a menu has none at all
     crashes    games, emulators or the frontend that crashed in the last 24 h (Windows' Application Error log), in plain words
     tactile    bass shakers switched on (manifest\tactile.json): VoiceMeeter running (started when not), shaker card present
   -Snapshot   when everything is OK: save a last-known-good copy of the configs (manifest\lkg\<stamp>, keeps 3)
@@ -55,7 +56,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -376,6 +377,31 @@ else {
   if ($tWarn) { Add-Result 'tactile' $checks.tactile 'WARN' (($tWarn + $tDid) -join '; ') }
   elseif ($tDid) { Add-Result 'tactile' $checks.tactile 'FIXED' ($tDid -join '; ') }
   else { Add-Result 'tactile' $checks.tactile 'OK' "on: $card at $($ts.strength)%" }
+}
+# previews: the game list plays each game's light preview video (am_video, tools\New-PreviewMedia.py). A menu with none at
+# all shows no game video anywhere (a new cabinet before its first Rebuild Game Menus); fewer than all is normal (some
+# games have no video). Counts per menu of the main menu.
+Emit @{ type = 'step'; id = 'previews'; label = $checks.previews; status = 'run' }
+$colRoot = Join-Path $RetroFE 'collections'
+$menus = @(Get-Content (Join-Path $colRoot 'Main\menu.txt') -ErrorAction SilentlyContinue | Where-Object { $_.Trim() -and (Test-Path (Join-Path $colRoot "$($_.Trim())")) } | ForEach-Object { $_.Trim() })
+$pv = foreach ($mn in $menus) {
+  $subs = @(Get-ChildItem (Join-Path $colRoot $mn) -Filter *.sub -File -ErrorAction SilentlyContinue)
+  if (-not $subs) { continue }
+  $tot = 0; $have = 0
+  foreach ($sub in $subs) {
+    $vdir = Join-Path $colRoot "$($sub.BaseName)\medium_artwork\am_video"
+    $vids = @{}; foreach ($v in @(Get-ChildItem $vdir -File -ErrorAction SilentlyContinue)) { $vids[$v.BaseName.ToLower()] = 1 }
+    foreach ($it in @(Get-Content $sub.FullName | Where-Object { $_.Trim() })) { $tot++; if ($vids.ContainsKey($it.Trim().ToLower())) { $have++ } }
+  }
+  [pscustomobject]@{ menu = $mn; have = $have; total = $tot }
+}
+$pv = @($pv)
+if (-not $pv.Count) { Add-Result 'previews' $checks.previews 'OK' 'no game menus to check' }
+else {
+  $txt = ($pv | ForEach-Object { "$($_.menu) $($_.have)/$($_.total)" }) -join ', '
+  $none = @($pv | Where-Object { $_.total -gt 0 -and $_.have -eq 0 })
+  if ($none) { Add-Result 'previews' $checks.previews 'WARN' "$txt - $(($none | ForEach-Object { $_.menu }) -join ', ') shows no game video: Tools > Rebuild Game Menus makes them (needs ffmpeg)" }
+  else { Add-Result 'previews' $checks.previews 'OK' $txt }
 }
 # crashes: Windows writes every program crash to the Application log (source "Application Error", event 1000) with the
 # program, the module it crashed in and the exception code. Report the last 24 h for this cabinet's games, their

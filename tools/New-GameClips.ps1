@@ -32,9 +32,17 @@ foreach ($e in $clips.PSObject.Properties) {
   if (-not $Force -and (Test-Path -LiteralPath $dst) -and (Get-Item -LiteralPath $dst).LastWriteTime -gt (Get-Item -LiteralPath $src).LastWriteTime) { $same++; continue }
   New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
   $part = "$dst.part.mp4"
-  $args = @('-hide_banner', '-loglevel', 'error', '-y', '-ss', "$start", '-i', $src, '-t', "$Seconds", '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30', '-pix_fmt', 'yuv420p') + $enc + @('-c:a', 'aac', '-b:a', '128k', '-ac', '2', '-movflags', '+faststart', $part)
-  & $FFmpeg @args 2>&1 | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
-  if ($LASTEXITCODE -or -not (Test-Path -LiteralPath $part) -or (Get-Item -LiteralPath $part).Length -lt 100KB) { Write-Host "FAILED $($e.Name) from $src"; Remove-Item -LiteralPath $part -ErrorAction SilentlyContinue; $failed++; continue }
+  $ffArgs = @('-hide_banner', '-loglevel', 'error', '-y', '-ss', "$start", '-i', $src, '-t', "$Seconds", '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30', '-pix_fmt', 'yuv420p') + $enc + @('-c:a', 'aac', '-b:a', '128k', '-ac', '2', '-movflags', '+faststart', $part)
+  # ffmpeg writes warnings to stderr; under 'Stop' Windows PowerShell 5.1 turns that into a fatal error - judge by the file
+  $ErrorActionPreference = 'Continue'; & $FFmpeg @ffArgs 2>&1 | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }; $ffExit = $LASTEXITCODE; $ErrorActionPreference = 'Stop'
+  if ($ffExit -or -not (Test-Path -LiteralPath $part) -or (Get-Item -LiteralPath $part).Length -lt 100KB) {
+    # a movie whose sound ffmpeg cannot decode (After Burner Climax's ADX audio): try again without sound
+    $noSound = @($ffArgs | Where-Object { $_ -notin '-c:a', 'aac', '-b:a', '128k', '-ac', '2' }); $noSound = $noSound[0..($noSound.Count - 2)] + @('-an', $part)
+    Remove-Item -LiteralPath $part -ErrorAction SilentlyContinue
+    $ErrorActionPreference = 'Continue'; & $FFmpeg @noSound 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host "  $_" }; $ffExit = $LASTEXITCODE; $ErrorActionPreference = 'Stop'
+    if (-not $ffExit -and (Test-Path -LiteralPath $part) -and (Get-Item -LiteralPath $part).Length -ge 100KB) { Write-Host "  (made without sound: the movie's audio could not be read)" }
+  }
+  if ($ffExit -or -not (Test-Path -LiteralPath $part) -or (Get-Item -LiteralPath $part).Length -lt 100KB) { Write-Host "FAILED $($e.Name) from $src"; Remove-Item -LiteralPath $part -ErrorAction SilentlyContinue; $failed++; continue }
   Move-Item -LiteralPath $part $dst -Force
   Write-Host ("made {0} ({1:N1} MB) from {2}" -f $e.Name, ((Get-Item -LiteralPath $dst).Length / 1MB), (Split-Path $src -Leaf))
   $made++
