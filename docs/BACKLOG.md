@@ -204,7 +204,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [x] [RACE1] Controls: check the wheel, pedals and paddles in every TeknoParrot racing profile (clutch L, brake M, gas R).
       New read-only tools\Test-WheelBindings.ps1. RACE1: 303 of 313 ok -> 313 of 313. Fixed (backups *.wheelmap-*.bak):
       WMMT5, ID4Exp and FNFSB2 had no steering, gas or brake bound; OutRun 2 SP DX (E:) had its brake on the gas pedal.
-- [ ] Controls: run Test-WheelBindings in the health check, so a profile that loses its wheel bindings is reported.
+- [x] [RACE1] Controls: run Test-WheelBindings in the health check ("Wheel bindings in TeknoParrot games": OK with the
+      count, or WARN naming the games). Skipped while no profile changed: health 2.5 s after a change, 0.8 s otherwise.
 - [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
 - [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
 - [ ] Controls: set up the "ready to set up" games from games-cant-start.txt with Add-TPGame (dry run first).
