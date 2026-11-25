@@ -307,6 +307,19 @@ static class AmPanel
                     rep["ok"] = true;
                 }
             }
+            else if (cmd == "saverule" || cmd == "describe")
+            {
+                // {"cmd":"saverule","output":"led0","game":"asteroid","do":"led","target":"P1START","color":"Red"} (do "default" removes it)
+                // {"cmd":"describe","output":"led0","game":"asteroid"} -> what that output does now
+                string o = Convert.ToString(req["output"]), g = req.ContainsKey("game") ? Convert.ToString(req["game"]) : "*";
+                if (cmd == "saverule")
+                {
+                    TriggerRules.SaveCabinetRule(Path.Combine(manifestDir, "panel-rules.json"), o, g, req.ContainsKey("do") ? Convert.ToString(req["do"]) : "led",
+                        req.ContainsKey("target") ? Convert.ToString(req["target"]) : null, req.ContainsKey("color") ? Convert.ToString(req["color"]) : null);
+                    ReloadRules();
+                }
+                rep["does"] = rules != null ? rules.Describe(o, g) : "-"; rep["ok"] = true;
+            }
             else if (cmd == "animate")   // {"cmd":"animate","kind":"chase"|"breathe"|"stop"}
             {
                 if (leds == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
@@ -333,8 +346,7 @@ static class AmPanel
             outputs = new OutputListener(manifestDir, delegate {
                 lock (Gate) { object g; if (State.TryGetValue("game", out g) && g != null) return Convert.ToString(g); if (State.TryGetValue("selected", out g) && g != null) return Convert.ToString(g); return null; }
             }, Log);
-            rules = new TriggerRules(Path.Combine(manifestDir, "panel-rules.json"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "panel-rules.json"));
-            Log("rules: " + rules.Count + " trigger rule(s) loaded");
+            ReloadRules();
             outputs.Changed += delegate (string name, int value) {
                 if (leds == null && rules.Count == 0) return;
                 lock (Gate)
@@ -367,6 +379,11 @@ static class AmPanel
                 string g; lock (Gate) g = State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : "";
                 new ColorStudio(leds, Gate, g).Show();
             });
+        menu.Items.Add("Triggers (game outputs)...", null, delegate {
+            string g; lock (Gate) g = State.ContainsKey("game") && State["game"] != null ? Convert.ToString(State["game"]) : (State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : "");
+            new TriggerStudio(outputs, delegate { return rules; }, ReloadRules, manifestDir, g,
+                leds != null ? leds.Labels : new List<string>(), leds != null ? leds.ColorNames : new List<string> { "White", "Red", "Green", "Blue", "Yellow" }).Show();
+        });
         menu.Items.Add("Re-scan boards", null, delegate { var b = ReadBoards(); lock (Gate) State["boards"] = b; SaveState(); });
         menu.Items.Add("Open log", null, delegate { try { Process.Start(logFile); } catch { } });
         menu.Items.Add(new ToolStripSeparator());
@@ -377,6 +394,13 @@ static class AmPanel
         if (glow != null) glow.Stop();
         if (outputs != null) outputs.Shutdown();
         tray.Visible = false;
+    }
+
+    // the cabinet's rules first, then the shipped defaults next to the exe
+    static void ReloadRules()
+    {
+        rules = new TriggerRules(Path.Combine(manifestDir, "panel-rules.json"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "panel-rules.json"));
+        Log("rules: " + rules.Count + " trigger rule(s) loaded");
     }
 
     static string TrayText()
