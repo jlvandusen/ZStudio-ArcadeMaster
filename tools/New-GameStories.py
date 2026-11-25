@@ -599,7 +599,7 @@ class Frontend:
         d = self.cdir / name
         conf = read_conf(d / 'settings.conf')
         return bool(conf.get('launcher') or conf.get('list.path') or (d / 'include.txt').exists()) \
-            and not (d / 'menu.txt').exists()
+            and not read_list(d / 'menu.txt')   # an EMPTY menu.txt (a CoinOPS leftover in MAME / GameCube) is not a menu
 
     def sources_of(self, name: str) -> list[str]:
         d = self.cdir / name

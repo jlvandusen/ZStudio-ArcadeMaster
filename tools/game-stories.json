@@ -147,5 +147,29 @@
 
   "NASCAR Heat 5": {"title": "NASCAR Heat 5", "year": 2020, "maker": "704Games", "story": "Official NASCAR racing: the Cup Series with its drivers, cars and oval tracks, where drafting and tyre wear decide close finishes.", "special": ["Officially licensed NASCAR cars, drivers and tracks.", "Drafting in packs on the big ovals."]},
 
-  "American Truck Simulator": {"title": "American Truck Simulator", "year": 2016, "maker": "SCS Software", "story": "Drive big American trucks across the western United States, delivering cargo from city to city on long highways. Not a race: careful driving, parking a trailer and keeping to the rules of the road.", "special": ["Long-distance trucking across a scaled-down map of the American West.", "Made for a wheel, pedals and a gear lever."]}
+  "American Truck Simulator": {"title": "American Truck Simulator", "year": 2016, "maker": "SCS Software", "story": "Drive big American trucks across the western United States, delivering cargo from city to city on long highways. Not a race: careful driving, parking a trailer and keeping to the rules of the road.", "special": ["Long-distance trucking across a scaled-down map of the American West.", "Made for a wheel, pedals and a gear lever."]},
+
+  "outrun": {"title": "Out Run", "year": 1986, "maker": "Sega", "story": "Drive a red Ferrari Testarossa convertible with your passenger beside you across sunny European-style scenery, racing the clock. At the end of each stage the road forks left or right, so every run can take a different route to one of five finishes.", "special": ["Pick your radio song before the start, including Magical Sound Shower.", "Branching roads: 15 stages, five different endings.", "Its sit-down cabinet moved with the steering."]},
+
+  "vr": {"title": "Virtua Racing", "year": 1992, "maker": "Sega", "story": "Formula-style racing in full 3D polygons, years before most racing games: three courses of rising difficulty and four camera views you can switch while you drive.", "special": ["One of the first arcade racers in real-time 3D polygons.", "Switch between four camera views at any time."]},
+
+  "orunners": {"title": "OutRunners", "year": 1992, "maker": "Sega", "story": "The sequel to Out Run built for two: pick one of eight cars and race a friend side by side across the world, choosing left or right at each fork to set your route.", "special": ["Head-to-head racing for two players in one cabinet.", "Keeps Out Run's branching routes and music choice."]},
+
+  "crusnusa": {"title": "Cruis'n USA", "year": 1994, "maker": "Midway / Nintendo", "story": "A coast-to-coast race across America, from the Golden Gate Bridge to Washington D.C., in sports cars, a jeep and even a school bus, weaving through traffic at full speed.", "special": ["A cross-country route through famous American places.", "Arcade-style handling: big jumps, crashes and traffic."]},
+
+  "crusnwld": {"title": "Cruis'n World", "year": 1996, "maker": "Midway / Nintendo", "story": "Cruis'n goes worldwide: race through countries around the globe, with stunts in mid-air and through traffic, in the same fast, forgiving arcade style as Cruis'n USA.", "special": ["Courses set in countries around the world.", "Mid-air stunts and wheelies for show."]},
+
+  "offroadc": {"title": "Off Road Challenge", "year": 1997, "maker": "Midway", "story": "Off-road trucks racing over desert, mud and mountain tracks with huge jumps. Earn money to upgrade your truck between races.", "special": ["Monster jumps over rough off-road courses.", "Truck upgrades bought with your winnings."]},
+
+  "calspeed": {"title": "California Speed", "year": 1998, "maker": "Atari Games", "story": "Race across California, from Silicon Valley to the deserts and the coast, on courses full of jumps and short cuts, in cars ranging from sports cars to a golf cart.", "special": ["Courses set around California.", "Unusual vehicles hidden among the sports cars."]},
+
+  "sfrushrk": {"title": "San Francisco Rush: The Rock", "year": 1997, "maker": "Atari Games", "story": "Fast, jump-filled racing through the hills of San Francisco. This edition adds the Alcatraz island course. Hidden short cuts and keys are everywhere for those who look.", "special": ["Huge jumps down San Francisco's steep streets.", "Secret short cuts and hidden keys on every course."]},
+
+  "sf2049se": {"title": "San Francisco Rush 2049 Special Edition", "year": 2003, "maker": "Atari Games", "story": "The futuristic Rush: cars with wings that open in the air, racing through a San Francisco of the year 2049, with stunt arenas and hidden routes.", "special": ["Cars spread wings to glide through long jumps.", "Stunt arenas as well as races."]},
+
+  "F-Zero GX (USA)": {"title": "F-Zero GX", "year": 2003, "maker": "Nintendo / Sega Amusement Vision", "story": "Anti-gravity racing at extreme speed with 30 machines on twisting tubes and loops. Built by Sega's Amusement Vision for Nintendo; its arcade twin is F-Zero AX on the Triforce board.", "special": ["30 racers on track at once at enormous speed.", "Made together by Nintendo and Sega, with an arcade version (F-Zero AX)."]},
+
+  "Mario Kart - Double Dash!! (USA)": {"title": "Mario Kart: Double Dash!!", "year": 2003, "maker": "Nintendo", "story": "Two characters ride each kart: one drives, the other throws the items, and you can swap them during the race. Every pair has its own special item.", "special": ["Two riders per kart, swappable mid-race.", "Each character has a special item of their own."]},
+
+  "Auto Modellista (USA)": {"title": "Auto Modellista", "year": 2003, "maker": "Capcom", "story": "A racing game drawn like a comic book: real Japanese and European cars in a cel-shaded style, with a garage for tuning and dressing up your car.", "special": ["Cel-shaded, comic-book graphics for real cars.", "A detailed garage for tuning and dressing up cars."]}
 }
