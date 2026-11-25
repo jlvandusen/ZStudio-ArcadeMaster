@@ -15,7 +15,7 @@ param(
   [string]$OutDir
 )
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'lib\AmVisual.ps1'); . (Join-Path $PSScriptRoot 'lib\CabinetTypes.ps1')
+. (Join-Path $PSScriptRoot 'lib\CabinetTypes.ps1')
 function Get-Setting([string]$key) { $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern "^\s*$([regex]::Escape($key))\s*=\s*(.*)$" -ErrorAction SilentlyContinue | Select-Object -Last 1; if ($m) { $m.Matches[0].Groups[1].Value.Trim() } }
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
 $setting = if ($Type) { $Type } else { Get-Setting 'cabinetType' }
@@ -26,6 +26,16 @@ $ct = Resolve-AmCabinetType $eff.id $cab $(if ($eff.switched) { '' } else { Get-
 if ($eff.switched) { $ct.auto = $false }
 if (-not $OutDir) { $OutDir = Join-Path $RetroFE "layouts\$Layout\images\intro" }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
+# Already drawn for the same cabinet type, title, tagline and icons by the same scripts? Then nothing to do: the boot
+# drew the same five pictures every time (0.8 s). The check runs before the drawing library loads.
+$pngs = 'intro_glow.png', 'intro_icons.png', 'intro_title.png', 'intro_line.png', 'intro_tagline.png'
+$scriptTicks = @($PSCommandPath, (Join-Path $PSScriptRoot 'lib\AmVisual.ps1'), (Join-Path $PSScriptRoot 'lib\CabinetTypes.ps1') | ForEach-Object { (Get-Item -LiteralPath $_).LastWriteTimeUtc.Ticks }) -join ','
+$info = "type={0}`r`nsetting={1}`r`ntitle={2}`r`ntagline={3}`r`nicons={4}`r`nscripts={5}" -f $ct.id, $(if ($setting) { $setting } else { 'auto' }), $ct.title, $ct.tagline, ($ct.icons -join ','), $scriptTicks
+$infoFile = Join-Path $OutDir 'intro.txt'
+if ((Test-Path -LiteralPath $infoFile) -and ([IO.File]::ReadAllText($infoFile).Trim() -eq $info.Trim()) -and -not @($pngs | Where-Object { -not (Test-Path -LiteralPath (Join-Path $OutDir $_)) }).Count) {
+  Write-Host ("intro: {0}  ({1})  unchanged, not redrawn" -f $ct.title, $ct.id); return
+}
+. (Join-Path $PSScriptRoot 'lib\AmVisual.ps1')
 $c1 = [AmPal]::Hex($ct.color); $c2 = [AmPal]::Hex($ct.color2)
 function RectF([double]$x, [double]$y, [double]$w, [double]$h) { New-Object Drawing.RectangleF([float]$x, [float]$y, [float]$w, [float]$h) }
 function New-Canvas([int]$w, [int]$h) { $b = New-Object Drawing.Bitmap $w, $h; $g = [Drawing.Graphics]::FromImage($b); [AmDraw]::Hq($g); $g.Clear([Drawing.Color]::Transparent); return $b, $g }
@@ -75,5 +85,5 @@ $spaced = (($ct.tagline -split ' ') | ForEach-Object { $_.ToCharArray() -join ' 
 [AmDraw]::Text($g, $spaced, (New-Object Drawing.Font('Segoe UI Semibold', 44, [Drawing.GraphicsUnit]::Pixel)), [AmPal]::Text, (RectF 0 0 1600 90), 'Center', 'Center')
 Save $b $g 'intro_tagline.png'
 
-Set-Content (Join-Path $OutDir 'intro.txt') ("type={0}`r`nsetting={1}`r`ntitle={2}`r`ntagline={3}`r`nicons={4}" -f $ct.id, $(if ($setting) { $setting } else { 'auto' }), $ct.title, $ct.tagline, ($ct.icons -join ',')) -Encoding ascii
+Set-Content $infoFile $info -Encoding ascii   # written last: a run stopped halfway draws everything again next time
 Write-Host ("intro: {0}  ({1}{2})  icons: {3}" -f $ct.title, $ct.id, $(if ($ct.auto) { ', auto-detected' } else { '' }), ($ct.icons -join ', '))

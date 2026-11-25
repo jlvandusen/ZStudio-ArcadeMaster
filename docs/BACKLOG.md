@@ -72,7 +72,9 @@ The loop works like this (James, 2026-11-25):
 
 ## 7. Racing and flight cabinet (DESKTOP-RACE1 takes these first)
 Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets never do the same one.
-- [ ] Performance: time each boot step on RACE1 into the launcher log, and cut the slowest step to under 1 s.
+- [x] [RACE1] Performance: time each boot step on RACE1 into the launcher log, and cut the slowest step to under 1 s.
+      Every step was already timed (launcher log "boot prep"). The intro card is no longer redrawn when nothing
+      changed: 1.27 s -> 0.76 s. Every boot step is now under 1 s. Next: background shuffle (0.9 s), device check (0.9 s).
 - [ ] Performance: menu frame time with the live wheel, needles and moving backdrops on. Fix any drop below 60 fps.
 - [ ] Performance: Build-Manifest / Rebuild Game Menus. Time each part and remove the repeated scans.
 - [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
