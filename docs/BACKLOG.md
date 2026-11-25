@@ -334,6 +334,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.
 - Azure sign-in (device code) at a browser.
+- GitHub builds of RetroFE: this PC's gh sign-in lacks the 'workflow' permission, so the workflow can't be pushed. On
+  RACE1 run `gh auth refresh -h github.com -s workflow` (opens a browser / device code), then a session moves
+  tools\ci\build-retrofe.yml to .github\workflows\ and merges it. Until then cabinets compile RetroFE themselves.
 - RACE1: drive Daytona Championship USA (Linked Cabinets): its steering is bound "X -" where the single version has
   "X +"; check it does not steer backwards. Also try Wangan Midnight 5, Initial D 4 Export and OutRun 2 SP DX (bindings fixed).
 - RACE1: drive a few force-feedback games (Batman, Daytona 3, Initial D Zero, Wangan Midnight 6R, OutRun 2 SP DX):

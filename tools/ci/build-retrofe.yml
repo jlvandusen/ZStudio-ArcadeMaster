@@ -1,0 +1,93 @@
+# Builds the ArcadeMaster RetroFE once, on GitHub, whenever the patches or the build script change on main, and publishes
+# it as release "retrofe-<key>". Every cabinet's automatic update (tools\Update-Cabinet.ps1) downloads that build
+# instead of compiling it; a cabinet only compiles itself when no release is there yet (or GitHub can't be reached).
+# <key> is the same fingerprint Update-Cabinet computes: retrofe\patches\*.patch + retrofe\Build-RetroFE.ps1
+# (.gitattributes fixes their line endings, so the bytes - and the key - are the same here and on the cabinets).
+name: Build RetroFE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'retrofe/patches/**'
+      - 'retrofe/Build-RetroFE.ps1'
+      - '.github/workflows/build-retrofe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-retrofe
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build key (same as Update-Cabinet)
+        id: key
+        shell: pwsh
+        run: |
+          $parts = @(Get-ChildItem retrofe\patches -Filter *.patch -File | Sort-Object Name) + @(Get-Item retrofe\Build-RetroFE.ps1)
+          $all = New-Object IO.MemoryStream
+          foreach ($p in $parts) { $b = [Text.Encoding]::UTF8.GetBytes($p.Name + "`n"); $all.Write($b, 0, $b.Length); $c = [IO.File]::ReadAllBytes($p.FullName); $all.Write($c, 0, $c.Length) }
+          $key = (-join ([Security.Cryptography.SHA1]::Create().ComputeHash($all.ToArray()) | ForEach-Object { $_.ToString('x2') })).Substring(0, 10)
+          "key=$key" >> $env:GITHUB_OUTPUT
+          Write-Host "build key $key ($($parts.Count - 1) patches)"
+          gh release view "retrofe-$key" --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) { "exists=1" >> $env:GITHUB_OUTPUT; Write-Host "release retrofe-$key already exists - nothing to build" } else { "exists=0" >> $env:GITHUB_OUTPUT }
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: GStreamer 1.24.13 (cached)
+        if: steps.key.outputs.exists == '0'
+        id: gstcache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\gst
+          key: gstreamer-msvc-x86_64-1.24.13
+
+      - name: Download and unpack GStreamer (checksums from gstreamer.freedesktop.org)
+        if: steps.key.outputs.exists == '0' && steps.gstcache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $base = 'https://gstreamer.freedesktop.org/data/pkg/windows/1.24.13/msvc'
+          $dl = Join-Path $env:RUNNER_TEMP 'gstdl'; New-Item -ItemType Directory -Force $dl | Out-Null
+          foreach ($m in 'gstreamer-1.0-msvc-x86_64-1.24.13.msi', 'gstreamer-1.0-devel-msvc-x86_64-1.24.13.msi') {
+            curl.exe -fsSL -o "$dl\$m" "$base/$m"; if ($LASTEXITCODE) { throw "download failed: $m" }
+            $want = ((curl.exe -fsSL "$base/$m.sha256sum") -split '\s+')[0].ToLower()
+            $have = (Get-FileHash "$dl\$m" -Algorithm SHA256).Hash.ToLower()
+            if ($want -ne $have) { throw "checksum mismatch for $m ($have, published $want)" }
+            Start-Process msiexec -ArgumentList '/a', "`"$dl\$m`"", '/qn', "TARGETDIR=`"$env:RUNNER_TEMP\gst`"" -Wait -NoNewWindow
+          }
+          Get-ChildItem "$env:RUNNER_TEMP\gst" -Recurse -Directory -Filter msvc_x86_64 | Select-Object -First 1 | ForEach-Object { Write-Host "GStreamer at $($_.FullName)" }
+
+      - name: Build RetroFE (retrofe\Build-RetroFE.ps1)
+        if: steps.key.outputs.exists == '0'
+        shell: pwsh
+        run: |
+          $gst = (Get-ChildItem "$env:RUNNER_TEMP\gst" -Recurse -Directory -Filter msvc_x86_64 | Where-Object { Test-Path (Join-Path $_.FullName 'include') } | Select-Object -First 1).FullName
+          if (-not $gst) { throw 'GStreamer kit not found' }
+          .\retrofe\Build-RetroFE.ps1 -GstRoot $gst -Work "$env:RUNNER_TEMP\src" -Out "$env:RUNNER_TEMP\out"
+          if (-not (Test-Path "$env:RUNNER_TEMP\out\retrofe\retrofe.exe")) { throw 'retrofe.exe was not built' }
+
+      - name: Publish release retrofe-${{ steps.key.outputs.key }}
+        if: steps.key.outputs.exists == '0'
+        shell: pwsh
+        run: |
+          $key = '${{ steps.key.outputs.key }}'
+          $rt = "$env:RUNNER_TEMP\out\retrofe"
+          "key=$key`r`nbuilt=$((Get-Date).ToUniversalTime().ToString('s'))Z`r`ncommit=$env:GITHUB_SHA`r`nmachine=github-actions" | Set-Content "$rt\am-build.txt" -Encoding ascii
+          $zip = "$env:RUNNER_TEMP\retrofe-$key.zip"
+          Compress-Archive -Path $rt -DestinationPath $zip -CompressionLevel Optimal
+          $h = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          "$h  retrofe-$key.zip" | Set-Content "$env:RUNNER_TEMP\retrofe-$key.zip.sha256" -Encoding ascii
+          Copy-Item "$rt\retrofe.exe" "$env:RUNNER_TEMP\retrofe.exe"
+          $notes = "RetroFE for ArcadeMaster, build key $key ($((Get-ChildItem retrofe\patches -Filter *.patch).Count) patches), commit $env:GITHUB_SHA. Installed by tools\Update-Cabinet.ps1 on every cabinet."
+          gh release create "retrofe-$key" $zip "$env:RUNNER_TEMP\retrofe-$key.zip.sha256" "$env:RUNNER_TEMP\retrofe.exe" --repo $env:GITHUB_REPOSITORY --title "RetroFE build $key" --notes $notes --target $env:GITHUB_SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
