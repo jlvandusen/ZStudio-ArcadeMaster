@@ -71,6 +71,14 @@ function Get-TPControls([string]$profilePath) {
 
 # ---------- MAME -listxml for all MAME-style sets in one call
 $mameInfo = @{}
+# the frontend's own MAME, already asked by New-PanelControlsArt.py: { machines: { name: [players, [[type, buttons, ways]...]] } }
+$mameCache = @{}
+$mcFile = Join-Path (Split-Path $Manifest) 'mame-inputs.json'
+if (Test-Path $mcFile) {
+  $mj = Get-Content $mcFile -Raw | ConvertFrom-Json
+  foreach ($p in $mj.machines.PSObject.Properties) { if ($p.Value) { $mameCache[$p.Name.ToLower()] = $p.Value } }
+  Write-Host ("MAME controls cache: {0} machines from {1}" -f $mameCache.Count, $mcFile)
+}
 $sets = @($m.games | Where-Object { $_.id -match '^(.+?):(.+)$' -and $MameSetCollections -contains $Matches[1] } | ForEach-Object { ($_.id -split ':', 2)[1] } | Sort-Object -Unique)
 if ($sets.Count -and (Test-Path $Mame)) {
   $xmlText = & $Mame -listxml @sets 2>$null | Out-String
@@ -110,6 +118,27 @@ foreach ($g in $m.games) {
   }
   if (-not $ctl -and $g.id -match '^(.+?):(.+)$' -and $MameSetCollections -contains $Matches[1]) {
     $mi = $mameInfo[$Matches[2]]; if ($mi) { $ctl = $mi.Controls; $status = $mi.Status }
+  }
+  # a MAME game in any collection (CoinOPS keeps them in Arcades / Fight / ArcadesMini, not one named MAME): the frontend's
+  # own MAME's -listxml answer, cached by New-PanelControlsArt.py in <manifest>\mame-inputs.json. Without it Pac-Man was a
+  # "gamepad" game, so meta.db had no 4-way game at all and RetroFE never switched the ServoStik to 4-way.
+  if (-not $ctl -and $g.id -match '^(.+?):(.+)$' -and @($g.variants.PSObject.Properties | Where-Object { $_.Value.emulator -eq 'mame' }).Count) {
+    $mc = $mameCache[$Matches[2].ToLower()]
+    if ($mc) {
+      $c = New-Controls; $c.source = "mame -listxml (cache) $($Matches[2])"; $c.players = [int]$mc[0]
+      foreach ($in in @($mc[1])) {
+        $t = [string]$in[0]; $b = [int]$in[1]; $w = [string]$in[2]; if ($b -gt $c.buttons) { $c.buttons = $b }
+        switch -Regex ($t) {
+          '^(joy|doublejoy|triplejoy)$' { $c.joystick = $true; if ($w -match '(\d)') { $c.ways = [int]$Matches[1] } elseif (-not $c.ways) { $c.ways = 8 } }
+          '^(trackball|mouse)$' { $c.trackball = $true }
+          '^(dial|positional|paddle)$' { $c.spinner = $true }
+          '^lightgun$' { $c.lightgun = $true }
+          '^pedal$' { $c.pedals = $true }
+          '^stick$' { $c.analogStick = $true }
+        }
+      }
+      if ($c.joystick -or $c.trackball -or $c.spinner -or $c.lightgun -or $c.buttons) { $ctl = $c }
+    }
   }
   if (-not $ctl) {
     # console / PC games: gamepad, wheel-capable when racing (native DirectInput wheel support or emulator mapping)
