@@ -2,5 +2,20 @@
   "_comment": "Controls for games no database knows (PC ports, homebrew). Key = '<RetroFE collection>/<item>' as the game list names it. Fields are games.json 'controls' fields: players, ways, joystick, buttons, labels, wheel, trackball, spinner, lightgun, flightStick. A wheel game gets GAS / BRAKE on buttons 1-2 automatically (stick steers), then its own buttons. A cabinet can add its own <manifest>\\panel-controls-overrides.json. Re-run tools\\New-PanelControlsArt.py after editing.",
   "PC Gamer/Alex Kidd in Miracle World DX": { "players": 1, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Jump", "Punch", "Item"] },
   "PC Gamer/Battle Gear 4 Tuned": { "players": 1, "wheel": true, "buttons": 3 },
-  "PC Gamer/daytona": { "players": 1, "wheel": true, "buttons": 3 }
+  "PC Gamer/daytona": { "players": 1, "wheel": true, "buttons": 3 },
+  "_neogeo": "Neo Geo games controls.dat does not cover. '*/<item>' = that game in every collection. Neo Geo buttons: A B C D.",
+  "*/mslug":  { "players": 2, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Shoot", "Jump", "Grenade"] },
+  "*/mslug2": { "players": 2, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Shoot", "Jump", "Grenade"] },
+  "*/mslugx": { "players": 2, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Shoot", "Jump", "Grenade"] },
+  "*/mslug3": { "players": 2, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Shoot", "Jump", "Grenade"] },
+  "*/mslug4": { "players": 2, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Shoot", "Jump", "Grenade"] },
+  "*/mslug5": { "players": 2, "joystick": true, "ways": "8", "buttons": 3, "labels": ["Shoot", "Jump", "Grenade"] },
+  "*/kof94":  { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] },
+  "*/kof95":  { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] },
+  "*/kof96":  { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] },
+  "*/kof97":  { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] },
+  "*/kof98":  { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] },
+  "*/kof99":  { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] },
+  "*/kof2000": { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] },
+  "*/kof2002": { "players": 2, "joystick": true, "ways": "8", "buttons": 4, "labels": ["Light Punch", "Light Kick", "Heavy Punch", "Heavy Kick"] }
 }

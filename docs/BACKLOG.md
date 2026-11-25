@@ -32,8 +32,13 @@ The loop works like this (James, 2026-11-25):
 - [ ] The 16 games still "moved": profiles want a different release than the copy found (GGXrd Revelator vs SIGN).
       Look for the right copy in the other builds, or point the profile at the release we have when TeknoParrot has
       a profile for it.
-- [ ] Cards: check that the 20 most-played games show the right button names and LEDBlinky colours, and fix the
-      overrides where they don't.
+- [x] Cards: checked 20 classics (no play history on the cabinet). Three changes (2026-11-25):
+      - controls.dat's real cabinet now beats MAME's list of every input (Centipede: rollerball game, not a stick;
+        2 players taking turns; MK: 5 buttons).
+      - Neo Geo names (Metal Slug, KOF 94–2002) come from `*/item` overrides.
+      - Long labels shrink, then hyphenate, then abbreviate, before being cut short.
+- [ ] Neo Geo and other games missing from controls.dat: add names for the most popular (Samurai Shodown, Fatal
+      Fury, Garou, Blazing Star, Puzzle Bobble).
 - [ ] Per-game "special controls" hints (trackball, spinner, dial, twin-stick): show them on more games, using
       MAME's `-listxml` control types.
 
