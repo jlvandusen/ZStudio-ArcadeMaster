@@ -50,7 +50,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -240,6 +240,37 @@ if ($gWarn) { Add-Result 'games' $checks.games 'WARN' ((@($gWarn) + @($gDid) + @
 elseif ($gDid) { Add-Result 'games' $checks.games 'FIXED' ((@($gDid) + @($gInfo) | Where-Object { $_ }) -join '; ') }
 else { Add-Result 'games' $checks.games 'OK' $(if ($gInfo) { $gInfo } else { 'every TeknoParrot game path in this frontend exists' }) }
 
+# pedals: TeknoParrot profiles this frontend launches whose brake or clutch sits on the wrong pedal (Repair-TPPedals:
+# Logitech layout gas Y / brake RotationZ / clutch Slider0, backup first). Only the installs the frontend's own launchers
+# start - never another frontend's copy. A fingerprint (profile count + newest change per install) skips the scan
+# when nothing changed since the last clean check.
+Emit @{ type = 'step'; id = 'pedals'; label = $checks.pedals; status = 'run' }
+$tpDirs = @(Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter *.conf -File -ErrorAction SilentlyContinue | ForEach-Object {
+  $m = Select-String -LiteralPath $_.FullName -Pattern '^\s*executable\s*=\s*(.+TeknoParrotUi\.exe)\s*$' | Select-Object -First 1
+  if ($m) { $e = $m.Matches[0].Groups[1].Value.Trim().Trim('"'); if (-not [IO.Path]::IsPathRooted($e)) { $e = Join-Path $RetroFE $e }; Split-Path $e } } |
+  Where-Object { Test-Path (Join-Path $_ 'UserProfiles') } | Sort-Object -Unique)
+if (-not $tpDirs) { Add-Result 'pedals' $checks.pedals 'OK' 'no TeknoParrot launcher in this frontend' }
+else {
+  $fp = ($tpDirs | ForEach-Object { $fs = @(Get-ChildItem (Join-Path $_ 'UserProfiles') -Filter *.xml -File -ErrorAction SilentlyContinue); $n = 0L; foreach ($f in $fs) { if ($f.LastWriteTimeUtc.Ticks -gt $n) { $n = $f.LastWriteTimeUtc.Ticks } }; "$_|$($fs.Count)|$n" }) -join ';'
+  $fpFile = Join-Path $ManifestDir 'pedals.fingerprint'
+  if ((Test-Path $fpFile) -and (Get-Content $fpFile -Raw).Trim() -eq $fp) { Add-Result 'pedals' $checks.pedals 'OK' "unchanged since the last check ($($tpDirs.Count) TeknoParrot installs)" }
+  else {
+    $rep = Join-Path $PSScriptRoot 'Repair-TPPedals.ps1'
+    $o = & $rep -TpDir $tpDirs *>&1 | Out-String
+    $wrong = [regex]::Match($o, '(\d+) profile\(s\) with the brake or clutch on the wrong pedal')
+    if ($wrong.Success -and $fix) {
+      $o2 = & $rep -TpDir $tpDirs -BackupRoot (Join-Path $ManifestDir 'backup') -Apply *>&1 | Out-String
+      $done = @([regex]::Matches($o2, '(?m)^fixed (\S+)') | ForEach-Object { $_.Groups[1].Value })
+      Add-Result 'pedals' $checks.pedals 'FIXED' "brake / clutch back on the right pedal in $($done -join ', ') (profiles backed up)"
+    } elseif ($wrong.Success) { Add-Result 'pedals' $checks.pedals 'WARN' "$($wrong.Groups[1].Value) game(s) have the brake or clutch on the wrong pedal - Repair-TPPedals.ps1 -Apply" }
+    else { Add-Result 'pedals' $checks.pedals 'OK' "every TeknoParrot game uses clutch LEFT, brake MIDDLE, gas RIGHT" }
+    # remember the state only when it is clean (after a fix the files changed: recompute)
+    if (-not $wrong.Success -or $fix) {
+      $fp = ($tpDirs | ForEach-Object { $fs = @(Get-ChildItem (Join-Path $_ 'UserProfiles') -Filter *.xml -File -ErrorAction SilentlyContinue); $n = 0L; foreach ($f in $fs) { if ($f.LastWriteTimeUtc.Ticks -gt $n) { $n = $f.LastWriteTimeUtc.Ticks } }; "$_|$($fs.Count)|$n" }) -join ';'
+      Set-Content $fpFile $fp -Encoding ascii
+    }
+  }
+}
 # logs
 Emit @{ type = 'step'; id = 'logs'; label = $checks.logs; status = 'run' }
 $did = @(); $log = Join-Path $RetroFE 'log.txt'
