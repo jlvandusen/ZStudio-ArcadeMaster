@@ -15,6 +15,7 @@
     art        boot intro + Tools art present (regenerated when missing)
     wheel      every TeknoParrot driving game's wheel / pedals / paddles / gears on the G29 (report only)
     updates    the "ArcadeMaster Update" task exists (put back when missing) and the last pull / build did not fail
+    tactile    bass shakers switched on (manifest\tactile.json): VoiceMeeter running (started when not), shaker card present
   -Snapshot   when everything is OK: save a last-known-good copy of the configs (manifest\lkg\<stamp>, keeps 3)
   -RestoreLkg put the newest last-known-good configs back (used by the watchdog after a crash loop)
   Writes manifest\health.json; with AM_VISUAL=1 it emits @AM step events for the visual tool page.
@@ -52,7 +53,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -354,6 +355,25 @@ else {
   if ($uWarn) { Add-Result 'updates' $checks.updates 'WARN' (($uWarn + $uDid) -join '; ') }
   elseif ($uDid) { Add-Result 'updates' $checks.updates 'FIXED' ($uDid -join '; ') }
   else { Add-Result 'updates' $checks.updates 'OK' "every 15 min; RetroFE build $buildTxt" }
+}
+# tactile: when the bass shakers are switched on (Tools > Bass Shakers, manifest\tactile.json) the game sound goes
+# through VoiceMeeter. After a restart VoiceMeeter may not be running - then no game has sound at all - so it is started
+# again; a missing shaker card is reported (unplugged).
+Emit @{ type = 'step'; id = 'tactile'; label = $checks.tactile; status = 'run' }
+$tj = Join-Path $ManifestDir 'tactile.json'
+$ts = if (Test-Path $tj) { Get-Content $tj -Raw | ConvertFrom-Json } else { $null }
+if (-not $ts -or -not $ts.on) { Add-Result 'tactile' $checks.tactile 'OK' 'off (Tools > Bass Shakers On-Off)' }
+else {
+  $vmExe = 'C:\Program Files (x86)\VB\Voicemeeter\voicemeeter.exe'
+  $tDid = @(); $tWarn = @()
+  if (-not @(Get-Process voicemeeter -ErrorAction SilentlyContinue).Count) {
+    if ($fix -and (Test-Path $vmExe)) { Start-Process $vmExe -WindowStyle Minimized; $tDid += 'VoiceMeeter was not running (no game sound) - started' } else { $tWarn += 'VoiceMeeter is not running - games have no sound until it is started' }
+  }
+  $card = [string]$ts.shaker
+  if ($card -and -not @(Get-PnpDevice -Class AudioEndpoint -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -eq $card -and $_.Status -eq 'OK' }).Count) { $tWarn += "shaker sound card '$card' not found - plugged in?" }
+  if ($tWarn) { Add-Result 'tactile' $checks.tactile 'WARN' (($tWarn + $tDid) -join '; ') }
+  elseif ($tDid) { Add-Result 'tactile' $checks.tactile 'FIXED' ($tDid -join '; ') }
+  else { Add-Result 'tactile' $checks.tactile 'OK' "on: $card at $($ts.strength)%" }
 }
 # logs
 Emit @{ type = 'step'; id = 'logs'; label = $checks.logs; status = 'run' }
