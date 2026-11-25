@@ -246,7 +246,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       G25, Driving Force GT and MOMO now have pictures (Newegg product photos, rim crop). 34 of 35 wheels have one.
 - [ ] Graphics: Driving Force Pro picture: only small photos with the pedals in frame were found (wheel ~150 px).
       Look for a bigger front view. The MOMO cut-out keeps a light edge along its base (small source photo).
-- [ ] Graphics: game launch screen with the game's own art full screen and that game's wheel and pedal controls.
+- [x] [RACE1] Graphics: game launch screen with the game's own art full screen and that game's wheel and pedal controls.
+      The game's fanart (dimmed, slow push-in), its logo and its controls card (with the live G29) for ~2.5 s while it loads.
 - [x] [RACE1] Controls: check the wheel, pedals and paddles in every TeknoParrot racing profile (clutch L, brake M, gas R).
       New read-only tools\Test-WheelBindings.ps1. RACE1: 303 of 313 ok -> 313 of 313. Fixed (backups *.wheelmap-*.bak):
       WMMT5, ID4Exp and FNFSB2 had no steering, gas or brake bound; OutRun 2 SP DX (E:) had its brake on the gas pedal.
