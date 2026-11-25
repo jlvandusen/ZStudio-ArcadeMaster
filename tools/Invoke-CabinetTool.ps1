@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -77,6 +77,13 @@ switch ($Tool) {
     Emit @{ type = 'wizard'; state = 'end'; ok = ($script:lastExit -eq 0) }
     Run 'Get-CabinetDevices.ps1' @('-Out', $cab, '-History', $hist) | Out-Null
     Emit-Devices
+  }
+  'PanelTest' {
+    # the control panel's counterpart of Wheel Setup: every control pressed shows up with its panel name and the key /
+    # joystick input it sends (Watch-Inputs.ps1, read-only). Saved to manifest\input-capture.txt for mapping work.
+    Banner 'PANEL TEST - press every button, move every stick, spin the dial (30 s)'
+    $env:AM_VISUAL = $(if ($visual) { '1' } else { '' })
+    Run 'Watch-Inputs.ps1' @('-Seconds', '30', '-Panel', (Join-Path $ManifestDir 'panel.json'), '-Out', (Join-Path $ManifestDir 'input-capture.txt')) | Out-Null
   }
   'DetectControllers' {
     Banner 'CONTROLLERS DETECTED'

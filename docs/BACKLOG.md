@@ -24,7 +24,9 @@ The loop works like this (James, 2026-11-25):
 ## 2a. James 2026-11-25: full settings like the race cabinet, and our own LED engine
 - [ ] **[PEDESTAL] CONTROLS settings group** (the pedestal's counterpart of the race cab's wheel / FFB / pedal
       settings), in Tools > Cabinet Settings and as Tools items:
-      - PANEL TEST: a full-screen Watch-Inputs. Press anything and see the key / joystick / button it sends, by name.
+      - [x] PANEL TEST (Tools > 1 Panel Test, control-panel cabinets): 30 s, and every control pressed shows with its
+            panel name from panel.json ("P1 BUTTON 1 - key LCONTROL") or its joystick axis / button. Saved to
+            manifest\input-capture.txt. (2026-11-25)
       - LEARN THE PANEL: Import-LEDBlinkyPanel, or button capture on marquee-only cabinets.
       - STICK RESTRICTOR: ServoStik (found: D209:1700) set to auto per game (joyways), always 8-way or always 4-way.
       - ROLLERBALL / DIAL: separate mice (multimouse) and sensitivity.
