@@ -33,8 +33,11 @@ static class AudioLevel
     public static string LastError;
 
     // must be called on the thread that reads (an MTA background thread is fine)
+    static int users;   // the attract animation and audio-follow rules share one meter
+
     public static bool Open()
     {
+        lock (typeof(AudioLevel)) { if (meter != null) { users++; return true; } }
         try
         {
             var en = (IMMDeviceEnumerator)new MMDeviceEnumerator();
@@ -42,7 +45,7 @@ static class AudioLevel
             if (en.GetDefaultAudioEndpoint(0 /* eRender */, 1 /* eMultimedia */, out dev) != 0 || dev == null) { LastError = "no playback device"; return false; }
             var iid = typeof(IAudioMeterInformation).GUID; object o;
             if (dev.Activate(ref iid, 23 /* CLSCTX_ALL */, IntPtr.Zero, out o) != 0) { LastError = "no peak meter"; return false; }
-            meter = (IAudioMeterInformation)o;
+            lock (typeof(AudioLevel)) { meter = (IAudioMeterInformation)o; users++; }
             return true;
         }
         catch (Exception e) { LastError = e.Message; meter = null; return false; }
@@ -55,5 +58,13 @@ static class AudioLevel
         return p;
     }
 
-    public static void Close() { if (meter != null) { try { Marshal.ReleaseComObject(meter); } catch { } meter = null; } }
+    public static void Close()
+    {
+        lock (typeof(AudioLevel))
+        {
+            if (--users > 0) return;
+            users = 0;
+            if (meter != null) { try { Marshal.ReleaseComObject(meter); } catch { } meter = null; }
+        }
+    }
 }

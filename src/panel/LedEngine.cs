@@ -452,7 +452,7 @@ class LedEngine
     public List<string> Labels { get { var l = new List<string>(pins.Keys); l.Sort(StringComparer.OrdinalIgnoreCase); return l; } }
     public List<string> ColorNames { get { var l = new List<string>(palette.Keys); l.Sort(StringComparer.OrdinalIgnoreCase); return l; } }
 
-    public void AllOff() { StopAnim(); foreach (var f in frame.Values) Array.Clear(f, 0, f.Length); Flush(); }
+    public void AllOff() { StopAnim(); AudioFollowOff(); foreach (var f in frame.Values) Array.Clear(f, 0, f.Length); Flush(); }
 
     // ---------------------------------------------------------------- LEDBlinky command 14: set LED ports
     // "14 port,intensity[,port,intensity...]". A port is a plain number (board 1, port 1-96; 97+ runs on into board 2,
@@ -511,9 +511,66 @@ class LedEngine
         return true;
     }
 
+    readonly object flushGate = new object();   // the animation and the audio-follow threads may both flush
     void Flush()
     {
-        foreach (var kv in frame) { int dev; if (boardToDevice.TryGetValue(kv.Key, out dev)) Pac64SetLEDIntensities(dev, kv.Value); }
+        lock (flushGate)
+            foreach (var kv in frame) { int dev; if (boardToDevice.TryGetValue(kv.Key, out dev)) Pac64SetLEDIntensities(dev, kv.Value); }
+    }
+
+    // ---------------------------------------------------------------- trigger rule "audio": buttons that follow the music
+    // A rule { "match": "lamp*", "do": "audio", "target": "P1B*", "color": "Cyan" } makes those buttons pulse with the
+    // system sound level while the output is on, over whatever else the panel shows; off puts the game's colours back.
+    // One small thread (one peak-meter read + one SDK write per board, ~30 a second), only while some rule holds it.
+    readonly Dictionary<string, int[]> following = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
+    System.Threading.Thread followThread;
+    volatile bool followRun;
+
+    public string AudioFollow(string target, int[] rgb, bool on)
+    {
+        if (!open) return "LED boards not open";
+        var rx = new System.Text.RegularExpressions.Regex("^" + System.Text.RegularExpressions.Regex.Escape(target).Replace("\\*", ".*").Replace("\\?", ".") + "$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var hit = new List<string>();
+        foreach (var l in pins.Keys) if (rx.IsMatch(l)) hit.Add(l);
+        if (hit.Count == 0) return "audio: no button matches " + target;
+        lock (following)
+        {
+            foreach (var l in hit) { if (on) following[l] = rgb; else following.Remove(l); }
+            if (!on) foreach (var l in hit) { int[] b; SetLabel(l, baseColor.TryGetValue(l, out b) ? b : new[] { 0, 0, 0 }); }
+            if (following.Count > 0 && followThread == null)
+            {
+                followRun = true;
+                followThread = new System.Threading.Thread(FollowLoop) { IsBackground = true, Name = "led-audio-follow" };
+                followThread.Start();
+            }
+            else if (following.Count == 0) StopFollow();
+        }
+        if (!on) Flush();
+        return "audio " + (on ? "on" : "off") + " for " + hit.Count + " button(s) (" + target + ")";
+    }
+
+    void StopFollow() { followRun = false; var t = followThread; followThread = null; if (t != null && t != System.Threading.Thread.CurrentThread) t.Join(300); }
+
+    public void AudioFollowOff()
+    {
+        lock (following) { foreach (var l in following.Keys) { int[] b; SetLabel(l, baseColor.TryGetValue(l, out b) ? b : new[] { 0, 0, 0 }); } following.Clear(); StopFollow(); }
+        Flush();
+    }
+
+    void FollowLoop()
+    {
+        if (!AudioLevel.Open()) { LastError = "audio follow: " + AudioLevel.LastError; return; }
+        double env = 0;
+        while (followRun)
+        {
+            double p = Math.Min(1.0, Math.Sqrt(AudioLevel.Peak()) * 1.15);
+            env = p > env ? p : env * 0.88 + p * 0.12;
+            double k = 0.08 + 0.92 * env;
+            lock (following) foreach (var kv in following) SetLabel(kv.Key, new[] { (int)(kv.Value[0] * k), (int)(kv.Value[1] * k), (int)(kv.Value[2] * k) });
+            Flush();
+            System.Threading.Thread.Sleep(33);
+        }
+        AudioLevel.Close();
     }
 
     // Colors.ini key -> InputMap label: P1_BUTTON1 -> P1B1, P1_START -> P1START, P1_COIN -> P1COIN, P1_JOYSTICK -> P1JOY...

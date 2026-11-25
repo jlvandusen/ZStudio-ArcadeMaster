@@ -51,7 +51,9 @@ The loop works like this (James, 2026-11-25):
         - [ ] Still open: the `Cab*` folders (cabinet LEDs: none on this cabinet), the S/N options, the `*Audio` variants.
         - [x] Audio-reactive animation: `audio` (AudioLevel.cs, the Windows peak meter) is a VU meter in the game's
               colours. Cabinet Settings > ATTRACT LIGHTS picks chase / breathe / to the music. Tested live 2026-11-25.
-        - [ ] Audio "via triggers": a trigger rule action `audio` (a lamp or the music drives a button group).
+        - [x] Audio "via triggers": the rule action `audio` makes a button group (`P1B*`) follow the music while an output
+              is on, and `level` turns an analog output into brightness (`max`). The pipe `simulate` feeds a fake output
+              through the rules. Tested live 2026-11-25.
         - [x] Command `14` (set LED ports by label, colour, board:port or number). Tested live 2026-11-25.
         - [x] Command `13` + automatic UltraStik map per game (Sticks.cs, New-StickMaps.py). Tested live on both sticks.
         - [x] `16`/`17`: dim the panel to 25% on pause. Tested live.

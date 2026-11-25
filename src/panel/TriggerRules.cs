@@ -7,6 +7,8 @@
 //   { "match": "led0", "game": "*", "do": "led", "target": "P1START", "color": "White" }
 //   { "match": "*recoil*", "do": "recoil", "target": "P1" }          (logged until the gun output is wired - step 7)
 //   { "match": "*", "game": "pacman", "do": "ignore" }
+//   { "match": "lamp2", "do": "level", "target": "P1B1", "color": "Red", "max": 255 }   (an analog output = brightness)
+//   { "match": "*fever*", "do": "audio", "target": "P1B*", "color": "Cyan" }           (buttons dance to the music)
 //
 // "match" and "game" take * and ? wildcards, case-insensitive. "led": value != 0 lights target in color, value 0 puts
 // the target back to the game's own colour. C# 5.
@@ -18,7 +20,7 @@ using System.Web.Script.Serialization;
 
 class TriggerRules
 {
-    class Rule { public Regex Match, Game; public string System, Do, Target, Color; public int Specificity; public string Source; }
+    class Rule { public Regex Match, Game; public string System, Do, Target, Color; public int Specificity, Max = 1; public string Source; }
     readonly List<Rule> rules = new List<Rule>();
     public int Count { get { return rules.Count; } }
     public int Hits;
@@ -42,7 +44,8 @@ class TriggerRules
                     rules.Add(new Rule {
                         Match = Glob(Get(r, "match") ?? "*"), Game = Glob(game), System = sys,
                         Do = (Get(r, "do") ?? "led").ToLowerInvariant(), Target = Get(r, "target"), Color = Get(r, "color") ?? "White",
-                        Specificity = (game != "*" ? 2 : sys != null ? 1 : 0) * 10000 - order++, Source = src });
+                        Specificity = (game != "*" ? 2 : sys != null ? 1 : 0) * 10000 - order++, Source = src,
+                        Max = Math.Max(1, ToInt(Get(r, "max"), 1)) });
                 }
             }
             catch { /* a broken rules file must never stop the service; the log says it is missing rules */ }
@@ -66,6 +69,19 @@ class TriggerRules
                     if (leds == null || r.Target == null || !leds.HasLabel(r.Target)) return null;
                     leds.Override(r.Target, value != 0 ? (leds.Color(r.Color) ?? new[] { 48, 48, 48 }) : null);
                     return r.Target + (value != 0 ? " on (" + r.Color + ")" : " back to game colour");
+                case "level":
+                    // an analog output (a lamp's or motor's strength) sets the button's brightness: value / max of its colour
+                    {
+                        if (leds == null || r.Target == null || !leds.HasLabel(r.Target)) return null;
+                        int[] c = leds.Color(r.Color) ?? new[] { 48, 48, 48 };
+                        double k = Math.Max(0, Math.Min(1, value / (double)r.Max));
+                        leds.Override(r.Target, value != 0 ? new[] { (int)(c[0] * k), (int)(c[1] * k), (int)(c[2] * k) } : null);
+                        return r.Target + " at " + (int)(k * 100) + "%";
+                    }
+                case "audio":
+                    // while the output is on, the target buttons (a label or a glob: "P1B*") dance to the music
+                    if (leds == null || r.Target == null) return null;
+                    return leds.AudioFollow(r.Target, leds.Color(r.Color) ?? new[] { 48, 48, 48 }, value != 0);
                 default:
                     // recoil / rumble / ffb / counter: the rule is honoured once that device path exists (steps 7 and 10)
                     if (log != null) log("rule '" + r.Do + "' for " + output + "=" + value + " (" + r.Target + "): not wired yet");
@@ -74,6 +90,8 @@ class TriggerRules
         }
         return null;
     }
+
+    static int ToInt(string s, int def) { int v; return int.TryParse(s, out v) ? v : def; }
 
     // which rule an output follows for a game, in words (the Triggers screen)
     public string Describe(string output, string game)
