@@ -200,8 +200,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       stories saying which to pick; Crazy Taxi 3 plays the game's own Glitter Oasis movie (catalog/art-aliases.json).
 - [ ] Video: 20 racing games still have none (7 PC games, 12 TeknoParrot short names such as ID5, SRC, WMMT5, and
       IDTA). No clip for them anywhere on RACE1. Look in the game folders for their own movies first (as Crazy Taxi 3).
-- [ ] Stories: AM_PC and AM_TP_* lists are rebuilt at every boot, which empties their am_story folders, and only
-      Rebuild Game Menus writes stories. Write them at boot too (or keep them outside the generated lists).
+- [x] [RACE1] Stories: AM_PC and AM_TP_* lists are rebuilt at every boot, which emptied their am_story folders. The
+      menu tool now sets the stories aside and puts them back: 26 of 26 kept over two rebuilds (before: 0 after one).
 - [ ] Main menu wheel picture: James sees it a little left and not turning. RetroFE finds the G29 and draws the
       picture at the screen centre, angle 0; a run with someone turning the wheel is needed to see the reading.
 

@@ -29,10 +29,17 @@ $names = @{ racing = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup
 # --- clean previous generation
 # only the launchers of collections made here (AM_PC, AM_TP_*): AM_TOOLS belongs to New-CabinetToolsCollection, and
 # deleting every AM_*.conf broke the Tools menu after each Rebuild Game Menus
+# The game stories (medium_artwork\am_story, written by New-GameStories.py on Rebuild Game Menus) are set aside and put
+# back once the collection is made again below: this runs at every boot, and deleting them left the PC and extra
+# TeknoParrot games without a story until the next Rebuild Game Menus.
+$storyKeep = Join-Path $RetroFE 'am-story-keep'
+if (Test-Path -LiteralPath $storyKeep) { Remove-Item -LiteralPath $storyKeep -Recurse -Force }
 $ownLaunchers = @(foreach ($d in Get-ChildItem $cols -Directory) {
   if (-not (Test-Path (Join-Path $d.FullName $marker))) { continue }
   $l = Select-String -LiteralPath (Join-Path $d.FullName 'settings.conf') -Pattern '^\s*launcher\s*=\s*(AM_\S+)\s*$' -ErrorAction SilentlyContinue | Select-Object -First 1
   if ($l) { $l.Matches[0].Groups[1].Value }
+  $st = Join-Path $d.FullName 'medium_artwork\am_story'
+  if (-not $Remove -and (Test-Path -LiteralPath $st)) { New-Item -ItemType Directory -Force $storyKeep | Out-Null; Move-Item -LiteralPath $st (Join-Path $storyKeep $d.Name) }
   Remove-Item $d.FullName -Recurse -Force
 })
 foreach ($l in $ownLaunchers) { Remove-Item (Join-Path $RetroFE "launchers.windows\$l.conf") -Force -ErrorAction SilentlyContinue }
@@ -213,6 +220,20 @@ if (Test-Path $aliasFile) {
   }
 }
 if ($aliased) { Write-Host "art: $aliased file(s) linked from the same game in another list (catalog\art-aliases.json)" }
+
+# --- the stories set aside above go back into the collections that were made again (a collection no longer made
+# loses them, like the rest of its generated files)
+if (Test-Path -LiteralPath $storyKeep) {
+  $kept = 0
+  foreach ($k in Get-ChildItem -LiteralPath $storyKeep -Directory) {
+    $art = Join-Path $cols "$($k.Name)\medium_artwork"
+    if (-not (Test-Path -LiteralPath (Join-Path $cols $k.Name))) { continue }
+    New-Item -ItemType Directory -Force $art | Out-Null
+    if (-not (Test-Path -LiteralPath (Join-Path $art 'am_story'))) { Move-Item -LiteralPath $k.FullName (Join-Path $art 'am_story'); $kept += @(Get-ChildItem -LiteralPath (Join-Path $art 'am_story') -File).Count }
+  }
+  Remove-Item -LiteralPath $storyKeep -Recurse -Force -ErrorAction SilentlyContinue
+  if ($kept) { Write-Host "stories: $kept kept for the rebuilt PC / TeknoParrot lists" }
+}
 
 # --- category collections (merged .sub views)
 $menu = New-Object System.Collections.Generic.List[string]
