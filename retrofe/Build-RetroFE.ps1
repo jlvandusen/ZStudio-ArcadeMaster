@@ -41,6 +41,9 @@ if ($CMake -eq 'cmake' -and -not (Get-Command cmake -ErrorAction SilentlyContinu
   if ($vsCm) { $CMake = $vsCm[0].FullName; Step "cmake: $CMake" }
 }
 
+# Windows PowerShell 5.1: with 'Stop', anything git writes to stderr ("From https://...", "HEAD is now at") is a
+# terminating NativeCommandError. Git's own exit codes are checked below, so steps 1-2 run with 'Continue'.
+$ErrorActionPreference = 'Continue'
 if ($Source) { Step "building the checkout at $src as it is (no clone / patches)"; & $Git -C $src submodule update --init --recursive }
 # --- 1. source
 elseif (-not (Test-Path (Join-Path $src '.git'))) {
@@ -64,6 +67,7 @@ if (-not $Source) {
     Step "apply $($p.Name)"; & $Git -C $src apply $p.FullName; if ($LASTEXITCODE) { throw "patch failed: $($p.Name)" }
   }
 }
+$ErrorActionPreference = 'Stop'
 
 # --- 3. SDL include shim
 $tp = Join-Path $src 'RetroFE\ThirdParty'
