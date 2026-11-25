@@ -34,6 +34,7 @@ $state = @{
 
 $meta = @{
   WheelSetup         = @{ icon = 'setup'; color = 'ff2fa0'; what = 'Turn, press and release each control once. Every game gets a best-practice mapping for this wheel.' }
+  PanelTest          = @{ icon = 'buttons'; color = 'ff2fa0'; what = 'Press every button, move every stick, spin the dial: each control lights up on screen with its name and the key it sends.' }
   DetectControllers  = @{ icon = 'detect'; color = '2ec8ff'; what = 'See everything plugged in: wheel, pedals, handbrake, pads, guns, trackball, screens.' }
   RepairIds          = @{ icon = 'repair'; color = '2ec8ff'; what = 'Controller moved to another USB port? Re-point every game to the controllers plugged in now.' }
   RebuildMenus       = @{ icon = 'rebuild'; color = 'ffb000'; what = 'Rescan the game library and rebuild the Racing, Flight and Arcade menus for this cabinet.' }

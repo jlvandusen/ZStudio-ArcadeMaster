@@ -43,6 +43,8 @@ $cabFile = Join-Path $ManifestDir 'cabinet.json'
 if (Test-Path $cabFile) {
   $cap = (Get-Content $cabFile -Raw | ConvertFrom-Json).capabilities
   if ($cap -and -not $cap.wheel) { $items.Remove('1 Wheel Setup'); if (-not $cap.ffb) { $items.Remove('5 Force Feedback On-Off') } }
+  # a control-panel cabinet gets the panel's counterpart of Wheel Setup: see what every button and stick sends
+  if ($cap -and $cap.controlPanel) { $items.Insert(2, '1 Panel Test', @('PanelTest', 'ff2fa0')) }
 }
 
 if (Test-Path $col) { Remove-Item $col -Recurse -Force }
