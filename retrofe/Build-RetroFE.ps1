@@ -52,6 +52,9 @@ if (-not $Source) {
   Step "checkout $Commit"
   & $Git -C $src fetch --depth 200 origin current 2>$null
   & $Git -C $src checkout --force $Commit; if ($LASTEXITCODE) { throw "commit $Commit not available" }
+  # files an earlier run's patches ADDED are untracked, so checkout leaves them and the same patch then refuses to
+  # apply ("already exists in working directory"): remove them. The CMake build folder stays, so rebuilds are quick.
+  & $Git -C $src clean -fdq -e RetroFE/Build
   & $Git -C $src submodule update --init --recursive
 
   # --- 2. patches
