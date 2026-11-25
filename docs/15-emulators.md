@@ -67,6 +67,20 @@ Adding a system later is then only a matter of putting its ROMs in a RetroBat fo
   - The pedestal has keyboard-encoder sticks and no gamepad, while Xbox games want a dual-analog pad with analog triggers.
   - Options: (a) xemu's keyboard bindings mapped to the panel; (b) a virtual XInput pad (ViGEmBus) fed from the panel and UltraStiks, which also helps PCSX2 / Cemu / Dolphin; (c) ask for a real pad with the controller question.
   - (b) is the robust one, and AmPanel already reads the panel.
+  - **Done first, with no driver (2026-11-25, PR 138):** xemu 0.8 has `[input.keyboard_controller_scancode_map]`, and emulatorLauncher keeps that section when it rewrites xemu.toml (tested). `tools/Set-XemuPanelMap.py` writes it from panel.json, as a Rebuild Menus step:
+
+    | Xbox pad | Panel |
+    |---|---|
+    | Left stick | P1 stick |
+    | Right stick | P2 stick |
+    | A / B / X / Y | P1 B1-B4 |
+    | White / Black | P1 B5-B6 |
+    | LT / RT | P1 B7-B8 |
+    | L3 / R3 | P2 B1-B2 |
+    | D-pad | P2 B5-B8 |
+    | Start / Back | P1 start / coin |
+
+    The sticks are digital: good for most games, weak for driving. Needs James at the panel to confirm each control in a game; the trigger names are the least certain.
 - **emulatorLauncher's controller argument** (`%CONTROLLERSCONFIG%` in es_systems) has to be passed, or xemu gets keyboard only. Its format comes from EmulationStation and needs reading.
 - **Performance:** Vulkan at `scale = 2` on a GTX 1660 Super. Measure per game; `scale = 1` where needed.
 - **Exit:** RetroFE's quit combo or AmPanel has to close xemu cleanly (the hard-disk image is written).
