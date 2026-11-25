@@ -375,10 +375,16 @@ def main() -> int:
     ap.add_argument('--jobs', type=int, default=0, help='parallel jobs (default 3 NVENC, 4 x264)')
     ap.add_argument('--ffmpeg', help='ffmpeg.exe or its folder')
     ap.add_argument('--encoder', choices=['auto', 'nvenc', 'x264'], default='auto')
-    ap.add_argument('--manifest', default=MANIFEST_DIR)
+    ap.add_argument('--manifest', default=None, help='default: <drive>/ArcadeMaster/manifest beside the frontend')
     ap.add_argument('--max-minutes', type=float, default=0,
                     help='start no new conversion after N minutes (the rest continue next run); 0 = no limit')
     a = ap.parse_args()
+    if not a.manifest:
+        # the manifest beside the frontend: <drive>/ArcadeMaster/frontend/<name> -> <drive>/ArcadeMaster/manifest
+        # (a fixed R: path made the run fail at its very end on a cabinet without R:, after all the work was done)
+        root = Path(a.retrofe).resolve()
+        guess = root.parent.parent / 'manifest' if root.parent.name.lower() == 'frontend' else None
+        a.manifest = str(guess) if guess and guess.parent.exists() else (MANIFEST_DIR if os.path.exists(os.path.splitdrive(MANIFEST_DIR)[0] + os.sep) else str(root / 'manifest'))
 
     t0 = time.time()
     root = os.path.abspath(a.retrofe)
