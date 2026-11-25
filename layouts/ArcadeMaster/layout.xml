@@ -41,25 +41,8 @@
   <!-- readability: dark column behind the list, band behind the cluster -->
   <image src="images/fx_scrim_gamelist.png" x="0" y="0" width="1920" height="1080" layer="2"/>
 
-  <!-- ================= MOTION (tools/New-LayoutFx.py): endless starfield drift + a neon floor running at you ================= -->
-  <!-- 2-screen-wide star sheet slides one screen left, then snaps back: the halves are identical, so it never jumps -->
-  <image src="images/fx_stars.png" x="0" y="0" width="3840" height="1080" alpha=".55" layer="2">
-    <onIdle>
-      <set duration="120"><animate type="x" from="0" to="-1920" algorithm="linear"/></set>
-    </onIdle>
-    <onGameEnter><set duration="1"><animate type="alpha" to="0"/></set></onGameEnter>
-    <onGameExit><set duration=".8"><animate type="alpha" to=".55"/></set></onGameExit>
-  </image>
-  <!-- floor lines repeat every 120 px: slide down 120 px, snap back, repeat -->
-  <image src="images/fx_grid.png" x="0" y="480" width="1920" height="720" alpha=".42" layer="3">
-    <onIdle>
-      <set duration="2.4"><animate type="y" from="480" to="600" algorithm="linear"/></set>
-    </onIdle>
-    <onMenuScroll><set duration=".25"><animate type="alpha" to=".7"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".8"><animate type="alpha" to=".42" algorithm="easeOutCubic"/></set></onMenuIdle>
-    <onGameEnter><set duration=".6"><animate type="alpha" to="0"/></set></onGameEnter>
-    <onGameExit><set duration=".8"><animate type="alpha" to=".42"/></set></onGameExit>
-  </image>
+  <!-- No synthwave starfield / grid floor / scanlines here (James, 2026-11-22: "I don't want that retro look, I want
+       something related to each game as the background"). The background is the game's own art: am_backdrop + fanart. -->
 
   <!-- ================= GAME LIST: logo wheel on the left ================= -->
   <image src="images/ui_select_frame.png" x="400" y="470" xOrigin="center" yOrigin="center" width="600" height="160" alpha="1" layer="9">
@@ -212,8 +195,6 @@
 
   <!-- ================= SCREEN FX ================= -->
   <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".45" layer="16"/>
-  <!-- CRT sheen: faint scanlines + soft light from the top -->
-  <image src="images/fx_scan.png" x="0" y="0" width="1920" height="1080" alpha=".7" layer="16"/>
 
   <!-- ================= FILTER BAR: the active playlist (LEFT / RIGHT switch it) + position in the list ================= -->
   <!-- banners: layouts/ArcadeMaster/collections/_common/medium_artwork/playlist/<playlist>.png (tools/New-PanelControlsArt.py) -->
