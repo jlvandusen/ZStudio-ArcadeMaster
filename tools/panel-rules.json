@@ -1,0 +1,20 @@
+{
+  "_comment": "AmPanel trigger -> activity rules (docs/13-panel-service.md, step 10): the repo's defaults. A cabinet adds or overrides its own in <manifest>\\panel-rules.json (tried first). match / game take * and ? wildcards. do: led | ignore | recoil | rumble | ffb (the last three are logged until their device paths are wired). led: output value != 0 lights target in color (a Color-RGB.ini name), 0 puts the game's colour back.",
+  "rules": [
+    { "match": "led0", "do": "led", "target": "P1START", "color": "White" },
+    { "match": "led1", "do": "led", "target": "P2START", "color": "White" },
+    { "match": "*start1*lamp*", "do": "led", "target": "P1START", "color": "White" },
+    { "match": "*start2*lamp*", "do": "led", "target": "P2START", "color": "White" },
+    { "match": "*start3*lamp*", "do": "led", "target": "P3START", "color": "White" },
+    { "match": "*start4*lamp*", "do": "led", "target": "P4START", "color": "White" },
+    { "match": "*lamp*start*1*", "do": "led", "target": "P1START", "color": "White" },
+    { "match": "*lamp*start*2*", "do": "led", "target": "P2START", "color": "White" },
+    { "match": "*recoil*1*", "do": "recoil", "target": "P1" },
+    { "match": "*recoil*2*", "do": "recoil", "target": "P2" },
+    { "match": "*recoil*", "do": "recoil", "target": "P1" },
+    { "match": "*rumble*", "do": "rumble", "target": "P1" },
+    { "match": "*motor*", "do": "rumble", "target": "P1" },
+    { "match": "Orientation*", "do": "ignore" },
+    { "match": "*counter*", "do": "ignore" }
+  ]
+}

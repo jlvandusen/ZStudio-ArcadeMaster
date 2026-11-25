@@ -46,6 +46,7 @@ static class AmPanel
     static bool passThrough = true;    // AmPanel.json "PassThrough": false = do not hand commands to LEDBlinky.exe (tests)
     static LedEngine leds;             // AmPanel.json "Lights": "own" = AmPanel drives the button LEDs (step 2), not LEDBlinky
     static OutputListener outputs;     // step 9: MAME-protocol emulator outputs (always on: it only listens)
+    static TriggerRules rules;         // step 10: output -> activity
     static NotifyIcon tray;
     static volatile bool quitting;
 
@@ -295,6 +296,18 @@ static class AmPanel
             outputs = new OutputListener(manifestDir, delegate {
                 lock (Gate) { object g; if (State.TryGetValue("game", out g) && g != null) return Convert.ToString(g); if (State.TryGetValue("selected", out g) && g != null) return Convert.ToString(g); return null; }
             }, Log);
+            rules = new TriggerRules(Path.Combine(manifestDir, "panel-rules.json"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "panel-rules.json"));
+            Log("rules: " + rules.Count + " trigger rule(s) loaded");
+            outputs.Changed += delegate (string name, int value) {
+                if (leds == null && rules.Count == 0) return;
+                lock (Gate)
+                {
+                    string game = State.ContainsKey("game") && State["game"] != null ? Convert.ToString(State["game"]) : Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null);
+                    string sys = State.ContainsKey("emulator") ? Convert.ToString(State["emulator"]) : null;
+                    string done = rules.Apply(name, value, game, sys, leds, Log);
+                    if (done != null) { State["lastTrigger"] = name + "=" + value + " -> " + done; State["triggerHits"] = rules.Hits; }
+                }
+            };
         }
         catch (Exception e) { Log("outputs: listener not started - " + e.Message); }
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };

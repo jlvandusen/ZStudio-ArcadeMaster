@@ -23,9 +23,10 @@ $icoArg = @(); $ico = Join-Path $dist 'ArcadeMaster.ico'; if (Test-Path $ico) { 
 $msg = & $csc[0].FullName /nologo /target:winexe /platform:x86 /optimize+ @icoArg "/out:$out" @refs @srcs 2>&1; $msg | ForEach-Object { Write-Host $_ }
 if ($LASTEXITCODE) { throw "compile failed ($LASTEXITCODE)" }
 Write-Host ("built {0} ({1:N0} KB)" -f $out, ((Get-Item $out).Length / 1KB))
+Copy-Item (Join-Path $PSScriptRoot 'panel-rules.json') (Join-Path $dist 'panel-rules.json') -Force   # the default trigger rules ship next to the exe
 if ($InstallTo) {
   New-Item -ItemType Directory -Force $InstallTo | Out-Null
   $dst = Join-Path $InstallTo 'AmPanel.exe'
   if (Get-Process AmPanel -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $dst }) { Write-Warning "AmPanel is running from $dst - quit it from the tray first"; return }
-  Copy-Item $out $dst -Force; Write-Host "installed -> $dst"
+  Copy-Item $out $dst -Force; Copy-Item (Join-Path $dist 'panel-rules.json') (Join-Path $InstallTo 'panel-rules.json') -Force; Write-Host "installed -> $dst"
 }

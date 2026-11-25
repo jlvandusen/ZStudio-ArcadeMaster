@@ -33,6 +33,19 @@ class LedEngine
     public int Games { get { return games.Count; } }
     public string LastError;
     bool open;
+    // each label's colour for the current game, so an output-driven override (a start lamp flashing) can fall back to it
+    readonly Dictionary<string, int[]> baseColor = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
+    public bool HasLabel(string label) { return pins.ContainsKey(label); }
+
+    // step 10: a trigger lights one control in a colour (rgb, 0-48 scale), or puts its game colour back (rgb = null)
+    public void Override(string label, int[] rgb)
+    {
+        if (!open) return;
+        int[] use = rgb;
+        if (use == null && !baseColor.TryGetValue(label, out use)) use = new[] { 0, 0, 0 };
+        if (SetLabel(label, use)) Flush();
+    }
+    public int[] Color(string name) { int[] c; return name != null && palette.TryGetValue(name, out c) ? c : null; }
 
     public LedEngine(string ledBlinkyDir)
     {
@@ -75,10 +88,11 @@ class LedEngine
     {
         if (!open) return "LED boards not open";
         foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
+        baseColor.Clear();
         Dictionary<string, string> g;
         if (rom == null || !games.TryGetValue(rom, out g))
         {
-            foreach (var label in pins.Keys) SetLabel(label, new[] { 16, 16, 16 });   // no colours known: soft white
+            foreach (var label in pins.Keys) { SetLabel(label, new[] { 16, 16, 16 }); baseColor[label] = new[] { 16, 16, 16 }; }   // no colours known: soft white
             Flush();
             return "no colours for '" + rom + "' - all buttons soft white";
         }
@@ -88,7 +102,7 @@ class LedEngine
             string label = ToLabel(kv.Key);
             int[] rgb;
             if (label == null || !palette.TryGetValue(kv.Value, out rgb)) continue;
-            if (SetLabel(label, rgb)) lit++;
+            if (SetLabel(label, rgb)) { lit++; baseColor[label] = rgb; }
         }
         Flush();
         return lit + " controls lit for " + rom;
