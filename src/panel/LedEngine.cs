@@ -298,6 +298,49 @@ class LedEngine
 
     public void AllOff() { StopAnim(); foreach (var f in frame.Values) Array.Clear(f, 0, f.Length); Flush(); }
 
+    // ---------------------------------------------------------------- LEDBlinky command 14: set LED ports
+    // "14 port,intensity[,port,intensity...]". A port is a plain number (board 1, port 1-96; 97+ runs on into board 2,
+    // the numbering LEDBlinky uses), "board:port", or a button label (P1B1: every channel of that button). Intensity is
+    // LEDBlinky's 0-48, or a colour name from Color-RGB.ini for a label. The rest of the panel is left as it is.
+    public string SetPorts(string spec)
+    {
+        if (!open) return "LED boards not open";
+        if (string.IsNullOrEmpty(spec)) return "no ports given (14 port,intensity,...)";
+        StopAnim();
+        var p = spec.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        int set = 0; var bad = new List<string>();
+        for (int i = 0; i + 1 < p.Length; i += 2)
+        {
+            string port = p[i].Trim(), val = p[i + 1].Trim();
+            int v; int[] rgb = null;
+            if (!int.TryParse(val, out v)) { if (!palette.TryGetValue(val, out rgb)) { bad.Add(port + "=" + val); continue; } v = Math.Max(rgb[0], Math.Max(rgb[1], rgb[2])); }
+            v = Math.Max(0, Math.Min(48, v));
+            if (pins.ContainsKey(port)) { if (SetLabel(port, rgb ?? new[] { v, v, v })) set++; continue; }
+            int board = 1, n;
+            int c = port.IndexOf(':');
+            if (c > 0) { if (!int.TryParse(port.Substring(0, c), out board) || !int.TryParse(port.Substring(c + 1), out n)) { bad.Add(port); continue; } }
+            else if (!int.TryParse(port, out n)) { bad.Add(port); continue; }
+            while (n > 96) { n -= 96; board++; }
+            byte[] f;
+            if (n < 1 || !frame.TryGetValue(board, out f)) { bad.Add(port); continue; }
+            f[n - 1] = (byte)(v * 255 / 48); set++;
+        }
+        Flush();
+        return set + " port(s) set" + (bad.Count > 0 ? ", not understood: " + string.Join(" ", bad) : "");
+    }
+
+    // ---------------------------------------------------------------- LEDBlinky 16 / 17: game paused
+    // the game's colours at a quarter while paused, back at full on unpause (a pause you can see from across the room)
+    public string Dim(bool on)
+    {
+        if (!open) return "LED boards not open";
+        StopAnim();
+        foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
+        foreach (var kv in baseColor) SetLabel(kv.Key, on ? new[] { kv.Value[0] / 4, kv.Value[1] / 4, kv.Value[2] / 4 } : kv.Value);
+        Flush();
+        return on ? "paused: dimmed to 25%" : "unpaused: full colour";
+    }
+
     // ---------------------------------------------------------------- helpers
     bool SetLabel(string label, int[] rgb)
     {

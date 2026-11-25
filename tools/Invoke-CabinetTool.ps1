@@ -163,6 +163,10 @@ switch ($Tool) {
       Step 'lowres' 'Find blurry backgrounds' 'run'
       & $py (Join-Path $t 'Find-LowResArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'lowres' 'Find blurry backgrounds' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # which UltraStik map every game wants (4-way, 2-way, diagonal, analog) - AmPanel loads it at game start
+      Step 'sticks' 'UltraStik maps per game' 'run'
+      & $py (Join-Path $t 'New-StickMaps.py') --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'sticks' 'UltraStik maps per game' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }

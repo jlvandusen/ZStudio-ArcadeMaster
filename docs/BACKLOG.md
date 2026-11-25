@@ -45,9 +45,11 @@ The loop works like this (James, 2026-11-25):
       - **Gaps to 100% LEDBlinky (James asked 2026-11-25; honest list):**
         - [ ] Play LEDBlinky's `.lwax` animation files (`LEDBlinky\lwa\`), including `random.lwax` and the S/N options.
         - [ ] Audio-reactive animation (`audio.lwax`): read the system sound level and drive the LEDs from it.
-        - [ ] Command `14` (set LED ports by number, label + channel, or controller + id + port).
-        - [ ] Command `13` (UltraStik map per game) via UltraStik32 `UltraStik_LoadMap(File)`; auto from controls.dat.
-        - [ ] Command `12` (load a MAME controller file) and `16`/`17` pause behaviour (dim the panel on pause).
+        - [x] Command `14` (set LED ports by label, colour, board:port or number). Tested live 2026-11-25.
+        - [x] Command `13` + automatic UltraStik map per game (Sticks.cs, New-StickMaps.py). Tested live on both sticks.
+        - [x] `16`/`17`: dim the panel to 25% on pause. Tested live.
+        - [ ] Command `12` (load a MAME controller file): pick the game's MAME ctrlr cfg.
+        - [ ] Graphical stick screen: show the stick's 9x9 map, pick or draw one per game (UltraMap replacement).
         - [ ] Speech: announce the game name on select (Windows SAPI), as LEDBlinky's voice option does.
         - [ ] Pixelcade / LED marquee output (the 2-player cabinet uses LEDBlinky only for that).
         - [ ] Other LED boards: LED-Wiz (ledwiz.dll), Howler (HowlerDLL.dll), GPWiz.

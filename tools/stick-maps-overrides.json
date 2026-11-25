@@ -1,0 +1,13 @@
+{
+  "_about": "UltraStik maps New-StickMaps.py cannot read from MAME: these win. Maps: Joy8Way Joy4Way Joy2Way vJoy2Way JoyDiag Analog (or any .um name in <manifest>\\ultrastik).",
+  "games": {
+    "qbert": "JoyDiag",
+    "qberta": "JoyDiag",
+    "qbertj": "JoyDiag",
+    "qberttst": "JoyDiag",
+    "qbertqub": "JoyDiag",
+    "myqbert": "JoyDiag",
+    "sqbert": "JoyDiag",
+    "qbtrktst": "JoyDiag"
+  }
+}
