@@ -212,7 +212,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       cache was dropped: cached textures are shared without a use count, so trimming them could crash the menu.
 - [ ] Performance: warm the main menu's cache at start (load each item's backdrops once while the intro plays), so even
       the first scroll is smooth.
-- [ ] Graphics: the main menu's Exit page has no backdrop (plain black). Give it art of its own.
+- [x] [RACE1] Graphics: the main menu's Exit page had no backdrop (plain black). EXIT is a main-menu entry, not a
+      collection, so the shuffle never dealt it backdrops; now it gets the main menu's game-art pool like the others.
 - [ ] Performance: Build-Manifest / Rebuild Game Menus. Time each part and remove the repeated scans.
 - [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
 - [x] [RACE1] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).

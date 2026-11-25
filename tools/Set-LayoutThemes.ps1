@@ -266,4 +266,25 @@ foreach ($col in $map.Keys) {
   }
   Write-Host ("{0,-20} -> {1,-8} bg: {2}" -f $col, $themeName, (($pool | Select-Object -First $BgSlots | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) }) -join ', '))
 }
+
+# --- main-menu entries that are not collections (EXIT: collections\Main\roms\EXIT.bat). RetroFE looks for their
+# backdrops as the Main menu's own item art (layouts\<layout>\collections\Main\medium_artwork\am_bgN\EXIT.*), which
+# nothing wrote, so the Exit page was plain black. They get the main menu's game-art pool, dealt like the others.
+$mainRoms = Join-Path (Split-Path (Split-Path $LayoutDir)) 'collections\Main\roms'
+if ($CollectionsDir) { $mainRoms = Join-Path $CollectionsDir 'Main\roms' }
+foreach ($entry in @(Get-ChildItem $mainRoms -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in '.bat', '.cmd', '.exe', '.lnk' } | ForEach-Object { $_.BaseName } | Sort-Object -Unique)) {
+  $pool = @(Get-BgPool 'Main' (Resolve-Skin $CabinetTheme))
+  if ($script:lowRes.Count) { $good = @(foreach ($p in $pool) { if (-not $script:lowRes.Contains($p)) { $p } }); if ($good.Count -ge [Math]::Min($BgSlots, $pool.Count)) { $pool = $good } }
+  if (-not $pool.Count) { continue }
+  if ($Shuffle) { $pool = Get-Shuffled $pool }
+  $pool = Select-Distinct $pool $BgSlots
+  for ($i = 1; $i -le $BgSlots; $i++) {
+    $src = $pool[($i - 1) % $pool.Count]; if (-not [IO.File]::Exists($src)) { continue }
+    $dir = Join-Path $LayoutDir "collections\Main\medium_artwork\am_bg$i"; New-Item -ItemType Directory -Force $dir | Out-Null
+    Get-ChildItem $dir -Filter "$entry.*" -File -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -eq $entry } | ForEach-Object { $_.Delete() }   # unlink first: never write through into game art
+    $slotFile = Join-Path $dir ($entry + [IO.Path]::GetExtension($src).ToLower())
+    if (-not ($script:canLink -and [AmNative.Link]::CreateHardLink($slotFile, $src, [IntPtr]::Zero))) { [IO.File]::Copy($src, $slotFile, $true) }
+  }
+  Write-Host ("{0,-20} -> main-menu entry bg: {1}" -f $entry, (($pool | Select-Object -First $BgSlots | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) }) -join ', '))
+}
 if ($styleFile -and -not $BackgroundsOnly) { Set-Content $styleFile $styleKey -Encoding ascii }
