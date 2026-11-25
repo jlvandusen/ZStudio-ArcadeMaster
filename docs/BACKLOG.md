@@ -267,7 +267,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       It also found MAME's plugin (E:\DRIVE Collection\emulators\MAME) with the same wrong id: fixed, 34 of 34 now.
 - [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
       Today: MinForce 0 everywhere, MaxForce 100 in most, 90 / 75 / 45 in a few.
-- [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
+- [x] [RACE1] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
+      All 3 (After Burner Climax, MachStorm, Star Wars Battle Pod) had NOTHING bound on RACE1 (no flight stick). Now flown
+      with the G29 (tools\Set-FlightOnWheel.ps1: wheel, paddles = nose up / down, pedals = throttle / air brake).
 - [x] [RACE1] Controls: set up the "ready to set up" games from games-cant-start.txt - none left (2026-11-25); the rest need their program files.
 - [ ] Stories: every racing and flight game has a story line (year, maker, cabinet, what makes it special).
       [RACE1] 2026-11-25: 73 of 106 racing/flight games had a one-line or no story -> 31 (stories tool run for every
@@ -288,7 +290,10 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [x] [RACE1] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
       Tools > 5a Bass Shakers On-Off (strength: -Choice strength:NN, kept in tactile.json); health 'Bass shakers' starts
       VoiceMeeter again when the shakers are on and it isn't running (otherwise no game sound), warns on an unplugged card.
-- [ ] Bass shakers: telemetry on in every PC racing game that has it, beyond the 6 Codemasters games.
+- [x] [RACE1] Bass shakers: telemetry on in every PC racing game that has it, beyond the 6 Codemasters games.
+      Checked 2026-11-25: every racer whose telemetry is a settings FILE has it on (the 6 Codemasters games). The rest are
+      switched inside the game or by SimHub: DiRT 5 and Project CARS (in-game option), American Truck Simulator (SimHub's
+      plugin). Wreckfest, Burnout Paradise, V-Rally 4, NASCAR Heat 5 have none - they use the sound-driven shakers.
 - [x] [RACE1] Reliability: the health check notices a game whose last start crashed and says why in plain words.
       System Health 'Games that crashed': Windows' Application Error log, last 24 h (-CrashHours), games / emulators / RetroFE by title.
 
@@ -322,6 +327,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - RACE1: drive a few force-feedback games (Batman, Daytona 3, Initial D Zero, Wangan Midnight 6R, OutRun 2 SP DX):
   the wheel should now push back. Before today 13 of them sent their force to nothing.
 - RACE1: turn the G29 during a short menu test run, so the wheel picture problem can be measured.
+- RACE1: try the flight games (After Burner Climax, MachStorm, Star Wars Battle Pod) with the wheel: do the paddles
+  feel right for nose up / down?
+- RACE1: in DiRT 5 and Project CARS, switch on the game's own telemetry option (UDP / shared memory) once SimHub is in.
 - RACE1: install SimHub (D:\ArcadeMaster\installers\SimHubSetup_9.13.5.exe, accept the admin prompt).
 - RACE1: plug in the USB sound card for the bass shakers, then run tools\tactile\Set-ShakerAudio.ps1 -Apply (or tell RACE1's session).
 - RACE1: test the live wheel, needles, gear lights, moving backdrops and D-pad menu at the cabinet; merge PR #3.
