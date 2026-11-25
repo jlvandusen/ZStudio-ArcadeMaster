@@ -51,6 +51,7 @@ static class AmPanel
     static DeviceWatcher devices;      // hot-plug: a controller plugged in / pulled updates the cabinet (Update-Controllers.ps1)
     static Sticks sticks;              // UltraStik maps per game: AmPanel.json "Sticks": "own" (default: on when Lights = own)
     static bool sticksOwn;
+    static string speech = "off";         // AmPanel.json "Speech": off | start
     static ControllerChoices choicesDb;   // "which controller will you use?" (controller-choices.json)
     static Control ui;                    // created on the tray thread: pipe threads show windows through it
     static string toolsDir, retroFERoot;
@@ -161,6 +162,7 @@ static class AmPanel
         if (Str(cfg, "TraceOutputs") != null) OutputListener.Trace = Convert.ToBoolean(cfg["TraceOutputs"]);
         if (Str(cfg, "Reactive") != null) reactive = Convert.ToBoolean(cfg["Reactive"]);
         if (Str(cfg, "AttractAnimation") != null) attractAnimation = Str(cfg, "AttractAnimation").ToLowerInvariant();
+        if (Str(cfg, "Speech") != null) speech = Str(cfg, "Speech").ToLowerInvariant();
         if (manifestDir == null)
         {
             // the launcher's config (ArcadeMaster.config.json) next to this exe or one folder up
@@ -185,6 +187,7 @@ static class AmPanel
         if (manifestDir == null) manifestDir = Path.Combine(exeDir, "manifest");
         Directory.CreateDirectory(manifestDir);
         logFile = Path.Combine(manifestDir, "ampanel.log");
+        Speech.Init(manifestDir);
         if (ledBlinkyDir != null && Directory.Exists(ledBlinkyDir)) SetDllDirectory(ledBlinkyDir);   // PacDrive32.dll lives there
         if (string.Equals(Str(cfg, "Lights"), "own", StringComparison.OrdinalIgnoreCase) && ledBlinkyDir != null) {
             leds = new LedEngine(ledBlinkyDir);
@@ -238,7 +241,9 @@ static class AmPanel
                 case "8": if (arg1 != null) State["emulator"] = arg1; what = "list change"; break;
                 case "9": State["selected"] = arg1; if (arg2 != null) State["emulator"] = arg2; what = "game selected"; break;
                 case "11": State["animation"] = null; what = "animation stop"; break;
-                case "12": what = "load MAME controller file " + arg1; break;
+                // 12: LEDBlinky reads a MAME -ctrlr file to translate input codes; AmPanel lights by Colors.ini labels,
+                // so it only records which file the game uses (status: ctrlr)
+                case "12": State["ctrlr"] = arg1; what = "MAME controller file " + arg1; break;
                 case "13": State["ultrastikMap"] = arg1 ?? "joy8way"; what = "UltraStik map"; break;
                 case "14": what = "set LED ports"; break;
                 case "15": if (arg1 != null) State["selected"] = arg1; what = "light game controls"; break;
@@ -270,6 +275,7 @@ static class AmPanel
                 else if (c == "13") State["stick"] = sticks.Load(arg1, null, true);
                 else if (what == "game stop" || what == "frontend start") State["stick"] = sticks.Load(null, null, false);
             }
+            if (what == "game start" && speech == "start") Speech.Say("Now playing " + Speech.Title(c));
             // hot-plug refreshes wait while a game runs (James: no effect on game performance)
             if (devices != null)
             {
@@ -409,7 +415,9 @@ static class AmPanel
             else if (cmd == "attract")   // {"cmd":"attract","kind":"audio"} - the idle animation from now on (Cabinet Settings)
             {
                 string k = req.ContainsKey("kind") ? Convert.ToString(req["kind"]).ToLowerInvariant() : "";
-                if (k == "chase" || k == "breathe" || k == "audio" || k.EndsWith(".lwax")) { attractAnimation = k; rep["ok"] = true; rep["attract"] = k; }
+                if (req.ContainsKey("speech")) { speech = Convert.ToString(req["speech"]).ToLowerInvariant(); rep["speech"] = speech; }
+                if (k == "" && req.ContainsKey("speech")) rep["ok"] = true;
+                else if (k == "chase" || k == "breathe" || k == "audio" || k.EndsWith(".lwax")) { attractAnimation = k; rep["ok"] = true; rep["attract"] = k; }
                 else { rep["ok"] = false; rep["error"] = "attract: chase, breathe or audio"; }
             }
             else if (cmd == "devicechange") { if (devices != null) devices.Poke(); rep["ok"] = devices != null; }   // as if a controller was plugged in

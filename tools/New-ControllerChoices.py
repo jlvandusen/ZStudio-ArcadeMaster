@@ -103,6 +103,19 @@ def main():
                 title = titles[item]
             out[g["id"]] = {"title": title, "choices": ch}
             kinds[" / ".join(x["id"] for x in ch)] += 1
+    # every game's spoken / shown title (AmPanel's "Now playing ..."), keyed by the item name RetroFE passes
+    names = {}
+    for g in items:
+        item = g["id"].split(":")[-1]
+        t = g.get("title") or item
+        if t == item and item in titles:
+            t = titles[item]
+        names.setdefault(item, t)
+    if not a.dry_run:
+        tp = os.path.join(a.manifest, "game-titles.json")
+        with open(tp + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(names, f, separators=(",", ":"), ensure_ascii=False)
+        os.replace(tp + ".tmp", tp)
     print("controller choices on this cabinet: %d of %d games" % (len(out), len(items)))
     for k, n in kinds.most_common():
         print("  %5d  %s" % (n, k))

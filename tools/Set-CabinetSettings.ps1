@@ -134,6 +134,13 @@ $S.lightsAttract = @{ group = 'LIGHTS AND DECK'; label = 'ATTRACT LIGHTS'; detai
     $cfg['AttractAnimation'] = "$v"; $cfg | ConvertTo-Json | Set-Content $amCfg -Encoding ascii
     # the running AmPanel takes it now (else at its next start)
     try { $c = New-Object IO.Pipes.NamedPipeClientStream('.', 'ArcadeMaster.Panel', [IO.Pipes.PipeDirection]::InOut); $c.Connect(500); $w = New-Object IO.StreamWriter($c); $w.AutoFlush = $true; $w.WriteLine("{`"cmd`":`"attract`",`"kind`":`"$v`",`"noreply`":true}"); $c.Dispose(); 'AmPanel updated' } catch { 'saved - AmPanel takes it at its next start' } } }
+$S.speech = @{ group = 'LIGHTS AND DECK'; label = 'ANNOUNCE THE GAME'; detail = 'A voice says "Now playing ..." with the game''s real name when it starts'; kind = 'switch'; default = $false
+  get = { $v = $null; if (Test-Path $amCfg) { $v = (Get-Content $amCfg -Raw | ConvertFrom-Json).Speech }; "$v" -eq 'start' }
+  set = { param($on)
+    $v = if ($on) { 'start' } else { 'off' }
+    $cfg = [ordered]@{}; if (Test-Path $amCfg) { foreach ($p in (Get-Content $amCfg -Raw | ConvertFrom-Json).PSObject.Properties) { $cfg[$p.Name] = $p.Value } }
+    $cfg['Speech'] = $v; $cfg | ConvertTo-Json | Set-Content $amCfg -Encoding ascii
+    try { $c = New-Object IO.Pipes.NamedPipeClientStream('.', 'ArcadeMaster.Panel', [IO.Pipes.PipeDirection]::InOut); $c.Connect(500); $w = New-Object IO.StreamWriter($c); $w.AutoFlush = $true; $w.WriteLine("{`"cmd`":`"attract`",`"speech`":`"$v`",`"noreply`":true}"); $c.Dispose(); 'AmPanel updated' } catch { 'saved - AmPanel takes it at its next start' } } }
 $S.ledCloseOnExit = @{ group = 'LIGHTS AND DECK'; label = 'LIGHTS OFF WHEN THE ARCADE CLOSES'; detail = 'LEDBlinky is closed together with the frontend'; kind = 'switch'; default = $false
   get = { IsYes (Conf 'LEDBlinkyCloseOnExit') }
   set = { param($on) SetConf 'LEDBlinkyCloseOnExit' $(if ($on) { 'yes' } else { 'no' }); '' } }
