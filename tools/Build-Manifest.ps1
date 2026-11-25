@@ -23,6 +23,9 @@ param(
   [string]$DefaultCategory = 'racing',
   # owner-curated tags (authoritative). Seeded with auto tags; entries with "auto": true may be re-derived.
   [string]$Tags = (Join-Path $PSScriptRoot '..\catalog\tags.json'),
+  # this cabinet's automatic tags (default: tags.json beside -Out); the repo file above is only read
+  [string]$LocalTags,
+  [switch]$SeedRepoTags,
   [switch]$NoSeedTags
 )
 $CabinetTypes = @('racing', 'flight', 'lightgun', 'standup')
@@ -215,12 +218,18 @@ foreach ($g in $games.Values) {
     if (-not $g.category) { $g.category = $DefaultCategory }
   }
 }
-# ---------------- owner tags: authoritative category + free tags; seed new games with their auto tag
-$tagDoc = if (Test-Path $Tags) { Get-Content $Tags -Raw | ConvertFrom-Json } else { [pscustomobject]@{ _help = ''; games = [pscustomobject]@{} } }
-$tagDoc._help = "Edit 'tags' per game. Cabinet types: racing, flight, lightgun, standup (shown as Arcade). Any other words are free tags (linked, kids, favorite...). Remove `"auto`": true once you have checked an entry; auto entries may be re-derived by Build-Manifest.ps1."
+# ---------------- tags: the owner's file in the repo (catalog\tags.json) is READ, never rewritten by a rebuild - every
+# cabinet rebuilt it with its own seeds, so it changed on every cabinet and in every commit. Automatic tags for games the
+# owner has not tagged go to this cabinet's own <manifest>\tags.json. The repo's entry wins when both have one.
+# -SeedRepoTags writes the seeds into the repo file (the old behaviour, for deliberately starting a shared list).
+$help = "Edit 'tags' per game. Cabinet types: racing, flight, lightgun, standup (shown as Arcade). Any other words are free tags (linked, kids, favorite...). Remove `"auto`": true once you have checked an entry; auto entries may be re-derived by Build-Manifest.ps1."
+function Read-TagDoc([string]$path) { if ($path -and (Test-Path $path)) { $d = Get-Content $path -Raw | ConvertFrom-Json; if (-not $d.games) { $d | Add-Member -Force -NotePropertyName games -NotePropertyValue ([pscustomobject]@{}) }; $d } else { [pscustomobject]@{ _help = ''; games = [pscustomobject]@{} } } }
+$ownerDoc = Read-TagDoc $Tags
+if (-not $LocalTags) { $LocalTags = Join-Path (Split-Path $Out) 'tags.json' }
+$seedDoc = if ($SeedRepoTags) { $ownerDoc } else { Read-TagDoc $LocalTags }
 $seeded = 0
 foreach ($g in $games.Values) {
-  $e = $tagDoc.games.PSObject.Properties[$g.id]
+  $e = $ownerDoc.games.PSObject.Properties[$g.id]; if (-not $e) { $e = $seedDoc.games.PSObject.Properties[$g.id] }
   if ($e) {
     if ($e.Value.auto -and -not ($e.Value.tags -contains $g.category)) { $e.Value.tags = @($g.category) }   # auto entry: keep in sync
     $g.tags = @($e.Value.tags)
@@ -228,14 +237,15 @@ foreach ($g in $games.Values) {
     if ($ct) { $g.category = $ct[0] }                                                   # owner's tag wins
   } else {
     $g.tags = @($g.category)
-    if (-not $NoSeedTags) { $tagDoc.games | Add-Member -NotePropertyName $g.id -NotePropertyValue ([pscustomobject]@{ title = $g.title; tags = @($g.category); auto = $true }); $seeded++ }
+    if (-not $NoSeedTags) { $seedDoc.games | Add-Member -NotePropertyName $g.id -NotePropertyValue ([pscustomobject]@{ title = $g.title; tags = @($g.category); auto = $true }); $seeded++ }
   }
 }
 if (-not $NoSeedTags) {
-  New-Item -ItemType Directory -Force (Split-Path $Tags) | Out-Null
-  $sorted = [ordered]@{}; foreach ($p in $tagDoc.games.PSObject.Properties | Sort-Object Name) { $sorted[$p.Name] = $p.Value }
-  [ordered]@{ _help = $tagDoc._help; games = $sorted } | ConvertTo-Json -Depth 5 | Set-Content $Tags -Encoding UTF8
-  if ($seeded) { Write-Host "tags: seeded $seeded new games into $Tags (edit, then remove ""auto"": true)" }
+  $seedPath = if ($SeedRepoTags) { $Tags } else { $LocalTags }
+  New-Item -ItemType Directory -Force (Split-Path $seedPath) | Out-Null
+  $sorted = [ordered]@{}; foreach ($q in $seedDoc.games.PSObject.Properties | Sort-Object Name) { $sorted[$q.Name] = $q.Value }
+  [ordered]@{ _help = $help; games = $sorted } | ConvertTo-Json -Depth 5 | Set-Content $seedPath -Encoding UTF8
+  if ($seeded) { Write-Host "tags: seeded $seeded new games into $seedPath (edit, then remove ""auto"": true; copy an entry into catalog\tags.json to share it)" }
 }
 
 $list = @($games.Values | Sort-Object { $_.category }, { $_.title })
