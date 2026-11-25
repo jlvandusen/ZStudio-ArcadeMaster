@@ -149,8 +149,18 @@ $touchMsg = $null
 $ccFile = Join-Path $RetroFE 'controls.conf'
 if ($fix -and $cab -and (Test-Path $ccFile) -and (@($cab.capabilities.touchControllers).Count -or (Select-String $ccFile -Pattern '^\s*mouseTouchScreens\s*=' -Quiet))) {   # only when there is something to decide (saves ~0.4 s per boot)
   $cabPath = Join-Path $ManifestDir 'cabinet.json'
-  $tOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-RetroFEScreens.ps1') -RetroFE $RetroFE -Cabinet $cabPath -TouchOnly 2>&1 | Out-String
-  if ($tOut -match 'touch: CHANGED (.+)') { $touchMsg = $Matches[1].Trim() }
+  # only when something it decides from changed since the last run: the touch boards, controls.conf's line, the script
+  # (it is a PowerShell of its own: 1.65 s of every boot for the same answer)
+  $tsScript = Join-Path $PSScriptRoot 'Set-RetroFEScreens.ps1'
+  $tKey = ((@($cab.capabilities.touchControllers) -join ',') + '|' + ((Select-String $ccFile -Pattern '^\s*mouseTouchScreens\s*=.*$' | ForEach-Object { $_.Line.Trim() }) -join ',') + '|' + (Get-Item $tsScript).LastWriteTimeUtc.Ticks + '|' + (Get-Item $ccFile).Length)
+  $tKeyFile = Join-Path $ManifestDir 'touch-key.txt'
+  if (-not (Test-Path $tKeyFile) -or (Get-Content $tKeyFile -Raw).Trim() -ne $tKey) {
+    $tOut = & powershell -NoProfile -ExecutionPolicy Bypass -File $tsScript -RetroFE $RetroFE -Cabinet $cabPath -TouchOnly 2>&1 | Out-String
+    if ($tOut -match 'touch: CHANGED (.+)') { $touchMsg = $Matches[1].Trim() }
+    # the key AFTER the run (it may have edited controls.conf): the next boot with the same hardware skips it
+    $tKey = ((@($cab.capabilities.touchControllers) -join ',') + '|' + ((Select-String $ccFile -Pattern '^\s*mouseTouchScreens\s*=.*$' | ForEach-Object { $_.Line.Trim() }) -join ',') + '|' + (Get-Item $tsScript).LastWriteTimeUtc.Ticks + '|' + (Get-Item $ccFile).Length)
+    Set-Content $tKeyFile $tKey -Encoding ascii
+  }
 }
 if ($fixedL -or $touchMsg) { Add-Result 'screens' $checks.screens 'FIXED' ((@($(if ($fixedL) { "$fixedL layout(s) given monitor= (they drew over the main screen)" }), $touchMsg) | Where-Object { $_ }) -join '; ') } else { Add-Result 'screens' $checks.screens 'OK' 'all declare their monitor' }
 
@@ -207,7 +217,9 @@ foreach ($tpd in Get-ChildItem (Join-Path $RetroFE 'emulators') -Directory -Filt
   $up = Join-Path $tpd.FullName 'UserProfiles'; if (-not (Test-Path $up)) { continue }
   $gone = @(foreach ($f in Get-ChildItem $up -Filter *.xml -File) {
     $m = [regex]::Match([IO.File]::ReadAllText($f.FullName), '<GamePath>(.+?)</GamePath>'); if (-not $m.Success) { continue }
-    $p = [Net.WebUtility]::HtmlDecode($m.Groups[1].Value); $full =   # XML: Let&apos;s Go Jungle is Let's Go Jungle if ([IO.Path]::IsPathRooted($p)) { $p } else { [IO.Path]::GetFullPath((Join-Path $tpd.FullName $p)) }
+    # the file is XML: Let&apos;s Go Jungle is Let's Go Jungle
+    $p = [Net.WebUtility]::HtmlDecode($m.Groups[1].Value)
+    $full = if ([IO.Path]::IsPathRooted($p)) { $p } else { [IO.Path]::GetFullPath((Join-Path $tpd.FullName $p)) }
     if (-not (Test-Path -LiteralPath $full)) { $f.BaseName } })
   if (-not $gone) { continue }
   # the same set already found unfixable last time: don't search the disks again on every boot
@@ -229,13 +241,20 @@ foreach ($tpd in Get-ChildItem (Join-Path $RetroFE 'emulators') -Directory -Filt
 $gInfo = ''
 $gj = Join-Path $ManifestDir 'games.json'
 if (Test-Path $gj) {
-  $glist = @((Get-Content $gj -Raw | ConvertFrom-Json).games)
   # only the games this cabinet plays (a shooter on the racing cabinet is not its problem)
-  $myModes = @(if ($cab) { $cab.capabilities.modes }); if ($myModes) { $glist = @($glist | Where-Object { $myModes -contains $_.category }) }
-  $cant = @($glist | Where-Object { -not @($_.variants.PSObject.Properties | Where-Object { $_.Value.ok }).Count })
-  $why = @($cant | ForEach-Object { @($_.variants.PSObject.Properties | ForEach-Object { $_.Value.problem } | Where-Object { $_ })[0] }) | Group-Object | ForEach-Object { "$($_.Count) $($_.Name -replace '-', ' ')" }
-  $gInfo = "{0} of {1} games can start" -f ($glist.Count - $cant.Count), $glist.Count
-  if ($cant) { $gInfo += "; $($cant.Count) can't" + $(if ($why) { " ($($why -join ', '))" } else { '' }) + " - list with reasons: manifest\games-cant-start.txt" }
+  $myModes = @(if ($cab) { $cab.capabilities.modes })
+  # games.json is ~10 MB (1.7 s to read): the summary line is kept next to it, redone when the catalog or the modes change
+  $gsFile = Join-Path $ManifestDir 'games-summary.txt'; $gsKey = "$((Get-Item $gj).LastWriteTimeUtc.Ticks)|$($myModes -join ',')"
+  $gs = if (Test-Path $gsFile) { @(Get-Content $gsFile) } else { @() }
+  if ($gs.Count -ge 2 -and $gs[0] -eq $gsKey) { $gInfo = $gs[1] } else {
+    $glist = @((Get-Content $gj -Raw | ConvertFrom-Json).games)
+    if ($myModes) { $glist = @($glist | Where-Object { $myModes -contains $_.category }) }
+    $cant = @($glist | Where-Object { -not @($_.variants.PSObject.Properties | Where-Object { $_.Value.ok }).Count })
+    $why = @($cant | ForEach-Object { @($_.variants.PSObject.Properties | ForEach-Object { $_.Value.problem } | Where-Object { $_ })[0] }) | Group-Object | ForEach-Object { "$($_.Count) $($_.Name -replace '-', ' ')" }
+    $gInfo = "{0} of {1} games can start" -f ($glist.Count - $cant.Count), $glist.Count
+    if ($cant) { $gInfo += "; $($cant.Count) can't" + $(if ($why) { " ($($why -join ', '))" } else { '' }) + " - list with reasons: manifest\games-cant-start.txt" }
+    Set-Content $gsFile @($gsKey, $gInfo) -Encoding UTF8
+  }
 }
 if ($gWarn) { Add-Result 'games' $checks.games 'WARN' ((@($gWarn) + @($gDid) + @($gInfo) | Where-Object { $_ }) -join '; ') }
 elseif ($gDid) { Add-Result 'games' $checks.games 'FIXED' ((@($gDid) + @($gInfo) | Where-Object { $_ }) -join '; ') }

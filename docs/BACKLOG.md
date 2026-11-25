@@ -6,7 +6,8 @@ gets added. Items that need James move to **Needs James** and are skipped, not w
 
 The loop works like this (James, 2026-11-25):
 
-- **Branch and PR every change.** Run `tools/Test-ArcadeMaster.ps1`, then merge your own PR (`gh pr merge --merge`).
+- **Branch and PR every change.** Run `tools/Test-ArcadeMaster.ps1 -Cabinet` (on a machine with a test frontend),
+  then merge your own PR (`gh pr merge --merge`).
 - **Try it on the R: copy** (`R:\ArcadeMaster\frontend\LEGENDS-am`), never on the live `E:\CoinOPS LEGENDS 4 Max`.
 - **Driver and display changes are approved.** Write down what changed and how to undo it.
 - **Measure first.** A performance or visuals change states its before and after numbers, or before and after
@@ -43,7 +44,19 @@ The loop works like this (James, 2026-11-25):
       MAME's `-listxml` control types.
 
 ## 3. Performance
-- [ ] Boot time: time each step from launcher start to the first menu (boot log), and cut the slowest step.
+- [x] Boot time: prep 6.9 s → 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
+      ~2 s every boot for the same picture. (2026-11-25)
+- [x] Background shuffle: 1.7–1.9 s → 1.6 s, while it now reads every game's backdrop too. It uses .NET folder
+      listings, a partial shuffle and hard links (the helper DLL is compiled once, cached in %LOCALAPPDATA%). Boot prep
+      4.2 s. (2026-11-25)
+- [x] Health check at boot 2.0 s → 0.4 s. The touch-screen step (a PowerShell of its own, 1.65 s) runs only when the
+      touch hardware or controls.conf changed (`touch-key.txt`). The games summary (10 MB games.json, 1.7 s) is kept in
+      `games-summary.txt`. Boot prep 6.9 s → **2.7 s** today. Also fixed: since #27 a comment had swallowed the
+      TeknoParrot path check, which then errored on every profile. (2026-11-25)
+- [ ] Boot time, next: Shuffle 1.7 s (now the largest), and Get-CabinetDevices on a cold start (1.3 s).
+- [x] `Test-ArcadeMaster.ps1 -Cabinet` runs the health check (`-NoFix`) and the panel learn (`--dry-run`) against
+      this cabinet's frontend, and fails on any error. It refuses a protected live frontend. A planted bug was caught
+      (2026-11-25).
 - [ ] Menu scrolling: turn on the perf log, measure frame time on Main and Arcades, and find the heavy layers.
 - [ ] Backdrops and marquees: no texture bigger than it is drawn. Downscale anything over 1920x1080 and check memory
       before and after.
@@ -53,6 +66,9 @@ The loop works like this (James, 2026-11-25):
       launcher repoint).
 
 ## 4. Graphics
+- [x] No generated "retro" scenes as menu backgrounds (arcade_retro_grid, arcade_starfield…). 40 menus used them. A
+      menu with no fanart now shows its games' own backdrops, then racing / flight / light-gun games for those menus,
+      then game art from the whole library, with one picture per game. (2026-11-25)
 - [x] Theme picker shows the label ("Tile Wall"), not the folder name. (2026-11-25)
 - [ ] Polish the five AM themes: spacing, text fitting long names, and a check at 1080p and 4K.
 - [ ] Marquees: replace placeholders with real art wherever any build has it, and improve the placeholder design.
