@@ -1,0 +1,216 @@
+From 40e42585730f04b12bba0601eda815dc5ae7e994 Mon Sep 17 00:00:00 2001
+From: James VanDusen <jlvandusen@msn.com>
+Date: Sun, 22 Nov 2026 16:33:38 -0500
+Subject: [PATCH] Pictures can follow the real wheel, buttons and pedals
+
+A layout picture can now turn with the steering wheel (liveSteer), light up while a button or D-pad direction is held (liveButton, liveHat), or brighten as a pedal is pressed (liveAxis). The controls card uses this so the wheel on screen moves with your hands.
+---
+ .../Source/Graphics/Component/Component.cpp   | 53 +++++++++++++++++++
+ RetroFE/Source/Graphics/Component/Component.h | 19 +++++++
+ RetroFE/Source/Graphics/Page.cpp              |  4 +-
+ RetroFE/Source/Graphics/PageBuilder.cpp       | 24 ++++++---
+ 4 files changed, 93 insertions(+), 7 deletions(-)
+
+diff --git a/RetroFE/Source/Graphics/Component/Component.cpp b/RetroFE/Source/Graphics/Component/Component.cpp
+index bd868e48..1fb5a296 100644
+--- a/RetroFE/Source/Graphics/Component/Component.cpp
++++ b/RetroFE/Source/Graphics/Component/Component.cpp
+@@ -435,4 +435,57 @@ void Component::setPauseOnScroll(bool value)
+ bool Component::getPauseOnScroll() const 
+ {
+     return pauseOnScroll_;
++}
++
++// ---------------- ArcadeMaster: live controller state (liveSteer / liveButton / liveHat / liveAxis) ----------------
++#include <algorithm>
++#include <cctype>
++
++// the joystick a live component follows: the first open one whose name contains `want` (case-insensitive),
++// or - with no name given - the first whose name contains "wheel", else the first open joystick
++static SDL_Joystick* liveJoystick(const std::string& want) {
++    auto lower = [](std::string s) { std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); }); return s; };
++    const std::string w = lower(want.empty() ? "wheel" : want);
++    SDL_Joystick* first = nullptr;
++    for (int i = 0; i < SDL_NumJoysticks(); ++i) {
++        SDL_Joystick* j = SDL_JoystickFromInstanceID(SDL_JoystickGetDeviceInstanceID(i));
++        if (!j) continue;                                                   // not opened by RetroFE
++        if (!first) first = j;
++        const char* n = SDL_JoystickName(j);
++        if (n && lower(n).find(w) != std::string::npos) return j;
++    }
++    return want.empty() ? first : nullptr;
++}
++
++void Component::liveBegin() {
++    if ((liveKind == LiveNone && liveSteer == 0.f) || !liveStarted_) return;
++    baseViewInfo.Angle = liveAngleBase_;                                    // undo last frame's live offset
++    baseViewInfo.Alpha = liveAlphaBase_;
++}
++
++void Component::liveEnd() {
++    if (liveKind == LiveNone && liveSteer == 0.f) return;
++    liveAngleBase_ = baseViewInfo.Angle; liveAlphaBase_ = baseViewInfo.Alpha; liveStarted_ = true;
++    SDL_Joystick* j = liveJoystick(liveDevice);
++    if (liveSteer != 0.f) {
++        const float v = j ? std::max(-1.f, SDL_JoystickGetAxis(j, 0) / 32767.f) : 0.f;
++        baseViewInfo.Angle = liveAngleBase_ + v * liveSteer;
++    }
++    switch (liveKind) {
++    case LiveButton:
++        baseViewInfo.Alpha = (j && SDL_JoystickGetButton(j, liveIndex)) ? liveAlphaBase_ : 0.f;
++        break;
++    case LiveHat:
++        baseViewInfo.Alpha = (j && SDL_JoystickNumHats(j) > 0 && (SDL_JoystickGetHat(j, 0) & liveIndex)) ? liveAlphaBase_ : 0.f;
++        break;
++    case LiveAxis: {
++        float t = 0.f;
++        const Sint16 raw = j ? SDL_JoystickGetAxis(j, liveIndex) : 0;
++        if (raw != 0) liveAxisMoved_ = true;
++        if (j && liveAxisMoved_ && liveTo != liveFrom) t = (static_cast<float>(raw) - liveFrom) / (liveTo - liveFrom);
++        baseViewInfo.Alpha = liveAlphaBase_ * std::min(1.f, std::max(0.f, t));
++        break;
++    }
++    default: break;
++    }
+ }
+\ No newline at end of file
+diff --git a/RetroFE/Source/Graphics/Component/Component.h b/RetroFE/Source/Graphics/Component/Component.h
+index 4074ac58..4a71ba04 100644
+--- a/RetroFE/Source/Graphics/Component/Component.h
++++ b/RetroFE/Source/Graphics/Component/Component.h
+@@ -70,6 +70,22 @@ public:
+ 	virtual bool isPaused() { return false; };
+ 	ViewInfo baseViewInfo;
+ 	std::string collectionName;
++
++	// ArcadeMaster: live controller state drives a component (layout attributes, read in PageBuilder::buildViewInfo)
++	//   liveSteer="450"          the angle follows the wheel: full lock = +/-450 degrees (900-degree wheel); can be
++	//                            combined with one of the next three (a button glow that turns with the wheel)
++	//   liveButton="4"           shown only while joystick button 4 (0-based) is held
++	//   liveHat="1"              shown while the hat points that way (1 up, 2 right, 4 down, 8 left)
++	//   liveAxis="3" liveFrom="32767" liveTo="-32768"   shown in proportion to how far that axis has moved (pedals)
++	//   liveDevice="G29"         joystick name to follow (default: the first whose name has "wheel", else the first)
++	// Page calls liveBegin() before update() and liveEnd() after it, so animations keep working on the base values.
++	enum LiveKind { LiveNone, LiveButton, LiveHat, LiveAxis };
++	LiveKind liveKind = LiveNone;
++	int liveIndex = 0;
++	float liveSteer = 0.f, liveFrom = 0.f, liveTo = 0.f;
++	std::string liveDevice;
++	void liveBegin();
++	void liveEnd();
+ 	void setMenuScrollReload(bool menuScrollReload);
+ 	bool getMenuScrollReload() const;
+ 	void setAnimationDoneRemove(bool value);
+@@ -105,6 +121,9 @@ private:
+     static std::map<int, SDL_Texture*> sharedBackgroundTextures_;
+     bool         pauseOnScroll_;
+     ViewInfo     storeViewInfo_;
++    float        liveAngleBase_ = 0.f, liveAlphaBase_ = 1.f;
++    bool         liveStarted_ = false;
++    bool         liveAxisMoved_ = false;   // SDL reports 0 until a DirectInput axis first moves: dark until then
+     unsigned int currentTweenIndex_;
+     bool         currentTweenComplete_;
+     double       elapsedTweenTime_;
+diff --git a/RetroFE/Source/Graphics/Page.cpp b/RetroFE/Source/Graphics/Page.cpp
+index 70741626..17754b6c 100644
+--- a/RetroFE/Source/Graphics/Page.cpp
++++ b/RetroFE/Source/Graphics/Page.cpp
+@@ -1452,7 +1452,9 @@ void Page::update(float dt) {
+ 					(*it)->playlistName = lastPlaylistName_;
+ 				}
+ 
++				(*it)->liveBegin();
+ 				bool done = (*it)->update(dt);
++				(*it)->liveEnd();   // ArcadeMaster: live wheel / button state
+ 
+ 				if (!(*it)->isIdle()) {
+ 					graphicsIdle = false;
+@@ -1544,7 +1546,7 @@ void Page::updateReloadables(float dt) {
+ 	for (auto& layer : LayerComponents_) {
+ 		for (Component* component : layer) {
+ 			if (component) {
+-				component->update(dt);
++				component->liveBegin(); component->update(dt); component->liveEnd();
+ 			}
+ 		}
+ 	}
+diff --git a/RetroFE/Source/Graphics/PageBuilder.cpp b/RetroFE/Source/Graphics/PageBuilder.cpp
+index 093ae1d8..25d90927 100644
+--- a/RetroFE/Source/Graphics/PageBuilder.cpp
++++ b/RetroFE/Source/Graphics/PageBuilder.cpp
+@@ -46,6 +46,18 @@
+ #include <filesystem>
+ #include <memory>
+ 
++// ArcadeMaster: liveSteer / liveButton / liveHat / liveAxis (+ liveFrom, liveTo, liveDevice) - see Component.h
++static void buildLive(rapidxml::xml_node<>* xml, Component* c) {
++    if (!xml || !c) return;
++    auto num = [&](const char* name, float& out) { rapidxml::xml_attribute<>* a = xml->first_attribute(name); if (!a) return false; try { out = std::stof(a->value()); return true; } catch (...) { return false; } };
++    float v = 0.f;
++    if (num("liveSteer", v))       c->liveSteer = v;                   // can be combined with one of the next three
++    if (num("liveButton", v)) { c->liveKind = Component::LiveButton; c->liveIndex = static_cast<int>(v); }
++    else if (num("liveHat", v))    { c->liveKind = Component::LiveHat;    c->liveIndex = static_cast<int>(v); }
++    else if (num("liveAxis", v))   { c->liveKind = Component::LiveAxis;   c->liveIndex = static_cast<int>(v);
++                                     c->liveFrom = 32767.f; c->liveTo = -32768.f; num("liveFrom", c->liveFrom); num("liveTo", c->liveTo); }
++    if (rapidxml::xml_attribute<>* d = xml->first_attribute("liveDevice")) c->liveDevice = d->value();
++}
+ using namespace rapidxml;
+ 
+ static const int MENU_FIRST = 0;   // first visible item in the list
+@@ -510,7 +522,7 @@ bool PageBuilder::buildComponents(xml_node<>* layout, Page* page, const std::str
+ 		c->baseViewInfo.Monitor = monitorXml ? Utils::convertInt(monitorXml->value()) : layoutMonitor;
+ 		c->baseViewInfo.Layout = page->getCurrentLayout();
+ 
+-		buildViewInfo(componentXml, c->baseViewInfo);
++		buildViewInfo(componentXml, c->baseViewInfo); buildLive(componentXml, c);
+ 		loadTweens(c, componentXml);
+ 		page->addComponent(c);
+ 	}
+@@ -581,7 +593,7 @@ bool PageBuilder::buildComponents(xml_node<>* layout, Page* page, const std::str
+ 				c->baseViewInfo.Monitor = monitorXml ? Utils::convertInt(monitorXml->value()) : layoutMonitor;
+ 				c->baseViewInfo.Layout = page->getCurrentLayout();
+ 
+-				buildViewInfo(componentXml, c->baseViewInfo);
++				buildViewInfo(componentXml, c->baseViewInfo); buildLive(componentXml, c);
+ 				loadTweens(c, componentXml);
+ 				page->addComponent(c);
+ 			}
+@@ -671,7 +683,7 @@ bool PageBuilder::buildComponents(xml_node<>* layout, Page* page, const std::str
+ 				c->baseViewInfo.Monitor = monitorXml ? Utils::convertInt(monitorXml->value()) : layoutMonitor;
+ 				c->baseViewInfo.Layout = page->getCurrentLayout();
+ 
+-				buildViewInfo(componentXml, c->baseViewInfo);
++				buildViewInfo(componentXml, c->baseViewInfo); buildLive(componentXml, c);
+ 				loadTweens(c, componentXml);
+ 				page->addComponent(c);
+ 			}
+@@ -706,7 +718,7 @@ bool PageBuilder::buildComponents(xml_node<>* layout, Page* page, const std::str
+ 				c->setMenuScrollReload(true);
+ 			}
+ 
+-			buildViewInfo(componentXml, c->baseViewInfo);
++			buildViewInfo(componentXml, c->baseViewInfo); buildLive(componentXml, c);
+ 			loadTweens(c, componentXml);
+ 			page->addComponent(c);
+ 		}
+@@ -725,7 +737,7 @@ bool PageBuilder::buildComponents(xml_node<>* layout, Page* page, const std::str
+ 			c->setMenuScrollReload(true);
+ 		}
+ 
+-		buildViewInfo(componentXml, c->baseViewInfo);
++		buildViewInfo(componentXml, c->baseViewInfo); buildLive(componentXml, c);
+ 		loadTweens(c, componentXml);
+ 		page->addComponent(c);
+ 		page->setStatusTextComponent(c);
+@@ -1001,7 +1013,7 @@ FontManager* PageBuilder::addFont(const xml_node<>* component, const xml_node<>*
+ }
+ 
+ void PageBuilder::loadTweens(Component* c, xml_node<>* componentXml) {
+-	buildViewInfo(componentXml, c->baseViewInfo);
++	buildViewInfo(componentXml, c->baseViewInfo); buildLive(componentXml, c);
+ 
+ 	c->setTweens(createTweenInstance(componentXml));
+ }
+-- 
+2.56.1.windows.1
+

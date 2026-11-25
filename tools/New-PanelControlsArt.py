@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 8     # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 11    # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -85,11 +85,18 @@ STICK_TEXT = {'8': '8-WAY STICK', '4': '4-WAY STICK', '2h': '2-WAY STICK', '2v':
 WHEEL_LABELS = ('GAS', 'BRAKE', 'GEAR +', 'GEAR −', 'VIEW')
 
 
+DIR_WORDS = {'up', 'down', 'left', 'right', 'forward', 'backward', 'back', 'backwards'}
+# two-stick games whose controls.dat only names directions ("Left Up" / "Right Down"): what each hand does
+TWIN_FIXED = {'cclimber': ('Left Arm', 'Right Arm', False), 'cclimberj': ('Left Arm', 'Right Arm', False),
+              'ccboot': ('Left Arm', 'Right Arm', False), 'cclimbr2': ('Left Arm', 'Right Arm', False)}
+
+
 class Sig:
-    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels', 'emu', 'leds')
+    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels', 'emu', 'leds', 'roles')
 
     def __init__(self, players=0, alt=False, stick=None, buttons=0, extras=(), labels=(), emu=''):
         self.emu = emu
+        self.roles = ()     # two-stick games: (left does, right does, left is, right is) - "LEFT TREAD" on "FLIGHT STICK 1"
         self.leds = ()      # the game's real button colours (LEDBlinky Colors.ini): (stick, b1, b2 ...) as RGB or None
         ex0 = set(extras)
         # a racer on a stick panel: the stick steers and the pedals land on buttons 1 + 2 (gas, brake), then the
@@ -124,6 +131,8 @@ class Sig:
             k += '-E' + hashlib.sha1(self.emu.encode()).hexdigest()[:8]
         if self.leds:
             k += '-C' + hashlib.sha1(repr(self.leds).encode()).hexdigest()[:8]
+        if self.roles:
+            k += '-R' + hashlib.sha1('|'.join(self.roles).encode()).hexdigest()[:8]
         return k
 
     def with_emu(self, emu: str, leds=()) -> 'Sig':
@@ -170,7 +179,8 @@ class LedColors:
                 line = line.strip()
                 if line.startswith('[') and line.endswith(']'):
                     cur = self.names.setdefault(line[1:-1].strip().lower(), {})
-                elif cur is not None and '=' in line and line.split('=', 1)[0].strip().lower() in ('numplayers', 'alternating', 'p1controls', 'p1numbuttons'):
+                elif cur is not None and '=' in line and (line.split('=', 1)[0].strip().lower() in ('numplayers', 'alternating', 'p1controls', 'p1numbuttons')
+                                                          or re.match(r'(?i)P1_JOYSTICK(LEFT|RIGHT)_(UP|DOWN|LEFT|RIGHT)\s*=', line)):
                     k, v = line.split('=', 1)
                     cur['_' + k.strip().lower()] = v.strip()
                 elif cur is not None and line.upper().startswith('P1_BUTTON') and '=' in line:
@@ -179,6 +189,30 @@ class LedColors:
                     if m:
                         cur[int(m.group(1))] = v.strip()
             log(f'button names: {sum(1 for g in self.names.values() if any(isinstance(k, int) for k in g))} games from {ci}')
+
+    def twin_roles(self, item: str):
+        """a two-stick game's roles from controls.dat: (left does, right does, is_tread) or None.
+        P1_JOYSTICKRIGHT_UP=Fire Up -> FIRE; Right Tread Forward -> RIGHT TREAD; bare directions -> MOVE"""
+        g = self.names.get(item.lower())
+        if not g:
+            return None
+        pc = g.get('_p1controls', '').lower()
+        if item.lower() in TWIN_FIXED:
+            return TWIN_FIXED[item.lower()]
+        def role(side):
+            vals = [v for k, v in g.items() if isinstance(k, str) and k.lower().startswith(f'_p1_joystick{side}_')]
+            words = {' '.join(w for w in re.split(r'\s+', v) if w.lower() not in DIR_WORDS).strip() for v in vals}
+            words.discard('')
+            return words.pop() if len(words) == 1 else ''
+        left, right = role('left'), role('right')
+        tread = 'tread' in (left + right).lower() or 'triggerstick' in pc or 'vdoublejoy2way' in pc
+        if tread:
+            left, right = 'Left Tread', 'Right Tread'
+        # a stick whose directions carry no role word ("Up", "Down"...) moves the player: Front Line's right stick,
+        # Black Widow's left one. Only when neither side says anything is it the plain move / fire pair.
+        if not left and not right:
+            return ('Move', 'Fire', tread)
+        return (left or 'Move', right or 'Move', tread)
 
     def cabinet(self, item: str):
         """the real cabinet as controls.dat describes it: (players, alternating, controls) or None. MAME's -listxml
@@ -470,8 +504,12 @@ def draw_label(c: Card, cx, cy, s, maxw):
     # a word too long even at 13 px breaks in two with a hyphen (HYPERSPACE -> HYPER- / SPACE, ROUNDHOUSE -> ROUND- / HOUSE)
     if any(c.width(w, font('semi', 13)) > maxw for w in words) and len(words) <= 2:
         long_ = max(words, key=len)
-        h = (len(long_) + 1) // 2
-        a, b = long_[:h] + '-', long_[h:]
+        if '/' in long_.strip('/'):                           # TANK/GRENADE -> TANK/ + GRENADE, never TANK/G-RENADE
+            h = long_.index('/', 1) + 1
+            a, b = long_[:h], long_[h:]
+        else:
+            h = (len(long_) + 1) // 2
+            a, b = long_[:h] + '-', long_[h:]
         if len(words) == 2:                                   # ROUNDHOUSE KICK -> ROUND- / HOUSE KICK when that fits
             other = words[1] if words[0] == long_ else words[0]
             b = f'{b} {other}' if words[0] == long_ else b
@@ -656,7 +694,8 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
     if 'twinstick' in sig.extras:
         # two sticks side by side, what each one does, which panel stick it is
         ts = PANEL['twinStick']
-        for cx, does, which, pc in ((112, ts['leftDoes'], ts['left'], PLAYER[0]), (282, ts['rightDoes'], ts['right'], PLAYER[1])):
+        ld, rd, lw, rw = sig.roles if sig.roles else (ts['leftDoes'], ts['rightDoes'], ts['left'], ts['right'])
+        for cx, does, which, pc in ((112, ld, lw, PLAYER[0]), (282, rd, rw, PLAYER[1])):
             draw_stick(c, cx, 134, sig.stick or '8', pc, k=.72)
             c.text((cx, 214), does.upper(), font('black', 24), CYAN + (255,), 'mm', glow=CYAN + (90,))
             c.text((cx, 244), which.upper(), font('semi', 19), DIM + (255,), 'mm')
@@ -794,7 +833,8 @@ def hint_of(s: Sig):
         return 'flightstick', f'FLY WITH THE {PANEL["flightStick"]["name"].upper()}'
     if 'twinstick' in ex:
         ts = PANEL['twinStick']
-        return 'twinstick', f'{ts["left"]} {ts["leftDoes"]}  ·  {ts["right"]} {ts["rightDoes"]}'.upper()
+        ld, rd, lw, rw = s.roles if s.roles else (ts['leftDoes'], ts['rightDoes'], ts['left'], ts['right'])
+        return 'twinstick', f'{lw} {ld}  ·  {rw} {rd}'.upper()
     if s.stick == '4':
         return '4way', '4-WAY GAME  ·  STICK SWITCHES ITSELF'
     return None
@@ -1225,6 +1265,14 @@ def main(argv=None):
                         s.stick = None                             # Centipede, Millipede: trackball only
                     if np > (s.players or 0):
                         s.players, s.alt = np, alt                 # Centipede, Robotron: 2 players taking turns
+                    if 'twinstick' in s.extras and 'doublejoy' not in pc:
+                        s.extras = tuple(e for e in s.extras if e != 'twinstick')   # Tutankham: one stick + buttons
+                if 'twinstick' in s.extras:
+                    tr = leds.twin_roles(it)
+                    if tr:
+                        ld, rd, tread = tr
+                        fs = PANEL.get('flightStick', {}).get('name', 'Flight stick')
+                        s.roles = (ld, rd, f'{fs} 1', f'{fs} 2') if tread else (ld, rd, PANEL['twinStick']['left'], PANEL['twinStick']['right'])
             src_count[src] += 1
             s = s.with_emu(emus.item(scol, it), leds.of(it, s.buttons))
             if not s.labels and 'wheel' not in s.extras:          # the game's own button names (Fire, Light Punch ...)

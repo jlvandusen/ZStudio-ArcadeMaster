@@ -94,6 +94,9 @@ try {
   $script:canLink = $true
 } catch { Write-Warning "hard links unavailable, copying instead: $($_.Exception.Message)" }
 
+$script:lowRes = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+if ($ManifestDir -and (Test-Path (Join-Path $ManifestDir 'lowres-art.txt'))) { foreach ($l in [IO.File]::ReadAllLines((Join-Path $ManifestDir 'lowres-art.txt'))) { if ($l) { [void]$script:lowRes.Add($l) } } }
+
 # in-place Fisher-Yates shuffle: Sort-Object { $rng.Next() } on the library's thousands of pictures, once per menu, was
 # most of the boot "Shuffle" time
 # Only $k random picks are needed (a few slots, with room for repeats of one game), so only $k swaps are made.
@@ -222,6 +225,12 @@ foreach ($col in $map.Keys) {
   }
   # rotating backdrop slots
   $pool = @(Get-BgPool $col $themeName)   # @(): a one-fanart collection would otherwise unroll to a string
+  # pictures too small or portrait-shaped to fill the screen (Find-LowResArt.py, at Rebuild Game Menus): left out
+  # whenever the menu still has enough others
+  if ($script:lowRes.Count) {
+    $good = @($pool | Where-Object { -not $script:lowRes.Contains($_) })
+    if ($good.Count -ge [Math]::Min($BgSlots, $pool.Count)) { $pool = $good }
+  }
   if ($Shuffle) { $pool = Get-Shuffled $pool }
   $pool = Select-Distinct $pool $BgSlots
   for ($i = 1; $i -le $BgSlots; $i++) {

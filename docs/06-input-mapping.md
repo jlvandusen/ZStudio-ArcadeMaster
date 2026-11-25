@@ -448,6 +448,19 @@ The previous owner's per-wheel sets were copied unchanged. They encode that mach
 **In the frontend:** the game list fades the card in bottom-right about 1 s after you stop on a game (`am_controls` art type). PC games use their own in-game control menus, so they get no card.
 
 **First run:** 64 cards. They already show real binding problems, e.g. GRID (TeknoParrot) has Brake bound to the clutch pedal.
+
+## Controls card: the real wheel, live (2026-11-22)
+
+When a game is highlighted, the card at the bottom of the game list shows:
+- **Left:** the real G29, using the product picture that Logitech G HUB installs (`C:\ProgramData\LGHUB\depots\*\g29\`). These pictures are read on each cabinet and never copied into the repo. Without G HUB, a simple outline wheel is drawn instead. The buttons that game uses are filled in colour and numbered, and the steering number sits at the top of the rim. **The drawing turns as you turn the real wheel**, and any button or D-pad direction you press lights up.
+- **Middle:** the real pedal set, clutch LEFT, brake MIDDLE and gas RIGHT. Each one **lights up as you press it**. Next to them are the shifter and handbrake.
+- **Right:** the game's name and what each numbered control does in that game, in plain words (for example "Shift up: Right paddle (behind the wheel)").
+
+How it's made:
+- `tools/New-GameControlsArt.ps1` draws the card (`am_controls`) and the wheel (`am_controls_wheel`) for every game.
+- It also draws one glow picture per button and pedal into `layouts/ArcadeMaster/images/controls/`.
+- RetroFE patch 0007 adds layout settings that tie a picture to the controller: `liveSteer`, `liveButton`, `liveHat` and `liveAxis`.
+- The pedal glows follow G29 axes gas 1, brake 2 and clutch 3. If a pedal lights the wrong bar, swap the `liveAxis` numbers in `layout.xml`.
 ## The menu follows your hands (2026-11-24)
 
 On wheel cabinets the main menu and the game lists react to the real controls. This uses RetroFE's live attributes (patches 0007, 0008 and 0010 on the controls card pull request), with `liveDevice="wheel"`, so nothing moves on cabinets without a wheel:

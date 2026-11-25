@@ -1,4 +1,4 @@
-# ArcadeMaster backlog
+﻿# ArcadeMaster backlog
 
 This list keeps the autonomous loop busy so it never waits on James. Each tick takes the top open item in the
 highest section that has one, does it, and ticks it off here in the same PR. Anything new found while working
@@ -13,6 +13,8 @@ The loop works like this (James, 2026-11-25):
 - **Measure first.** A performance or visuals change states its before and after numbers, or before and after
   pictures, in the PR.
 - **No retro look.** Backgrounds come from each game's own art.
+- **Edit this file with the Edit tool, not PowerShell `Get-Content`/`Set-Content`.** PowerShell 5.1 reads UTF-8
+  without a BOM as ANSI and mangles every arrow and dash.
 
 ## 1. Board and housekeeping (every tick, quick)
 - Board: `beat`, `list`, then claim and do any job addressed to p1 or the pool.
@@ -20,6 +22,21 @@ The loop works like this (James, 2026-11-25):
 - Delete merged branches and stale worktrees.
 
 ## 2. Game mechanics and controls
+- [ ] **[PEDESTAL] Two-stick and special-control games, deep dive** (James 2026-11-25). For each game: the card says
+      what each stick, dial and button really does, and MAME maps it to the right physical control. MAME 0.196 port
+      tags and types were dumped with an autoboot Lua script (headless):
+      - Tank treads, triggers fire. Assault (:MCUB/:MCUH/:MCUDI0), Battlezone (:IN3), Vindicators (:260000; left
+        trigger B1, left thumb B2, right trigger B3, right thumb B4) go on the two upper flight sticks. Assault's
+        current cfg is the old owner's one-gamepad mix: replace it.
+      - Move + fire / aim / attack: Robotron, Smash TV, Total Carnage (move/fire), Black Widow (move/aim), Karate
+        Champ (move/attack), Front Line (left aims, right moves). P1 stick left, P2 stick right: default.cfg already
+        maps this. The cards need the real roles from controls.dat instead of "Move / Fire".
+      - Crazy Climber: P1 stick = left arm, P2 stick = right arm (works by default; the card must say so).
+      - Tutankham is one stick plus Fire Left / Fire Right / Flash: not a twin-stick game. Drop it from the filter.
+      - Omega Race: the dial rotates, B1 fire, B2 thrust. MAME did not start it headless; check the ROM.
+      - Discs of Tron: 8-way stick moves, the dial aims the disc, B1 fire, B2 shields, B3/B4 aim down/up.
+      - First, find which device the flight sticks are (`tools/Watch-Inputs.ps1`: move each control, see what it
+        sends). Then write each game's cfg on the R: copy, backing up the old one.
 - [ ] Learn buttons on cabinets where LEDBlinky only drives the marquee. Read the I-PAC/Ultimarc config if there
       is one, otherwise add a "press each button" capture tool in Tools that writes `panel.json`.
 - [x] The dial's 2 buttons: the importer now starts from `tools/panels/<host>.json`. A device LEDBlinky doesn't
@@ -38,8 +55,12 @@ The loop works like this (James, 2026-11-25):
         2 players taking turns; MK: 5 buttons).
       - Neo Geo names (Metal Slug, KOF 94–2002) come from `*/item` overrides.
       - Long labels shrink, then hyphenate, then abbreviate, before being cut short.
-- [ ] Neo Geo and other games missing from controls.dat: add names for the most popular (Samurai Shodown, Fatal
-      Fury, Garou, Blazing Star, Puzzle Bobble).
+- [x] [PEDESTAL] Neo Geo names for 17 more games missing from controls.dat: Fatal Fury 2/Special/3, Real Bout 1/Special/2,
+      Garou, Samurai Shodown 1–5 + V Special, Last Blade 1–2, Windjammers. (2026-11-25)
+- [ ] More Neo Geo names when the layout is certain (Art of Fighting, Blazing Star, Shock Troopers, Pulstar…).
+- [ ] Live panel card on the pedestal: ZStudio-retrofe#1 (merged 2026-11-25) adds `liveButton` / `liveHat`, so the
+      controls card's buttons can light up while held, as RACE1's G29 card does. Needs a RetroFE build with patch 0007
+      on the R: copy first. Then map the panel's keys from panel.json onto the card.
 - [ ] Per-game "special controls" hints (trackball, spinner, dial, twin-stick): show them on more games, using
       MAME's `-listxml` control types.
 
@@ -72,14 +93,24 @@ The loop works like this (James, 2026-11-25):
 - [x] Theme picker shows the label ("Tile Wall"), not the folder name. (2026-11-25)
 - [ ] Polish the five AM themes: spacing, text fitting long names, and a check at 1080p and 4K.
 - [ ] Marquees: replace placeholders with real art wherever any build has it, and improve the placeholder design.
-- [ ] Low-resolution backdrops: find them, then upscale them or pick a better still from the video.
+- [x] Low-resolution backdrops: `Find-LowResArt.py` (at Rebuild Game Menus) lists art under 1024 px wide or in
+      portrait shape: 72 of 2,055, mostly TeknoParrot flyers at 300×500. The shuffle leaves them out whenever a menu
+      has enough other art. (2026-11-25)
+- [ ] For the games whose only art is low-res: take a 1080p still from their video (New-PreviewMedia's backdrop) or
+      find better fanart in the other builds.
 - [ ] Attract mode: cycle game videos with the story line and controls card.
 - [ ] Touch bar from `layout - 1` drawn on the main screen: find the root cause (displays are approved now).
 
 ## 5. Game stories
-- [ ] Stories for the games that still lack one (2,474 written so far).
-- [ ] Quality pass: no wrong years, makers or claims. Check against MAME's history and info data where it exists.
-- [ ] Stories for merged-list (.sub) items and TeknoParrot and light-gun games.
+- [ ] Stories for the 5 games that still lack one (acedvrw, doom2, 3 Pinball FX3 tables).
+- [x] Quality pass, wrong matches (2026-11-25). A history.dat entry found by title, or a non-MAME id taken as a rom
+      name, must now agree with the catalog's year (within 2) and title. 9 games had another game's history:
+      Batman 2013 had Data East's 1990 trivia, and GRID had Midway's The Grid. Garbled UTF-8 ("PokkÃ©n") is repaired.
+- [x] 28 hand-written stories in `tools/game-stories.json`, which New-GameStories.py prefers over every other source:
+      Battle Pod, Batman, Ikaruga, Initial D 6, OutRun 2 SP, Let's Go Jungle… (2026-11-25)
+- [ ] The other ~30 TeknoParrot games with only a one-line "A 2010 racing game…" story. Add them to
+      `tools/game-stories.json` only where the facts are certain. Spider-Man 2017, Rampage 2020 and K.O. Drive need a
+      source first.
 
 ## 6. Tooling
 - [x] The E: refusal in the preview, marquee and theme tools comes from `tools/lib/am_guard.py`. It reads

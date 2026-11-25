@@ -1,0 +1,166 @@
+From 1d5b913b252f1e4063c35ecbd87d92e3c0b23228 Mon Sep 17 00:00:00 2001
+From: James VanDusen <jlvandusen@msn.com>
+Date: Tue, 24 Nov 2026 22:14:44 -0500
+Subject: [PATCH] Backdrops that drive with you: pan with the wheel, grow with
+ the throttle
+
+New layout attributes: liveShiftX (x moves with the steering, pixels at full
+lock), liveZoomAxis + liveZoom (+ liveZoomSmooth) (the picture grows with a
+pedal), liveCover (a full-screen picture grows just enough that it never shows
+its edges while it pans or tilts). The stale-first-reading rule for wheels and
+pedals now lives in one helper, shared by steering, needles and zoom.
+---
+ .../Source/Graphics/Component/Component.cpp   | 80 ++++++++++++-------
+ RetroFE/Source/Graphics/Component/Component.h | 10 +++
+ RetroFE/Source/Graphics/PageBuilder.cpp       |  4 +
+ 3 files changed, 63 insertions(+), 31 deletions(-)
+
+diff --git a/RetroFE/Source/Graphics/Component/Component.cpp b/RetroFE/Source/Graphics/Component/Component.cpp
+index b05ef5ab..f03cc1c7 100644
+--- a/RetroFE/Source/Graphics/Component/Component.cpp
++++ b/RetroFE/Source/Graphics/Component/Component.cpp
+@@ -459,49 +459,67 @@ static SDL_Joystick* liveJoystick(const std::string& want) {
+     return want.empty() ? first : nullptr;
+ }
+ 
++// Steering / pedal readings. Until a wheel or pedal sends its first report SDL holds a stale value (often full lock, or
++// half travel), so an axis counts as centred / released until its reading first changes. Remembered per joystick and
++// axis, so pages built later (after it has moved) follow it straight away.
++static bool liveAxisLive(SDL_Joystick* j, int axis, Sint16& raw) {
++    static std::map<std::pair<SDL_JoystickID, int>, std::pair<Sint16, bool>> seen;   // first reading, changed since
++    if (!j || axis < 0 || axis >= SDL_JoystickNumAxes(j)) return false;
++    raw = SDL_JoystickGetAxis(j, axis);
++    const auto key = std::make_pair(SDL_JoystickInstanceID(j), axis);
++    auto it = seen.find(key);
++    if (it == seen.end()) it = seen.emplace(key, std::make_pair(raw, false)).first;
++    if (raw != it->second.first) it->second.second = true;
++    return it->second.second;
++}
++static float liveSteerValue(SDL_Joystick* j) { Sint16 raw = 0; return liveAxisLive(j, 0, raw) ? std::max(-1.f, raw / 32767.f) : 0.f; }
++static float livePedalValue(SDL_Joystick* j, int axis, float from, float to) {
++    Sint16 raw = 0;
++    if (to == from || !liveAxisLive(j, axis, raw)) return 0.f;
++    return std::min(1.f, std::max(0.f, (static_cast<float>(raw) - from) / (to - from)));
++}
++
+ void Component::liveBegin() {
+-    if ((liveKind == LiveNone && liveSteer == 0.f && liveNeedle < 0) || !liveStarted_) return;
+-    baseViewInfo.Angle = liveAngleBase_;                                    // undo last frame's live offset
++    if (!liveAny() || !liveStarted_) return;
++    baseViewInfo.Angle = liveAngleBase_;                                    // undo last frame's live offsets
+     baseViewInfo.Alpha = liveAlphaBase_;
++    if (liveGeom()) { baseViewInfo.X = liveXBase_; baseViewInfo.Width = liveWBase_; baseViewInfo.Height = liveHBase_; }
+ }
+ 
+ void Component::liveEnd() {
+-    if (liveKind == LiveNone && liveSteer == 0.f && liveNeedle < 0) return;
++    if (!liveAny()) return;
+     liveAngleBase_ = baseViewInfo.Angle; liveAlphaBase_ = baseViewInfo.Alpha; liveStarted_ = true;
++    liveXBase_ = baseViewInfo.X; liveWBase_ = baseViewInfo.Width; liveHBase_ = baseViewInfo.Height;
+     SDL_Joystick* j = liveJoystick(liveDevice);
+-    if (liveSteer != 0.f) {
+-        // Until a wheel sends its first report, SDL holds a stale value (often full lock): the picture started turned
+-        // and only snapped upright once the wheel moved. Steering counts as centred until the reading first changes;
+-        // remembered per joystick, so pages built later (after the wheel has moved) follow it straight away.
+-        static std::map<SDL_JoystickID, std::pair<Sint16, bool>> steerSeen;   // first reading, has it changed since
+-        float v = 0.f;
+-        if (j) {
+-            const Sint16 raw = SDL_JoystickGetAxis(j, 0);
+-            auto it = steerSeen.find(SDL_JoystickInstanceID(j));
+-            if (it == steerSeen.end()) it = steerSeen.emplace(SDL_JoystickInstanceID(j), std::make_pair(raw, false)).first;
+-            if (raw != it->second.first) it->second.second = true;
+-            if (it->second.second) v = std::max(-1.f, raw / 32767.f);
+-        }
+-        baseViewInfo.Angle = liveAngleBase_ + v * liveSteer;
+-    }
++    const float steer = (liveSteer != 0.f || liveShiftX != 0.f) ? liveSteerValue(j) : 0.f;
++    if (liveSteer != 0.f) baseViewInfo.Angle = liveAngleBase_ + steer * liveSteer;
+     if (liveNeedle >= 0) {
+-        // a dial needle that rises with a pedal ("rev it in the menu"). Until that pedal sends its first report SDL
+-        // holds a stale value (0 = half travel), so it counts as released until the reading first changes.
+-        static std::map<std::pair<SDL_JoystickID, int>, std::pair<Sint16, bool>> pedalSeen;
+-        float t = 0.f;
+-        if (j && liveTo != liveFrom && liveNeedle < SDL_JoystickNumAxes(j)) {
+-            const Sint16 raw = SDL_JoystickGetAxis(j, liveNeedle);
+-            const auto key = std::make_pair(SDL_JoystickInstanceID(j), liveNeedle);
+-            auto it = pedalSeen.find(key);
+-            if (it == pedalSeen.end()) it = pedalSeen.emplace(key, std::make_pair(raw, false)).first;
+-            if (raw != it->second.first) it->second.second = true;
+-            if (it->second.second) t = std::min(1.f, std::max(0.f, (static_cast<float>(raw) - liveFrom) / (liveTo - liveFrom)));
+-        }
+-        const float target = t * liveNeedleSpan, k = std::min(0.99f, std::max(0.f, liveNeedleSmooth));
++        // a dial needle that rises with a pedal ("rev it in the menu")
++        const float target = livePedalValue(j, liveNeedle, liveFrom, liveTo) * liveNeedleSpan, k = std::min(0.99f, std::max(0.f, liveNeedleSmooth));
+         liveNeedleCur_ = liveNeedleCur_ * k + target * (1.f - k);
+         if (std::fabs(liveNeedleCur_ - target) < 0.05f) liveNeedleCur_ = target;
+         baseViewInfo.Angle += liveNeedleCur_;
+     }
++    if (liveGeom() && liveWBase_ > 0.f && liveHBase_ > 0.f) {
++        // a backdrop that drives with you: pans with the wheel, grows with the throttle, and (liveCover) grows just
++        // enough to keep the screen covered while it is shifted or tilted
++        const float dx = steer * liveShiftX;
++        float zoom = 1.f;
++        if (liveZoomAxis >= 0) {
++            const float target = livePedalValue(j, liveZoomAxis, liveFrom, liveTo) * liveZoom, k = std::min(0.99f, std::max(0.f, liveZoomSmooth));
++            liveZoomCur_ = liveZoomCur_ * k + target * (1.f - k);
++            if (std::fabs(liveZoomCur_ - target) < 0.0005f) liveZoomCur_ = target;
++            zoom += liveZoomCur_;
++        }
++        if (liveCover) {
++            const float tilt = std::fabs(baseViewInfo.Angle - liveAngleBase_) * 3.14159265f / 180.f;
++            const float byShift = 1.f + 2.f * std::fabs(dx) / liveWBase_;
++            const float byTilt = std::cos(tilt) + (liveWBase_ / liveHBase_) * std::sin(tilt);
++            zoom *= std::max(byShift, byTilt);
++        }
++        baseViewInfo.X = liveXBase_ + dx;
++        baseViewInfo.Width = liveWBase_ * zoom; baseViewInfo.Height = liveHBase_ * zoom;
++    }
+     switch (liveKind) {
+     case LiveButton:
+         baseViewInfo.Alpha = (j && SDL_JoystickGetButton(j, liveIndex)) ? liveAlphaBase_ : 0.f;
+diff --git a/RetroFE/Source/Graphics/Component/Component.h b/RetroFE/Source/Graphics/Component/Component.h
+index 742ca41d..d4f29bbd 100644
+--- a/RetroFE/Source/Graphics/Component/Component.h
++++ b/RetroFE/Source/Graphics/Component/Component.h
+@@ -90,6 +90,12 @@ public:
+ 	//   (uses liveFrom / liveTo as the pedal's rest / pressed values, like liveAxis)
+ 	int liveNeedle = -1;
+ 	float liveNeedleSpan = 270.f, liveNeedleSmooth = 0.f;
++	//   liveShiftX="60"          x moves with the wheel: +/- that many pixels at full lock (a backdrop panning into a turn)
++	//   liveZoomAxis="1" liveZoom="0.05" [liveZoomSmooth="0.85"]   the picture grows with a pedal (5% at full throttle)
++	//   liveCover="1"            grow just enough that a full-screen picture never shows its edges while it pans / tilts
++	float liveShiftX = 0.f, liveZoom = 0.f, liveZoomSmooth = 0.85f;
++	int liveZoomAxis = -1;
++	bool liveCover = false;
+ 	void liveBegin();
+ 	void liveEnd();
+ 	void setMenuScrollReload(bool menuScrollReload);
+@@ -131,6 +137,10 @@ private:
+     bool         liveStarted_ = false;
+     bool         liveAxisMoved_ = false;   // SDL reports 0 until a DirectInput axis first moves: dark until then
+     float        liveNeedleCur_ = 0.f;     // smoothed needle offset (degrees)
++    float        liveZoomCur_ = 0.f;       // smoothed pedal zoom (0 .. liveZoom)
++    float        liveXBase_ = 0.f, liveWBase_ = 0.f, liveHBase_ = 0.f;
++    bool         liveGeom() const { return liveShiftX != 0.f || liveZoomAxis >= 0 || liveCover; }
++    bool         liveAny() const { return liveKind != LiveNone || liveSteer != 0.f || liveNeedle >= 0 || liveGeom(); }
+     unsigned int currentTweenIndex_;
+     bool         currentTweenComplete_;
+     double       elapsedTweenTime_;
+diff --git a/RetroFE/Source/Graphics/PageBuilder.cpp b/RetroFE/Source/Graphics/PageBuilder.cpp
+index 07611a66..17936d38 100644
+--- a/RetroFE/Source/Graphics/PageBuilder.cpp
++++ b/RetroFE/Source/Graphics/PageBuilder.cpp
+@@ -52,6 +52,10 @@ static void buildLive(rapidxml::xml_node<>* xml, Component* c) {
+     auto num = [&](const char* name, float& out) { rapidxml::xml_attribute<>* a = xml->first_attribute(name); if (!a) return false; try { out = std::stof(a->value()); return true; } catch (...) { return false; } };
+     float v = 0.f;
+     if (num("liveSteer", v))       c->liveSteer = v;                   // can be combined with one of the next three
++    if (num("liveShiftX", v))      c->liveShiftX = v;
++    if (num("liveZoomAxis", v))    { c->liveZoomAxis = static_cast<int>(v); num("liveZoom", c->liveZoom); num("liveZoomSmooth", c->liveZoomSmooth);
++                                     if (!xml->first_attribute("liveFrom")) { c->liveFrom = 32767.f; c->liveTo = -32768.f; } num("liveFrom", c->liveFrom); num("liveTo", c->liveTo); }
++    if (num("liveCover", v))       c->liveCover = v != 0.f;
+     if (num("liveNeedle", v))      { c->liveNeedle = static_cast<int>(v); c->liveFrom = 32767.f; c->liveTo = -32768.f; num("liveFrom", c->liveFrom); num("liveTo", c->liveTo);
+                                      num("liveNeedleSpan", c->liveNeedleSpan); num("liveNeedleSmooth", c->liveNeedleSmooth); }
+     if (num("liveButton", v)) { c->liveKind = Component::LiveButton; c->liveIndex = static_cast<int>(v); }
+-- 
+2.56.1.windows.1
+
