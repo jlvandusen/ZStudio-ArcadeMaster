@@ -41,7 +41,7 @@ The loop works like this (James, 2026-11-25):
       launcher repoint).
 
 ## 4. Graphics
-- [ ] Theme picker shows the label ("Tile Wall"), not the folder name.
+- [x] Theme picker shows the label ("Tile Wall"), not the folder name. (2026-11-25)
 - [ ] Polish the five AM themes: spacing, text fitting long names, and a check at 1080p and 4K.
 - [ ] Marquees: replace placeholders with real art wherever any build has it, and improve the placeholder design.
 - [ ] Low-resolution backdrops: find them, then upscale them or pick a better still from the video.
@@ -54,8 +54,8 @@ The loop works like this (James, 2026-11-25):
 - [ ] Stories for merged-list (.sub) items and TeknoParrot and light-gun games.
 
 ## 6. Tooling
-- [ ] The E: refusal in the preview and marquee tools should come from the cabinet's live-frontend setting, not a
-      hard-coded drive.
+- [x] The E: refusal in the preview, marquee and theme tools comes from `tools/lib/am_guard.py`. It reads
+      `AM_PROTECTED`, else `ProtectedPaths` in ArcadeMaster.config.json, else the whole E: drive. (2026-11-25)
 - [ ] Self-test: add checks for the new tools (marquees, themes, library mover dry run).
 
 ## Needs James (skip, never wait)
