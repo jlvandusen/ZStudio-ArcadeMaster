@@ -117,6 +117,11 @@ so a second pass is needed). The bigger share is main-thread texture / video set
 once the list and backdrop are ready and make the remaining textures over the next frames, behind the page's enter
 animation. (Test builds must be swapped in between the 15-minute update runs: Update-Cabinet puts the installed
 build back within 15 minutes, by design.)
+**Tried (2026-11-25), no gain - not shipped:** one preparation pass on menu entry instead of up to five (the rest left to
+finish over the next frames; Image::update completes loads by itself, so it is safe). Entering Racing: one pass 150 /
+90 ms, installed 83 / 95 ms - the same within the noise, so the cost is not in the second pass. What is left is texture
+and video creation on the main thread; the real fix is making those over several frames (or on a shared D3D11 context),
+which is a larger patch. Until then the 84 ms entry stays.
 **Now:** entering a list spends 44 ms in `logic` on the main thread building the first item. Startup also waits for
 the thread pool to drain (`ThreadPool::wait()` in RetroFE.cpp) before the menu draws.
 **Do:** draw the menu with placeholders and fill items as they finish; the pool already exists.
