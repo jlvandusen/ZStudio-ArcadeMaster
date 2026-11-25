@@ -22,6 +22,11 @@ param(
   [int]$ThemeSettleSec = 8             # ... asked once RetroFE has run this long and nothing it started is still open
 )
 $ErrorActionPreference = 'Stop'
+# Started from a PowerShell 7 window (or by something it launched), Windows PowerShell 5.1 inherits 7's PSModulePath,
+# loads 7's modules and loses built-ins such as Get-FileHash ('not recognized') - the series playlists step failed
+# that way on DESKTOP-RACE2 (a Store PowerShell 7: ...\windowsapps\microsoft.powershell_7...\Modules). Keep only 5.1's own
+# module folders (and non-PowerShell ones) for this boot and every tool it runs.
+if ($PSVersionTable.PSVersion.Major -lt 6) { $env:PSModulePath = (($env:PSModulePath -split ';') | Where-Object { $_ -and ($_ -notmatch 'powershell' -or $_ -match 'WindowsPowerShell') }) -join ';' }
 . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1')
 . (Join-Path $PSScriptRoot 'lib\AmSettings.ps1'); . (Join-Path $PSScriptRoot 'lib\AmTheme.ps1')
 $exe = Get-AmRetroFEExe $Root   # retrofe\retrofe.exe, core\retrofe.exe (CoinOPS LEGENDS / CORE) or <root>\retrofe.exe

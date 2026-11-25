@@ -118,7 +118,10 @@ if (Test-Path $cc) {
     }
     # a build with no playlist keys at all (DRIVE): add them, or the filter bar (All / Game of the Month / Most played /
     # Last played / Favorites) can never be switched
-    foreach ($k in 'nextPlaylist', 'prevPlaylist') { if (-not @($lines | Where-Object { $_ -match "^\s*$k\s*=" }).Count) { $lines.Add("$k = $($want[$k])"); $moved = $true } }
+    # ... but only where nothing else steps through them: a cabinet with playlist buttons (nextCyclePlaylist, the wheel's
+    # P / O from New-SeriesPlaylists) or keys commented out on purpose keeps that - Left / Right include the steering axis
+    $cycleKeys = @($lines | Where-Object { $_ -match '^\s*#?\s*(next|prev)(Cycle)?Playlist\s*=' }).Count
+    if (-not $cycleKeys) { foreach ($k in 'nextPlaylist', 'prevPlaylist') { $lines.Add("$k = $($want[$k])"); $moved = $true } }
   }
   # Esc must go BACK, never quit: CoinOPS builds ship quit = Escape, so one press closed the whole frontend. Take the
   # quit key from the cabinet's controls profile (retrofe\controls\controls-<type>.conf: all say quit = Q) and make sure
