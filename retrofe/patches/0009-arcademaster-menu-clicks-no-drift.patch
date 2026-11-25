@@ -1,0 +1,59 @@
+From d4ace0a5874742e3de66121c2b1268af9453dd88 Mon Sep 17 00:00:00 2001
+From: James VanDusen <jlvandusen@msn.com>
+Date: Mon, 23 Nov 2026 18:51:19 -0500
+Subject: [PATCH] Menu clicks no longer turn the wheel
+
+Each menu scroll gave the wheel a short force "click". On the G29 every click
+pushed the rim the same way, whichever way you scrolled, and the light centring
+spring could not pull it back between presses, so the wheel (and the on-screen
+wheel that follows it) stepped round a bit more with every scroll. The clicks
+are now off unless a cabinet sets ffbTick, and when on they are one back-and-
+forth vibration instead of a one-way push. The centring spring, the select
+rumble and the launch rumble are unchanged.
+
+Tested on the racing cabinet: six keyboard scrolls with the wheel untouched,
+the steering reading stayed at 0 (before: drifted to about 30 degrees).
+---
+ RetroFE/Source/Control/Haptics.cpp | 9 +++++++--
+ RetroFE/Source/Control/Haptics.h   | 2 +-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/RetroFE/Source/Control/Haptics.cpp b/RetroFE/Source/Control/Haptics.cpp
+index 7ec32ab6..764c58a2 100644
+--- a/RetroFE/Source/Control/Haptics.cpp
++++ b/RetroFE/Source/Control/Haptics.cpp
+@@ -76,11 +76,16 @@ bool Haptics::open() {
+         LOG_INFO("Haptics", "using the device's autocentre (" + std::to_string(center_) + "%) for the centring feel");
+     }
+     if ((caps_ & SDL_HAPTIC_DAMPER) && damper_ > 0) effDamper_ = makeCondition(SDL_HAPTIC_DAMPER, damper_);
++    // Menu "detent" ticks: ONE full sine period - a click felt in the hands with no net push. A one-way constant
++    // pulse per scroll stepped the wheel round (the weak centring spring could not undo it between presses), and
++    // with the on-screen wheel following the real one it visibly turned - the wrong way, too.
++    const Uint16 tickLen = static_cast<Uint16>(std::max(20, tickMs_));
++    if (caps_ & SDL_HAPTIC_SINE) { effTickFwd_ = effTickBack_ = makeSine(tick_, tickLen, tickLen, 0); }
+     if (caps_ & SDL_HAPTIC_CONSTANT) {
+-        effTickFwd_ = makeConstant(1, tick_, static_cast<Uint16>(tickMs_));
+-        effTickBack_ = makeConstant(-1, tick_, static_cast<Uint16>(tickMs_));
++        if (effTickFwd_ < 0) { effTickFwd_ = makeConstant(1, tick_, tickLen); effTickBack_ = makeConstant(-1, tick_, tickLen); }
+         effThunk_ = makeConstant(1, thunkPct_, 90);
+     }
++
+     if (caps_ & SDL_HAPTIC_SINE) {
+         effSelect_ = makeSine(selectPct_, 40, 160, 60);
+         effLaunch_ = makeSine(launchPct_, 28, 450, 250);
+diff --git a/RetroFE/Source/Control/Haptics.h b/RetroFE/Source/Control/Haptics.h
+index 61fd36a0..90bb5dd6 100644
+--- a/RetroFE/Source/Control/Haptics.h
++++ b/RetroFE/Source/Control/Haptics.h
+@@ -46,7 +46,7 @@ private:
+ 
+     bool enabled_ = false;
+     std::string deviceMatch_;
+-    int strength_ = 75, center_ = 35, damper_ = 12, tick_ = 45, tickMs_ = 35, thunkPct_ = 60, selectPct_ = 55, launchPct_ = 85;
++    int strength_ = 75, center_ = 35, damper_ = 12, tick_ = 0 /* menu clicks off by default: on wheels they stepped the rim round (ffbTick = 45 to try) */, tickMs_ = 35, thunkPct_ = 60, selectPct_ = 55, launchPct_ = 85;
+ 
+     SDL_Haptic* haptic_ = nullptr;
+     unsigned int caps_ = 0;
+-- 
+2.56.1.windows.1
+

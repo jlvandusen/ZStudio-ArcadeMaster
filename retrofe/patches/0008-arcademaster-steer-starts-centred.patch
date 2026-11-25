@@ -1,0 +1,49 @@
+From daf29b353159734b58eeb4da30feeac218cb74f9 Mon Sep 17 00:00:00 2001
+From: James VanDusen <jlvandusen@msn.com>
+Date: Mon, 23 Nov 2026 18:22:11 -0500
+Subject: [PATCH] Live steering: the wheel picture starts upright
+
+Until a wheel sends its first report, SDL holds a stale steering value (often
+full lock), so a picture following the wheel started turned and only snapped
+upright once the wheel moved. Steering now counts as centred until the reading
+first changes. This is remembered per joystick, so pages built later follow the
+wheel straight away.
+---
+ RetroFE/Source/Graphics/Component/Component.cpp | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/RetroFE/Source/Graphics/Component/Component.cpp b/RetroFE/Source/Graphics/Component/Component.cpp
+index 1fb5a296..53129fa9 100644
+--- a/RetroFE/Source/Graphics/Component/Component.cpp
++++ b/RetroFE/Source/Graphics/Component/Component.cpp
+@@ -14,6 +14,7 @@
+  * along with RetroFE.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ #include "Component.h"
++#include <map>
+ #include "../Animate/Tween.h"
+ #include "../../Graphics/ViewInfo.h"
+ #include "../../Utility/Log.h"
+@@ -468,7 +469,18 @@ void Component::liveEnd() {
+     liveAngleBase_ = baseViewInfo.Angle; liveAlphaBase_ = baseViewInfo.Alpha; liveStarted_ = true;
+     SDL_Joystick* j = liveJoystick(liveDevice);
+     if (liveSteer != 0.f) {
+-        const float v = j ? std::max(-1.f, SDL_JoystickGetAxis(j, 0) / 32767.f) : 0.f;
++        // Until a wheel sends its first report, SDL holds a stale value (often full lock): the picture started turned
++        // and only snapped upright once the wheel moved. Steering counts as centred until the reading first changes;
++        // remembered per joystick, so pages built later (after the wheel has moved) follow it straight away.
++        static std::map<SDL_JoystickID, std::pair<Sint16, bool>> steerSeen;   // first reading, has it changed since
++        float v = 0.f;
++        if (j) {
++            const Sint16 raw = SDL_JoystickGetAxis(j, 0);
++            auto it = steerSeen.find(SDL_JoystickInstanceID(j));
++            if (it == steerSeen.end()) it = steerSeen.emplace(SDL_JoystickInstanceID(j), std::make_pair(raw, false)).first;
++            if (raw != it->second.first) it->second.second = true;
++            if (it->second.second) v = std::max(-1.f, raw / 32767.f);
++        }
+         baseViewInfo.Angle = liveAngleBase_ + v * liveSteer;
+     }
+     switch (liveKind) {
+-- 
+2.56.1.windows.1
+
