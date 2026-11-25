@@ -231,6 +231,9 @@ $seeded = 0
 foreach ($g in $games.Values) {
   $e = $ownerDoc.games.PSObject.Properties[$g.id]; if (-not $e) { $e = $seedDoc.games.PSObject.Properties[$g.id] }
   if ($e) {
+    # a title the owner set by hand (an entry without "auto") is the game's name everywhere (Daytona3Single ->
+    # "Daytona Championship USA (Single Cabinet)")
+    if (-not $e.Value.auto -and $e.Value.PSObject.Properties['title'] -and [string]$e.Value.title) { $g.title = [string]$e.Value.title }
     if ($e.Value.auto -and -not ($e.Value.tags -contains $g.category)) { $e.Value.tags = @($g.category) }   # auto entry: keep in sync
     $g.tags = @($e.Value.tags)
     $ct = @($e.Value.tags | Where-Object { $CabinetTypes -contains $_ })

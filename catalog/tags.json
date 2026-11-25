@@ -86,19 +86,17 @@
                                    "auto":  true
                                },
                   "Daytona3Multi":  {
-                                        "title":  "Daytona3Multi",
-                                        "tags":  [
-                                                     "racing"
-                                                 ],
-                                        "auto":  true
-                                    },
+                              "title":  "Daytona Championship USA (Linked Cabinets)",
+                              "tags":  [
+                                           "racing"
+                                       ]
+                          },
                   "Daytona3Single":  {
-                                         "title":  "Daytona3Single",
-                                         "tags":  [
-                                                      "racing"
-                                                  ],
-                                         "auto":  true
-                                     },
+                              "title":  "Daytona Championship USA (Single Cabinet)",
+                              "tags":  [
+                                           "racing"
+                                       ]
+                          },
                   "DeadHeat":  {
                                    "title":  "Dead Heat",
                                    "tags":  [
