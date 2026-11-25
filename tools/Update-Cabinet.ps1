@@ -132,7 +132,7 @@ try {
     $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
 # Build-RetroFE.ps1 also runs under Windows PowerShell 5.1 (PR 109), so a cabinet without pwsh 7 still builds
 if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue).Source }
-    if (-not $GstRoot) { $GstRoot = @('D:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'R:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'C:\gstreamer\1.0\msvc_x86_64') | Where-Object { Test-Path (Join-Path $_ 'include') } | Select-Object -First 1 }
+    if (-not $GstRoot) { $GstRoot = @('D:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'R:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'C:\gstreamer\1.0\msvc_x86_64') | Where-Object { Test-Path ([IO.Path]::Combine($_, 'include')) } | Select-Object -First 1 }   # not Join-Path: 5.1 throws on a missing drive (no D: on the pedestal)
     # Visual Studio (any drive - RACE1 has it on D:\VS) through vswhere, and its own cmake
     $vswhere = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
     $vs = if (Test-Path $vswhere) { & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1 } else { $null }
