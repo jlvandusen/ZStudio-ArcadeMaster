@@ -51,6 +51,8 @@ static class AmPanel
     static DeviceWatcher devices;      // hot-plug: a controller plugged in / pulled updates the cabinet (Update-Controllers.ps1)
     static Sticks sticks;              // UltraStik maps per game: AmPanel.json "Sticks": "own" (default: on when Lights = own)
     static bool sticksOwn;
+    static ControllerChoices choicesDb;   // "which controller will you use?" (controller-choices.json)
+    static Control ui;                    // created on the tray thread: pipe threads show windows through it
     static string toolsDir, retroFERoot;
     static bool reactive = true;
     static string attractAnimation = "chase";   // step 6: AmPanel.json "AttractAnimation": chase | breathe
@@ -69,6 +71,40 @@ static class AmPanel
                 f.Show(); Application.DoEvents();
                 using (var bmp = new System.Drawing.Bitmap(f.Width, f.Height)) { f.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, f.Width, f.Height)); bmp.Save(args[2]); }
                 f.Close();
+            }
+            return 0;
+        }
+        // AmPanel.exe choose <item> [collection]: asked by the frontend right before a game starts, and WAITS for the
+        // answer. Prints the choice id (empty = no question for this game); exit code 0 = answered / nothing to ask.
+        if (args.Length >= 2 && args[0] == "choose")
+        {
+            try
+            {
+                using (var c = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut))
+                {
+                    c.Connect(1500);
+                    var w = new StreamWriter(c, new UTF8Encoding(false)) { AutoFlush = true };
+                    var req = new Dictionary<string, object> { { "cmd", "choose" }, { "game", args[1] } };
+                    if (args.Length > 2) req["collection"] = args[2];
+                    w.WriteLine(Json.Serialize(req));
+                    var rep = Json.Deserialize<Dictionary<string, object>>(new StreamReader(c, Encoding.UTF8).ReadLine() ?? "{}");
+                    Console.WriteLine(rep.ContainsKey("choice") ? Convert.ToString(rep["choice"]) : "");
+                    if (rep.ContainsKey("stickMap")) Console.WriteLine("stickMap=" + rep["stickMap"]);
+                    return 0;
+                }
+            }
+            catch { return 0; }   // no AmPanel: the game simply starts
+        }
+        // AmPanel.exe --snapshot-choose <item> <png>: the controller question drawn off-screen (docs, tests)
+        if (args.Length == 3 && args[0] == "--snapshot-choose")
+        {
+            LoadConfig();
+            var db = new ControllerChoices(manifestDir); string id = db.Find(args[1], null);
+            using (var f = new ControllerChooser(db.Title(id), db.Choices(id), db.LastPick(id), 60))
+            {
+                f.WindowState = FormWindowState.Normal; f.TopMost = false; f.Bounds = new System.Drawing.Rectangle(-20000, -20000, 1600, 900);
+                f.Show(); Application.DoEvents();
+                using (var bmp = new System.Drawing.Bitmap(f.Width, f.Height)) { f.DrawToBitmap(bmp, new System.Drawing.Rectangle(0, 0, f.Width, f.Height)); bmp.Save(args[2]); }
             }
             return 0;
         }
@@ -295,12 +331,20 @@ static class AmPanel
         {
             try
             {
-                using (var s = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 4, PipeTransmissionMode.Byte))
+                var s = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 4, PipeTransmissionMode.Byte);
+                s.WaitForConnection();
+                var r = new StreamReader(s, Encoding.UTF8);
+                var w = new StreamWriter(s, new UTF8Encoding(false)) { AutoFlush = true };
+                string line = r.ReadLine();
+                if (line != null && line.IndexOf("\"cmd\":\"choose\"", StringComparison.Ordinal) >= 0)
                 {
-                    s.WaitForConnection();
-                    var r = new StreamReader(s, Encoding.UTF8);
-                    var w = new StreamWriter(s, new UTF8Encoding(false)) { AutoFlush = true };
-                    string line = r.ReadLine();
+                    // the controller question waits for a person: answer on its own thread, keep serving the rest
+                    string l = line;
+                    new Thread(delegate () { try { w.WriteLine(Reply(l)); } catch { } finally { s.Dispose(); } }) { IsBackground = true, Name = "choose" }.Start();
+                    continue;
+                }
+                using (s)
+                {
                     if (line != null && line.IndexOf("\"noreply\":true", StringComparison.Ordinal) >= 0)
                     {
                         // a forwarded command: the sender has already gone; handle it off the pipe thread so the
@@ -331,6 +375,34 @@ static class AmPanel
                 rep["ok"] = true;
             }
             else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
+            else if (cmd == "choose")   // {"cmd":"choose","game":"centiped","collection":"Arcades","seconds":8} - blocks until answered
+            {
+                string game = req.ContainsKey("game") ? Convert.ToString(req["game"]) : null, coll = req.ContainsKey("collection") ? Convert.ToString(req["collection"]) : null;
+                int secs = req.ContainsKey("seconds") ? Convert.ToInt32(req["seconds"]) : 8;
+                if (choicesDb == null) choicesDb = new ControllerChoices(manifestDir);
+                string id = choicesDb.Find(game, coll);
+                var ch = choicesDb.Choices(id);
+                rep["ok"] = true;
+                if (ch.Count >= 2 && ui != null)
+                {
+                    string picked = null;
+                    ui.Invoke((MethodInvoker)delegate {
+                        using (var f = new ControllerChooser(choicesDb.Title(id), ch, choicesDb.LastPick(id), secs)) { f.ShowDialog(); picked = f.Picked; }
+                    });
+                    if (picked != null)
+                    {
+                        choicesDb.SavePick(id, picked);
+                        rep["choice"] = picked;
+                        foreach (var c in ch) if (Convert.ToString(c["id"]) == picked && c.ContainsKey("stickMap"))
+                            {
+                                string map = Convert.ToString(c["stickMap"]); rep["stickMap"] = map;
+                                if (sticks != null) { sticks.PickRom = game; sticks.PickMap = map; }
+                            }
+                        lock (Gate) { State["controller"] = picked; State["controllerFor"] = game; }
+                        Log("choose: " + game + " -> " + picked);
+                    }
+                }
+            }
             else if (cmd == "attract")   // {"cmd":"attract","kind":"audio"} - the idle animation from now on (Cabinet Settings)
             {
                 string k = req.ContainsKey("kind") ? Convert.ToString(req["kind"]).ToLowerInvariant() : "";
@@ -447,6 +519,7 @@ static class AmPanel
             }
             catch (Exception e) { Log("reactive: not started - " + e.Message); }
         }
+        ui = new Control(); ui.CreateControl(); var unused = ui.Handle;   // the tray thread's window: Invoke target
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };
         if (toolsDir != null && retroFERoot != null)
         {
