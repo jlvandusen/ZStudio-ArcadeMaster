@@ -65,7 +65,10 @@ The loop works like this (James, 2026-11-25):
               Cabinet Settings > ANNOUNCE THE GAME, off by default. Verified: speaker peak 0.00 -> 0.97 while it spoke.
         - [ ] Pixelcade / LED marquee output (the 2-player cabinet uses LEDBlinky only for that).
         - [ ] Other LED boards: LED-Wiz (ledwiz.dll), Howler (HowlerDLL.dll), GPWiz.
-        - [ ] Buttons tab: blink-to-learn each LED pin, so we no longer need LEDBlinky's input-map wizard.
+        - [x] Buttons window (tray, or pipe `buttons`): it lights each RGB group in turn, you press the lit button, and
+              it saves `<manifest>\LEDBlinkyInputMap-learned.xml` (LEDBlinky's format). AmPanel prefers that file, so
+              LEDBlinky's input-map wizard is no longer needed. Tested with real key presses 2026-11-25.
+        - [ ] Someone at the cabinet: walk all 64 groups once. This also settles the P1/P2 vs P3/P4 board order.
       - **"Which controller will you use?" at game start** (James 2026-11-25):
         - [x] The data: tools/New-ControllerChoices.py -> `<manifest>\controller-choices.json`. It runs in the hot-plug
               refresh and Rebuild Menus, so it follows what is plugged in. Pedestal: 311 games have a choice (222
