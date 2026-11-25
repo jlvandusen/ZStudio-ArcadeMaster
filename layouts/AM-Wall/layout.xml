@@ -12,7 +12,12 @@
   <image src="images/wall_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
   <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.55" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.7" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="fanart" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.7" algorithm="easeOutCubic"/></set></onMenuIdle>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
   </reloadableImage>
   <image src="images/wall_tiles.png" x="40" y="110" width="680" height="960" alpha="1" layer="3"/>

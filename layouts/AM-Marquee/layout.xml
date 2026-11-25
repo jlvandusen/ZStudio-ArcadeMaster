@@ -1,7 +1,8 @@
 <!--
   AM-Marquee - GAME LIST (c) The Real Z Studios - all art drawn by tools/New-ArcadeThemes.py
   Idea: CoinOPS Marquee / Marquee+Bezel put marquee art beside a bezel screen; here the whole screen is a
-  cabinet: lit marquee (type="marquee") on top, video in a CRT bezel, controls card on the panel deck,
+  cabinet over the game's own art: lit marquee (type="marquee") on top, video in a clean screen frame,
+  controls card on the panel deck, no CRT / scanline effects,
   logo list on the left side panel, title + story on the right side panel.
   Keys: UP / DOWN games, LEFT / RIGHT playlists (menu is orientation="vertical").
 -->
@@ -12,15 +13,16 @@
   <image src="images/marq_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
   <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.4" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.6" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="fanart" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.6" algorithm="easeOutCubic"/></set></onMenuIdle>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
   </reloadableImage>
   <image src="images/marq_side_l.png" x="0" y="0" width="420" height="1080" alpha="1" layer="2"/>
   <image src="images/marq_side_r.png" x="1500" y="0" width="420" height="1080" alpha="1" layer="2"/>
-  <image src="images/marq_light.png" x="960" y="160" xOrigin="center" yOrigin="center" width="1200" height="420" alpha="0" layer="3">
-    <onMenuScroll><set duration=".05"><animate type="alpha" to=".15"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".06"><animate type="alpha" to=".7"/></set><set duration=".06"><animate type="alpha" to=".25"/></set><set duration=".1"><animate type="alpha" to=".8"/></set><set duration="2.5"><animate type="alpha" to=".6" algorithm="easeInOutSine"/></set><set duration="2.5"><animate type="alpha" to=".8" algorithm="easeInOutSine"/></set></onMenuIdle>
-  </image>
   <reloadableImage type="marquee" x="960" y="170" xOrigin="center" yOrigin="center" width="984" maxHeight="300" alpha="0" layer="4">
     <onMenuScroll><set duration=".05"><animate type="alpha" to=".2"/></set></onMenuScroll>
     <onMenuIdle><set duration=".1"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
@@ -33,7 +35,6 @@
     <onMenuIdle><set duration=".3"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
   </reloadableVideo>
-  <image src="images/marq_glass.png" x="960" y="560" xOrigin="center" yOrigin="center" width="768" height="432" alpha=".9" layer="7"/>
   <reloadableImage type="am_hint" x="960" y="370" xOrigin="center" yOrigin="center" width="760" height="71" alpha="0" layer="17">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="y" to="370"/></set></onMenuScroll>
     <onMenuIdle><set duration="1.1"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="380" algorithm="easeOutBounce"/></set></onMenuIdle>

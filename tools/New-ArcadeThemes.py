@@ -8,7 +8,7 @@ the list position), in a different arrangement. The arrangement ideas (not their
 layouts on R: - see IDEAS below.
 
   AM-Wall     brick wall of logo tiles on the left, the selected game enlarged on the right with video, card, hint
-  AM-Marquee  a whole cabinet: lit marquee on top, video in a CRT bezel, controls card on the control-panel deck
+  AM-Marquee  a whole cabinet: lit marquee on top, video in a clean screen frame, controls card on the control-panel deck
   AM-Wheel    curved logo wheel on the right, big video on the left, story ticker along the bottom
   AM-Poster   box-art carousel along the bottom over the game's full-screen backdrop
   AM-Neon     minimal centred neon text list under a huge logo: the lightest theme for weak PCs
@@ -17,9 +17,15 @@ Keys: every game list menu is orientation="vertical", so UP / DOWN move through 
 for the playlists (controls.conf nextPlaylist / prevPlaylist), even where the items are laid out sideways (Poster,
 Wall). The main menu row stays horizontal like ArcadeMaster's, so the wheel steers it.
 
+Background rule (James, 2026-11-22: "something related to each game as the background", no retro look): the
+background is ALWAYS the game's own art - am_backdrop, with its fanart over it where it has one. The only generated
+base is a plain dark gradient behind them. No generated scenes, synthwave, stars, grid floors, scanlines or CRT
+effects in any theme; neon is used only for frame edges and selection highlights.
+
 Performance rules every theme keeps:
   - each generated picture is drawn at exactly the size the layout shows it (no GPU rescale of our art)
-  - full-screen layers: one opaque pre-scaled JPEG background + the game's am_backdrop; nothing else covers the screen
+  - full-screen layers: the plain pre-scaled JPEG gradient + the game's am_backdrop (+ its fanart if it has one);
+    nothing else covers the screen
   - the video has ONE fixed size (width + maxHeight, so 4:3 and 16:9 both fit); only its alpha animates
   - animations are alpha / small moves of small pictures; no animated resizes of the video or the backdrop
 
@@ -99,14 +105,6 @@ def radial_fast(w, h, color, alpha=255, power=1.6):
     return radial(max(8, w // s), max(8, h // s), color, power=power, alpha=alpha).resize((w, h), Image.BICUBIC)
 
 
-def vignette(w, h, strength=200):
-    m = radial_fast(w, h, (0, 0, 0), alpha=255, power=1.2).getchannel('A')
-    inv = ImageChops.invert(m).point(lambda v: int(v * strength / 255))
-    im = Image.new('RGBA', (w, h), (0, 0, 0, 255))
-    im.putalpha(inv)
-    return im
-
-
 def glow_line_layer(w, h, draw_fn, color, width, blur, ss=2, core=(255, 255, 255), core_w=None):
     """neon stroke: blurred coloured halo + the coloured line + a thin hot core. draw_fn(draw, scale, fill, width)"""
     big = blank(w * ss, h * ss)
@@ -153,51 +151,9 @@ def punch(im, box, r=0):
     return im
 
 
-def noise(w, h, sigma=40, alpha=30, seed=1):
-    random.seed(seed)
-    n = Image.effect_noise((w, h), sigma).convert('L')
-    im = Image.new('RGBA', (w, h), (255, 255, 255, 0))
-    im.putalpha(n.point(lambda v: int(abs(v - 128) / 128 * alpha)))
-    return im
-
-
-def scanlines(w, h, step=3, alpha=70):
-    im = blank(w, h)
-    d = ImageDraw.Draw(im)
-    for y in range(0, h, step):
-        d.line((0, y, w, y), fill=(0, 0, 0, alpha))
-    return im
-
-
-def stars(w, h, n, seed, colors=((255, 255, 255),), amax=200):
-    rnd = random.Random(seed)
-    im = blank(w, h)
-    d = ImageDraw.Draw(im)
-    for _ in range(n):
-        x, y, r = rnd.uniform(0, w), rnd.uniform(0, h), rnd.choice([0.7, 0.9, 1.1, 1.5, 2.0])
-        d.ellipse((x - r, y - r, x + r, y + r), fill=rgba(rnd.choice(colors), rnd.uniform(60, amax)))
-    return im
-
-
-def perspective_grid(w, h, color, horizon, alpha=90, rays=28, rows=14, width=2):
-    """flat neon floor below `horizon` (y inside the picture), lines converging to the centre"""
-    ss = 2
-    im = blank(w * ss, h * ss)
-    d = ImageDraw.Draw(im)
-    cx = w / 2
-    for k in range(-rays, rays + 1):
-        d.line((cx * ss, horizon * ss, (cx + k * w / rays * 2.2) * ss, h * ss), fill=rgba(color, alpha), width=width * ss)
-    for i in range(1, rows + 1):
-        t = (i / rows) ** 2.1
-        y = horizon + (h - horizon) * t
-        d.line((0, y * ss, w * ss, y * ss), fill=rgba(color, int(alpha * (0.35 + 0.65 * t))), width=width * ss)
-    im = im.resize((w, h), Image.LANCZOS)
-    fade = vgrad(w, h, (0, 0, 0, 0), (0, 0, 0, 255)).getchannel('A')
-    fade = fade.point(lambda v: v)
-    m = Image.new('L', (w, h), 0)
-    m.paste(fade.crop((0, 0, w, h - horizon)).resize((w, h - horizon)), (0, horizon))
-    im.putalpha(ImageChops.multiply(im.getchannel('A'), m))
-    return im
+def plain_bg(top, bottom):
+    """the only generated background: a plain dark gradient behind the game's own art (no scenes, grids or effects)"""
+    return vgrad(W, H, top, bottom)
 
 
 def clip_to(overlay, base):
@@ -250,11 +206,12 @@ def x_image(src, x, y, w, h, layer, alpha=1, origin=True, inner=''):
 
 
 def x_backdrop(alpha, layer=1):
-    """the game's own blurred backdrop (New-PreviewMedia -> am_backdrop), full screen, NO resize animation"""
-    return (f'  <reloadableImage type="am_backdrop" x="0" y="0" width="{W}" height="{H}" alpha="0" layer="{layer}">\n'
-            f'    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>\n'
-            f'    <onMenuIdle>{fade(alpha, ".45")}</onMenuIdle>\n'
-            f'    {HIDE_ON_EXIT}\n  </reloadableImage>\n')
+    """the background IS the game's own art: its am_backdrop (New-PreviewMedia, a frame of its video), with its real
+    fanart drawn over it where the game has one. Full screen, pre-scaled 1920x1080, NO resize animation."""
+    return ''.join(f'  <reloadableImage type="{kind}" x="0" y="0" width="{W}" height="{H}" alpha="0" layer="{layer}">\n'
+                   f'    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>\n'
+                   f'    <onMenuIdle>{fade(alpha, ".45")}</onMenuIdle>\n'
+                   f'    {HIDE_ON_EXIT}\n  </reloadableImage>\n' for kind in ('am_backdrop', 'fanart'))
 
 
 def x_video(x, y, w, mh, layer, delay='.3'):
@@ -367,7 +324,7 @@ class Theme:
                        f'  (BACK | PREV | START | NEXT | RANDOM, controls.conf touch1Column<n>of5Row3of3). Art: tools/New-ArcadeThemes.py\n'
                        f'  Enable with settings.conf: numScreens = 2, screenNum1 = <display index>, fullscreen1 = yes', monitor=1, min_show=False)
                 + x_image(f'images/{self.p}_bg.jpg', 0, 0, W, H, 0, origin=False)
-                + x_backdrop(.45, 1)
+                + x_backdrop(.6, 1)
                 + x_image(f'images/{self.p}_m2_frame.png', 960, 268, 1660, 530, 4)
                 + '  <reloadableImage type="marquee" x="960" y="268" xOrigin="center" yOrigin="center" width="1600" maxHeight="488" alpha="0" layer="3">\n'
                   f'    <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>\n'
@@ -451,15 +408,7 @@ class Wall(Theme):
         return self.WX + (-self.HALF_X if j % 2 == 0 else self.HALF_X), self.WY + j * self.STEP_Y
 
     def art(self, img):
-        bg = vgrad(W, H, (22, 24, 32), (10, 10, 14))
-        bg = Image.alpha_composite(bg, noise(W, H, 50, 14, 3))
-        d = ImageDraw.Draw(bg)
-        for x in range(760, W, 48):                      # faint amber blueprint grid on the right
-            d.line((x, 0, x, H), fill=(255, 176, 0, 10))
-        for y in range(0, H, 48):
-            d.line((760, y, W, y), fill=(255, 176, 0, 10))
-        bg = Image.alpha_composite(bg, vignette(W, H, 170))
-        save_jpg(bg, img / 'wall_bg.jpg')
+        save_jpg(plain_bg((22, 24, 32), (10, 10, 14)), img / 'wall_bg.jpg')
         # the tile panel: every slot's empty tile, baked into ONE picture (the logos fly between fixed tiles)
         px, py, pw, ph = self.PANEL
         panel = blank(pw, ph)
@@ -515,7 +464,7 @@ class Wall(Theme):
                        '  Fast: tiles are ONE baked picture, the logos move between fixed tiles; video has one fixed size.')
                 + x_sounds()
                 + x_image('images/wall_bg.jpg', 0, 0, W, H, 0, origin=False)
-                + x_backdrop(.55, 1)
+                + x_backdrop(.7, 1)
                 + x_image('images/wall_tiles.png', px, py, pw, ph, 3, origin=False)
                 + f'  <image src="images/wall_sel.png" x="{sx}" y="{sy}" xOrigin="center" yOrigin="center" width="380" height="140" alpha="1" layer="9">\n'
                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to=".5"/></set></onMenuScroll>\n'
@@ -543,7 +492,7 @@ class Wall(Theme):
         return x_image('../../../images/wall_tiles.png', 1240, 20, 680, 960, 2, alpha='.35', origin=False)
 
     def preview(self, s):
-        c = s.base(self, backdrop_alpha=.55)
+        c = s.base(self, backdrop_alpha=.7)
         px, py, pw, ph = self.PANEL
         s.paste(c, self.img('wall_tiles.png'), px, py, pw, ph, origin=False)
         s.paste(c, self.img('wall_sel.png'), *self.slot(0), 380, 140)
@@ -569,46 +518,19 @@ class Wall(Theme):
 class Marquee(Theme):
     name, p = 'Marquee', 'marq'
     label = 'Cabinet'
-    about = 'a whole arcade cabinet: lit marquee, CRT bezel, controls card on the control panel'
+    about = "a cabinet frame over the game's own art: lit marquee, framed screen, controls card on the control panel"
     idea = ('CoinOPS "Marquee" / "Marquee + Bezel" (marquee art beside a bezel-framed screen) - here the screen IS the '
-            'cabinet: marquee lightbox on top, video in a CRT bezel, the controls card on the control-panel deck')
+            'cabinet: marquee lightbox on top, video in a clean modern screen frame, the controls card on the panel deck')
     accent, accent2, bg_dark = (255, 70, 70), (255, 210, 80), (14, 6, 9)
 
     def art(self, img):
-        # arcade-carpet style background: random neon shapes, kept dark so text stays readable
-        rnd = random.Random(42)
-        bg = vgrad(W, H, (20, 8, 16), (8, 4, 10))
-        shapes = blank(W, H)
-        d = ImageDraw.Draw(shapes)
-        cols = [(255, 70, 70), (255, 210, 80), (46, 200, 255), (160, 90, 255), (60, 230, 140)]
-        for _ in range(520):
-            x, y, r = rnd.uniform(0, W), rnd.uniform(0, H), rnd.uniform(6, 22)
-            c = rgba(rnd.choice(cols), 46)
-            k = rnd.randint(0, 3)
-            if k == 0:
-                d.ellipse((x - r, y - r, x + r, y + r), outline=c, width=3)
-            elif k == 1:
-                d.polygon([(x, y - r), (x + r, y + r), (x - r, y + r)], outline=c, width=3)
-            elif k == 2:
-                d.line((x - r, y - r / 2, x - r / 3, y + r / 2, x + r / 3, y - r / 2, x + r, y + r / 2), fill=c, width=3)
-            else:
-                d.line((x - r, y, x + r, y), fill=c, width=3)
-                d.line((x, y - r, x, y + r), fill=c, width=3)
-        bg = Image.alpha_composite(bg, shapes)
-        bg = Image.alpha_composite(bg, vignette(W, H, 200))
-        save_jpg(bg, img / 'marq_bg.jpg')
-        # cabinet side panels (left: list, right: info + story)
+        save_jpg(plain_bg((20, 12, 16), (6, 4, 6)), img / 'marq_bg.jpg')
+        # cabinet side panels (left: list, right: info + story): smoked glass over the game's art, a clean edge line
         for side in ('l', 'r'):
-            sp = vgrad(420, H, (26, 20, 24, 240), (10, 8, 10, 245))
-            sd = ImageDraw.Draw(sp)
-            for i, (c, off) in enumerate(((self.accent, 0), (self.accent2, 34))):     # two diagonal livery stripes
-                pts = [(-40, 760 + off), (460, 420 + off), (460, 448 + off), (-40, 788 + off)]
-                sd.polygon(pts, fill=rgba(c, 150))
-            sp = Image.alpha_composite(sp, noise(420, H, 40, 10, 5 if side == 'l' else 6))
-            # chrome T-molding on the inner edge (drawn for the left panel, mirrored for the right)
-            mold = glow_line_layer(420, H, lambda dd, s, f, w: dd.line((414 * s, 0, 414 * s, H * s), fill=f, width=w),
-                                   (200, 205, 215), 5, 3, core=(255, 255, 255))
-            sp = Image.alpha_composite(sp, mold)
+            sp = Image.new('RGBA', (420, H), (8, 8, 10, 175))
+            edge = glow_line_layer(420, H, lambda dd, s, f, w: dd.line((416 * s, 0, 416 * s, H * s), fill=f, width=w),
+                                   self.accent, 2, 4)
+            sp = Image.alpha_composite(sp, edge)
             if side == 'r':
                 sp = sp.transpose(Image.FLIP_LEFT_RIGHT)
             save_png(sp, img / f'marq_side_{side}.png')
@@ -620,24 +542,8 @@ class Marquee(Theme):
         lb = Image.alpha_composite(lb, glow_line_layer(1060, 340, rrect_fn((36, 18, 1024, 322), 7), self.accent2, 2, 5))
         lb = punch(lb, (38, 20, 1022, 320), r=6)
         save_png(lb, img / 'marq_lightbox.png')
-        save_png(radial_fast(1200, 420, (255, 236, 200), alpha=200, power=1.1), img / 'marq_light.png')
-        # CRT bezel: black plastic, rounded screen hole 768x432, soft inner shadow
-        bz = blank(880, 480)
-        bd = ImageDraw.Draw(bz)
-        bd.rounded_rectangle((0, 0, 879, 479), radius=34, fill=(16, 16, 18, 255))
-        bz = clip_to(vgrad(880, 480, (255, 255, 255, 26), (0, 0, 0, 0)), bz)
-        sh = blank(880, 480)
-        ImageDraw.Draw(sh).rounded_rectangle((44, 16, 836, 464), radius=30, outline=(0, 0, 0, 230), width=14)
-        bz = clip_to(sh.filter(ImageFilter.GaussianBlur(6)), bz)
-        bz = punch(bz, (56, 24, 824, 456), r=26)
-        save_png(bz, img / 'marq_bezel.png')
-        # CRT glass over the video: scanlines, curved-tube shading, a glare streak
-        gl = scanlines(768, 432, 3, 70)
-        gl = Image.alpha_composite(gl, vignette(768, 432, 150))
-        glare = blank(768, 432)
-        ImageDraw.Draw(glare).polygon([(80, 0), (300, 0), (120, 432), (-60, 432)], fill=(255, 255, 255, 18))
-        gl = Image.alpha_composite(gl, glare.filter(ImageFilter.GaussianBlur(18)))
-        save_png(gl, img / 'marq_glass.png')
+        # screen frame: a clean modern cabinet frame (dark, rounded, thin accent edge) around the 768x432 video
+        save_png(neon_frame(880, 480, 768, 432, self.accent, r=16, width=3, blur=6, fill=(14, 14, 18, 235), core=None), img / 'marq_bezel.png')
         # control-panel deck behind the controls card
         dk = blank(1180, 310)
         ImageDraw.Draw(dk).polygon([(40, 0), (1140, 0), (1180, 310), (0, 310)], fill=(22, 22, 28, 235))
@@ -661,21 +567,17 @@ class Marquee(Theme):
                 + '\n'.join(items) + '\n  </menu>\n')
         return (x_head('  AM-Marquee - GAME LIST (c) The Real Z Studios - all art drawn by tools/New-ArcadeThemes.py\n'
                        '  Idea: CoinOPS Marquee / Marquee+Bezel put marquee art beside a bezel screen; here the whole screen is a\n'
-                       '  cabinet: lit marquee (type="marquee") on top, video in a CRT bezel, controls card on the panel deck,\n'
+                       '  cabinet over the game\'s own art: lit marquee (type="marquee") on top, video in a clean screen frame,\n'
+                       '  controls card on the panel deck,'
+                       ' no CRT / scanline effects,\n'
                        '  logo list on the left side panel, title + story on the right side panel.\n'
                        '  Keys: UP / DOWN games, LEFT / RIGHT playlists (menu is orientation="vertical").')
                 + x_sounds()
                 + x_image('images/marq_bg.jpg', 0, 0, W, H, 0, origin=False)
-                + x_backdrop(.4, 1)
+                + x_backdrop(.6, 1)
                 + x_image('images/marq_side_l.png', 0, 0, 420, H, 2, origin=False)
                 + x_image('images/marq_side_r.png', 1500, 0, 420, H, 2, origin=False)
-                # marquee: backlight bloom that flickers on like a tube, the marquee art, the chrome lightbox
-                + '  <image src="images/marq_light.png" x="960" y="160" xOrigin="center" yOrigin="center" width="1200" height="420" alpha="0" layer="3">\n'
-                  '    <onMenuScroll><set duration=".05"><animate type="alpha" to=".15"/></set></onMenuScroll>\n'
-                  '    <onMenuIdle><set duration=".06"><animate type="alpha" to=".7"/></set><set duration=".06"><animate type="alpha" to=".25"/></set>'
-                  '<set duration=".1"><animate type="alpha" to=".8"/></set>'
-                  '<set duration="2.5"><animate type="alpha" to=".6" algorithm="easeInOutSine"/></set>'
-                  '<set duration="2.5"><animate type="alpha" to=".8" algorithm="easeInOutSine"/></set></onMenuIdle>\n  </image>\n'
+                # marquee art in its chrome lightbox
                 + '  <reloadableImage type="marquee" x="960" y="170" xOrigin="center" yOrigin="center" width="984" maxHeight="300" alpha="0" layer="4">\n'
                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to=".2"/></set></onMenuScroll>\n'
                   f'    <onMenuIdle>{fade(1, ".25", ".1")}</onMenuIdle>\n    {HIDE_ON_EXIT}\n  </reloadableImage>\n'
@@ -683,7 +585,6 @@ class Marquee(Theme):
                 # the screen
                 + x_image('images/marq_bezel.png', 960, 560, 880, 480, 6)
                 + x_video(960, 560, 768, 432, 5)
-                + x_image('images/marq_glass.png', 960, 560, 768, 432, 7, alpha='.9')
                 + x_hint(960, 380, 760, 71, 17)
                 # control panel
                 + x_image('images/marq_deck.png', 960, 928, 1180, 310, 8)
@@ -705,19 +606,16 @@ class Marquee(Theme):
     def main_deco(self):
         P = '../../../'
         return (x_image(f'{P}images/marq_side_l.png', 0, 0, 420, H, 2, origin=False)
-                + x_image(f'{P}images/marq_side_r.png', 1500, 0, 420, H, 2, origin=False)
-                + x_image(f'{P}images/marq_light.png', 960, 330, 1200, 420, 3, alpha='.55'))
+                + x_image(f'{P}images/marq_side_r.png', 1500, 0, 420, H, 2, origin=False))
 
     def preview(self, s):
-        c = s.base(self, backdrop_alpha=.4)
+        c = s.base(self, backdrop_alpha=.6)
         s.paste(c, self.img('marq_side_l.png'), 0, 0, 420, H, origin=False)
         s.paste(c, self.img('marq_side_r.png'), 1500, 0, 420, H, origin=False)
-        s.paste(c, self.img('marq_light.png'), 960, 160, 1200, 420, alpha=.75)
         s.fit(c, s.marquee, 960, 170, 984, 300)
         s.paste(c, self.img('marq_lightbox.png'), 960, 170, 1060, 340)
         s.fit(c, s.video, 960, 560, 768, 432)
         s.paste(c, self.img('marq_bezel.png'), 960, 560, 880, 480)
-        s.paste(c, self.img('marq_glass.png'), 960, 560, 768, 432, alpha=.9)
         s.paste(c, s.hint, 960, 380, 760, 71)
         s.paste(c, self.img('marq_deck.png'), 960, 928, 1180, 310)
         s.paste(c, s.controls, 960, 928, 1100, 300)
@@ -751,17 +649,7 @@ class Wheel(Theme):
         return self.CX - self.R * math.cos(t), self.CY + self.R * math.sin(t), -j * self.STEP
 
     def art(self, img):
-        bg = vgrad(W, H, (34, 8, 52), (6, 4, 16))
-        st = blank(W, H)
-        st.paste(stars(W, 640, 260, 9, ((255, 255, 255), (255, 180, 230), (150, 220, 255)), 170), (0, 0))
-        bg = Image.alpha_composite(bg, st)
-        glow = radial_fast(1800, 500, (255, 60, 160), alpha=90)
-        g2 = blank(W, H)
-        g2.paste(glow, (-300, 640), glow)
-        bg = Image.alpha_composite(bg, g2)
-        bg = Image.alpha_composite(bg, perspective_grid(W, H, (255, 47, 160), 780, alpha=70, rays=22, rows=9))
-        bg = Image.alpha_composite(bg, vignette(W, H, 170))
-        save_jpg(bg, img / 'whl_bg.jpg')
+        save_jpg(plain_bg((24, 12, 32), (6, 4, 12)), img / 'whl_bg.jpg')
         # the arc: glass band under the logos + neon rims + a tick per slot
         aw = W - self.ARC_X
         cx, cy = self.CX - self.ARC_X, self.CY
@@ -813,7 +701,7 @@ class Wheel(Theme):
                        '  Keys: UP / DOWN games, LEFT / RIGHT playlists (menu is orientation="vertical").')
                 + x_sounds()
                 + x_image('images/whl_bg.jpg', 0, 0, W, H, 0, origin=False)
-                + x_backdrop(.45, 1)
+                + x_backdrop(.65, 1)
                 + x_image('images/whl_top.png', 0, 0, W, 78, 2, origin=False)
                 + f'  <image src="images/whl_arc.png" x="{self.ARC_X}" y="0" width="{W - self.ARC_X}" height="{H}" alpha="1" layer="3">\n'
                   '    <onMenuScroll><set duration=".05"><animate type="x" to="1150"/></set></onMenuScroll>\n'
@@ -839,7 +727,7 @@ class Wheel(Theme):
         return x_image(f'../../../images/whl_arc.png', self.ARC_X, 0, W - self.ARC_X, H, 2, alpha='.45', origin=False)
 
     def preview(self, s):
-        c = s.base(self, backdrop_alpha=.45)
+        c = s.base(self, backdrop_alpha=.65)
         s.paste(c, self.img('whl_top.png'), 0, 0, W, 78, origin=False)
         s.paste(c, self.img('whl_arc.png'), self.ARC_X, 0, W - self.ARC_X, H, origin=False)
         s.paste(c, self.img('whl_sel.png'), self.SEL[0] - 20, self.SEL[1], 520, 190, alpha=.8)
@@ -874,15 +762,7 @@ class Poster(Theme):
              3: (750, 44, 175, 160, 8, .5), 4: (935, 54, 150, 140, 10, .3), 5: (1110, 60, 150, 140, 12, 0)}
 
     def art(self, img):
-        bg = vgrad(W, H, (26, 24, 30), (6, 6, 9))
-        rays = blank(W, H)
-        rd = ImageDraw.Draw(rays)
-        for k in range(9):                                  # soft projector rays from the top
-            x = 200 + k * 200
-            rd.polygon([(x, 0), (x + 60, 0), (x + 380 - k * 40, H), (x + 160 - k * 40, H)], fill=(255, 220, 160, 9))
-        bg = Image.alpha_composite(bg, rays.filter(ImageFilter.GaussianBlur(30)))
-        bg = Image.alpha_composite(bg, vignette(W, H, 210))
-        save_jpg(bg, img / 'pst_bg.jpg')
+        save_jpg(plain_bg((24, 22, 28), (6, 6, 9)), img / 'pst_bg.jpg')
         save_png(vgrad(W, 560, (0, 0, 0, 0), (0, 0, 0, 235)), img / 'pst_shade.png')
         save_png(vgrad(W, 300, (0, 0, 0, 200), (0, 0, 0, 0)), img / 'pst_top.png')
         save_png(radial_fast(760, 220, (255, 214, 150), alpha=120), img / 'pst_spot.png')
@@ -975,11 +855,7 @@ class Neon(Theme):
     LX, LY, STEP = 960, 520, 56
 
     def art(self, img):
-        bg = vgrad(W, H, (4, 4, 14), (0, 0, 2))
-        bg = Image.alpha_composite(bg, stars(W, H, 160, 21, ((255, 255, 255), (150, 240, 255)), 120))
-        bg = Image.alpha_composite(bg, perspective_grid(W, H, (40, 70, 255), 700, alpha=60, rays=18, rows=8))
-        bg = Image.alpha_composite(bg, vignette(W, H, 190))
-        save_jpg(bg, img / 'neon_bg.jpg')
+        save_jpg(plain_bg((8, 8, 16), (0, 0, 3)), img / 'neon_bg.jpg')
         rule = glow_line_layer(1300, 30, lambda d, s, f, w: d.line((30 * s, 15 * s, 1270 * s, 15 * s), fill=f, width=w), self.accent, 3, 6)
         rd = ImageDraw.Draw(rule)
         rd.ellipse((644, 9, 656, 21), fill=rgba(self.accent2, 255))
@@ -1007,7 +883,7 @@ class Neon(Theme):
                        '  Keys: UP / DOWN games, LEFT / RIGHT playlists (menu is orientation="vertical").')
                 + x_sounds()
                 + x_image('images/neon_bg.jpg', 0, 0, W, H, 0, origin=False)
-                + x_backdrop(.3, 1)
+                + x_backdrop(.45, 1)
                 + '  <reloadableImage type="logo" x="960" y="150" xOrigin="center" yOrigin="center" width="800" maxHeight="240" alpha="0" layer="5">\n'
                   f'    {HIDE_ON_SCROLL}\n    <onMenuIdle>{fade(1, ".3")}</onMenuIdle>\n    {HIDE_ON_EXIT}\n  </reloadableImage>\n'
                 + x_image('images/neon_rule.png', 960, 290, 1300, 30, 4)
@@ -1030,7 +906,7 @@ class Neon(Theme):
         return x_image('../../../images/neon_rule.png', 960, 560, 1300, 30, 4)
 
     def preview(self, s):
-        c = s.base(self, backdrop_alpha=.3)
+        c = s.base(self, backdrop_alpha=.45)
         s.fit(c, s.logo(0), 960, 150, 800, 240)
         s.paste(c, self.img('neon_rule.png'), 960, 290, 1300, 30)
         s.paste(c, self.img('neon_bar.png'), self.LX, self.LY, 720, 84)

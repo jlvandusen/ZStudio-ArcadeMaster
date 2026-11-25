@@ -10,7 +10,6 @@
   <image src="../../../images/marq_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
   <image src="../../../images/marq_side_l.png" x="0" y="0" width="420" height="1080" alpha="1" layer="2"/>
   <image src="../../../images/marq_side_r.png" x="1500" y="0" width="420" height="1080" alpha="1" layer="2"/>
-  <image src="../../../images/marq_light.png" x="960" y="330" xOrigin="center" yOrigin="center" width="1200" height="420" alpha=".55" layer="3"/>
   <reloadableImage type="logo" mode="layout" x="960" y="330" xOrigin="center" yOrigin="center" width="1100" height="269" alpha="0" layer="5">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/><animate type="y" to="350"/></set></onMenuScroll>
     <onMenuIdle><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="330" algorithm="easeOutCubic"/></set></onMenuIdle>
