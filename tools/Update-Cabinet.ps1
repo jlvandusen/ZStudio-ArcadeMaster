@@ -118,7 +118,20 @@ try {
   $key = (-join ($sha.ComputeHash($all.ToArray()) | ForEach-Object { $_.ToString('x2') })).Substring(0, 10)
   $have = if (Test-Path $stampFile) { ((Get-Content $stampFile | Where-Object { $_ -match '^key=' } | Select-Object -First 1) -replace '^key=', '').Trim() } else { '' }
   $built = Join-Path $BuildRoot "retrofe-$key\retrofe"
-  if ($have -eq $key) { Write-Host "RetroFE is up to date (build $key, $($parts.Count - 1) patches)"; return }
+  if ($have -eq $key) {
+    # the recorded build is right - but is the exe really that build? A test exe copied over it by hand (2026-11-25) went
+    # unnoticed: compare with the exe that was built and put it back, keeping the odd one aside
+    $builtExe = Join-Path $built 'retrofe.exe'; $instExe = Join-Path $rtDir 'retrofe.exe'
+    if ((Test-Path -LiteralPath $builtExe) -and (Test-Path -LiteralPath $instExe) -and (Get-FileHash -LiteralPath $builtExe).Hash -ne (Get-FileHash -LiteralPath $instExe).Hash) {
+      if ($running) { Say "retrofe.exe is not build $key (a test or hand-copied exe?) - it is put back when RetroFE is closed" }
+      else {
+        $stray = "$instExe.am-stray-" + (Get-Date -Format 'yyyyMMdd-HHmmss')
+        Move-Item -LiteralPath $instExe $stray; Copy-Item -LiteralPath $builtExe $instExe
+        Say "retrofe.exe was not build $key - put back (the other exe kept as $(Split-Path $stray -Leaf))"
+      }
+    }
+    Write-Host "RetroFE is up to date (build $key, $($parts.Count - 1) patches)"; return
+  }
 
   # 3. build (not at boot: -DeployOnly only installs a finished build)
   if (-not (Test-Path (Join-Path $built 'retrofe.exe'))) {

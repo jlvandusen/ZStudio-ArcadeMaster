@@ -317,8 +317,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [x] [RACE1] Main's game-list layout installed on RACE1 (story panel, light preview videos). Portable ffmpeg 7.1 in
       D:\ArcadeMaster\_tools\ffmpeg (James ok); New-PreviewMedia made 110 previews (10.97 GB -> 1.69 GB) + 110 backdrops.
 
-- [ ] Self-healing: Update-Cabinet checks the installed retrofe.exe is the build am-build.txt names (hash) and puts the right
-      one back when not - a test build left in place on 2026-11-25 went unnoticed by the update and health checks.
+- [x] [RACE1] Self-healing: Update-Cabinet checks the installed retrofe.exe is the build am-build.txt names (hash) and puts
+      the right one back when RetroFE is closed (the odd exe kept as retrofe.exe.am-stray-<time>). Tested with a planted exe.
 - [ ] Health: a line for games with no preview video (am_video) in the menus this cabinet shows, with the count per menu.
 - [ ] Tools: bass-shaker strength in the menu (Cabinet Settings or a Tools item), using ToggleTactile -Choice strength:NN.
 - [ ] Self-test: one run showed 8 of 9 without naming the failed check (2026-11-25); make every failure print its name and
