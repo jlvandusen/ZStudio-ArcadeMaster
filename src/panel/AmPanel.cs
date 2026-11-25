@@ -77,6 +77,7 @@ static class AmPanel
                     if (!ok) leds = null;
                 }
                 State["ledBlinkyRunning"] = Process.GetProcessesByName("LEDBlinky").Length > 0;
+                State["guns"] = Guns.Find();   // step 7: light guns plugged in (AimTrak / Sinden / Gun4IR)
             }
             Handle(args, false);
             new Thread(PipeServer) { IsBackground = true, Name = "pipe" }.Start();
@@ -277,6 +278,7 @@ static class AmPanel
                 rep["ok"] = true;
             }
             else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
+            else if (cmd == "guns") { var g = Guns.Find(); lock (Gate) State["guns"] = g; rep["guns"] = g; rep["ok"] = true; }
             else if (cmd == "boards") { var b = ReadBoards(); lock (Gate) State["boards"] = b; rep["boards"] = b; rep["ok"] = true; }
             else if (cmd == "light")   // {"cmd":"light","rom":"sf2"} - light a game's controls now (tests, Tools)
             {
@@ -421,12 +423,15 @@ static class AmPanel
         {
             foreach (var kv in State)
             {
-                if (kv.Key == "boards") continue;
+                if (kv.Key == "boards" || kv.Key == "guns") continue;
                 sb.AppendLine(kv.Key + ": " + (kv.Value == null ? "-" : Convert.ToString(kv.Value)));
             }
             var boards = State.ContainsKey("boards") ? State["boards"] as List<object> : null;
             sb.AppendLine("boards: " + (boards == null ? 0 : boards.Count));
             if (boards != null) foreach (Dictionary<string, object> b in boards) sb.AppendLine("  #" + b["index"] + " " + b["kind"] + " " + b["usb"] + (Convert.ToInt32(b["leds"]) > 0 ? " (" + b["leds"] + " LEDs)" : ""));
+            var guns = State.ContainsKey("guns") ? State["guns"] as List<object> : null;
+            sb.AppendLine("light guns: " + (guns == null ? 0 : guns.Count));
+            if (guns != null) foreach (Dictionary<string, object> g in guns) sb.AppendLine("  " + g["kind"] + " " + g["usb"] + " - " + g["name"]);
         }
         return sb.ToString();
     }
