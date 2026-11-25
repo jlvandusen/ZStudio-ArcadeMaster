@@ -1,0 +1,103 @@
+<!--
+  AM-Marquee - GAME LIST (c) The Real Z Studios - all art drawn by tools/New-ArcadeThemes.py
+  Idea: CoinOPS Marquee / Marquee+Bezel put marquee art beside a bezel screen; here the whole screen is a
+  cabinet over the game's own art: lit marquee (type="marquee") on top, video in a clean screen frame,
+  controls card on the panel deck, no CRT / scanline effects,
+  logo list on the left side panel, title + story on the right side panel.
+  Keys: UP / DOWN games, LEFT / RIGHT playlists (menu is orientation="vertical").
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+  <sound type="select"    src="sounds/select.wav"/>
+  <sound type="highlight" src="sounds/highlight.wav"/>
+  <sound type="load"      src="sounds/load.wav"/>
+  <image src="images/marq_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
+  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.6" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="fanart" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.6" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/marq_side_l.png" x="0" y="0" width="420" height="1080" alpha="1" layer="2"/>
+  <image src="images/marq_side_r.png" x="1500" y="0" width="420" height="1080" alpha="1" layer="2"/>
+  <reloadableImage type="marquee" x="960" y="170" xOrigin="center" yOrigin="center" width="984" maxHeight="300" alpha="0" layer="4">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to=".2"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".1"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/marq_lightbox.png" x="960" y="170" xOrigin="center" yOrigin="center" width="1060" height="340" alpha="1" layer="5"/>
+  <image src="images/marq_bezel.png" x="960" y="560" xOrigin="center" yOrigin="center" width="880" height="480" alpha="1" layer="6"/>
+  <reloadableVideo type="am_video" imageType="logo" x="960" y="560" xOrigin="center" yOrigin="center" width="768" maxHeight="432" alpha="0" layer="5">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableVideo>
+  <reloadableImage type="am_hint" x="960" y="370" xOrigin="center" yOrigin="center" width="760" height="71" alpha="0" layer="17">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="y" to="370"/></set></onMenuScroll>
+    <onMenuIdle><set duration="1.1"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="380" algorithm="easeOutBounce"/></set></onMenuIdle>
+    <onIdle><set duration="1.2"><animate type="alpha" to=".8" algorithm="easeInOutSine"/></set><set duration="1.2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set></onIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/marq_deck.png" x="960" y="928" xOrigin="center" yOrigin="center" width="1180" height="310" alpha="1" layer="8"/>
+  <reloadableImage type="am_controls" x="960" y="928" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="9">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".9"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="playlist" mode="commonlayout" x="205" y="52" xOrigin="center" yOrigin="center" width="380" height="37" alpha="1" layer="11">
+    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="205" y="92" xOrigin="center" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <image src="images/marq_sel.png" x="205" y="620" xOrigin="center" yOrigin="center" width="380" height="124" alpha="1" layer="9">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to=".4"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".15"><animate type="alpha" to="1"/></set></onMenuIdle>
+  </image>
+  <menu type="custom" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
+    <itemDefaults x="205" y="620" xOrigin="center" yOrigin="center" width="290" maxHeight="78" alpha="0" layer="10" fontColor="ffffff" fontSize="34" loadFontSize="34"/>
+    <item yOffset="-500" width="290" maxHeight="78" alpha="0"/>
+    <item yOffset="-400" width="290" maxHeight="78" alpha="0.17"/>
+    <item yOffset="-300" width="290" maxHeight="78" alpha="0.34"/>
+    <item yOffset="-200" width="290" maxHeight="78" alpha="0.51"/>
+    <item yOffset="-100" width="290" maxHeight="78" alpha="0.68"/>
+    <item selected="true" yOffset="0" width="340" maxHeight="96" alpha="1"/>
+    <item yOffset="100" width="290" maxHeight="78" alpha="0.68"/>
+    <item yOffset="200" width="290" maxHeight="78" alpha="0.51"/>
+    <item yOffset="300" width="290" maxHeight="78" alpha="0.34"/>
+    <item yOffset="400" width="290" maxHeight="78" alpha="0.17"/>
+    <item yOffset="500" width="290" maxHeight="78" alpha="0"/>
+  </menu>
+  <reloadableText type="title" menuScrollReload="true" x="1710" y="70" xOrigin="center" yOrigin="center" fontSize="34" loadFontSize="34" fontColor="ffffff" alpha="0" layer="10">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="1710" y="118" xOrigin="center" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="ffd250" alpha="0" layer="10">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <reloadableText type="year" menuScrollReload="true" x="1710" y="156" xOrigin="center" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="ff4646" alpha="0" layer="10">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <reloadableScrollingText type="am_story" menuScrollReload="true" x="1525" y="210" width="370" height="840" fontSize="24" loadFontSize="24" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="14" startPosition="0" startTime="4" endTime="4" alpha="0" layer="10">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".8"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableScrollingText>
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">
+    <onGameEnter><set duration=".2"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to="1"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
+  </image>
+  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="700" maxHeight="360" alpha="0" layer="19">
+    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="1"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
+  </reloadableImage>
+</layout>

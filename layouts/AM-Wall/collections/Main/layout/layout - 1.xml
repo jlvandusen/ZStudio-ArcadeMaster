@@ -1,0 +1,13 @@
+<!--
+  AM-Wall - SECOND SCREEN, MAIN MENU: the highlighted collection's logo in the theme's frame, plus
+  ArcadeMaster's touch bar (BACK | PREV | START = open | NEXT | RANDOM).
+-->
+<layout monitor="1" width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
+  <image src="../../../images/wall_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
+  <image src="../../../images/wall_m2_frame.png" x="960" y="300" xOrigin="center" yOrigin="center" width="1660" height="530" alpha="1" layer="4"/>
+  <reloadableImage type="logo" mode="layout" x="960" y="300" xOrigin="center" yOrigin="center" width="1300" height="318" alpha="0" layer="5">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to=".3"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+  </reloadableImage>
+  <image src="../../../images/ui_touchbar.png" x="0" y="720" width="1920" height="360" alpha="1" layer="7"/>
+</layout>

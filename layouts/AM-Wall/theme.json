@@ -1,0 +1,10 @@
+{
+  "name": "AM-Wall",
+  "label": "Tile Wall",
+  "about": "a brick wall of logo tiles; the chosen game opens big with its video, controls card and hint",
+  "idea": "CoinOPS \"Wall\" / \"Night Wall\" (a wall of game screens with the chosen one in front) - here a staggered two-column tile wall that scrolls with UP / DOWN",
+  "keys": "UP / DOWN: games   LEFT / RIGHT: playlists   SELECT: play   BACK: main menu",
+  "madeBy": "tools/New-ArcadeThemes.py",
+  "resolution": "1920x1080",
+  "monitors": 2
+}
