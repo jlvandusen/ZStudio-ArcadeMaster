@@ -332,6 +332,10 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [ ] Self-test: fails 8 of 9 now and then, only right after heavy work (video encoding, menu rebuilds; twice on 2026-11-25),
       never when idle (8 of 8 runs). Probably a timing-based watchdog check under load. Capture the FAIL lines next time
       (RACE1's merge step now stops and keeps them) and give that check more time.
+- [ ] Self-healing: Update-Cabinet removes old RetroFE builds from its build folder (keeps the installed one and the one
+      before); each is ~435 MB and every patch change adds one (RACE1: 3 builds, 1.3 GB on 2026-11-25).
+- [ ] Game feature: a favourites button (mark the selected game) and a Favourites playlist in Racing, using RetroFE's own
+      favourites (addPlaylist / favorites.txt); pick a free wheel button.
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.
