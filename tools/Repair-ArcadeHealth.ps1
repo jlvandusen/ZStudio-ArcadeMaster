@@ -56,7 +56,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; gpu = 'Graphics driver'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -435,6 +435,19 @@ if (-not $crash.Count) { Add-Result 'crashes' $checks.crashes 'OK' "no game, emu
 else {
   $lines = foreach ($grp in $crash | Group-Object who) { $last = $grp.Group | Sort-Object when | Select-Object -Last 1; "{0} crashed {1}x, last {2:HH:mm} {3}" -f $grp.Name, $grp.Count, $last.when, $last.why }
   Add-Result 'crashes' $checks.crashes 'WARN' ($lines -join '; ')
+}
+# graphics driver: the newest driver from NVIDIA / AMD for this card (legacy cards included), looked up by
+# Update-GpuDriver.ps1 in the background at most once a day - this check only reads its last answer, never waits
+Emit @{ type = 'step'; id = 'gpu'; label = $checks.gpu; status = 'run' }
+$gf = Join-Path $ManifestDir 'gpu-driver.json'; $gd = $null; if (Test-Path $gf) { try { $gd = Get-Content $gf -Raw | ConvertFrom-Json } catch { } }
+if (-not $gd -or ((Get-Date) - [datetime]$gd.checked).TotalHours -ge 24) {
+  try { Start-Process powershell -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'Update-GpuDriver.ps1')`"", '-Cache', "`"$gf`"") | Out-Null } catch { }
+}
+if (-not $gd) { Add-Result 'gpu' $checks.gpu 'OK' 'looking up the newest driver (answer at the next check)' }
+else {
+  $old = @($gd.cards | Where-Object { $_.newer })
+  if ($old) { Add-Result 'gpu' $checks.gpu 'WARN' (($old | ForEach-Object { "$($_.card): $($_.installed) installed, $($_.latest) available ($($_.date)) - Tools > Graphics Driver" }) -join '; ') }
+  else { Add-Result 'gpu' $checks.gpu 'OK' ((@($gd.cards) | ForEach-Object { "$($_.card) $($_.installed)$(if ($_.latest) { ' (newest)' })" }) -join '; ') }
 }
 # logs
 Emit @{ type = 'step'; id = 'logs'; label = $checks.logs; status = 'run' }

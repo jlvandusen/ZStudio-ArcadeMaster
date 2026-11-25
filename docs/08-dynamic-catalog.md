@@ -137,6 +137,8 @@ DirectInput instance GUIDs change when a device moves USB port or Windows re-enu
 | Cabinet Settings | `Set-CabinetSettings.ps1` + `Set-CabinetSystem.ps1` | every cabinet setting, grouped, with its value (see below) |
 | Themes | `Invoke-CabinetTool -Tool Themes` | the theme picker; the new theme must be confirmed after the restart (docs/10) |
 | Reset Theme | `Reset-Theme.ps1` | ArcadeMaster layout, original style, per-mode themes removed |
+| Graphics Driver | `Update-GpuDriver.ps1` | checks NVIDIA / AMD for the newest driver for this exact card, legacy cards included (NVIDIA's lookup is per product, so a GTX 1060 gets the 58x security branch and a Kepler card 474.xx). If one is newer, it downloads it, checks the maker's signature and installs it silently: Windows asks for admin, then a restart. AMD: starts AMD's Auto-Detect installer, which asks its own questions. The health check reads the daily answer (`manifest\gpu-driver.json`) and warns when an update is waiting. `AM_SYSTEM_DRYRUN=1` prints the install command instead of running it |
+| Flight Stick Setup | `WheelMap.ps1 -Capture -Name HOTAS -CabinetType flight` | only listed while a flight stick is plugged in; the flight wizard (stick, twist, throttle, buttons) |
 
 How it fits together:
 

@@ -35,6 +35,7 @@ $state = @{
 
 $meta = @{
   WheelSetup         = @{ icon = 'setup'; color = 'ff2fa0'; what = 'Turn, press and release each control once. Every game gets a best-practice mapping for this wheel.' }
+  GpuDriver          = @{ icon = 'display'; color = '3ddc84'; what = 'Get the newest graphics driver for this card from NVIDIA or AMD, old cards included. Asks for admin; restart afterwards.' }
   FlightSetup        = @{ icon = 'joystick'; color = '2ec8ff'; what = 'Move the stick, twist it, slide the throttle and press each button once. The flight games get a mapping for this stick.' }
   PanelTest          = @{ icon = 'buttons'; color = 'ff2fa0'; what = 'Press every button, move every stick, spin the dial: each control lights up on screen with its name and the key it sends.' }
   DetectControllers  = @{ icon = 'detect'; color = '2ec8ff'; what = 'See everything plugged in: wheel, pedals, handbrake, pads, guns, trackball, screens.' }
@@ -162,6 +163,22 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
       } else {
         [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 0, 0)
         [AmDraw]::Text($g, 'Not set up yet', $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+      }
+    }
+    'GpuDriver' {
+      $gf = Join-Path $ManifestDir 'gpu-driver.json'
+      $gd = if (Test-Path $gf) { try { Get-Content $gf -Raw | ConvertFrom-Json } catch { } }
+      $c0 = if ($gd) { @($gd.cards)[0] }
+      if ($c0 -and $c0.newer) {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 0, 0)
+        [AmDraw]::Text($g, "Update: $($c0.installed) -> $($c0.latest)", $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+        [AmDraw]::Text($g, "$($c0.card)  -  released $($c0.date)", $small, [AmPal]::Dim, (RectF ($r.X + 86) ($r.Y + 58) ($r.Width - 86) 34), 'Near', 'Center')
+      } elseif ($c0) {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 2, 0)
+        [AmDraw]::Text($g, "Newest: $($c0.installed)", $val, [AmPal]::Text, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+        [AmDraw]::Text($g, "$($c0.card)", $small, [AmPal]::Dim, (RectF ($r.X + 86) ($r.Y + 58) ($r.Width - 86) 34), 'Near', 'Center')
+      } else {
+        [AmDraw]::Text($g, 'Not checked yet', $val, [AmPal]::Amber, (RectF $r.X $r.Y $r.Width 60), 'Near', 'Center')
       }
     }
     'FlightSetup' {

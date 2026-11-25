@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -87,6 +87,17 @@ switch ($Tool) {
     Emit @{ type = 'wizard'; state = 'end'; ok = ($script:lastExit -eq 0) }
     Run 'Get-CabinetDevices.ps1' @('-Out', $cab, '-History', $hist) | Out-Null
     Emit-Devices
+  }
+  'GpuDriver' {
+    # newest NVIDIA / AMD driver for this card (legacy cards too): check, then download, verify the maker's signature and
+    # install - Windows asks for admin first, the screen blinks, and a restart finishes it
+    Banner 'GRAPHICS DRIVER - checking NVIDIA / AMD for the newest driver for this card'
+    $gf = Join-Path $ManifestDir 'gpu-driver.json'
+    Run 'Update-GpuDriver.ps1' @('-Cache', $gf) | Out-Null
+    $gd = Get-Content $gf -Raw | ConvertFrom-Json
+    Emit @{ type = 'tiles'; tiles = @(@($gd.cards) | ForEach-Object { @{ label = ($_.card -replace '^(NVIDIA|AMD)\s+', '').ToUpper(); value = "$($_.installed)"; suffix = $(if ($_.newer) { " -> $($_.latest)" } else { ' NEWEST' }); icon = 'display' } }) }
+    if (@($gd.cards | Where-Object { $_.newer }).Count) { Run 'Update-GpuDriver.ps1' @('-Install') | Out-Null; Write-Host 'Restart the PC to finish the driver update.' -ForegroundColor Yellow }
+    else { Write-Host 'The newest driver is already installed.' -ForegroundColor Green }
   }
   'PanelTest' {
     # the control panel's counterpart of Wheel Setup: every control pressed shows up with its panel name and the key /
