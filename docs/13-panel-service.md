@@ -3,6 +3,47 @@
 James, 2026-11-25: replicate and embed LEDBlinky's capabilities, run in the system tray as a service that talks
 back to the frontend, and fold in the Ultimarc tools (light guns, 4/8-way restrictors, and the rest).
 
+## North star (James, 2026-11-25)
+
+"This master arcade will be the interface to end all other interfaces": complete, customizable and adaptive graphics
+overlays, usable with legacy systems' layouts and art, on new technology that feels almost firmware-level fast.
+AmPanel is the hardware half of that: lights, restrictors, sticks, guns and emulator outputs answer instantly, from one
+service, with no third-party program in the path.
+
+## Two faces: dummy-proof and pro (James, 2026-11-25)
+
+- **Simple (default, for anyone at the cabinet):** everything automatic from what the cabinet learned (panel.json,
+  controls.dat, Colors.ini, emulator outputs). A few big choices: lights on / off, colours per game on / off, stick
+  auto / 8 / 4. Every change shows live on the panel and has an undo. Nothing here can break the cabinet.
+- **Advanced (for developers):** every LED pin and raw output value, the full trigger -> activity rule editor
+  (global / system / game), import / export of profiles, and the documented pipe API and command line, so anything on
+  the cabinet can be scripted. Advanced changes are still saved as overrides on top of the learned defaults, never
+  over the source files, so "back to automatic" always works.
+
+## Validation: what is proven today, what is next
+
+Proven on ARCADE-PEDESTAL (2026-11-25, step 1):
+
+| Claim | Evidence |
+|---|---|
+| We can talk to the panel hardware without LEDBlinky | AmPanel read all 3 boards through Ultimarc's PacDrive SDK: 2 × I-PAC Ultimate I/O (96 LEDs each), 1 ServoStik |
+| RetroFE needs no change | AmPanel accepts LEDBlinky's documented command line. `9 bzone mame` -> game selected, `assault mame` -> game start, logged and in panel-state.json |
+| One instance, talks back to the frontend | A second `AmPanel.exe ...` forwards over \\.\pipe\ArcadeMaster.Panel and exits. `{"cmd":"status"}` returns the full state as JSON |
+| Faster than LEDBlinky on every scroll | `9 <rom> mame` round trip: **AmPanel 130–185 ms vs LEDBlinky.exe 590–880 ms** (Windows' own process start is 57–80 ms of that) |
+| Nothing lost while it grows | Shadow mode: every command is also handed to LEDBlinky.exe, which still lights the panel |
+
+Available in the SDKs, not yet used (the next steps):
+
+| Feature | SDK function (exported by the DLLs on this cabinet) |
+|---|---|
+| per-game RGB colours, fades, flashing | PacDrive32 `Pac64SetLEDIntensities`, `Pac64SetLEDFadeTime`, `Pac64SetLEDFlashSpeeds`, `Pac64SetLEDStates` |
+| ServoStik 4 / 8-way per game (replaces Ultimarc's ServoStik tool) | PacDrive32 `PacSetServoStik4Way`, `PacSetServoStik8Way` |
+| UltraStik 360 maps / restrictor (replaces UltraMap) | UltraStik32 `UltraStik_LoadMap`, `UltraStik_LoadMapFile`, `UltraStik_SetRestrictor` |
+| emulator lamps / recoil / motors | MAME's documented Windows output protocol (also Supermodel, Model 2, Flycast, TeknoParrot plugins) |
+
+Not covered by any SDK on the cabinet (stays with the vendor's tool until a published interface exists): AimTrak
+calibration, firmware updates (deliberately never called).
+
 ## How it is built: published interfaces only
 
 | Source | What it gives us |
