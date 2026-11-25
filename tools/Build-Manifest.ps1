@@ -112,6 +112,10 @@ foreach ($tp in $TeknoParrot) {
       if ($meta.release_year) { $g.year = $meta.release_year }
       if ($meta.wheel_rotation) { $g.wheelRotation = [int]$meta.wheel_rotation }
     }
+    # a profile renamed by a collection's builder ("After Burner Climax.xml") has no Metadata\<id>.json: the profile
+    # itself still carries the game's name and genre (<GameName>, <GameGenre>Flying), so a flight game stays flight
+    if (-not $g.genre) { $pg = $xml.SelectSingleNode('//GameGenre'); if ($pg -and $pg.InnerText) { $g.genre = $pg.InnerText } }
+    if ($g.title -eq $id) { $pn = $xml.SelectSingleNode('//GameName'); if ($pn -and $pn.InnerText) { $g.title = $pn.InnerText } }
     $vname = $tp.Variant; if ($g.variants.Contains($vname)) { $vname = "$vname-$($tp.Name)" }
     $g.variants[$vname] = [ordered]@{
       emulator = 'teknoparrot'; install = $tp.Path; profile = $id; gamePath = $gp

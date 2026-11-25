@@ -11,6 +11,12 @@
       "name": "E-TeknoParrotMulti",
       "root": "E:\\DRIVE Collection\\emulators\\TeknoParrotMulti",
       "onlyExisting": true
+    },
+    {
+      "name": "D-FLIGHT-TeknoParrot",
+      "root": "D:\\FLIGHT Collection\\emulators\\TeknoParrot",
+      "note": "the FLIGHT Collection's own TeknoParrot: After Burner Climax, Blazing Angels, MachStorm, Star Wars Battle Pod (the Flight menu)",
+      "onlyExisting": true
     }
   ],
   "dolphin": [
