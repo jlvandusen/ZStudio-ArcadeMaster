@@ -45,8 +45,10 @@ The loop works like this (James, 2026-11-25):
 ## 3. Performance
 - [x] Boot time: prep 6.9 s → 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
       ~2 s every boot for the same picture. (2026-11-25)
-- [ ] Boot time, next: the background shuffle (1.7 s) and the health check (2.1 s). Run them after RetroFE is up,
-      or cache what they read.
+- [x] Background shuffle: 1.7–1.9 s → 1.6 s, while it now reads every game's backdrop too. It uses .NET folder
+      listings, a partial shuffle and hard links (the helper DLL is compiled once, cached in %LOCALAPPDATA%). Boot prep
+      4.2 s. (2026-11-25)
+- [ ] Boot time, next: the health check (2.0 s). Run its slow parts after RetroFE is up, or cache what it reads.
 - [ ] Menu scrolling: turn on the perf log, measure frame time on Main and Arcades, and find the heavy layers.
 - [ ] Backdrops and marquees: no texture bigger than it is drawn. Downscale anything over 1920x1080 and check memory
       before and after.
@@ -56,6 +58,9 @@ The loop works like this (James, 2026-11-25):
       launcher repoint).
 
 ## 4. Graphics
+- [x] No generated "retro" scenes as menu backgrounds (arcade_retro_grid, arcade_starfield…). 40 menus used them. A
+      menu with no fanart now shows its games' own backdrops, then racing / flight / light-gun games for those menus,
+      then game art from the whole library, with one picture per game. (2026-11-25)
 - [x] Theme picker shows the label ("Tile Wall"), not the folder name. (2026-11-25)
 - [ ] Polish the five AM themes: spacing, text fitting long names, and a check at 1080p and 4K.
 - [ ] Marquees: replace placeholders with real art wherever any build has it, and improve the placeholder design.

@@ -80,6 +80,36 @@ function Expand-Bg([object[]]$list) {
 foreach ($p in @($cfg.backgrounds.PSObject.Properties | Where-Object { $_.Name -notlike '_*' })) { $p.Value = @(Expand-Bg $p.Value) }
 $allBg = @($cfg.backgrounds.PSObject.Properties | Where-Object { $_.Name -notlike '_*' } | ForEach-Object { $_.Value } | Where-Object { $_ -ne '*' } | Sort-Object -Unique)
 $rng = New-Object Random
+# CreateHardLink, compiled once into a cached DLL (Add-Type compiling C# costs ~0.7 s at every boot; loading the DLL ~0)
+$script:canLink = $false
+try {
+  if (-not ('AmNative.Link' -as [type])) {
+    $dll = Join-Path $env:LOCALAPPDATA 'ArcadeMaster\AmNative.Link.v1.dll'
+    if (-not (Test-Path $dll)) {
+      New-Item -ItemType Directory -Force (Split-Path $dll) | Out-Null
+      Add-Type -Namespace AmNative -Name Link -OutputAssembly $dll -MemberDefinition '[DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] public static extern bool CreateHardLink(string lpFileName, string lpExistingFileName, IntPtr lpSecurityAttributes);'
+    }
+    Add-Type -Path $dll
+  }
+  $script:canLink = $true
+} catch { Write-Warning "hard links unavailable, copying instead: $($_.Exception.Message)" }
+
+# in-place Fisher-Yates shuffle: Sort-Object { $rng.Next() } on the library's thousands of pictures, once per menu, was
+# most of the boot "Shuffle" time
+# Only $k random picks are needed (a few slots, with room for repeats of one game), so only $k swaps are made.
+function Get-Shuffled([object[]]$a, [int]$k = 48) {
+  $a = [object[]]$a.Clone(); $n = $a.Count; if ($n -le 1) { return ,$a }
+  $k = [Math]::Min($k, $n - 1)
+  for ($i = $n - 1; $i -ge $n - $k; $i--) { $j = $rng.Next($i + 1); $t = $a[$i]; $a[$i] = $a[$j]; $a[$j] = $t }
+  ,$a[($n - $k)..($n - 1)]
+}
+# a few pictures of DIFFERENT games (a game's fanart and its backdrop are both in the pool - never the same game twice)
+function Select-Distinct([object[]]$a, [int]$n) {
+  $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase); $out = New-Object System.Collections.Generic.List[string]
+  foreach ($p in $a) { if ($seen.Add(([IO.Path]::GetFileNameWithoutExtension($p) -replace '-\d+$', ''))) { $out.Add($p); if ($out.Count -ge $n) { break } } }
+  if ($out.Count -eq 0) { return ,@($a) }
+  ,$out.ToArray()
+}
 
 # Game fanart of a collection, following merged sub-collections (<name>.sub) and Main's menu entries.
 # Folder listings are cached for the run: the 22 menus share collections (Main includes Racing, which merges a dozen
@@ -88,14 +118,16 @@ $rng = New-Object Random
 $script:dirMemo = @{}
 function Get-Listing([string]$dir, [string]$filter) {
   $k = "$dir|$filter"
-  if (-not $script:dirMemo.ContainsKey($k)) { $script:dirMemo[$k] = @(Get-ChildItem $dir -Filter $filter -File -ErrorAction SilentlyContinue) }
+  # [IO.DirectoryInfo]::GetFiles: the same FileInfo objects as Get-ChildItem, several times faster on big art folders
+  if (-not $script:dirMemo.ContainsKey($k)) { $script:dirMemo[$k] = @(if ([IO.Directory]::Exists($dir)) { ([IO.DirectoryInfo]$dir).GetFiles($filter) }) }
   $script:dirMemo[$k]
 }
 function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = @{}, [string[]]$only = $null) {
   if (-not $CollectionsDir -or $depth -gt 3) { return @() }
   $key = "$col|$($only -join ',')"; if ($seen.ContainsKey($key)) { return @() }; $seen[$key] = $true
   $dir = Join-Path $CollectionsDir $col
-  $files = @(Get-Listing (Join-Path $dir 'medium_artwork\fanart') '*' |
+  # fanart, and the 1920x1080 stills New-PreviewMedia.py takes from each game's own video (am_backdrop)
+  $files = @(@(Get-Listing (Join-Path $dir 'medium_artwork\fanart') '*') + @(Get-Listing (Join-Path $dir 'medium_artwork\am_backdrop') '*') |
              Where-Object { $_.Extension -match '^\.(jpe?g|png)$' -and $_.BaseName -ne 'default' -and (-not $only -or $only -contains $_.BaseName) } |
              ForEach-Object { $_.FullName })
   # merged collections: a .sub that LISTS items means "only these games"; an empty .sub means "the whole collection"
@@ -111,10 +143,58 @@ function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = 
   return @($files | Sort-Object -Unique)
 }
 
-# Backdrop pool: the collection's own game fanart first; the generated scenes only if it has none.
+# every game picture in the build (fanart + am_backdrop of all collections), read once: the backdrop of a menu that
+# has no game art of its own (MAME, Favorites, a console with no fanart yet)
+$script:libraryArt = $null
+function Get-LibraryArt {
+  if ($null -eq $script:libraryArt) {
+    $script:libraryArt = @(if ($CollectionsDir) { foreach ($d in Get-ChildItem $CollectionsDir -Directory) { foreach ($k in 'fanart', 'am_backdrop') {
+      Get-Listing (Join-Path $d.FullName "medium_artwork\$k") '*' | Where-Object { $_.Extension -match '^\.(jpe?g|png)$' -and $_.BaseName -ne 'default' } | ForEach-Object { $_.FullName } } } })
+  }
+  $script:libraryArt
+}
+
+# game ids (= art file names) of one kind from the catalog, read once: racing | flight | lightgun
+$script:familyIds = $null
+function Get-FamilyIds([string]$fam) {
+  if ($fam -notin 'racing', 'flight', 'lightgun') { return $null }
+  if ($null -eq $script:familyIds) {
+    $script:familyIds = @{}
+    foreach ($f in 'racing', 'flight', 'lightgun') { $script:familyIds[$f] = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase) }
+    $gj = if ($ManifestDir) { Join-Path $ManifestDir 'games.json' } else { $null }
+    if ($gj -and (Test-Path $gj)) {
+      # games.json is ~10 MB (seconds to parse): the three id lists are cached next to it, redone when it changes
+      $cache = Join-Path $ManifestDir 'family-ids.json'; $stamp = [string](Get-Item $gj).LastWriteTimeUtc.Ticks
+      $c = $null; if (Test-Path $cache) { try { $c = Get-Content $cache -Raw | ConvertFrom-Json } catch { } }
+      if (-not $c -or $c.stamp -ne $stamp) {
+        $lists = @{ racing = @(); flight = @(); lightgun = @() }
+        foreach ($g in (Get-Content $gj -Raw | ConvertFrom-Json).games) {
+          $k = if ($g.category -in 'racing', 'flight', 'lightgun') { $g.category } elseif ($g.genre -match '(?i)racing|driving') { 'racing' } elseif ($g.genre -match '(?i)flight|flying') { 'flight' } elseif ($g.genre -match '(?i)gun') { 'lightgun' } else { $null }
+          if ($k) { $lists[$k] += [string]$g.id; if ($g.title) { $lists[$k] += [string]$g.title } }
+        }
+        $c = [pscustomobject]@{ stamp = $stamp; racing = $lists.racing; flight = $lists.flight; lightgun = $lists.lightgun }
+        $c | ConvertTo-Json -Depth 3 -Compress | Set-Content $cache -Encoding UTF8
+      }
+      foreach ($f in 'racing', 'flight', 'lightgun') { foreach ($id in @($c.$f)) { if ($id) { [void]$script:familyIds[$f].Add($id) } } }
+    }
+  }
+  $script:familyIds[$fam]
+}
+
+# Backdrop pool: the collection's own game art first, then game art from the whole library. The generated scenes only
+# on a build with no game art at all (James 2026-11-22: "something related to each game as the background", no retro look).
 function Get-BgPool([string]$col, [string]$themeName) {
   $fan = @(Get-CollectionFanart $col)
   if ($fan.Count -gt 0) { return $fan }
+  $lib = @(Get-LibraryArt)
+  # a racing / flight / light-gun menu shows games of its own kind (the catalog's category or genre)
+  $fam = ($themeName -split '-')[0]
+  $ids = Get-FamilyIds $fam
+  if ($ids -and $ids.Count) {
+    $own = @($lib | Where-Object { $ids.Contains([IO.Path]::GetFileNameWithoutExtension($_)) })
+    if ($own.Count) { return $own }
+  }
+  if ($lib.Count -gt 0) { return $lib }
   $key = if ($col -eq 'Main') { 'main' } else { ($themeName -split '-')[0] }   # a skin (racing-rally) uses its family's scenes
   $pool = @($cfg.backgrounds.$key); if ($pool -contains '*') { $pool = @($cfg.backgrounds.$CabinetTheme) }   # main menu: the cabinet's own scenes
   if (-not $pool -or $pool -contains '*') { $pool = $allBg }
@@ -142,12 +222,16 @@ foreach ($col in $map.Keys) {
   }
   # rotating backdrop slots
   $pool = @(Get-BgPool $col $themeName)   # @(): a one-fanart collection would otherwise unroll to a string
-  if ($Shuffle) { $pool = @($pool | Sort-Object { $rng.Next() }) }
+  if ($Shuffle) { $pool = Get-Shuffled $pool }
+  $pool = Select-Distinct $pool $BgSlots
   for ($i = 1; $i -le $BgSlots; $i++) {
     $src = $pool[($i - 1) % $pool.Count]
     if (-not (Test-Path -LiteralPath $src)) { throw "missing background $src" }
-    Get-ChildItem $dst -Filter "am_bg$i.*" -ErrorAction SilentlyContinue | Remove-Item -Force   # slot may change extension
-    Copy-Item -LiteralPath $src (Join-Path $dst ("am_bg$i" + [IO.Path]::GetExtension($src).ToLower())) -Force
+    foreach ($old in ([IO.DirectoryInfo]$dst).GetFiles("am_bg$i.*")) { $old.Delete() }   # slot may change extension
+    # a hard link on the same drive: fanart can be several MB, and copying ~270 of them every boot cost seconds. The slot
+    # is deleted above before it is linked again, so nothing ever writes through the link into the game's own art.
+    $slotFile = Join-Path $dst ("am_bg$i" + [IO.Path]::GetExtension($src).ToLower())
+    if (-not ($script:canLink -and [AmNative.Link]::CreateHardLink($slotFile, $src, [IntPtr]::Zero))) { [IO.File]::Copy($src, $slotFile, $true) }
   }
   Write-Host ("{0,-20} -> {1,-8} bg: {2}" -f $col, $themeName, (($pool | Select-Object -First $BgSlots | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) }) -join ', '))
 }
