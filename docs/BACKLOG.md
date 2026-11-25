@@ -38,6 +38,11 @@ The loop works like this (James, 2026-11-25):
       - Discs of Tron: 8-way triggerstick (B1 throw, B2 deflect) plus a push/pull dial (B3 aim up, B4 aim down). The
         card is fixed (#41: stick + DIAL, no false trackball). In MAME, the dial's 2 panel buttons should be aim up/down.
       - [x] Cards: roles per stick (#40); Discs of Tron (#41).
+      - [x] MAME: `tools/mame-controls.json` + `Set-MameControls.ps1` (backs up `.am-bak`, `-Restore` undoes).
+            Assault, Battlezone and Vindicators: left tread = P1 stick OR joystick 1, right tread = P2 stick OR
+            joystick 2, fire = either trigger (key or joystick button). Applied on the R: copy; MAME loads them.
+      - [ ] With James at the panel: run `Watch-Inputs.ps1` to confirm the flight sticks are joystick 1/2 (or which
+            keys), then trim the OR lists to the real controls. Add Discs of Tron (dial buttons = aim up/down).
       - First, find which device the flight sticks are (`tools/Watch-Inputs.ps1`: move each control, see what it
         sends). Then write each game's cfg on the R: copy, backing up the old one.
 - [ ] Learn buttons on cabinets where LEDBlinky only drives the marquee. Read the I-PAC/Ultimarc config if there
