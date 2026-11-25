@@ -63,7 +63,7 @@ $S.cabinetMode = @{ group = 'CABINET'; label = 'MODE IN USE'; kind = 'info'
   show = { param($v) "$v".ToUpper() }
   set = { param($v) 'set at every start from the cabinet type and the controls plugged in' } }
 $S.followHardware = @{ group = 'CABINET'; label = 'FOLLOW THE HARDWARE'; detail = 'Wheel unplugged and a flight stick in? The cabinet becomes a flight cab'; kind = 'switch'; default = $true
-  get = { (Conf 'cabinetFollowHardware') -notmatch '^(no|false|0)$' }
+  get = { "$(Conf 'cabinetFollowHardware')" -notmatch '^(no|false|0)$' }
   set = { param($on) SetConf 'cabinetFollowHardware' $(if ($on) { 'yes' } else { 'no' }); 'applies at the next start' } }
 $S.showAllModes = @{ group = 'CABINET'; label = 'SHOW EVERY MODE'; detail = 'Main menu lists Racing / Flight / Light gun even when their controls are not plugged in'; kind = 'switch'; default = $false
   get = { IsYes (Conf 'cabinetShowAllModes') }

@@ -90,7 +90,8 @@ function Get-AmIntroSpec([string]$RetroFE, [string]$ManifestDir, [string]$Type) 
   $get = { param($k) $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern "^\s*$([regex]::Escape($k))\s*=\s*(.*)$" -ErrorAction SilentlyContinue | Select-Object -Last 1; if ($m) { $m.Matches[0].Groups[1].Value.Trim() } }
   $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
   $setting = if ($Type) { $Type } else { & $get 'cabinetType' }
-  $follow = (& $get 'cabinetFollowHardware') -notmatch '^(no|false|0)$'
+  # "$(...)" turns a missing line (no output) into '' - without it -notmatch returns an empty array, not $true
+  $follow = "$(& $get 'cabinetFollowHardware')" -notmatch '^(no|false|0)$'
   $eff = if ($Type) { @{ id = $Type; switched = $false } } else { Get-AmEffectiveCabinetType $setting $cab $follow }
   # a custom title belongs to the configured type - not shown when the cabinet switched to another mode
   $ct = Resolve-AmCabinetType $eff.id $cab $(if ($eff.switched) { '' } else { & $get 'cabinetTitle' }) $(if ($eff.switched) { '' } else { & $get 'cabinetTagline' })

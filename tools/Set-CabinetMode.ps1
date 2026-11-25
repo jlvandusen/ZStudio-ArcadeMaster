@@ -24,7 +24,7 @@ function Set-Setting([string]$key, [string]$value) {
   if (-not $done) { $lines.Add("$key = $value") }; Set-Content $sc $lines -Encoding ascii
 }
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$follow = (Get-Setting 'cabinetFollowHardware') -notmatch '^(no|false|0)$'
+$follow = "$(Get-Setting 'cabinetFollowHardware')" -notmatch '^(no|false|0)$'   # "$()": a missing line must read as yes, not an empty array
 $eff = Get-AmEffectiveCabinetType (Get-Setting 'cabinetType') $cab $follow
 $primary = ($eff.id -split '\+')[0]
 $actions = @()
