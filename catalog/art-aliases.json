@@ -51,6 +51,10 @@
     "TeknoParrot/IDTA": {
       "from": "E:\\DRIVE Collection\\collections\\TeknoParrot\\roms\\Initial D The Arcade - Season 3\\Option\\MV01\\advinfo1.usm",
       "start": 0
+    },
+    "AM_TP_Emulators_TeknoParrot/abc": {
+      "from": "D:\\Arcade PC\\Sega Lindbergh Yellow\\AfterBurner Climax\\disk1\\rom\\movie\\abc_adv_movie_0.sfd",
+      "start": 0
     }
   }
 }

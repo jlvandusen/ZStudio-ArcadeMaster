@@ -319,12 +319,12 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 
 - [x] [RACE1] Self-healing: Update-Cabinet checks the installed retrofe.exe is the build am-build.txt names (hash) and puts
       the right one back when RetroFE is closed (the odd exe kept as retrofe.exe.am-stray-<time>). Tested with a planted exe.
-- [ ] Health: a line for games with no preview video (am_video) in the menus this cabinet shows, with the count per menu.
+- [x] [RACE1] Health: 'Game preview videos' - per menu, games with a preview (RACE1: Racing 92/103, Flight 1/3); WARN when a
+      menu has none at all. It found Flight 0/3: After Burner Climax now plays its own attract movie (.sfd, silent - ffmpeg can't
+      read its ADX audio; New-GameClips retries without sound). MachStorm and Star Wars Battle Pod pack their movies in archives.
 - [ ] Tools: bass-shaker strength in the menu (Cabinet Settings or a Tools item), using ToggleTactile -Choice strength:NN.
-- [ ] Self-test: one run showed 8 of 9 without naming the failed check (2026-11-25); make every failure print its name and
-      find the flaky check (probably a timing-based watchdog check under load).
-
-## Needs James (skip, never wait)
+- [x] [RACE1] Self-test: the '8 of 9' run did name its failed check - only the last output line had been shown. Not seen again
+      in 5 runs; leave it.
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.
