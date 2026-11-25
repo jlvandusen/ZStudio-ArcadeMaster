@@ -25,10 +25,12 @@ class TriggerRules
 
     public TriggerRules(params string[] files)
     {
-        int order = 0;
+        int order = 0, fileNo = -1;
         foreach (var f in files)
         {
+            fileNo++;
             if (f == null || !File.Exists(f)) continue;
+            string src = fileNo == 0 ? "this cabinet" : "defaults";   // files[0] is the cabinet's own, the rest are shipped
             try
             {
                 var root = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(f));
@@ -40,7 +42,7 @@ class TriggerRules
                     rules.Add(new Rule {
                         Match = Glob(Get(r, "match") ?? "*"), Game = Glob(game), System = sys,
                         Do = (Get(r, "do") ?? "led").ToLowerInvariant(), Target = Get(r, "target"), Color = Get(r, "color") ?? "White",
-                        Specificity = (game != "*" ? 2 : sys != null ? 1 : 0) * 10000 - order++, Source = Path.GetFileName(f) });
+                        Specificity = (game != "*" ? 2 : sys != null ? 1 : 0) * 10000 - order++, Source = src });
                 }
             }
             catch { /* a broken rules file must never stop the service; the log says it is missing rules */ }
@@ -71,6 +73,41 @@ class TriggerRules
             }
         }
         return null;
+    }
+
+    // which rule an output follows for a game, in words (the Triggers screen)
+    public string Describe(string output, string game)
+    {
+        foreach (var r in rules)
+        {
+            if (!r.Match.IsMatch(output ?? "") || !r.Game.IsMatch(game ?? "")) continue;
+            return r.Do + (r.Target != null ? " " + r.Target : "") + (r.Do == "led" ? " " + r.Color : "") + "  (" + r.Source + ")";
+        }
+        return "-";
+    }
+
+    // the Triggers screen saves a game's rule for one output into the cabinet's own rules file; replaces an earlier one
+    public static void SaveCabinetRule(string file, string output, string game, string action, string target, string color)
+    {
+        var js = new JavaScriptSerializer();
+        var root = File.Exists(file) ? js.Deserialize<Dictionary<string, object>>(File.ReadAllText(file)) : new Dictionary<string, object>();
+        var list = root.ContainsKey("rules") ? root["rules"] as System.Collections.ArrayList : null;
+        if (list == null) list = new System.Collections.ArrayList();
+        for (int i = list.Count - 1; i >= 0; i--)
+        {
+            var r = list[i] as Dictionary<string, object>;
+            if (r != null && string.Equals(Get(r, "match"), output, StringComparison.OrdinalIgnoreCase) && string.Equals(Get(r, "game") ?? "*", game, StringComparison.OrdinalIgnoreCase)) list.RemoveAt(i);
+        }
+        if (action != "default")   // "default" = no cabinet rule: the shipped defaults apply again
+        {
+            var n = new Dictionary<string, object>(); n["match"] = output; n["game"] = game; n["do"] = action;
+            if (!string.IsNullOrEmpty(target)) n["target"] = target;
+            if (action == "led" && !string.IsNullOrEmpty(color)) n["color"] = color;
+            list.Insert(0, n);
+        }
+        root["rules"] = list;
+        if (!root.ContainsKey("_comment")) root["_comment"] = "This cabinet's own trigger rules (AmPanel Triggers screen). They win over the shipped defaults.";
+        File.WriteAllText(file, js.Serialize(root), new System.Text.UTF8Encoding(false));
     }
 
     static string Get(Dictionary<string, object> d, string k) { return d.ContainsKey(k) && d[k] != null ? Convert.ToString(d[k]) : null; }

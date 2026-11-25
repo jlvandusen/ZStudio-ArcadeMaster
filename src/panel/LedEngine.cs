@@ -293,6 +293,8 @@ class LedEngine
         return d;
     }
     public bool KnowsGame(string rom) { return rom != null && games.ContainsKey(rom); }
+    public List<string> Labels { get { var l = new List<string>(pins.Keys); l.Sort(StringComparer.OrdinalIgnoreCase); return l; } }
+    public List<string> ColorNames { get { var l = new List<string>(palette.Keys); l.Sort(StringComparer.OrdinalIgnoreCase); return l; } }
 
     public void AllOff() { StopAnim(); foreach (var f in frame.Values) Array.Clear(f, 0, f.Length); Flush(); }
 
