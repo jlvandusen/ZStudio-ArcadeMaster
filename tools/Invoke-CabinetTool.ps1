@@ -121,7 +121,9 @@ switch ($Tool) {
     }
     # joystick-panel cabinets (pedestal / stand-up, no wheel): a button-layout card for every game (tools/New-PanelControlsArt.py)
     $capNow = if (Test-Path $cab) { (Get-Content $cab -Raw | ConvertFrom-Json).capabilities } else { $null }
-    $py = (Get-Command python.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source
+    . (Join-Path $t 'lib\AmPython.ps1')
+    $py = Find-AmPython   # found even when Python is not on this process's PATH
+    if (-not $py) { Write-Host 'cards, stories and preview videos skipped: no Python found' }
     if ($capNow -and $capNow.controlPanel -and -not $capNow.wheel -and $py) {
       Step 'panelcards' 'Button layout cards' 'run'
       & $py (Join-Path $t 'New-PanelControlsArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
