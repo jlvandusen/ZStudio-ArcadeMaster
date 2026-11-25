@@ -41,6 +41,7 @@ class LedEngine
     public void Override(string label, int[] rgb)
     {
         if (!open) return;
+        if (StopAnim()) RestoreBase();
         int[] use = rgb;
         if (use == null && !baseColor.TryGetValue(label, out use)) use = new[] { 0, 0, 0 };
         if (SetLabel(label, use)) Flush();
@@ -51,6 +52,7 @@ class LedEngine
     public void Glow(string label, bool held)
     {
         if (!open || !pins.ContainsKey(label)) return;
+        if (StopAnim()) RestoreBase();   // any press ends the attract animation
         if (!held) { Override(label, null); return; }
         int[] b; baseColor.TryGetValue(label, out b);
         int mx = b == null ? 0 : Math.Max(b[0], Math.Max(b[1], b[2]));
@@ -107,12 +109,83 @@ class LedEngine
         catch (Exception e) { LastError = e.Message; return false; }
     }
 
-    public void Close() { if (open) { try { AllOff(); PacShutdown(); } catch { } open = false; } }
+    public void Close() { if (open) { try { StopAnim(); AllOff(); PacShutdown(); } catch { } open = false; } }
+
+    // ---------------------------------------------------------------- step 6: attract animations
+    // One animation thread at a time; every other write first stops it (StopAnim) so there is a single writer.
+    System.Threading.Thread anim;
+    volatile bool animRun;
+    public string Animation { get; private set; }
+
+    public string Animate(string kind)
+    {
+        bool was = StopAnim();
+        if (string.IsNullOrEmpty(kind) || kind == "stop") { if (was) RestoreBase(); return "animation stopped"; }
+        if (!open) return "LED boards not open";
+        if (kind != "breathe" && kind != "chase") return "unknown animation '" + kind + "' (breathe, chase, stop)";
+        var labels = new List<string>(pins.Keys); labels.Sort(StringComparer.OrdinalIgnoreCase);
+        animRun = true; Animation = kind;
+        anim = new System.Threading.Thread(delegate () { AnimLoop(kind, labels); }) { IsBackground = true, Name = "led-anim" };
+        anim.Start();
+        return kind + " on " + labels.Count + " buttons";
+    }
+
+    bool StopAnim()
+    {
+        var t = anim; if (t == null) return false;
+        animRun = false; t.Join(500); anim = null; Animation = null;
+        return true;
+    }
+
+    void RestoreBase()
+    {
+        foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
+        foreach (var kv in baseColor) SetLabel(kv.Key, kv.Value);
+        Flush();
+    }
+
+    void AnimLoop(string kind, List<string> labels)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (animRun)
+        {
+            double t = sw.Elapsed.TotalSeconds;
+            foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
+            for (int i = 0; i < labels.Count; i++)
+            {
+                int[] rgb;
+                if (kind == "breathe")
+                {
+                    // the game's own colours pulsing (soft white where the game has none), 2.5 s per breath
+                    int[] b; if (!baseColor.TryGetValue(labels[i], out b)) b = new[] { 24, 24, 24 };
+                    double k = 0.15 + 0.85 * (0.5 + 0.5 * Math.Sin(2 * Math.PI * t / 2.5));
+                    rgb = new[] { (int)(b[0] * k), (int)(b[1] * k), (int)(b[2] * k) };
+                }
+                else
+                {
+                    // a rainbow running across the panel, one hue step per button
+                    double h = (i * 0.06 + t * 0.35) % 1.0;
+                    rgb = Hue(h);
+                }
+                SetLabel(labels[i], rgb);
+            }
+            Flush();
+            System.Threading.Thread.Sleep(33);   // ~30 frames a second: one SDK call per board per frame
+        }
+    }
+
+    static int[] Hue(double h)
+    {
+        double r = Math.Abs(h * 6 - 3) - 1, g = 2 - Math.Abs(h * 6 - 2), b = 2 - Math.Abs(h * 6 - 4);
+        return new[] { (int)(48 * Clamp(r)), (int)(48 * Clamp(g)), (int)(48 * Clamp(b)) };
+    }
+    static double Clamp(double v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
 
     // a game's colours: every control it lists lit in its colour, every other button off. Unknown game: attract white.
     public string LightGame(string rom)
     {
         if (!open) return "LED boards not open";
+        StopAnim();
         foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
         baseColor.Clear();
         Dictionary<string, string> g;
@@ -134,7 +207,7 @@ class LedEngine
         return lit + " controls lit for " + rom;
     }
 
-    public void AllOff() { foreach (var f in frame.Values) Array.Clear(f, 0, f.Length); Flush(); }
+    public void AllOff() { StopAnim(); foreach (var f in frame.Values) Array.Clear(f, 0, f.Length); Flush(); }
 
     // ---------------------------------------------------------------- helpers
     bool SetLabel(string label, int[] rgb)

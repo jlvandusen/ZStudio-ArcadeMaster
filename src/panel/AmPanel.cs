@@ -49,6 +49,7 @@ static class AmPanel
     static TriggerRules rules;         // step 10: output -> activity
     static ReactiveKeys glow;          // step 5: held buttons glow ("Reactive": false turns it off)
     static bool reactive = true;
+    static string attractAnimation = "chase";   // step 6: AmPanel.json "AttractAnimation": chase | breathe
     static NotifyIcon tray;
     static volatile bool quitting;
 
@@ -97,6 +98,7 @@ static class AmPanel
         if (Str(cfg, "PassThrough") != null) passThrough = Convert.ToBoolean(cfg["PassThrough"]);
         if (Str(cfg, "TraceOutputs") != null) OutputListener.Trace = Convert.ToBoolean(cfg["TraceOutputs"]);
         if (Str(cfg, "Reactive") != null) reactive = Convert.ToBoolean(cfg["Reactive"]);
+        if (Str(cfg, "AttractAnimation") != null) attractAnimation = Str(cfg, "AttractAnimation").ToLowerInvariant();
         if (manifestDir == null)
         {
             // the launcher's config (ArcadeMaster.config.json) next to this exe or one folder up
@@ -177,6 +179,8 @@ static class AmPanel
                 // the documented events that change what the panel shows
                 if (c == "9" || c == "15") State["lights"] = leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null));
                 else if (c == "2") { leds.AllOff(); State["lights"] = "off (frontend quit)"; }
+                else if (c == "5") State["lights"] = "attract: " + leds.Animate(attractAnimation);
+                else if (c == "6") State["lights"] = leds.Animate("stop");
                 else if (what == "game start") State["lights"] = leds.LightGame(c);
             }
             State["lastEvent"] = what;
@@ -278,6 +282,11 @@ static class AmPanel
                 else { string res; lock (Gate) { res = leds.LightGame(req.ContainsKey("rom") ? Convert.ToString(req["rom"]) : null); State["lights"] = res; } rep["result"] = res; rep["ok"] = true; }
             }
             else if (cmd == "off") { if (leds != null) lock (Gate) leds.AllOff(); rep["ok"] = leds != null; }
+            else if (cmd == "animate")   // {"cmd":"animate","kind":"chase"|"breathe"|"stop"}
+            {
+                if (leds == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
+                else { string res; lock (Gate) { res = leds.Animate(req.ContainsKey("kind") ? Convert.ToString(req["kind"]) : "chase"); State["lights"] = res; } rep["result"] = res; rep["ok"] = true; }
+            }
             else if (cmd == "outputs")   // live emulator outputs: {"connected":true,"outputs":{"led0":1,...}}
             {
                 rep["connected"] = outputs != null && outputs.Connected;
