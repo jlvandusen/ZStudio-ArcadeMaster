@@ -1,0 +1,17 @@
+{
+  "_help": "Save folders Record-GamePlay.ps1 backs up after each game (Backup-GameSaves). Paths are relative to the frontend root; * matches one folder level. A set is zipped only when one of its files changed, into <dest>\\<COMPUTERNAME>\\<set>\\slot-1..keep.zip (rotating: old versions are overwritten, never deleted - NAS recycle bin rule). TeknoParrot / PC games keep saves in their own folder: files the game wrote there during play (up to learnMaxMB each) are learned per game and backed up as 'game-<id>'.",
+  "dest": "Z:\\ArcadeMaster\\saves",
+  "keep": 5,
+  "learnMaxMB": 64,
+  "learnSkipExt": [".log", ".tmp", ".dmp", ".etl", ".bak", ".old", ".part"],
+  "sets": [
+    { "name": "RetroArch",        "paths": ["emulators\\RetroArch\\saves", "emulators\\RetroArch\\states"] },
+    { "name": "Dolphin",          "paths": ["emulators\\Dolphin\\User\\GC", "emulators\\Dolphin\\User\\Wii\\title", "emulators\\Dolphin\\User\\StateSaves"] },
+    { "name": "Dolphin Triforce", "paths": ["emulators\\Dolphin Triforce\\*\\User\\GC", "emulators\\Dolphin Triforce\\*\\User\\Wii\\title"], "_note": "not StateSaves: there they are the collection's boot snapshots (~20 MB each), not player progress" },
+    { "name": "PCSX2",            "paths": ["emulators\\PCSX2\\memcards", "emulators\\PCSX2\\sstates"] },
+    { "name": "MAME",             "paths": ["emulators\\MAME\\nvram", "emulators\\MAME\\cfg"] },
+    { "name": "Supermodel",       "paths": ["emulators\\Supermodel\\NVRAM", "emulators\\Supermodel\\Saves"] },
+    { "name": "Model 2",          "paths": ["emulators\\m2emulator\\NVDATA"] },
+    { "name": "Cemu",             "paths": ["emulators\\Cemu\\mlc01\\usr\\save"] }
+  ]
+}

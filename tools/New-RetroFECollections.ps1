@@ -327,3 +327,6 @@ if ($RebuildDatabase) {
   . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $exe = Get-AmRetroFEExe $RetroFE   # retrofe\, core\ (CoinOPS) or the root
   if ($exe) { $p = Start-Process $exe -ArgumentList '-rebuilddatabase' -WorkingDirectory (Split-Path $exe) -PassThru -WindowStyle Hidden; if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Warning 'meta.db rebuild timed out' } else { Write-Host "meta.db rebuilt (exit $($p.ExitCode))" } }
 }
+
+# the launchers rewritten above lose ArcadeMaster's start / end hooks (play time, Most played, save backups): put them back
+try { & (Join-Path $PSScriptRoot 'Set-GameHooks.ps1') -RetroFE $RetroFE -ManifestDir (Split-Path $Manifest) -Quiet } catch { Write-Warning "game hooks: $($_.Exception.Message)" }
