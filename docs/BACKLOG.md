@@ -103,6 +103,19 @@ The loop works like this (James, 2026-11-25):
 - [ ] Per-game "special controls" hints (trackball, spinner, dial, twin-stick): show them on more games, using
       MAME's `-listxml` control types.
 
+## 3a. RetroFE: the pedestal builds it now (ZStudio fork, R:\repos\personal\ZStudio-retrofe-git)
+- [x] Build toolchain on the pedestal: VS 2022 Build Tools + GStreamer 1.24.13; `retrofe\Build-RetroFE.ps1 -Source`
+      (#56). Installed on the R: copy as `core\` (CoinOPS kept in `core.am-coinops\`).
+- [x] Fork #3: LEDBlinky calls off the render thread (coalesced); perfLog logs `hitch N ms: logic/draw/present | item`.
+- [x] Fork #4: meta.db schema migration. Under the new build, no game had metadata (missing iscoredId/iscoredType).
+- [ ] Scroll hitches on a cold cache (116–359 ms on the first run): read the new `hitch` lines to see which phase
+      and item, then fix that (image / video first load off the main thread).
+- [ ] Settings errors under the new build: 5 menus have no collection settings.conf (All Trackball, All Twin Stick,
+      All Vector, Console Arcade - Retro Arcade PC, Main); hi2txt defaults zip / scores folder missing. TOS GRS "not
+      found" is expected (this cabinet has a ServoStik).
+- [ ] Fork history is unrelated to upstream CoinOPS (imported fresh): plan a one-time --allow-unrelated-histories
+      merge before pulling upstream's 1,443 commits.
+
 ## 3. Performance
 - [x] Boot time: prep 6.9 s → 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
       ~2 s every boot for the same picture. (2026-11-25)
