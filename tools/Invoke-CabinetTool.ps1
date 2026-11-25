@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -180,6 +180,21 @@ switch ($Tool) {
     if (-not $on -and -not (Get-Setting 'ffbDevice')) { Set-Setting 'ffbDevice' 'G29' }
     Banner ("FORCE FEEDBACK IN THE MENUS: " + $(if ($on) { 'OFF' } else { 'ON' }))
     Emit @{ type = 'toggle'; label = 'FORCE FEEDBACK'; icon = 'ffb'; on = (-not $on); detail = $(if ($on) { 'The wheel stays loose in the menus' } else { 'Centre spring, detent ticks and a thunk on select - released when a game starts' }) }
+  }
+  'ToggleTactile' {
+    # bass shakers from the game sound (tools\tactile\Set-ShakerAudio.ps1 through VoiceMeeter): on / off, remembered
+    # in manifest\tactile.json. -Choice 'strength:NN' sets the strength (0-100) and switches on.
+    $tj = Join-Path $ManifestDir 'tactile.json'
+    $st = if (Test-Path $tj) { Get-Content $tj -Raw | ConvertFrom-Json } else { $null }
+    $strength = if ($Choice -match '^strength:(\d+)$') { [int]$Matches[1] } elseif ($st -and $st.strength) { [int]$st.strength } else { 70 }
+    $wasOn = $st -and $st.on -and -not ($Choice -match '^strength:')
+    $sa = Join-Path $t 'tactile\Set-ShakerAudio.ps1'
+    $out = if ($wasOn) { Run 'tactile\Set-ShakerAudio.ps1' @('-Off', '-ManifestDir', $ManifestDir) } else { Run 'tactile\Set-ShakerAudio.ps1' @('-Apply', '-Strength', "$strength", '-ManifestDir', $ManifestDir) }
+    $nowOn = -not $wasOn -and (($out -join "`n") -match 'shakers on|DRY RUN')
+    $why = if (-not $wasOn -and -not $nowOn) { if (($out -join "`n") -match 'shaker sound card') { 'Plug the bass shakers'' USB sound card in first' } else { (($out | Select-Object -Last 1) -replace '^.*?:\s*', '') } } elseif ($nowOn) { "Game sound to the shakers at $strength% - the amp's low-pass keeps the rumble" } else { 'Game sound to the speakers only' }
+    Banner ("BASS SHAKERS: " + $(if ($nowOn) { 'ON' } else { 'OFF' }))
+    Write-Host "  $why"
+    Emit @{ type = 'toggle'; label = 'BASS SHAKERS'; icon = 'ffb'; on = $nowOn; detail = $why }
   }
   'ToggleSecondScreen' {
     $two = (Get-Setting 'numScreens') -eq '2'

@@ -282,7 +282,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [ ] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
 - [x] [RACE1] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
       tools\tactile\Set-ShakerAudio.ps1 (check / -Apply / -Off, dry-run safe) through the VoiceMeeter already installed.
-- [ ] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
+- [x] [RACE1] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
+      Tools > 5a Bass Shakers On-Off (strength: -Choice strength:NN, kept in tactile.json); health 'Bass shakers' starts
+      VoiceMeeter again when the shakers are on and it isn't running (otherwise no game sound), warns on an unplugged card.
 - [ ] Bass shakers: telemetry on in every PC racing game that has it, beyond the 6 Codemasters games.
 - [ ] Reliability: the health check notices a game whose last start crashed and says why in plain words.
 

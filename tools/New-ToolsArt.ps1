@@ -30,6 +30,7 @@ $state = @{
   ffb = (Get-Setting 'ffb') -match '^(yes|true|1)$'
   screens = (Get-Setting 'numScreens') -eq '2'
   perf = [int]("0" + (Get-Setting 'perfLog')) -gt 0
+  tactile = $($tj = Join-Path $ManifestDir 'tactile.json'; (Test-Path $tj) -and [bool]((Get-Content $tj -Raw | ConvertFrom-Json).on))
 }
 
 $meta = @{
@@ -46,6 +47,7 @@ $meta = @{
   SystemSettings     = @{ icon = 'buttons'; color = 'ffb000'; what = 'Every cabinet setting in one list: type, screens, sounds, story panel, attract mode, button lights, Stream Deck, Windows switches.' }
   ResetTheme         = @{ icon = 'repair'; color = '7b5cff'; what = 'A theme gone wrong? Back to the ArcadeMaster layout with its original style, no per-mode themes.' }
   CabinetType        = @{ icon = 'cabinet'; color = '2ec8ff'; what = 'Tell the arcade what it is - racing, flight, light gun, stand-up, multicade, or a combo. Shown in the boot intro.' }
+  ToggleTactile      = @{ icon = 'ffb'; color = 'ff6a00'; what = 'Bass shakers feel every game: engine, kerbs, crashes, gunfire - from the game sound, through the shaker amp.'; toggle = 'tactile' }
   TogglePerfLog      = @{ icon = 'perf'; color = '9aa3b2'; what = 'Write frame times, p99 and hitches to log.txt every 10 seconds.'; toggle = 'perf' }
 }
 
@@ -63,6 +65,7 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
     [AmDraw]::Toggle($g, (RectF $r.X ($r.Y + 6) 200 84), $on, [AmPal]::Green, (PxFont 'Segoe UI Black' 34))
     $txt = switch ($m.toggle) {
       'screens' { $n = if ($cab) { @($cab.capabilities.displays).Count } else { 0 }; "$n display$(if ($n -ne 1) { 's' }) connected" }
+      'tactile' { $tj = Join-Path $ManifestDir 'tactile.json'; if (Test-Path $tj) { $s = Get-Content $tj -Raw | ConvertFrom-Json; "$($s.shaker) at $($s.strength)%" } else { 'Plug in the shaker sound card, then switch on' } }
       'ffb' { if ($cab -and ($cab.devices | Where-Object { $_.ffb })) { 'Wheel supports force feedback' } else { 'No force-feedback wheel found' } }
       default { if ($on) { 'Logging every 10 s' } else { 'Not logging' } }
     }

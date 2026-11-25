@@ -30,6 +30,7 @@ $items = [ordered]@{
   '3 Repair Controller IDs'  = @('RepairIds', '2ec8ff')
   '4 Rebuild Game Menus'     = @('RebuildMenus', 'ffb000')
   '5 Force Feedback On-Off'  = @('ToggleFfb', 'ff2fa0')
+  '5a Bass Shakers On-Off'   = @('ToggleTactile', 'ff6a00')
   '6 Second Screen On-Off'   = @('ToggleSecondScreen', '9be7ff')
   '7 Shuffle Backgrounds'    = @('ShuffleBackgrounds', '7b5cff')
   '8 Performance Log On-Off' = @('TogglePerfLog', '9aa3b2')
@@ -42,7 +43,7 @@ $items = [ordered]@{
 $cabFile = Join-Path $ManifestDir 'cabinet.json'
 if (Test-Path $cabFile) {
   $cap = (Get-Content $cabFile -Raw | ConvertFrom-Json).capabilities
-  if ($cap -and -not $cap.wheel) { $items.Remove('1 Wheel Setup'); if (-not $cap.ffb) { $items.Remove('5 Force Feedback On-Off') } }
+  if ($cap -and -not $cap.wheel) { $items.Remove('1 Wheel Setup'); if (-not $cap.ffb) { $items.Remove('5 Force Feedback On-Off') }; $items.Remove('5a Bass Shakers On-Off') }
   # a control-panel cabinet gets the panel's counterpart of Wheel Setup: see what every button and stick sends
   if ($cap -and $cap.controlPanel) { $items.Insert(2, '1 Panel Test', @('PanelTest', 'ff2fa0')) }
 }
