@@ -259,6 +259,35 @@ and copy save folders (RetroArch, Dolphin, PCSX2, TeknoParrot) to the NAS after 
 - **Tested on RACE2:** California Speed launched from the Racing list ran the start hook. Closing it ran the end hook: 126 s recorded, Most played written, 6 sets backed up (about 3 MB). A simulated TeknoParrot game learned its save file and left the log out. Seven backups of one set rotated through 5 slots.
 - **Note:** MAME on this frontend didn't close on Escape when the key was sent by a script. Use the cabinet's exit button.
 
+### A12-A20: second deep dive (RACE2, 2026-11-25)
+The rivals' own pages (sources below) list these, and the table above doesn't cover them yet.
+Value is judged for a public arcade cabinet.
+
+| Item | What | Who has it | Value | Size | Suits |
+|---|---|---|---|---|---|
+| **A12 Kiosk / guest mode** | Locks Tools, settings and exit to Windows. A held button combo unlocks it. A kid list is a playlist of safe games | Batocera UI modes; CoinOPS ARISE Micro (kiosk by default) | high: guests can't break the cabinet | S-M | all |
+| **A13 Light guns end to end** | Sinden border on by itself, guns written per emulator at launch, crosshairs off, calibration in Tools, a Light Gun menu from the catalog | Batocera (Sinden, GunCon, Gun4IR, AimTrak, several guns) | high on the pedestal | M-L | pedestal |
+| **A14 Insert Coin / free play** | Opens on an Insert Coin screen; free play or credits set in cabinet.json | CoinOPS kiosk config | high: the arcade feel | S | pedestal, both race cabs |
+| **A15 Bezels and shaders for 4:3 games** | Bezel art per game (Bezel Project), optional scanlines, from the catalog's orientation | Batocera decorations, CoinOPS, Big Box | high for arcade games | M | pedestal |
+| **A16 Run-ahead by game** | RetroArch run-ahead 1-2 frames for 2D arcade cores, written at launch; a lag figure added to A4 | Batocera (RetroArch) | medium-high | S-M | pedestal |
+| **A17 Phone page: play / kill / now playing** | On top of A7: start a game, close a stuck one, see what is running (the A10 hooks know) | Batocera ES web server | medium | S | all |
+| **A18 Random game + Game of the Month** | One button picks a game; a monthly featured playlist that attract mode (A8) leans on | CoinOPS (Y button, Game of the Month), Big Box | medium, cheap | S | all |
+| **A19 Hi-scores out: Hall of Fame** | After A9, the end hook reads MAME hi-scores (hi2txt) and posts new top scores to the NAS / a Discord webhook; the touch screen shows them | CoinOPS (Discord, Hall of Fame) | medium | M | pedestal |
+| **A20 Branded start and clean shutdown** | No Windows on screen at boot, a startup video; helper apps (VoiceMeeter, SimHub) closed cleanly on exit | Big Box Premium (startup screens; 14.0 "Shutdown Applications") | medium | S | all |
+
+Lower value, not planned: manuals reader (LaunchBox 14), Steam store import, custom fields and badges, 3D boxes.
+
+**Where all three are weak, and a cabinet system can clearly win:**
+- **Linked cabinets.** RACE1 + RACE2 race head to head on the LAN, like a linked Daytona or Initial D pair. The board / NAS matches them, and the menu asks "Join RACE2?". No rival links cabinets it knows about. This is the biggest win, for the two race cabs.
+- **Per-game wheel profiles.** Force strength, rotation angle and deadzones per game, from the catalog. Batocera calls wheel support "under heavy development"; Big Box and CoinOPS have none.
+- **Fleet page.** Health, play time, saves and scores for every cabinet on one page (board + NAS + A10 data). Each rival manages one machine.
+- **Lag numbers on the real hardware.** A4 plus a per-emulator lag measurement: numbers no rival publishes.
+- **Room-aware cabinets.** Quiet hours (attract and music volume by time of day), kiosk on a timer, shakers and lights off in kiosk.
+
+Sources: launchbox-app.com/premium, launchbox-app.com/about/changelog, feedback.launchbox-app.com/changelog/launchbox-for-windows-140,
+wiki.batocera.org (ui_mode, emulators:lightgun_games, emulators:wheel_games, netplay, es-webserver, decoration),
+batocera.org/changelog, coinops.pages.dev.
+
 ### A11. Music in the menu
 Optional menu music per collection (the cabinet's own tracks), quieter during video, off by a Tools switch.
 
