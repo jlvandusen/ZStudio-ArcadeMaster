@@ -160,7 +160,67 @@
                                            "am_gauge2_over":  "blank.png",
                                            "am_burst":  "blank.png",
                                            "am_drift":  "blank.png"
-                                       }
+                                       },
+                   "racing-snowrally":  {
+                                            "am_spinner":  "skins/racing-snowrally_wheel.png",
+                                            "am_gauge_face":  "skins/racing-snowrally_speedo.png",
+                                            "am_gauge_under":  "blank.png",
+                                            "am_gauge_over":  "skins/racing-snowrally_needle.png",
+                                            "am_gauge2_face":  "skins/racing-snowrally_tacho.png",
+                                            "am_gauge2_over":  "skins/racing-snowrally_needle.png",
+                                            "am_burst":  "skins/racing-snowrally_burst.png",
+                                            "am_drift":  "blank.png"
+                                        },
+                   "racing-desert":  {
+                                         "am_spinner":  "skins/racing-desert_wheel.png",
+                                         "am_gauge_face":  "skins/racing-desert_speedo.png",
+                                         "am_gauge_under":  "blank.png",
+                                         "am_gauge_over":  "skins/racing-desert_needle.png",
+                                         "am_gauge2_face":  "skins/racing-desert_tacho.png",
+                                         "am_gauge2_over":  "skins/racing-desert_needle.png",
+                                         "am_burst":  "skins/racing-desert_burst.png",
+                                         "am_drift":  "blank.png"
+                                     },
+                   "racing-nightcity":  {
+                                            "am_spinner":  "skins/racing-nightcity_wheel.png",
+                                            "am_gauge_face":  "skins/racing-nightcity_speedo.png",
+                                            "am_gauge_under":  "blank.png",
+                                            "am_gauge_over":  "skins/racing-nightcity_needle.png",
+                                            "am_gauge2_face":  "skins/racing-nightcity_tacho.png",
+                                            "am_gauge2_over":  "skins/racing-nightcity_needle.png",
+                                            "am_burst":  "skins/racing-nightcity_burst.png",
+                                            "am_drift":  "blank.png"
+                                        },
+                   "racing-f1pit":  {
+                                        "am_spinner":  "skins/racing-f1pit_wheel.png",
+                                        "am_gauge_face":  "skins/racing-f1pit_speedo.png",
+                                        "am_gauge_under":  "blank.png",
+                                        "am_gauge_over":  "skins/racing-f1pit_needle.png",
+                                        "am_gauge2_face":  "skins/racing-f1pit_tacho.png",
+                                        "am_gauge2_over":  "skins/racing-f1pit_needle.png",
+                                        "am_burst":  "skins/racing-f1pit_burst.png",
+                                        "am_drift":  "blank.png"
+                                    },
+                   "flight-carrier":  {
+                                          "am_spinner":  "skins/flight-carrier_control.png",
+                                          "am_gauge_face":  "skins/flight-carrier_plate.png",
+                                          "am_gauge_under":  "skins/flight-carrier_horizon.png",
+                                          "am_gauge_over":  "blank.png",
+                                          "am_gauge2_face":  "skins/flight-carrier_reticle.png",
+                                          "am_gauge2_over":  "blank.png",
+                                          "am_burst":  "blank.png",
+                                          "am_drift":  "blank.png"
+                                      },
+                   "flight-aerobatic":  {
+                                            "am_spinner":  "skins/flight-aerobatic_control.png",
+                                            "am_gauge_face":  "skins/flight-aerobatic_plate.png",
+                                            "am_gauge_under":  "skins/flight-aerobatic_horizon.png",
+                                            "am_gauge_over":  "blank.png",
+                                            "am_gauge2_face":  "skins/flight-aerobatic_reticle.png",
+                                            "am_gauge2_over":  "blank.png",
+                                            "am_burst":  "skins/flight-aerobatic_burst.png",
+                                            "am_drift":  "blank.png"
+                                        }
                },
     "backgrounds":  {
                         "_comment":  "Main-menu backdrop slots am_bg1..am_bg6 are filled with RANDOM GAME FANART from each collection (incl. merged .sub collections) by Set-LayoutThemes.ps1 -Shuffle -CollectionsDir, reshuffled every boot. The game list shows the selected game\u0027s own fanart. These generated scenes are only a fallback for collections that have no fanart at all.",
@@ -247,7 +307,23 @@
                                  "racing-dragstrip":  {
                                                           "label":  "Dragstrip",
                                                           "about":  "white dials, big red line, shift light, flames"
-                                                      }
+                                                      },
+                                 "racing-snowrally":  {
+                                                          "label":  "Snow Rally",
+                                                          "about":  "icy blue-white dials, orange needles, snow spray"
+                                                      },
+                                 "racing-desert":  {
+                                                       "label":  "Desert Raid",
+                                                       "about":  "sand-coloured dials, terracotta needles, dust"
+                                                   },
+                                 "racing-nightcity":  {
+                                                          "label":  "Night City",
+                                                          "about":  "dark dials lit amber like street lights, wet-road rain"
+                                                      },
+                                 "racing-f1pit":  {
+                                                      "label":  "F1 Pit Lane",
+                                                      "about":  "carbon dials, red and white, LED shift lights"
+                                                  }
                              },
                   "flight":  {
                                  "flight":  {
@@ -273,7 +349,15 @@
                                  "flight-nightops":  {
                                                          "label":  "Night Ops",
                                                          "about":  "night-vision green on black"
-                                                     }
+                                                     },
+                                 "flight-carrier":  {
+                                                        "label":  "Carrier Deck",
+                                                        "about":  "navy grey instruments, deck-yellow markings"
+                                                    },
+                                 "flight-aerobatic":  {
+                                                          "label":  "Display Team",
+                                                          "about":  "red and white aerobatic team, smoke trails"
+                                                      }
                              }
               }
 }
