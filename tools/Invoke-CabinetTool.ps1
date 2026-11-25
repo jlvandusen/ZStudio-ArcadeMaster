@@ -133,9 +133,12 @@ switch ($Tool) {
       & $py (Join-Path $t 'New-GameStories.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'stories' 'Game stories' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
       # light preview videos + video backdrops for games added since the last run (skips everything up to date)
-      Step 'previews' 'Preview videos and backdrops' 'run'
-      & $py (Join-Path $t 'New-PreviewMedia.py') --retrofe $RetroFE 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
-      Step 'previews' 'Preview videos and backdrops' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # first run on a cabinet with hundreds of videos takes hours: 10 minutes per run, the next run continues
+      # (every game still plays its original video meanwhile)
+      $pvLabel = 'Preview videos and backdrops (10 min per run - a big first run continues next time)'
+      Step 'previews' $pvLabel 'run'
+      & $py (Join-Path $t 'New-PreviewMedia.py') --retrofe $RetroFE --max-minutes 10 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'previews' $pvLabel $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }
