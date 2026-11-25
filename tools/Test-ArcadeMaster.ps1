@@ -15,11 +15,17 @@
     ArcadeMaster theme back and then give up (about 20 s)
     theme confirm: a fake frontend on an unconfirmed new theme - nobody answers "keep this theme?" -> old theme back
     and the frontend restarted; and the frontend dying before the prompt -> the watchdog reverts (about 25 s)
+  -Cabinet:
+    runs this cabinet's checks for real against its frontend (ArcadeMaster.config.json, never a ProtectedPaths one):
+    Repair-ArcadeHealth -NoFix and Import-LEDBlinkyPanel --dry-run must finish without a single PowerShell / Python
+    error. A script can parse and still be broken (2026-11-25: a comment mid-line cut off an expression, and the health
+    check failed on every TeknoParrot profile for a day).
 .EXAMPLE
   tools\Test-ArcadeMaster.ps1
   tools\Test-ArcadeMaster.ps1 -Watchdog
+  tools\Test-ArcadeMaster.ps1 -Cabinet
 #>
-param([switch]$Watchdog)
+param([switch]$Watchdog, [switch]$Cabinet)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot
 $fails = 0; $checks = 0
@@ -134,6 +140,32 @@ if ($Watchdog) {
     finally { Get-Process retrofe -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$t*" } | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300; Remove-Item $t -Recurse -Force -ErrorAction SilentlyContinue }
     Report $area $problems $(if ($crash) { 'frontend dies before the theme is confirmed: the watchdog puts the old theme back' } else { 'no answer to "keep this theme?": old theme back, frontend restarted on it' })
   }
+}
+
+if ($Cabinet) {
+  $problems = @(); $cfg = $null
+  foreach ($cf in 'R:\ArcadeMaster\ArcadeMaster.config.json', 'D:\ArcadeMaster\ArcadeMaster.config.json', 'C:\ArcadeMaster\ArcadeMaster.config.json') { if (Test-Path $cf) { $cfg = Get-Content $cf -Raw | ConvertFrom-Json; break } }
+  if (-not $cfg -or -not $cfg.RetroFERoot -or -not (Test-Path $cfg.RetroFERoot)) { $problems += 'no ArcadeMaster.config.json with a RetroFERoot that exists on this machine' }
+  else {
+    . (Join-Path $PSScriptRoot 'lib\AmPython.ps1'); $py = Find-AmPython
+    $prot = $null
+    if ($py) { $prot = & $py -c "import sys; sys.path.insert(0, r'$PSScriptRoot\lib'); from am_guard import is_protected; print(is_protected(r'$($cfg.RetroFERoot)', r'$($cfg.ManifestDir)'))" 2>$null }
+    if ("$prot".Trim() -eq 'True') { $problems += "$($cfg.RetroFERoot) is a protected live frontend (ProtectedPaths): not testing against it" }
+    else {
+      # a child PowerShell, so every error record of the health check lands on stderr (2>&1) and is counted
+      $ErrorActionPreference = 'Continue'
+      $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Repair-ArcadeHealth.ps1') -RetroFE $cfg.RetroFERoot -ManifestDir $cfg.ManifestDir -NoFix 2>&1
+      $errs = @($out | Where-Object { $_ -is [Management.Automation.ErrorRecord] })
+      if ($errs) { $problems += "Repair-ArcadeHealth -NoFix: $($errs.Count) error(s), first: $(($errs[0].ToString() -split "`n")[0])" }
+      if (-not ($out | Where-Object { "$_" -match '^health: ' })) { $problems += 'Repair-ArcadeHealth did not reach its summary line' }
+      if ($py) {
+        $pOut = & $py -B (Join-Path $PSScriptRoot 'Import-LEDBlinkyPanel.py') --retrofe $cfg.RetroFERoot --manifest $cfg.ManifestDir --dry-run 2>&1
+        if ($LASTEXITCODE) { $problems += "Import-LEDBlinkyPanel --dry-run exited $LASTEXITCODE`: $((@($pOut) | Select-Object -Last 1))" }
+      }
+      $ErrorActionPreference = 'Stop'
+    }
+  }
+  Report 'cabinet' $problems "health check and panel learn run clean against $($cfg.RetroFERoot)"
 }
 
 Write-Host ("{0} of {1} checks passed" -f ($checks - $fails), $checks)
