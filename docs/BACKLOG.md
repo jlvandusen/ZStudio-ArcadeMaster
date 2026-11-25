@@ -88,8 +88,9 @@ The loop works like this (James, 2026-11-25):
 
 ## 7. Racing and flight cabinet (DESKTOP-RACE1 takes these first)
 Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets never do the same one.
-- [ ] Performance: time each boot step on RACE1 into the launcher log, and cut the slowest step to under 1 s.
-- [ ] Performance: menu frame time with the live wheel, needles and moving backdrops on. Fix any drop below 60 fps.
+- [x] Performance: boot steps are timed in the launcher log; the title card is skipped when unchanged (PR 29).
+      RACE1 boot prep 4.5 s, every step under 1 s.
+- [ ] [RACE1] Performance: menu frame time with the live wheel, needles and moving backdrops on. Fix any drop below 60 fps.
 - [ ] Performance: Build-Manifest / Rebuild Game Menus. Time each part and remove the repeated scans.
 - [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
 - [ ] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).
