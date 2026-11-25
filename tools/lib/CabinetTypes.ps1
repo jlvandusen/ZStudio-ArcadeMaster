@@ -82,3 +82,29 @@ function Get-AmTypeCollection([string]$id) { @{ racing = 'Racing'; simulation = 
 $script:AmModeCollections = @{ racing = @('Racing'); simulation = @('Racing', 'Flight'); flight = @('Flight'); lightgun = @('Lightgun'); standup = @('Arcade'); pedestal = @('Arcade'); multicade = @('Racing', 'Flight', 'Lightgun', 'Arcade') }
 function Get-AmModeCollectionsFor([string]$id) { @($id -split '\+' | ForEach-Object { $script:AmModeCollections[$_] } | Select-Object -Unique) }
 function Get-AmAllModeCollections { @($script:AmModeCollections.Values | ForEach-Object { $_ } | Select-Object -Unique) }
+# The boot intro card (New-CabinetIntro.ps1) for a frontend: which cabinet type, title, tagline, icons and colours, plus
+# a key that changes whenever anything that shapes the card changes (the settings, the hardware, the drawing scripts).
+# Start-ArcadeMaster compares the key with the one the last render wrote into intro.txt and skips the render (a whole
+# PowerShell start + the C# drawing helpers, ~2 s) when nothing changed.
+function Get-AmIntroSpec([string]$RetroFE, [string]$ManifestDir, [string]$Type) {
+  $get = { param($k) $m = Select-String -Path (Join-Path $RetroFE 'settings.conf') -Pattern "^\s*$([regex]::Escape($k))\s*=\s*(.*)$" -ErrorAction SilentlyContinue | Select-Object -Last 1; if ($m) { $m.Matches[0].Groups[1].Value.Trim() } }
+  $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
+  $setting = if ($Type) { $Type } else { & $get 'cabinetType' }
+  $follow = (& $get 'cabinetFollowHardware') -notmatch '^(no|false|0)$'
+  $eff = if ($Type) { @{ id = $Type; switched = $false } } else { Get-AmEffectiveCabinetType $setting $cab $follow }
+  # a custom title belongs to the configured type - not shown when the cabinet switched to another mode
+  $ct = Resolve-AmCabinetType $eff.id $cab $(if ($eff.switched) { '' } else { & $get 'cabinetTitle' }) $(if ($eff.switched) { '' } else { & $get 'cabinetTagline' })
+  if ($eff.switched) { $ct.auto = $false }
+  $sha = [Security.Cryptography.SHA1]::Create()
+  $code = foreach ($f in @((Join-Path $PSScriptRoot 'AmVisual.ps1'), (Join-Path (Split-Path $PSScriptRoot) 'New-CabinetIntro.ps1'))) { if (Test-Path $f) { [BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($f))) } }
+  $key = (@($ct.id, $setting, $ct.title, $ct.tagline, ($ct.icons -join ','), $ct.color, $ct.color2, @($ct.parts).Count) + $code) -join '|'
+  @{ ct = $ct; setting = $setting; key = [BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($key))).Replace('-', '') }
+}
+
+# true when the intro images in $OutDir were drawn for this exact spec (intro.txt key=, every image present)
+function Test-AmIntroCurrent([string]$OutDir, $spec) {
+  $txt = Join-Path $OutDir 'intro.txt'
+  if (-not (Test-Path $txt)) { return $false }
+  foreach ($n in 'intro_glow.png', 'intro_icons.png', 'intro_title.png', 'intro_line.png', 'intro_tagline.png') { if (-not (Test-Path (Join-Path $OutDir $n))) { return $false } }
+  [bool](Select-String -Path $txt -Pattern "^key=$($spec.key)$" -Quiet)
+}

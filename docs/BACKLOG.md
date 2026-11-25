@@ -43,7 +43,10 @@ The loop works like this (James, 2026-11-25):
       MAME's `-listxml` control types.
 
 ## 3. Performance
-- [ ] Boot time: time each step from launcher start to the first menu (boot log), and cut the slowest step.
+- [x] Boot time: prep 6.9 s → 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
+      ~2 s every boot for the same picture. (2026-11-25)
+- [ ] Boot time, next: the background shuffle (1.7 s) and the health check (2.1 s). Run them after RetroFE is up,
+      or cache what they read.
 - [ ] Menu scrolling: turn on the perf log, measure frame time on Main and Arcades, and find the heavy layers.
 - [ ] Backdrops and marquees: no texture bigger than it is drawn. Downscale anything over 1920x1080 and check memory
       before and after.
