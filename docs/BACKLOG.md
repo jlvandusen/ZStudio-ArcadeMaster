@@ -299,10 +299,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       menu tool now sets the stories aside and puts them back: 26 of 26 kept over two rebuilds (before: 0 after one).
 - [x] [RACE1] Wheel on the game list's controls card followed the handbrake, not the G29: 26 live elements had no
       liveDevice, so RetroFE used the first controller it opened (the handbrake on RACE1). All now say liveDevice="wheel".
-- [ ] Wheel picture still sits ~25 degrees left once a game list opens (RACE1, nobody at the wheel): the G29 reports
-      about -1800 after the force feedback starts. Check whether the real wheel is held off centre (G HUB centre /
-      RetroFE's spring and page-change push), with James at the wheel.
-
+- [x] [RACE1] Wheel pictures sat ~23 degrees left: held by the centring spring the G29 rests at raw -1658, not 0.
+      RetroFE patch 0013 measures steering from where the wheel rests (steady 2 s, near the middle). James spotted it.
 - [x] [RACE1] Board: two jobs with the same title posted in the same second got the same id and the second replaced
       the first (it happened with one job per cabinet). Board.ps1 post now adds -2, -3 and creates the file only if new.
 
