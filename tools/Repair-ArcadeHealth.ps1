@@ -58,12 +58,27 @@ Emit @{ type = 'step'; id = 'runtime'; label = $checks.runtime; status = 'run' }
 . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $rexe = Get-AmRetroFEExe $RetroFE   # retrofe\, core\ (CoinOPS) or the root
 $rt = if ($rexe) { Split-Path $rexe } else { Join-Path $RetroFE 'retrofe' }; $need = @('retrofe.exe', 'SDL2.dll', 'gstreamer-1.0-0.dll', 'glib-2.0-0.dll')
 $miss = @($need | Where-Object { -not (Test-Path (Join-Path $rt $_)) })
-if (-not $miss) { Add-Result 'runtime' $checks.runtime 'OK' "$((Get-ChildItem $rt -File -ErrorAction SilentlyContinue).Count) files" }
+# A stock CoinOPS retrofe.exe runs the layout but ignores our live* attributes (patches 0007/0008/0010/0011): every
+# button / gear / pedal glow is then drawn all the time and the styles look broken (DESKTOP-RACE2, 2026-11-25).
+# Read once per exe (size + date cached in the manifest) - the exe is ~3 MB.
+$stock = $null
+if ($rexe -and (Test-Path $rexe)) {
+  $fi = Get-Item $rexe; $key = "$($fi.Length)-$($fi.LastWriteTimeUtc.Ticks)"; $pf = Join-Path $ManifestDir 'retrofe-patched.txt'
+  $known = if (Test-Path $pf) { "$(Get-Content $pf -Raw)".Trim() } else { '' }
+  if ($known -notlike "$key=*") {
+    $known = "$key=$([int][Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($rexe)).Contains('liveButton'))"
+    Set-Content -Path $pf -Value $known -NoNewline -ErrorAction SilentlyContinue
+  }
+  if ($known.EndsWith('=0')) { $stock = "stock RetroFE without the ArcadeMaster patches ($rexe): wheel, pedal and button overlays will not work - copy a package from Z:\ArcadeMaster\builds\retrofe-*\retrofe to $(Join-Path $RetroFE 'retrofe')" }
+}
+if (-not $miss -and $stock) { Add-Result 'runtime' $checks.runtime 'WARN' $stock }
+elseif (-not $miss) { Add-Result 'runtime' $checks.runtime 'OK' "$((Get-ChildItem $rt -File -ErrorAction SilentlyContinue).Count) files, ArcadeMaster patches in" }
 else {
   $src = Get-ChildItem (Join-Path $lkgRoot 'runtime') -File -ErrorAction SilentlyContinue
   if ($fix -and $src) { foreach ($m in $miss) { $s = Join-Path $lkgRoot "runtime\$m"; if (Test-Path $s) { Copy-Item $s (Join-Path $rt $m) } }; $still = @($need | Where-Object { -not (Test-Path (Join-Path $rt $_)) }) }
   else { $still = $miss }
-  if ($still) { Add-Result 'runtime' $checks.runtime 'WARN' "missing: $($still -join ', ')" } else { Add-Result 'runtime' $checks.runtime 'FIXED' "restored $($miss -join ', ') from last-known-good" }
+  $sn = if ($stock) { "; $stock" } else { '' }
+  if ($still) { Add-Result 'runtime' $checks.runtime 'WARN' "missing: $($still -join ', ')$sn" } elseif ($stock) { Add-Result 'runtime' $checks.runtime 'WARN' "restored $($miss -join ', ') from last-known-good$sn" } else { Add-Result 'runtime' $checks.runtime 'FIXED' "restored $($miss -join ', ') from last-known-good" }
 }
 
 # settings

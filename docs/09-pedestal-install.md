@@ -59,6 +59,8 @@ tools\New-RetroFECollections.ps1 -Manifest D:\ArcadeMaster\manifest\games.json -
 tools\New-CabinetToolsCollection.ps1 -RetroFE <root>
 ```
 
+- **Put the patched RetroFE in place: this step is required.** Copy a package's `retrofe\` folder from `Z:\ArcadeMaster\builds\retrofe-*` to `<root>\retrofe\`, with RetroFE closed; `Start-ArcadeMaster` prefers `<root>\retrofe\retrofe.exe` over a CoinOPS `core\retrofe.exe`. With only the stock exe, the layout still loads, but every button, gear and pedal glow is drawn all the time, the wheel and needles don't move, and the styles look broken. The health check reports this under `runtime`. To build one yourself: `retrofe\Build-RetroFE.ps1` under **pwsh 7** (Windows PowerShell 5.1 stops on git's stderr), with VS 2022 Build Tools and GStreamer 1.24.13 (see README).
 - Copy `layouts\ArcadeMaster` into `<root>\layouts\` and set `layout = ArcadeMaster` in settings.conf.
+- **Themes:** `tools\Import-RetroFETheme.ps1 -Source <root> -RetroFE <root> -All -NoPreview` registers the layouts already in the frontend (ArcadeMaster and the CoinOPS theme). Then run `python tools\New-ArcadeThemes.py --install <root> --manifest <manifest>`, which needs `pip install pillow`; don't run it with `python -I`, which hides user-installed packages. That adds the five AM-* layouts. Tools → Themes lists everything in `<manifest>\themes.json`.
 - Set `cabinetType = pedestal` in settings.conf, or `standup+lightgun` etc., or leave it on `auto`.
 - Boot through `tools\Start-ArcadeMaster.ps1 -Root <root>`. It waits for the controllers, repairs IDs, matches Dolphin to the connected controllers, renders the intro and Tools art, shuffles backdrops, and runs RetroFE under the crash watchdog.
