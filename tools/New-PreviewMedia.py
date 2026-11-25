@@ -465,6 +465,21 @@ def main() -> int:
             print(f'stand-ins: {standins} game(s) got their original video in am_video until converted', flush=True)
     deadline = (t0 + a.max_minutes * 60) if a.max_minutes else 0
 
+    def replace_standin(part: str, ov: str, src: str) -> None:
+        # a stand-in is a hard link to the original video: when the original is read-only, so is the stand-in, and
+        # Windows refuses to replace it ("Access is denied"). Unlink it (that needs the read-only flag off, which the
+        # two names share), give the original its flag back, then move the new preview in.
+        try:
+            os.replace(part, ov)
+        except PermissionError:
+            if not os.path.exists(ov) or os.access(ov, os.W_OK):
+                raise
+            mode = os.stat(src).st_mode
+            os.chmod(ov, mode | stat.S_IWRITE)
+            os.remove(ov)
+            os.chmod(src, mode)
+            os.replace(part, ov)
+
     def is_standin(ov: str, src_size: int) -> bool:
         try:
             return os.path.getsize(ov) == src_size
@@ -528,7 +543,7 @@ def main() -> int:
                         tail = ' | '.join((r.stderr or '').strip().splitlines()[-3:])
                         # the stand-in (the original video) stays in am_video, so the game still shows a video
                         raise RuntimeError(f'ffmpeg video failed (original kept as the preview): {tail}')
-                os.replace(part, ov)
+                replace_standin(part, ov, src)
                 rec['video'] = mode
             if need_b:
                 check_write_file(ob, root)
