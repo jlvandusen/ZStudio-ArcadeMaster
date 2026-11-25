@@ -72,7 +72,11 @@ The loop works like this (James, 2026-11-25):
 - [x] Theme picker shows the label ("Tile Wall"), not the folder name. (2026-11-25)
 - [ ] Polish the five AM themes: spacing, text fitting long names, and a check at 1080p and 4K.
 - [ ] Marquees: replace placeholders with real art wherever any build has it, and improve the placeholder design.
-- [ ] Low-resolution backdrops: find them, then upscale them or pick a better still from the video.
+- [x] Low-resolution backdrops: `Find-LowResArt.py` (at Rebuild Game Menus) lists art under 1024 px wide or in
+      portrait shape: 72 of 2,055, mostly TeknoParrot flyers at 300×500. The shuffle leaves them out whenever a menu
+      has enough other art. (2026-11-25)
+- [ ] For the games whose only art is low-res: take a 1080p still from their video (New-PreviewMedia's backdrop) or
+      find better fanart in the other builds.
 - [ ] Attract mode: cycle game videos with the story line and controls card.
 - [ ] Touch bar from `layout - 1` drawn on the main screen: find the root cause (displays are approved now).
 

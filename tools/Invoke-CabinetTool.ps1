@@ -152,6 +152,10 @@ switch ($Tool) {
       Step 'marquees' 'Game marquees' 'run'
       & $py (Join-Path $t 'New-Marquees.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'marquees' 'Game marquees' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # art too small or portrait-shaped for a full-screen background: the boot shuffle leaves it out
+      Step 'lowres' 'Find blurry backgrounds' 'run'
+      & $py (Join-Path $t 'Find-LowResArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'lowres' 'Find blurry backgrounds' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }
