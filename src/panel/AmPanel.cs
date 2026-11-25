@@ -48,6 +48,8 @@ static class AmPanel
     static OutputListener outputs;     // step 9: MAME-protocol emulator outputs (always on: it only listens)
     static TriggerRules rules;         // step 10: output -> activity
     static ReactiveKeys glow;          // step 5: held buttons glow ("Reactive": false turns it off)
+    static DeviceWatcher devices;      // hot-plug: a controller plugged in / pulled updates the cabinet (Update-Controllers.ps1)
+    static string toolsDir, retroFERoot;
     static bool reactive = true;
     static string attractAnimation = "chase";   // step 6: AmPanel.json "AttractAnimation": chase | breathe
     static NotifyIcon tray;
@@ -113,6 +115,14 @@ static class AmPanel
                 if (ledBlinkyDir == null && root != null) ledBlinkyDir = Path.Combine(root, "LEDBlinky");
                 break;
             }
+        }
+        // the repo's tools and the frontend root (hot-plug refresh) always come from the launcher's config
+        foreach (var p in new[] { Path.Combine(exeDir, "ArcadeMaster.config.json"), Path.Combine(Path.GetDirectoryName(exeDir.TrimEnd('\\')) ?? exeDir, "ArcadeMaster.config.json") })
+        {
+            var lc = ReadJson(p); if (lc == null) continue;
+            if (Str(lc, "RepoPath") != null) toolsDir = Path.Combine(Str(lc, "RepoPath"), "tools");
+            retroFERoot = Str(lc, "RetroFERoot");
+            break;
         }
         if (manifestDir == null) manifestDir = Path.Combine(exeDir, "manifest");
         Directory.CreateDirectory(manifestDir);
@@ -185,6 +195,12 @@ static class AmPanel
                 else if (c == "5") State["lights"] = "attract: " + leds.Animate(attractAnimation);
                 else if (c == "6") State["lights"] = leds.Animate("stop");
                 else if (what == "game start") State["lights"] = leds.LightGame(c);
+            }
+            // hot-plug refreshes wait while a game runs (James: no effect on game performance)
+            if (devices != null)
+            {
+                if (what == "game start") devices.GameRunning = true;
+                else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") { devices.GameRunning = false; devices.Resume(); }
             }
             State["lastEvent"] = what;
             State["lastArgs"] = string.Join(" ", a);
@@ -278,6 +294,7 @@ static class AmPanel
                 rep["ok"] = true;
             }
             else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
+            else if (cmd == "devicechange") { if (devices != null) devices.Poke(); rep["ok"] = devices != null; }   // as if a controller was plugged in
             else if (cmd == "guns") { var g = Guns.Find(); lock (Gate) State["guns"] = g; rep["guns"] = g; rep["ok"] = true; }
             else if (cmd == "boards") { var b = ReadBoards(); lock (Gate) State["boards"] = b; rep["boards"] = b; rep["ok"] = true; }
             else if (cmd == "light")   // {"cmd":"light","rom":"sf2"} - light a game's controls now (tests, Tools)
@@ -374,6 +391,19 @@ static class AmPanel
             catch (Exception e) { Log("reactive: not started - " + e.Message); }
         }
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };
+        if (toolsDir != null && retroFERoot != null)
+        {
+            try
+            {
+                devices = new DeviceWatcher(toolsDir, retroFERoot, manifestDir, delegate (string line) {
+                    lock (Gate) { State["devicesChanged"] = line; State["devicesChangedAt"] = DateTime.Now.ToString("s"); }
+                    SaveState();
+                    if (!line.StartsWith("CHANGED: nothing"))
+                        try { tray.ShowBalloonTip(6000, "Controllers changed", line.Substring(9), ToolTipIcon.Info); } catch { }
+                }, Log);
+            }
+            catch (Exception e) { Log("devices: listener not started - " + e.Message); }
+        }
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
@@ -395,6 +425,7 @@ static class AmPanel
         tray.DoubleClick += delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); };
         Application.Run();
         if (glow != null) glow.Stop();
+        if (devices != null) devices.Stop();
         if (outputs != null) outputs.Shutdown();
         tray.Visible = false;
     }
