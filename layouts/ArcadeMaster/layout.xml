@@ -263,7 +263,7 @@
   </reloadableImage>
   <!-- live controls (retrofe patch 0007): the G29 turns with the real wheel (liveSteer = degrees at full lock),
        buttons / D-pad / pedals light up while pressed. Pedal axes: gas 1, brake 2, clutch 3 (G29 on DirectInput). -->
-  <reloadableImage type="am_controls_wheel" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" liveSteer="450">
+  <reloadableImage type="am_controls_wheel" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" liveDevice="wheel" liveSteer="450">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -271,7 +271,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </reloadableImage>
-  <image src="images/controls/btn0.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="0">
+  <image src="images/controls/btn0.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="0">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -279,7 +279,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn1.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="1">
+  <image src="images/controls/btn1.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="1">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -287,7 +287,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn2.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="2">
+  <image src="images/controls/btn2.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="2">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -295,7 +295,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn3.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="3">
+  <image src="images/controls/btn3.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="3">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -303,7 +303,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn4.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="4">
+  <image src="images/controls/btn4.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="4">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -311,7 +311,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn5.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="5">
+  <image src="images/controls/btn5.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="5">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -319,7 +319,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn6.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="6">
+  <image src="images/controls/btn6.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="6">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -327,7 +327,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn7.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="7">
+  <image src="images/controls/btn7.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="7">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -335,7 +335,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn8.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="8">
+  <image src="images/controls/btn8.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="8">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -343,7 +343,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn9.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="9">
+  <image src="images/controls/btn9.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="9">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -351,7 +351,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn10.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="10">
+  <image src="images/controls/btn10.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="10">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -359,7 +359,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn11.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="11">
+  <image src="images/controls/btn11.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="11">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -367,7 +367,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn19.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="19">
+  <image src="images/controls/btn19.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="19">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -375,7 +375,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn20.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="20">
+  <image src="images/controls/btn20.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="20">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -383,7 +383,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn21.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="21">
+  <image src="images/controls/btn21.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="21">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -391,7 +391,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn22.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="22">
+  <image src="images/controls/btn22.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="22">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -399,7 +399,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn23.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="23">
+  <image src="images/controls/btn23.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="23">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -407,7 +407,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/btn24.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveButton="24">
+  <image src="images/controls/btn24.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveButton="24">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -415,7 +415,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/hat1.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveHat="1">
+  <image src="images/controls/hat1.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveHat="1">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -423,7 +423,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/hat2.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveHat="2">
+  <image src="images/controls/hat2.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveHat="2">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -431,7 +431,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/hat4.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveHat="4">
+  <image src="images/controls/hat4.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveHat="4">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -439,7 +439,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/hat8.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveSteer="450" liveHat="8">
+  <image src="images/controls/hat8.png" x="955" y="905" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="17" additive="true" liveDevice="wheel" liveSteer="450" liveHat="8">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -447,7 +447,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/pedal_clutch.png" x="1121" y="853" width="62" height="78" alpha="0" layer="17" additive="true" liveAxis="3" liveFrom="32767" liveTo="-32768">
+  <image src="images/controls/pedal_clutch.png" x="1121" y="853" width="62" height="78" alpha="0" layer="17" additive="true" liveDevice="wheel" liveAxis="3" liveFrom="32767" liveTo="-32768">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -455,7 +455,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/pedal_brake.png" x="1179" y="853" width="64" height="78" alpha="0" layer="17" additive="true" liveAxis="2" liveFrom="32767" liveTo="-32768">
+  <image src="images/controls/pedal_brake.png" x="1179" y="853" width="64" height="78" alpha="0" layer="17" additive="true" liveDevice="wheel" liveAxis="2" liveFrom="32767" liveTo="-32768">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>
@@ -463,7 +463,7 @@
     </onMenuIdle>
     <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>  </image>
-  <image src="images/controls/pedal_gas.png" x="1251" y="853" width="58" height="88" alpha="0" layer="17" additive="true" liveAxis="1" liveFrom="32767" liveTo="-32768">
+  <image src="images/controls/pedal_gas.png" x="1251" y="853" width="58" height="88" alpha="0" layer="17" additive="true" liveDevice="wheel" liveAxis="1" liveFrom="32767" liveTo="-32768">
     <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".9"><animate type="nop"/></set>

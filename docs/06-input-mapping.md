@@ -489,3 +489,7 @@ reports WRONG (another axis or button), MISSING (no steering, gas or brake: the 
 (keyboard only). Fix a profile with WheelMap (`tools\wheelmap\WheelMap.ps1 -Generate`, then `-Apply -Commit`, or copy
 only the staged files you checked), which backs up every live file first.
 
+Every live element (liveSteer, liveButton, liveHat, liveAxis, liveNeedle, liveShiftX, liveZoomAxis) needs
+`liveDevice="wheel"`. Without it RetroFE follows the FIRST controller it opened, which on a cabinet with a handbrake
+or a control panel is not the wheel: the picture then sits at that controller's resting value and never turns.
+
