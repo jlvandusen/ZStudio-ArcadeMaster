@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 11    # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 12   # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -785,7 +785,8 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
     if dev or 'twinstick' in sig.extras:          # the left panel already shows the device: one plain line instead
         shown = []
     for e in shown:
-        lab = EXTRA_LABEL[e]
+        # this panel's own name for the device ("DIAL", "ROLLERBALL") rather than the generic one
+        lab = {'spinner': PANEL.get('spinner', {}).get('name', ''), 'trackball': PANEL.get('trackball', {}).get('name', '')}.get(e, '').upper() or EXTRA_LABEL[e]
         f = font('black', 28)
         wdt = 34 + 14 + c.width(lab, f)
         if x + wdt > x1:
@@ -1267,6 +1268,10 @@ def main(argv=None):
                         s.players, s.alt = np, alt                 # Centipede, Robotron: 2 players taking turns
                     if 'twinstick' in s.extras and 'doublejoy' not in pc:
                         s.extras = tuple(e for e in s.extras if e != 'twinstick')   # Tutankham: one stick + buttons
+                    # MAME's extra input ports are not always cabinet controls (Discs of Tron's internal "Track Y"
+                    # made it a trackball game): keep a trackball only when the cabinet had one
+                    if 'trackball' in s.extras and not re.search(r'trackball|mouse', pc):
+                        s.extras = tuple(e for e in s.extras if e != 'trackball')
                 if 'twinstick' in s.extras:
                     tr = leds.twin_roles(it)
                     if tr:
