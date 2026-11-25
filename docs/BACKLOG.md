@@ -249,7 +249,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [x] [RACE1] Performance: Build-Manifest / Rebuild Game Menus. Timed: the folder listing behind 'games that can't
       start' was most of it (3 s warm, up to ~9 s cold). It is now saved (manifest\dir-index.json) and reused while the
       game folders' first two levels are unchanged (24 h at most): catalog 9.4-15 s -> 3.8 s, results identical.
-- [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
+- [x] [RACE1] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
+      Six new skins (racing: Snow Rally, Desert Raid, Night City, F1 Pit Lane; flight: Carrier Deck, Display Team): 11 racing
+      + 7 flight styles now. Same slots and sizes as the others, so just as fast; installed by each cabinet's layout update.
 - [x] [RACE1] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).
       G25, Driving Force GT and MOMO now have pictures (Newegg product photos, rim crop). 34 of 35 wheels have one.
 - [ ] Graphics: Driving Force Pro picture: only small photos with the pedals in frame were found (wheel ~150 px).
