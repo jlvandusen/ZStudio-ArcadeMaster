@@ -206,7 +206,14 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       WMMT5, ID4Exp and FNFSB2 had no steering, gas or brake bound; OutRun 2 SP DX (E:) had its brake on the gas pedal.
 - [x] [RACE1] Controls: run Test-WheelBindings in the health check ("Wheel bindings in TeknoParrot games": OK with the
       count, or WARN naming the games). Skipped while no profile changed: health 2.5 s after a change, 0.8 s otherwise.
+- [x] [RACE1] Force feedback reached the wheel in only 18 of 31 games with the FFB Arcade Plugin: 12 named an SDL id
+      their own SDL2.dll never produces (the newer checksum id with SDL 2.0.22), Initial D Zero named an Xbox pad.
+      New tools\Repair-FFBPluginDevice.ps1 asks each folder's own SDL2.dll for the wheel's id: 31 of 31 now (backups
+      *.am-ffbdevice-*.bak). RACE2 has the same E: games: run it there too.
+- [ ] WheelMap's FFBPlugin generator copies the id from existing configs (that is how the wrong ids spread): make it
+      use the id the folder's own SDL2.dll gives, like Repair-FFBPluginDevice.
 - [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
+      Today: MinForce 0 everywhere, MaxForce 100 in most, 90 / 75 / 45 in a few.
 - [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
 - [ ] Controls: set up the "ready to set up" games from games-cant-start.txt with Add-TPGame (dry run first).
 - [ ] Stories: every racing and flight game has a story line (year, maker, cabinet, what makes it special).
@@ -235,6 +242,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - Azure sign-in (device code) at a browser.
 - RACE1: drive Daytona Championship USA (Linked Cabinets): its steering is bound "X -" where the single version has
   "X +"; check it does not steer backwards. Also try Wangan Midnight 5, Initial D 4 Export and OutRun 2 SP DX (bindings fixed).
+- RACE1: drive a few force-feedback games (Batman, Daytona 3, Initial D Zero, Wangan Midnight 6R, OutRun 2 SP DX):
+  the wheel should now push back. Before today 13 of them sent their force to nothing.
 - RACE1: turn the G29 during a short menu test run, so the wheel picture problem can be measured.
 - RACE1: install SimHub (D:\ArcadeMaster\installers\SimHubSetup_9.13.5.exe, accept the admin prompt).
 - RACE1: plug in the USB sound card for the bass shakers.

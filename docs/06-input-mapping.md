@@ -493,3 +493,13 @@ Every live element (liveSteer, liveButton, liveHat, liveAxis, liveNeedle, liveSh
 `liveDevice="wheel"`. Without it RetroFE follows the FIRST controller it opened, which on a cabinet with a handbrake
 or a control panel is not the wheel: the picture then sits at that controller's resting value and never turns.
 
+## Force feedback in TeknoParrot games (FFB Arcade Plugin)
+
+Games with the FFB Arcade Plugin (FFBPlugin.ini beside the game) push the wheel only when `DeviceGUID` is exactly the
+SDL id the plugin's OWN SDL2.dll (in the same folder) gives the wheel. That id depends on the SDL version: before 2.26
+the G29 is `030000006d0400004fc2000000000000`; from 2.26 on SDL adds a checksum of the device name
+(`03004ed76d0400004fc2000000000000` for "Logitech G HUB G29 Driving Force Racing Wheel USB"). A config copied from
+another game or PC can name an id that never matches, and the game then has no force feedback with no error.
+`tools\Repair-FFBPluginDevice.ps1` asks each folder's SDL2.dll for the wheel's id and fixes DeviceGUID (dry run;
+`-Apply` backs up first).
+
