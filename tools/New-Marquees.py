@@ -58,7 +58,8 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageSta
 
 DEFAULT_RETROFE = r'R:\ArcadeMaster\frontend\LEGENDS-am'
 MANIFEST_DIR = r'R:\ArcadeMaster\manifest'
-FORBIDDEN_DRIVES = {'E:'}
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'lib'))
+from am_guard import is_protected  # noqa: E402  (the live frontend: ProtectedPaths in the config, else E:)
 LAYOUT = 'ArcadeMaster'
 IMG_EXTS = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')
 MW, MH = 1920, 480                     # placeholder size
@@ -99,7 +100,7 @@ def is_reparse(p: str) -> bool:
 
 
 def on_forbidden_drive(p: str) -> bool:
-    return os.path.splitdrive(os.path.realpath(p))[0].upper() in FORBIDDEN_DRIVES
+    return is_protected(p, MANIFEST_DIR)
 
 
 class Unsafe(Exception):
