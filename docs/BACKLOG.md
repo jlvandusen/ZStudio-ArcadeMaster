@@ -22,6 +22,21 @@ The loop works like this (James, 2026-11-25):
 - Delete merged branches and stale worktrees.
 
 ## 2. Game mechanics and controls
+- [ ] **[PEDESTAL] Two-stick and special-control games, deep dive** (James 2026-11-25). For each game: the card says
+      what each stick, dial and button really does, and MAME maps it to the right physical control. MAME 0.196 port
+      tags and types were dumped with an autoboot Lua script (headless):
+      - Tank treads, triggers fire. Assault (:MCUB/:MCUH/:MCUDI0), Battlezone (:IN3), Vindicators (:260000; left
+        trigger B1, left thumb B2, right trigger B3, right thumb B4) go on the two upper flight sticks. Assault's
+        current cfg is the old owner's one-gamepad mix: replace it.
+      - Move + fire / aim / attack: Robotron, Smash TV, Total Carnage (move/fire), Black Widow (move/aim), Karate
+        Champ (move/attack), Front Line (left aims, right moves). P1 stick left, P2 stick right: default.cfg already
+        maps this. The cards need the real roles from controls.dat instead of "Move / Fire".
+      - Crazy Climber: P1 stick = left arm, P2 stick = right arm (works by default; the card must say so).
+      - Tutankham is one stick plus Fire Left / Fire Right / Flash: not a twin-stick game. Drop it from the filter.
+      - Omega Race: the dial rotates, B1 fire, B2 thrust. MAME did not start it headless; check the ROM.
+      - Discs of Tron: 8-way stick moves, the dial aims the disc, B1 fire, B2 shields, B3/B4 aim down/up.
+      - First, find which device the flight sticks are (`tools/Watch-Inputs.ps1`: move each control, see what it
+        sends). Then write each game's cfg on the R: copy, backing up the old one.
 - [ ] Learn buttons on cabinets where LEDBlinky only drives the marquee. Read the I-PAC/Ultimarc config if there
       is one, otherwise add a "press each button" capture tool in Tools that writes `panel.json`.
 - [x] The dial's 2 buttons: the importer now starts from `tools/panels/<host>.json`. A device LEDBlinky doesn't
