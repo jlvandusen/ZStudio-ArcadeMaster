@@ -187,7 +187,11 @@ The loop works like this (James, 2026-11-25):
   - [ ] A1. Controllers set up at every game start for each emulator from what is plugged in (150 ms budget).
     - [x] [RACE1] Step 1, survive reboots / USB renumbering: Repair-EmulatorDevices keeps MAME, Cemu, Supermodel and
           Model 2 on the right device (id and JOY number) at boot and on plug / unplug, as TeknoParrot already was.
-    - [ ] Step 2: RetroArch, PCSX2, Flycast and PC games: check how each stores the controller and add it.
+    - [x] [RACE1] Step 2 on RACE1: every config searched for the G29 / handbrake GUIDs. New: Assetto Corsa Competizione
+          (controls.json instanceGuid) via catalog/controller-files.json. DiRT 4 / GRID use the product GUID (safe).
+          RetroArch, PCSX2, Flycast are not installed on RACE1.
+    - [ ] Step 2 on the pedestal: RetroArch (RetroBat systems) stores players by index; pin them with
+          input_playerN_reserved_device + device_reservation_type = preferred, and check PCSX2 / Flycast there.
     - [ ] Step 3: run the same checks at game start (launcher hook), so a controller plugged in mid-session is right.
   - [ ] A4. Speed promises as self-test checks: boot, 60 fps with video, video start 150 ms, launch 1 s.
   - [ ] A3. In-game menu on a hotkey combo: pause, save / load state, controls card, exit.

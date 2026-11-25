@@ -1,0 +1,6 @@
+{
+  "_comment": "PC game files that store a controller's DirectInput instance GUID (which Windows can change after a reboot or a USB port change). tools/Repair-EmulatorDevices.ps1 swaps the old GUID for the device's new one in each file that exists, with a backup, at boot and on plug / unplug. %VAR% is an environment variable of the cabinet's user. Found by searching every config on DESKTOP-RACE1 for the G29's GUID (2026-11-25); DiRT 4 and GRID store the product GUID (VID/PID), which never changes, so they are not here. Add a game: its file, and what it stores.",
+  "files": [
+    { "game": "Assetto Corsa Competizione", "path": "%USERPROFILE%\\Documents\\Assetto Corsa Competizione\\Config\\controls.json", "stores": "instanceGuid \"{GUID}\" per device" }
+  ]
+}

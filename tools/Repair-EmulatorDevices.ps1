@@ -23,7 +23,8 @@ param(
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
   [string]$WheelProfile,                 # WheelMap profile the configs were generated from (default: wheelmap\profiles\G29.json)
   [string[]]$Roots,                 # emulator folders to repair (default: <RetroFE>\emulators + this cabinet's WheelMap targets)
-  [string]$ScanFile,                # Get-CabinetDevices' directinput-scan.txt, just refreshed (boot / hot-plug): no second scan
+  [string]$ControllerFiles,         # tests: another catalog\controller-files.json
+  [string]$ScanFile,               # Get-CabinetDevices' directinput-scan.txt, just refreshed (boot / hot-plug): no second scan
   [string]$LiveJson,                # tests: a JSON list of devices instead of reading DirectInput
   [switch]$Apply
 )
@@ -127,6 +128,17 @@ foreach ($r in $Roots) {
         $v = [uint32](($v -band 0xFFFFF0FF) -bor ([uint32]$joyMap[$joy] -shl 8)); [BitConverter]::GetBytes($v).CopyTo($out, $i * 4); $n++
       }
       if ($n) { Save-File $f.FullName $out "Model 2: $n control(s) moved to the new device number" }
+    }
+  }
+}
+# PC games that store a device's GUID in their own settings (catalog\controller-files.json: Assetto Corsa Competizione ...)
+if ($guidMap.Count) {
+  $cf = Join-Path (Split-Path $PSScriptRoot) 'catalog\controller-files.json'
+  if ($ControllerFiles) { $cf = $ControllerFiles }
+  if (Test-Path -LiteralPath $cf) {
+    foreach ($g in (Get-Content -LiteralPath $cf -Raw | ConvertFrom-Json).files) {
+      $p = [Environment]::ExpandEnvironmentVariables([string]$g.path)
+      if (Test-Path -LiteralPath $p) { Edit-Text $p $swapGuid "$($g.game) device id" }
     }
   }
 }
