@@ -357,3 +357,30 @@ On DESKTOP-RACE1, boot prep went from **9.6 s to 5.5 s**:
 | The Tools art finishes in the background at low priority while RetroFE starts. It only shows inside Tools, never during the intro. Its images are swapped in atomically (temp file, then replace). | ~1.1 s |
 | The health check only starts the touch re-check when there is a touch board or a touch setting | ~0.4 s |
 | Boot tools run inside the launcher's own PowerShell instead of one new `powershell.exe` each. Each still gets its own script scope, and `exit` in a tool ends only that tool. `Get-CabinetDevices` also runs the controller scan in-process. Set `AM_BOOT_SEPARATE=1` to go back to separate processes when a tool misbehaves. | 6.1 s -> 4.6 s here; about 1.2 s per tool on the pedestal's i3 |
+
+## Emulator versions and updates (2026-11-25)
+James: "properly check each emulator's version and offer to update them in the settings check". `catalog\emulators.json`
+lists how each emulator's version is read, where its newest official release is published and what may be done;
+`tools\Update-Emulators.ps1` does the work.
+
+- **System Health** (Tools > 00 System Health, and every boot) has an **Emulator versions** line. It only reads the last
+  answer and starts a fresh lookup in the background once a day, like the graphics driver line, so it never slows boot.
+- **Tools > 9d Emulator Updates** checks again, shows each emulator as a tile (installed -> newest), and offers each
+  update that is safe to do, plus "Open TeknoParrot updater" and "Not now".
+
+| Emulator | Newest from | What the update does |
+|---|---|---|
+| Supermodel (Model 3) | GitHub trzy/Supermodel (SHA-256 checked) | new exe and Games.xml; keeps Config\Supermodel.ini (wheel bindings), NVRAM, saves, the FFB plugin files |
+| Dolphin | GitHub tags + dl.dolphin-emu.org (7-Zip test) | new program files; keeps User (controllers, Wii Remotes, saves) and portable.txt |
+| Cemu | GitHub cemu-project/Cemu (size checked; that release lists no SHA-256) | new exe and resources; keeps mlc01 (games, saves), controller profiles, settings, keys, graphic packs, cemuhook. Warns: Cemu 2 no longer loads cemuhook |
+| MAME | GitHub mamedev/mame | shown only: a new MAME needs ROM sets made for it, so MAME and ROMs are updated together by hand |
+| TeknoParrot | its own updater | the Tools screen opens TeknoParrot; our bindings live in UserProfiles, which it keeps |
+| Model 2 | - | 1.1a is the last release |
+
+Every replaced file is copied first to `<emulator>\am-update-backup-<time>\` (copy it back to undo); nothing is deleted;
+`am-version.txt` records the version. It refuses while the emulator is running. `AM_SYSTEM_DRYRUN=1` downloads and checks,
+then prints the copy plan only. Downloads are kept in `D:\ArcadeMaster\_downloads\emulators`.
+
+Tested 2026-11-25 on RACE1: dry runs of all three; a real Supermodel update on a copy of the menus' folder (10 files in, 5
+backed up, Supermodel.ini byte-identical, Games.xml 152 KB -> 505 KB) and the new 0.4 build printed our wheel bindings
+back (`-print-inputs`). No live emulator was updated: that is James's choice in Tools.

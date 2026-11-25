@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'EmulatorUpdates', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -98,6 +98,40 @@ switch ($Tool) {
     Emit @{ type = 'tiles'; tiles = @(@($gd.cards) | ForEach-Object { @{ label = ($_.card -replace '^(NVIDIA|AMD)\s+', '').ToUpper(); value = "$($_.installed)"; suffix = $(if ($_.newer) { " -> $($_.latest)" } else { ' NEWEST' }); icon = 'display' } }) }
     if (@($gd.cards | Where-Object { $_.newer }).Count) { Run 'Update-GpuDriver.ps1' @('-Install') | Out-Null; Write-Host 'Restart the PC to finish the driver update.' -ForegroundColor Yellow }
     else { Write-Host 'The newest driver is already installed.' -ForegroundColor Green }
+  }
+  'EmulatorUpdates' {
+    # every emulator the menus use against its newest release; the ones that can be updated safely are offered one by
+    # one (settings, saves and our wheel bindings kept, replaced files backed up); MAME is shown only (ROM sets),
+    # TeknoParrot's own updater is opened on request
+    Banner 'EMULATOR UPDATES - checking each emulator against its newest release'
+    Run 'Update-Emulators.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null
+    $ev = Get-Content (Join-Path $ManifestDir 'emulator-versions.json') -Raw | ConvertFrom-Json
+    Emit @{ type = 'tiles'; tiles = @(@($ev.emulators) | ForEach-Object { @{ label = ($_.name -replace ' \(.*$', '').ToUpper(); value = "$($_.installed)"; suffix = $(switch ($_.status) { 'newer' { " -> $($_.latest)" } 'newest' { ' NEWEST' } default { '' } }); icon = 'rebuild' } }) }
+    $opts = @(foreach ($x in @($ev.emulators | Where-Object { $_.status -eq 'newer' -and $_.action -eq 'update' })) {
+      $short = ($x.name -replace ' \(.*$', '').ToUpper(); $sub = "$($x.installed) -> $($x.latest). $($x.note)"; if ($x.warn) { $sub += ' ' + $x.warn }
+      @{ id = $x.id; label = 'UPDATE ' + $short; sub = $sub }
+    })
+    if (@($ev.emulators | Where-Object { $_.action -eq 'own-updater' }).Count) { $opts += @{ id = 'teknoparrot'; label = 'OPEN TEKNOPARROT UPDATER'; sub = 'TeknoParrot checks its own parts; our wheel bindings (UserProfiles) are kept' } }
+    $opts += @{ id = 'none'; label = 'NOT NOW'; sub = 'Nothing is changed' }
+    $chosen = $null
+    if ($visual -and $env:AM_WIZ_KEYFILE) {
+      Emit @{ type = 'choice'; title = 'UPDATE AN EMULATOR?'; prompt = 'Old files are kept in am-update-backup in the emulator folder'; options = $opts; selected = $opts.Count - 1 }
+      $deadline = (Get-Date).AddSeconds(180)
+      while ((Get-Date) -lt $deadline) {
+        if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) {
+          $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue
+          if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break }
+        }
+        Start-Sleep -Milliseconds 100
+      }
+    } elseif ($Choice) { $chosen = $Choice }
+    if ($chosen -eq 'teknoparrot') {
+      $tp = Join-Path $RetroFE 'emulators\TeknoParrot\TeknoParrotUi.exe'
+      if (Test-Path $tp) { Start-Process $tp -WorkingDirectory (Split-Path $tp); Write-Host 'TeknoParrot opened: use its update check, then close it.' }
+    } elseif ($chosen -and $chosen -ne 'none') {
+      Run 'Update-Emulators.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir, '-Update', $chosen) | Out-Null
+      Run 'Update-Emulators.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null   # fresh answer for System Health
+    } else { Write-Host 'Nothing changed.' }
   }
   'PanelTest' {
     # the control panel's counterpart of Wheel Setup: every control pressed shows up with its panel name and the key /

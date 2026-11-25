@@ -38,6 +38,7 @@ $items = [ordered]@{
   '9a Themes'                = @('Themes', '7b5cff')
   '9b Reset Theme'           = @('ResetTheme', '7b5cff')
   '9c Graphics Driver'       = @('GpuDriver', '3ddc84')
+  '9d Emulator Updates'      = @('EmulatorUpdates', '3ddc84')
 }
 
 # a cabinet with no wheel (pedestal, stand-up) does not need the wheel and force-feedback items
