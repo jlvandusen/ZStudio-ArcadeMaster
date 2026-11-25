@@ -92,7 +92,8 @@ static class AmPanel
     static void LoadConfig()
     {
         string exeDir = AppDomain.CurrentDomain.BaseDirectory;
-        var cfg = ReadJson(Path.Combine(exeDir, "AmPanel.json"));
+        // next to the exe, else one folder up: the LEDBlinky.exe shim (ampanel-shim\) shares the installed AmPanel's config
+        var cfg = ReadJson(Path.Combine(exeDir, "AmPanel.json")) ?? ReadJson(Path.Combine(Path.GetDirectoryName(exeDir.TrimEnd('\\')) ?? exeDir, "AmPanel.json"));
         manifestDir = Str(cfg, "ManifestDir");
         ledBlinkyDir = Str(cfg, "LEDBlinkyDir");
         if (Str(cfg, "PassThrough") != null) passThrough = Convert.ToBoolean(cfg["PassThrough"]);

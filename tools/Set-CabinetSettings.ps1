@@ -120,6 +120,10 @@ $S.buttonLights = @{ group = 'LIGHTS AND DECK'; label = 'BUTTON LIGHTS (LEDBLINK
     if ($kept) { [void](Set-AmConfCommented $sc 'LEDBlinkyDirectory' $false); "LEDBlinkyDirectory = $kept" + $(if (-not (Test-Path (Join-Path $kept 'LEDBlinky.exe'))) { ' - LEDBlinky.exe is not there' } else { '' }) }
     elseif (Test-Path (Join-Path $ledDefault 'LEDBlinky.exe')) { SetConf 'LEDBlinkyDirectory' $ledDefault; "LEDBlinkyDirectory = $ledDefault" }
     else { 'no LEDBlinky found - install it into the frontend''s LEDBlinky folder first' } } }
+$S.lightsEngine = @{ group = 'LIGHTS AND DECK'; label = 'BUTTON LIGHTS ENGINE'; detail = 'LEDBlinky, or ArcadeMaster''s own AmPanel: faster, buttons glow while held, game lamps on the buttons, attract animations'; kind = 'cycle'
+  presets = @('LEDBlinky', 'ArcadeMaster'); default = 'LEDBlinky'
+  get = { $c = Conf 'LEDBlinkyDirectory'; if ($c -and $c.TrimEnd('\') -ieq (Join-Path (Split-Path $ManifestDir) 'ampanel-shim')) { 'ArcadeMaster' } else { 'LEDBlinky' } }
+  set = { param($v) (& (Join-Path $PSScriptRoot 'Set-ButtonLights.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -Engine $v 6>&1 | Out-String).Trim() } }
 $S.ledCloseOnExit = @{ group = 'LIGHTS AND DECK'; label = 'LIGHTS OFF WHEN THE ARCADE CLOSES'; detail = 'LEDBlinky is closed together with the frontend'; kind = 'switch'; default = $false
   get = { IsYes (Conf 'LEDBlinkyCloseOnExit') }
   set = { param($on) SetConf 'LEDBlinkyCloseOnExit' $(if ($on) { 'yes' } else { 'no' }); '' } }
