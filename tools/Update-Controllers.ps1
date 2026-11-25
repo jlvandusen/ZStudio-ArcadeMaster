@@ -24,6 +24,9 @@ $dol = Run 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir)
 $ids = Run 'Update-ControllerIds.ps1' @('-RetroFE', $RetroFE, '-Cabinet', $cab, '-History', $hist, '-Apply')
 [void](Run 'Set-CabinetMode.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir))
 $notes = @()
+# which games now give a choice of controller (asked at game start)
+. (Join-Path $t 'lib\AmPython.ps1'); $py = Find-AmPython
+if ($py) { $ch = & $py (Join-Path $t 'New-ControllerChoices.py') --manifest $ManifestDir 2>&1 | Out-String; if ($ch -match 'on this cabinet: (\d+)') { $choiceGames = [int]$Matches[1] } }
 if ($ids -match 'APPLIED: (\d+)' -and [int]$Matches[1] -gt 0) { $notes += "re-pointed $($Matches[1]) game profile(s)" }
 if ($dol -match '->') { $notes += 'Dolphin updated' }
 

@@ -61,6 +61,18 @@ The loop works like this (James, 2026-11-25):
         - [ ] Pixelcade / LED marquee output (the 2-player cabinet uses LEDBlinky only for that).
         - [ ] Other LED boards: LED-Wiz (ledwiz.dll), Howler (HowlerDLL.dll), GPWiz.
         - [ ] Buttons tab: blink-to-learn each LED pin, so we no longer need LEDBlinky's input-map wizard.
+      - **"Which controller will you use?" at game start** (James 2026-11-25):
+        - [x] The data: tools/New-ControllerChoices.py -> `<manifest>\controller-choices.json`. It runs in the hot-plug
+              refresh and Rebuild Menus, so it follows what is plugged in. Pedestal: 311 games have a choice (222
+              trackball/joystick, 53 analog/8-way stick, 36 gun games trackball/mouse).
+        - [ ] The question (proposed; James can redirect):
+              - The ZStudio-retrofe fork's Launcher.cpp makes a blocking pipe call to AmPanel (`choose <game>`, 15 s cap)
+                before the emulator starts, and only for games in the file.
+              - AmPanel shows a full-screen, top-most chooser driven by the panel: stick left/right, button 1 picks.
+              - The last pick per game is highlighted, and that pick is used after 8 s of no input.
+              - It replies with the stick map and any extra emulator arguments (e.g. a MAME `-ctrlr`), then sets the map.
+              - No question when only one choice is plugged in.
+        - [ ] Flight sticks are not detected (cabinet.json flightStick false): needs the Watch-Inputs capture at the cabinet.
       - [ ] Step 2: an LED test in Tools. Light each button in turn and in each player's colour. Only while LEDBlinky is
             not running (they would fight over the boards).
       - [ ] Step 3: per-game colours on game select (Colors.ini + InputMap), from the RetroFE launcher hook that now
