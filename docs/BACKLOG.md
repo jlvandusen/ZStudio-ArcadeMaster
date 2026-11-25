@@ -41,6 +41,9 @@ The loop works like this (James, 2026-11-25):
       - [x] MAME: `tools/mame-controls.json` + `Set-MameControls.ps1` (backs up `.am-bak`, `-Restore` undoes).
             Assault, Battlezone and Vindicators: left tread = P1 stick OR joystick 1, right tread = P2 stick OR
             joystick 2, fire = either trigger (key or joystick button). Applied on the R: copy; MAME loads them.
+      - Mice: 3 Ultimarc devices (D209:0410, 0411, 0511), and MAME runs with `multimouse 0`, so all are one mouse
+        (rolling the rollerball also turns the dial in Tempest). Map them separately with `multimouse 1` (rollerball =
+        MOUSECODE_n for TRACKBALL_X/Y, dial = MOUSECODE_m for DIAL) once the capture shows which is which.
       - [ ] With James at the panel: run `Watch-Inputs.ps1` to confirm the flight sticks are joystick 1/2 (or which
             keys), then trim the OR lists to the real controls. Add Discs of Tron (dial buttons = aim up/down).
       - First, find which device the flight sticks are (`tools/Watch-Inputs.ps1`: move each control, see what it
@@ -123,7 +126,9 @@ The loop works like this (James, 2026-11-25):
 ## 6. Tooling
 - [x] The E: refusal in the preview, marquee and theme tools comes from `tools/lib/am_guard.py`. It reads
       `AM_PROTECTED`, else `ProtectedPaths` in ArcadeMaster.config.json, else the whole E: drive. (2026-11-25)
-- [ ] Self-test: add checks for the new tools (marquees, themes, library mover dry run).
+- [x] Self-test `-Cabinet` also runs New-Marquees, New-GameStories (both `--dry-run`) and Set-MameControls (dry run).
+      11 s in all. (2026-11-25)
+- [ ] Self-test: Move-ToLibrary dry run against a small plan.
 
 ## 7. Racing and flight cabinet (DESKTOP-RACE1 takes these first)
 Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets never do the same one.
