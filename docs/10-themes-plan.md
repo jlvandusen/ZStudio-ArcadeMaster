@@ -49,15 +49,20 @@ Styles change the pictures; these change the **arrangement**. Each is a complete
 | Layout | Idea | Borrowed from |
 |---|---|---|
 | **AM-Wall** (Tile Wall) | A staggered two-column wall of logo tiles on the left. The chosen game opens big on the right: video, title bar, controls card, hint, and the story after 6 s. | CoinOPS Wall / Night Wall |
-| **AM-Marquee** (Cabinet) | The screen is a cabinet: a lit marquee lightbox on top (`type="marquee"`), the video in a CRT bezel with scanline glass, the controls card on the control-panel deck. Logos are on the left side panel; title and story are on the right one. | CoinOPS Marquee / Marquee + Bezel |
+| **AM-Marquee** (Cabinet) | The screen is a cabinet: a lit marquee lightbox on top (`type="marquee"`), the video in a clean screen frame, the controls card on the control-panel deck. Logos are on the left side panel; title and story are on the right one. | CoinOPS Marquee / Marquee + Bezel |
 | **AM-Wheel** (Spin Wheel) | Logos on a curved, tilted wheel at the right, over a neon arc. The video is big on the left, and the story runs as a ticker along the bottom. | CoinOPS Wheel Ani, CORE TYPE R |
 | **AM-Poster** (Box Art) | A box-art (`cover`) carousel with tilted neighbours along the bottom, over the game's full-bleed backdrop. The video is top right and the controls card top left. | CoinOPS Poster / Bottom Spin |
 | **AM-Neon** (Neon Lite) | A centred neon **text** list under one huge logo. It has no list pictures to load and the fewest layers, so it's the theme for weak PCs. | CoinOPS Vertical / Fast |
 
+- **Backgrounds are the game's own art** (James, 2026-11-22: "something related to each game as the background"):
+  - Every theme draws the game's `am_backdrop`, with its `fanart` over it where the game has one.
+  - The only generated base is a plain dark gradient behind them.
+  - No theme has generated scenes, synthwave, stars, grid floors, scanlines or CRT effects. AM-Marquee's screen frame is a clean modern frame, with no CRT glass.
+  - Neon is used only on frame edges and selection highlights.
 - **Keys:** every game-list menu is `orientation="vertical"`, so UP / DOWN move through the games and LEFT / RIGHT stay on the playlists. This holds even where the items are laid out sideways (Poster, Wall): there, UP / DOWN mean previous / next. The main-menu row stays horizontal like ArcadeMaster's, so the wheel steers it.
 - **Speed:**
   - Every generated picture is made at the size the layout draws it.
-  - Each theme has two full-screen layers: one opaque, pre-scaled JPEG background and the game's `am_backdrop`. The backdrop is darkened by its alpha, not by a scrim layer, and has no resize animation.
+  - Full-screen layers are the plain pre-scaled gradient JPEG, the game's `am_backdrop`, and its `fanart` only where it has one. The game art is darkened by its alpha, not by a scrim layer, and has no resize animation.
   - The tile wall is baked into one picture; only the logos move between the fixed tiles.
   - The video has one fixed size (`width` + `maxHeight`, so 4:3 and 16:9 both fit), and only its alpha animates.
   - Each theme's own art is 0.1 to 0.9 MB.
