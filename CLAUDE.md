@@ -6,6 +6,7 @@ Several cabinets work on this repo; each runs its own Claude session:
 |---|---|
 | DESKTOP-RACE1 | racing / flight, G29 wheel; the coordinator |
 | ARCADE-PEDESTAL | 4-player pedestal with a touch second screen |
+| DESKTOP-RACE2 | second racing / flight cabinet, G29 wheel, clutch + handbrake + paddles, one 1080p screen |
 
 They coordinate on the NAS board, **`Z:\ArcadeMaster\board`**. Read `BOARD.md` there.
 
