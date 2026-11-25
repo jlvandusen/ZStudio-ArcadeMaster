@@ -50,7 +50,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -207,7 +207,7 @@ foreach ($tpd in Get-ChildItem (Join-Path $RetroFE 'emulators') -Directory -Filt
   $up = Join-Path $tpd.FullName 'UserProfiles'; if (-not (Test-Path $up)) { continue }
   $gone = @(foreach ($f in Get-ChildItem $up -Filter *.xml -File) {
     $m = [regex]::Match([IO.File]::ReadAllText($f.FullName), '<GamePath>(.+?)</GamePath>'); if (-not $m.Success) { continue }
-    $p = $m.Groups[1].Value; $full = if ([IO.Path]::IsPathRooted($p)) { $p } else { [IO.Path]::GetFullPath((Join-Path $tpd.FullName $p)) }
+    $p = [Net.WebUtility]::HtmlDecode($m.Groups[1].Value); $full =   # XML: Let&apos;s Go Jungle is Let's Go Jungle if ([IO.Path]::IsPathRooted($p)) { $p } else { [IO.Path]::GetFullPath((Join-Path $tpd.FullName $p)) }
     if (-not (Test-Path -LiteralPath $full)) { $f.BaseName } })
   if (-not $gone) { continue }
   # the same set already found unfixable last time: don't search the disks again on every boot
@@ -216,8 +216,9 @@ foreach ($tpd in Get-ChildItem (Join-Path $RetroFE 'emulators') -Directory -Filt
   if ($fix) {
     $hints = @(Get-AmTeknoParrotRoots -RetroFE $RetroFE | Where-Object { $_.TrimEnd('\') -ne $tpd.FullName.TrimEnd('\') })
     $rep = Join-Path $PSScriptRoot 'Repair-TPProfiles.ps1'
-    $dry = & $rep -TpDir $tpd.FullName -HintDirs $hints *>&1 | Out-String   # back up + write only when something can be fixed
-    $o = if ($dry -match 'resolvable=([1-9]\d*)') { & $rep -TpDir $tpd.FullName -HintDirs $hints -BackupRoot (Join-Path $ManifestDir 'backup') -Apply *>&1 | Out-String } else { '' }
+    $cat = Join-Path $ManifestDir 'games.json'   # where the catalog found moved games (foundAt)
+    $dry = & $rep -TpDir $tpd.FullName -HintDirs $hints -Catalog $cat *>&1 | Out-String   # back up + write only when something can be fixed
+    $o = if ($dry -match 'resolvable=([1-9]\d*)') { & $rep -TpDir $tpd.FullName -HintDirs $hints -Catalog $cat -BackupRoot (Join-Path $ManifestDir 'backup') -Apply *>&1 | Out-String } else { '' }
     $done = @([regex]::Matches($o, '(?m)^fixed (\S+)\.xml') | ForEach-Object { $_.Groups[1].Value })
     $left = @($gone | Where-Object { $done -notcontains $_ })
     if ($left) { Set-Content $memo (($left | Sort-Object) -join ',') } else { Remove-Item $memo -ErrorAction SilentlyContinue }
@@ -308,6 +309,18 @@ if ($fix -and $lbDir -and (Test-Path (Join-Path $ownLb 'LEDBlinky.exe')) -and ([
 }
 if ((Test-Path (Join-Path $tools 'ARCADEMASTER-TOOLS.txt')) -and -not (Get-ChildItem (Join-Path $tools 'medium_artwork\video') -File -ErrorAction SilentlyContinue) -and $fix) { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'New-ToolsArt.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-Null; $did += 'Tools art regenerated' }
 if ($did) { Add-Result 'art' $checks.art 'FIXED' ($did -join '; ') } else { Add-Result 'art' $checks.art 'OK' 'present' }
+
+# control panel: two buttons that send the same key (learned by Import-LEDBlinkyPanel.py into panel.json). Fine when it
+# is one physical button under two names; when they are two buttons, a game cannot tell them apart.
+$pj = Join-Path $ManifestDir 'panel.json'
+if (Test-Path $pj) {
+  $pn = $null; try { $pn = Get-Content $pj -Raw | ConvertFrom-Json } catch { }
+  $cl = @(if ($pn -and $pn.clashes) { $pn.clashes })
+  if ($cl.Count) {
+    $txt = ($cl | ForEach-Object { "$(@($_.buttons) -join ' and ') both send $($_.key)" }) -join '; '
+    Add-Result 'panel' $checks.panel 'WARN' "$txt - if they are one button that is fine; if two, give one a new key in the I-PAC config (WinIPAC) and in LEDBlinkyInputMap.xml, then Rebuild Game Menus"
+  } else { Add-Result 'panel' $checks.panel 'OK' "$(@($pn.players).Count) players, no two buttons share a key" }
+} else { Add-Result 'panel' $checks.panel 'OK' 'not learned on this cabinet (no LEDBlinky button map)' }
 
 # summary + last-known-good snapshot
 $warn = @($results | Where-Object { $_.state -eq 'WARN' }).Count; $fixed = @($results | Where-Object { $_.state -eq 'FIXED' }).Count

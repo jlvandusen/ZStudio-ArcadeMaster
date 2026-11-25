@@ -66,6 +66,21 @@ $script:AmFolderHints = @{
   SnoCross = @('SNOTP', 'SnoCross'); DirtyDrivin = @('dd', 'Dirty Drivin'); Batman = @('BATMAN'); Cars = @('cars')
 }
 
+# Is $new the same game as $old? Their paths must end the same way (file name, then folders upwards) up to and including
+# a folder that names the game. "Game\RingGame.exe" alone is not enough: Under Night In-Birth and Fighting Climax Ignition
+# both have one; "Fighting Climax Ignition [SDCS]\Game\RingGame.exe" is.
+$script:AmGenericFolders = @('game', 'games', 'bin', 'binaries', 'win32', 'win64', 'x64', 'x86', 'exe', 'data', 'app', 'release', 'linux', 'dump', 'rom', 'roms', 'program', 'main', 'disk', 'files', 'content', 'build', 'sys', 'system', 'windowsnoeditor')
+function Test-AmSameGamePath([string]$old, [string]$new) {
+  $a = @($old -split '\\' | Where-Object { $_ }); $b = @($new -split '\\' | Where-Object { $_ })
+  if ($a.Count -lt 2 -or $b.Count -lt 2 -or $a[-1] -ne $b[-1]) { return $false }
+  for ($i = 2; $i -le [Math]::Min($a.Count, $b.Count) - 1; $i++) {
+    $x = $a[$a.Count - $i]; $y = $b[$b.Count - $i]
+    if ($x -ne $y) { return $false }                                  # -ne is case-insensitive
+    if ($script:AmGenericFolders -notcontains $x.ToLower()) { return $true }
+  }
+  $false
+}
+
 function ConvertTo-AmKey([string]$s) { ($s.ToLower() -replace '[^a-z0-9]', '') }
 
 # the game's own program file in a folder: the name TeknoParrot expects if it says one, else the largest .exe / Linux
@@ -113,7 +128,7 @@ function Invoke-AmGameDoctor($games) {
 
       $exe = [IO.Path]::GetFileName($path); $folder = [IO.Path]::GetFileName([IO.Path]::GetDirectoryName($path))
       # moved: a folder with the same name somewhere under the game folders that holds the same program file
-      $hits = @(@((& $dirIx)[$folder.ToLower()]) | Where-Object { $_ } | ForEach-Object { Join-Path $_ $exe } | Where-Object { (Test-Path -LiteralPath $_ -PathType Leaf) -and (Test-AmProgramFile $_) })
+      $hits = @(@((& $dirIx)[$folder.ToLower()]) | Where-Object { $_ } | ForEach-Object { Join-Path $_ $exe } | Where-Object { (Test-Path -LiteralPath $_ -PathType Leaf) -and (Test-AmProgramFile $_) -and (Test-AmSameGamePath $path $_) })
       if ($hits.Count -ge 1) {
         $new = $hits | Sort-Object { $_.Length } | Select-Object -First 1   # the shallowest copy (not a tools\32\ duplicate)
         $v.problem = 'moved'; $stats.moved++
