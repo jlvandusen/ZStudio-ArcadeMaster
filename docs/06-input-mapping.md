@@ -535,6 +535,9 @@ reboot, a USB port change, or unplugging and replugging. Each emulator records t
 | Cemu | `<uuid>` id in `controllerProfiles\*.xml` | `Repair-EmulatorDevices.ps1` |
 | Supermodel (Model 3) | `JOYn_` numbers in `Config\Supermodel.ini` | `Repair-EmulatorDevices.ps1` |
 | Model 2 | device number inside each control code in `CFG\*.input` (keys untouched) | `Repair-EmulatorDevices.ps1` |
+| Assetto Corsa Competizione | `instanceGuid` per device in `Documents\...\Config\controls.json` | `Repair-EmulatorDevices.ps1` (`catalog\controller-files.json`) |
+| DiRT 4, GRID | the **product** GUID (VID / PID) in `input\devices\device_defines.xml` | nothing needed: it never changes |
+| RetroArch (pedestal, RetroBat systems) | `input_playerN_joypad_index` (a number) | to do on the pedestal: pin players with `input_playerN_reserved_device` (VID:PID name) |
 
 `Repair-EmulatorDevices.ps1` keeps `manifest\emulator-devices.json` (the ids and numbers the files are written with;
 on RACE1 seeded from `profiles\G29.json`, on other cabinets the first run records what is plugged in). Each run
@@ -542,7 +545,8 @@ matches devices by USB VID / PID (then name, then old id when two are the same),
 each changed file up as `<file>.ids-<time>.bak`. It covers the frontend's own `emulators\` folder and the WheelMap
 targets of this cabinet. It runs at boot (Start-ArcadeMaster, after Update-ControllerIds) and on plug / unplug
 (Update-Controllers), reading the DirectInput scan Get-CabinetDevices has just refreshed (about 0.4 s).
-Tested on copies with the wheel and handbrake swapped and new ids: 9 files fixed (MAME, Cemu, Supermodel, six Model 2
+Every config file on RACE1 was searched for the wheel's and handbrake's GUIDs (2026-11-25): only MAME, Cemu and ACC store
+them; RetroArch, PCSX2 and Flycast are not installed here. Tested on copies with the wheel and handbrake swapped and new ids: 9 files fixed (MAME, Cemu, Supermodel, six Model 2
 games), and a second run changed nothing.
 
 ## Favourites on the wheel (2026-11-25)
