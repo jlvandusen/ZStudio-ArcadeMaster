@@ -261,6 +261,10 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       list + 15 hand-written: Initial D 4/5/7/8/Zero, Wangan Midnight 5, Battle Gear 4, GTI Club 3, After Burner Climax,
       Wreckfest, Burnout Paradise, Project CARS, V-Rally 4, NASCAR Heat 5, American Truck Simulator). Left: MAME racers
       (art folder is a link onto E:, which the stories tool won't write into), Model 3 clones, GameCube, Sega Racing Classic.
+      [RACE1] then 31 -> 19: an EMPTY menu.txt (CoinOPS leftover) made the stories and controls-card tools skip MAME and
+      GameCube entirely; fixed, + 12 hand-written (Out Run, Virtua Racing, OutRunners, Cruis'n USA/World, Off Road
+      Challenge, California Speed, Rush The Rock / 2049, F-Zero GX, Double Dash, Auto Modellista). Left: Model 3 regional
+      versions (Dirt Devils, Emergency Call Ambulance, Scud Race, Sega Rally 2 DX), Sega Racing Classic, Valve Limit R, MachStorm, Cars.
 - [ ] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
 - [ ] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
 - [ ] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
