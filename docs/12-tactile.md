@@ -26,3 +26,19 @@ On this cabinet that's 16 PC racing games, and the other 87 racing games run on 
 2. **SimHub:** install it (free; winget `SHWotever.SimHub`). Enable ShakeIt Bass Shakers on the shaker output, using one shared profile kept in the repo for every cabinet. The launcher starts SimHub hidden at boot, the same way as the Stream Deck helper.
 3. **Sound-driven games:** mirror the game audio to the shaker output through a low-pass filter. VoiceMeeter is already installed, and Equalizer APO on the shaker output is the alternative. While SimHub is driving a telemetry game, the sound path is turned down so the two don't double up.
 4. **Tools menu:** add a "Tactile On-Off" switch and a strength setting, plus a health-check line for the shaker output.
+
+## Sound-driven shakers: ready to switch on (2026-11-25)
+
+DESKTOP-RACE1 already has VoiceMeeter (basic edition 1.0.7.3) with its remote-control DLL, so no extra software is needed. `tools\tactile\Set-ShakerAudio.ps1`:
+
+- **Default, no switch: check.** It changes nothing. It shows VoiceMeeter, the device Windows plays through, the shaker card (an active sound output that is not VoiceMeeter or a display), and the plan.
+- **`-Apply`:**
+  - starts VoiceMeeter minimised
+  - A1 = the current speakers, A2 = the shaker card
+  - VoiceMeeter's input feeds both
+  - shaker strength `-Strength` 0-100 (70 = -18 dB)
+  - makes "VoiceMeeter Input" the Windows default, remembering the old one in `<manifest>\tactile.json`.
+- **`-Off`:** puts the old default back and mutes the shaker bus.
+- **Dry run:** `AM_SYSTEM_DRYRUN=1` prints what it would do.
+
+The low-pass comes from the shaker amplifier's own crossover; set it to about 80 Hz. For more cut, run `VoicemeeterBUSGEQ15.exe` on bus A2. Telemetry games (SimHub ShakeIt) and sound-driven games can share the same card.
