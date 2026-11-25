@@ -52,6 +52,9 @@ static class AmPanel
     static Sticks sticks;              // UltraStik maps per game: AmPanel.json "Sticks": "own" (default: on when Lights = own)
     static bool sticksOwn;
     static string speech = "off";         // AmPanel.json "Speech": off | start
+    static ExitGuard exitGuard;           // Esc ends any game (AmPanel.json "ExitKey": "ESC" | "none", "ExitGraceMs")
+    static string exitKey = "ESC";
+    static int exitGraceMs = 1500;
     static string gameStartAnimation, gamePauseAnimation;   // AmPanel.json defaults (.lwax name or "random"); per-game files win
     static ControllerChoices choicesDb;   // "which controller will you use?" (controller-choices.json)
     static Control ui;                    // created on the tray thread: pipe threads show windows through it
@@ -164,6 +167,8 @@ static class AmPanel
         if (Str(cfg, "Reactive") != null) reactive = Convert.ToBoolean(cfg["Reactive"]);
         if (Str(cfg, "AttractAnimation") != null) attractAnimation = Str(cfg, "AttractAnimation").ToLowerInvariant();
         if (Str(cfg, "Speech") != null) speech = Str(cfg, "Speech").ToLowerInvariant();
+        if (Str(cfg, "ExitKey") != null) exitKey = Str(cfg, "ExitKey");
+        if (Str(cfg, "ExitGraceMs") != null) exitGraceMs = Convert.ToInt32(cfg["ExitGraceMs"]);
         gameStartAnimation = Str(cfg, "GameStartAnimation"); gamePauseAnimation = Str(cfg, "GamePauseAnimation");
         if (manifestDir == null)
         {
@@ -316,6 +321,12 @@ static class AmPanel
                 if (what == "game start") devices.GameRunning = true;
                 else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") { devices.GameRunning = false; devices.Resume(); }
             }
+            // the universal end-game key is armed only while a game runs
+            if (exitGuard != null)
+            {
+                if (what == "game start") { exitGuard.Emulator = Convert.ToString(State.ContainsKey("emulator") ? State["emulator"] : null); exitGuard.GameRunning = true; }
+                else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") exitGuard.GameRunning = false;
+            }
             State["lastEvent"] = what;
             State["lastArgs"] = string.Join(" ", a);
             State["lastEventAt"] = DateTime.Now.ToString("s");
@@ -458,6 +469,10 @@ static class AmPanel
                 }
                 rep["ok"] = true;
             }
+            else if (cmd == "endgame")   // {"cmd":"endgame"} - end the game in front now, as the exit key does (tests, Stream Deck)
+            {
+                rep["result"] = exitGuard == null ? "exit guard off" : exitGuard.EndNow(); rep["ok"] = exitGuard != null;
+            }
             else if (cmd == "buttons")   // {"cmd":"buttons"} - open the Buttons window on the cabinet (Tools)
             {
                 if (leds == null || ui == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
@@ -582,6 +597,15 @@ static class AmPanel
             catch (Exception e) { Log("reactive: not started - " + e.Message); }
         }
         ui = new Control(); ui.CreateControl(); var unused = ui.Handle;   // the tray thread's window: Invoke target
+        if (!exitKey.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
+            int vk = ReactiveKeys.VkOf(exitKey);
+            if (vk == 0) Log("exit guard: unknown ExitKey '" + exitKey + "'");
+            else try {
+                    exitGuard = new ExitGuard(vk, exitGraceMs, "retrofe",
+                        new[] { Path.Combine(manifestDir, "exit-rules.json"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exit-rules.json") }, Log);
+                } catch (Exception e) { Log("exit guard: not started - " + e.Message); }
+        }
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };
         if (toolsDir != null && retroFERoot != null)
         {
