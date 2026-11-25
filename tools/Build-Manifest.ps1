@@ -23,10 +23,42 @@ param(
   [string]$DefaultCategory = 'racing',
   # owner-curated tags (authoritative). Seeded with auto tags; entries with "auto": true may be re-derived.
   [string]$Tags = (Join-Path $PSScriptRoot '..\catalog\tags.json'),
+  # this cabinet's automatic tags (default: tags.json beside -Out); the repo file above is only read
+  [string]$LocalTags,
+  [switch]$SeedRepoTags,
   [switch]$NoSeedTags
 )
 $CabinetTypes = @('racing', 'flight', 'lightgun', 'standup')
 $ErrorActionPreference = 'Stop'
+
+# ---------------- this machine's own locations when the caller did not name them (Setup / Tools pass only -RetroFE / -Out).
+# The defaults above are DESKTOP-RACE1's; another cabinet finds its installs instead of failing on a missing drive.
+if (-not $PSBoundParameters.ContainsKey('TeknoParrot')) {
+  $found = [ordered]@{}
+  $tgt = Join-Path $PSScriptRoot "wheelmap\targets\$env:COMPUTERNAME.json"
+  if (Test-Path $tgt) { foreach ($t in @((Get-Content $tgt -Raw | ConvertFrom-Json).teknoparrot)) { if ($t.root -and (Test-Path -LiteralPath $t.root)) { $found[$t.root.TrimEnd('\').ToLower()] = $t.root } } }
+  foreach ($d in Get-ChildItem (Join-Path $RetroFE 'emulators') -Directory -Filter 'TeknoParrot*' -ErrorAction SilentlyContinue) { if (Test-Path (Join-Path $d.FullName 'UserProfiles')) { $found[$d.FullName.ToLower()] = $d.FullName } }
+  foreach ($p in @($TeknoParrot | ForEach-Object { $_.Path })) { if (Test-Path -LiteralPath $p) { $found[$p.TrimEnd('\').ToLower()] = $p } }
+  $cols = @(Get-ChildItem (Join-Path $RetroFE 'collections') -Directory -ErrorAction SilentlyContinue | ForEach-Object Name)
+  $TeknoParrot = @($found.Values | ForEach-Object {
+    $leaf = Split-Path $_ -Leaf
+    $variant = if ($leaf -match 'multi') { 'multicab' } elseif ($leaf -match 'light ?gun') { 'lightgun' } elseif ($_ -like "$RetroFE*") { 'standalone' } else { 'external' }
+    # only an install INSIDE this frontend belongs to one of its collections: a RetroFE collection lists the profiles of
+    # its own emulators\TeknoParrot*, so D:\Emulators\TeknoParrot or another frontend's copy with the same folder name
+    # must not claim it (its games would be listed there and hidden, as missing). Outside installs get their own
+    # AM_TP_* collection from New-RetroFECollections.
+    $inside = $_.ToLower().StartsWith($RetroFE.TrimEnd('\').ToLower() + '\')
+    $col = if ($inside) { $cols | Where-Object { $_ -eq $leaf -or ($variant -eq 'standalone' -and $_ -eq 'TeknoParrot') } | Select-Object -First 1 } else { $null }
+    @{ Name = $leaf; Path = $_; Variant = $variant; Collection = $col } })
+  Write-Host ("TeknoParrot installs found: {0}" -f (($TeknoParrot | ForEach-Object { "$($_.Path) [$($_.Variant)]" }) -join '; '))
+}
+$TeknoParrot = @($TeknoParrot | Where-Object { $_.Path -and (Test-Path -LiteralPath $_.Path) })   # a missing drive is skipped, not fatal
+if ($LaunchBox -and -not (Test-Path -LiteralPath $LaunchBox)) { Write-Host "LaunchBox not found at $LaunchBox - skipped"; $LaunchBox = $null }
+if (-not $PSBoundParameters.ContainsKey('DefaultCategory')) {
+  # games with no genre follow the cabinet: a wheel cabinet is a racing set, a flight-stick one flight, anything else stand-up arcade
+  $cabFile = Join-Path (Split-Path $Out) 'cabinet.json'
+  if (Test-Path $cabFile) { $cap = (Get-Content $cabFile -Raw | ConvertFrom-Json).capabilities; $DefaultCategory = if ($cap.wheel) { 'racing' } elseif ($cap.flightStick) { 'flight' } else { 'standup' }; Write-Host "default category (from the cabinet's controls): $DefaultCategory" }
+}
 
 function Get-Category([string]$genre, [string]$platform) {
   $g = "$genre $platform".ToLower()
@@ -44,7 +76,14 @@ function Find-Media([string]$col, [string]$item) {
   }
   $m
 }
-function Resolve-GamePath([string]$tp, [string]$p) { if (-not $p) { return $null }; if ([IO.Path]::IsPathRooted($p)) { return $p }; [IO.Path]::GetFullPath((Join-Path $tp $p)) }
+function Resolve-GamePath([string]$tp, [string]$p) {
+  if (-not $p) { return $null }
+  $full = if ([IO.Path]::IsPathRooted($p)) { $p } else { [IO.Path]::GetFullPath((Join-Path $tp $p)) }
+  # a broken relative GamePath (..\..\ above the drive root) collapses to the root: report it, don't fail the catalog
+  if ($full -match '^([A-Za-z]:)?\\\.\.' -or -not [IO.Path]::GetDirectoryName($full)) { $script:brokenPaths += "$tp :: $p"; return $null }
+  return $full
+}
+$script:brokenPaths = @()
 function New-Game([string]$id) { [ordered]@{ id = $id; title = $id; year = $null; platform = $null; genre = $null; category = $null; tags = @(); wheelRotation = $null; variants = [ordered]@{}; media = [ordered]@{}; sources = @() } }
 
 $games = [ordered]@{}
@@ -76,7 +115,7 @@ foreach ($tp in $TeknoParrot) {
     $vname = $tp.Variant; if ($g.variants.Contains($vname)) { $vname = "$vname-$($tp.Name)" }
     $g.variants[$vname] = [ordered]@{
       emulator = 'teknoparrot'; install = $tp.Path; profile = $id; gamePath = $gp
-      gameDir = if ($gp) { Split-Path $gp } else { $null }
+      gameDir = if ($gp) { [IO.Path]::GetDirectoryName($gp) } else { $null }
       ok = [bool]($gp -and (Test-Path -LiteralPath $gp)); retrofeCollection = $tp.Collection
     }
     if ($tp.Collection) {
@@ -88,6 +127,13 @@ foreach ($tp in $TeknoParrot) {
 
 # ---------------- RetroFE non-TeknoParrot collections (file-based items)
 $tpCollections = @($TeknoParrot | ForEach-Object { $_.Collection } | Where-Object { $_ })
+# Supermodel's own list of Model 3 sets (Config\Games.xml): full title, version/region, year, parent set. Clones such
+# as scudau (Scud Race, Australia) have no entry in RetroFE's hyperlist and showed in the menu as "scudau" or "NA".
+$setInfo = @{}
+foreach ($gx in Get-ChildItem (Join-Path $RetroFE 'emulators') -Recurse -Depth 3 -Filter 'Games.xml' -File -ErrorAction SilentlyContinue) {
+  try { [xml]$sx = Get-Content -LiteralPath $gx.FullName -Raw } catch { continue }
+  foreach ($s in @($sx.games.game)) { if ($s.name -and -not $setInfo.ContainsKey($s.name)) { $setInfo[$s.name] = @{ title = [string]$s.identity.title; version = [string]$s.identity.version; year = [string]$s.identity.year; parent = [string]$s.parent } } }
+}
 foreach ($col in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   if ($col.Name -in $tpCollections -or $col.Name -in 'Main', 'GAMES', 'SETTINGS', 'Controller') { continue }
   if (Get-ChildItem $col.FullName -Filter 'ARCADEMASTER-*.txt' -File -ErrorAction SilentlyContinue) { continue }   # our own generated collections (views, Tools) are outputs, not sources
@@ -102,15 +148,30 @@ foreach ($col in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
     $item = $f.BaseName; $id = "$($col.Name):$item"
     $g = New-Game $id; $hg = $hyper[$item]
     if ($hg) { $g.title = $hg.description; $g.year = $hg.year; $g.genre = $hg.genre; $g.platform = $col.Name } else { $g.title = $item; $g.platform = $col.Name }
+    $si = $setInfo[$item]
+    if ($si -and $si.title -and (-not $hg -or "$($hg.description)".Trim() -in '', 'NA', $item)) {
+      # a clone carries its version in the name, so the menu tells "Scud Race (Australia, Twin/DX)" from "Scud Race"
+      $g.title = if ($si.parent -and $si.version) { "$($si.title) ($($si.version))" } else { $si.title }
+      if ((-not $g.year -or $g.year -eq 'NA') -and $si.year) { $g.year = $si.year }
+      $ph = if ($si.parent) { $hyper[$si.parent] } else { $null }
+      if (-not $g.genre -or $g.genre -eq 'NA') { $g.genre = if ($ph -and $ph.genre) { $ph.genre } else { $g.genre } }
+    }
     $g.variants['default'] = [ordered]@{ emulator = $conf['launcher']; file = $f.FullName; ok = $true; retrofeCollection = $col.Name }
     $g.sources += [ordered]@{ frontend = 'retrofe'; collection = $col.Name; item = $item }
     $g.media = Find-Media $col.Name $item
+    # missing art comes from the game's family in the same collection: its parent, then the other versions
+    # (Emergency Call Ambulance: only the US set ecau has art; eca, ecaj and ecap use it)
+    if ($si -and $g.media.Count -lt 2) {
+      $family = $si.parent; if (-not $family) { $family = $item }
+      $kin = @($family) + @($setInfo.Keys | Where-Object { $setInfo[$_].parent -eq $family -and $_ -ne $item } | Sort-Object)
+      foreach ($k in $kin) { if ($k -eq $item) { continue }; foreach ($kv in (Find-Media $col.Name $k).GetEnumerator()) { if (-not $g.media.Contains($kv.Key)) { $g.media[$kv.Key] = $kv.Value } } }
+    }
     $games[$id] = $g
   }
 }
 
 # ---------------- LaunchBox platforms: link to TP profiles, add category + extra media
-foreach ($plat in $LaunchBoxPlatforms) {
+foreach ($plat in @(if ($LaunchBox) { $LaunchBoxPlatforms })) {
   $px = Join-Path $LaunchBox "Data\Platforms\$plat.xml"; if (-not (Test-Path $px)) { continue }
   [xml]$lb = Get-Content $px -Raw
   foreach ($e in $lb.LaunchBox.Game) {
@@ -145,6 +206,10 @@ foreach ($plat in $LaunchBoxPlatforms) {
   }
 }
 
+# ---------------- games that can't start: find moved files, give every other one a plain reason (lib\AmGameDoctor.ps1)
+. (Join-Path $PSScriptRoot 'lib\AmGameDoctor.ps1')
+$doctor = Invoke-AmGameDoctor $games.Values
+
 # ---------------- categories + write
 foreach ($g in $games.Values) {
   if (-not $g.category) {
@@ -153,12 +218,18 @@ foreach ($g in $games.Values) {
     if (-not $g.category) { $g.category = $DefaultCategory }
   }
 }
-# ---------------- owner tags: authoritative category + free tags; seed new games with their auto tag
-$tagDoc = if (Test-Path $Tags) { Get-Content $Tags -Raw | ConvertFrom-Json } else { [pscustomobject]@{ _help = ''; games = [pscustomobject]@{} } }
-$tagDoc._help = "Edit 'tags' per game. Cabinet types: racing, flight, lightgun, standup (shown as Arcade). Any other words are free tags (linked, kids, favorite...). Remove `"auto`": true once you have checked an entry; auto entries may be re-derived by Build-Manifest.ps1."
+# ---------------- tags: the owner's file in the repo (catalog\tags.json) is READ, never rewritten by a rebuild - every
+# cabinet rebuilt it with its own seeds, so it changed on every cabinet and in every commit. Automatic tags for games the
+# owner has not tagged go to this cabinet's own <manifest>\tags.json. The repo's entry wins when both have one.
+# -SeedRepoTags writes the seeds into the repo file (the old behaviour, for deliberately starting a shared list).
+$help = "Edit 'tags' per game. Cabinet types: racing, flight, lightgun, standup (shown as Arcade). Any other words are free tags (linked, kids, favorite...). Remove `"auto`": true once you have checked an entry; auto entries may be re-derived by Build-Manifest.ps1."
+function Read-TagDoc([string]$path) { if ($path -and (Test-Path $path)) { $d = Get-Content $path -Raw | ConvertFrom-Json; if (-not $d.games) { $d | Add-Member -Force -NotePropertyName games -NotePropertyValue ([pscustomobject]@{}) }; $d } else { [pscustomobject]@{ _help = ''; games = [pscustomobject]@{} } } }
+$ownerDoc = Read-TagDoc $Tags
+if (-not $LocalTags) { $LocalTags = Join-Path (Split-Path $Out) 'tags.json' }
+$seedDoc = if ($SeedRepoTags) { $ownerDoc } else { Read-TagDoc $LocalTags }
 $seeded = 0
 foreach ($g in $games.Values) {
-  $e = $tagDoc.games.PSObject.Properties[$g.id]
+  $e = $ownerDoc.games.PSObject.Properties[$g.id]; if (-not $e) { $e = $seedDoc.games.PSObject.Properties[$g.id] }
   if ($e) {
     if ($e.Value.auto -and -not ($e.Value.tags -contains $g.category)) { $e.Value.tags = @($g.category) }   # auto entry: keep in sync
     $g.tags = @($e.Value.tags)
@@ -166,14 +237,15 @@ foreach ($g in $games.Values) {
     if ($ct) { $g.category = $ct[0] }                                                   # owner's tag wins
   } else {
     $g.tags = @($g.category)
-    if (-not $NoSeedTags) { $tagDoc.games | Add-Member -NotePropertyName $g.id -NotePropertyValue ([pscustomobject]@{ title = $g.title; tags = @($g.category); auto = $true }); $seeded++ }
+    if (-not $NoSeedTags) { $seedDoc.games | Add-Member -NotePropertyName $g.id -NotePropertyValue ([pscustomobject]@{ title = $g.title; tags = @($g.category); auto = $true }); $seeded++ }
   }
 }
 if (-not $NoSeedTags) {
-  New-Item -ItemType Directory -Force (Split-Path $Tags) | Out-Null
-  $sorted = [ordered]@{}; foreach ($p in $tagDoc.games.PSObject.Properties | Sort-Object Name) { $sorted[$p.Name] = $p.Value }
-  [ordered]@{ _help = $tagDoc._help; games = $sorted } | ConvertTo-Json -Depth 5 | Set-Content $Tags -Encoding UTF8
-  if ($seeded) { Write-Host "tags: seeded $seeded new games into $Tags (edit, then remove ""auto"": true)" }
+  $seedPath = if ($SeedRepoTags) { $Tags } else { $LocalTags }
+  New-Item -ItemType Directory -Force (Split-Path $seedPath) | Out-Null
+  $sorted = [ordered]@{}; foreach ($q in $seedDoc.games.PSObject.Properties | Sort-Object Name) { $sorted[$q.Name] = $q.Value }
+  [ordered]@{ _help = $help; games = $sorted } | ConvertTo-Json -Depth 5 | Set-Content $seedPath -Encoding UTF8
+  if ($seeded) { Write-Host "tags: seeded $seeded new games into $seedPath (edit, then remove ""auto"": true; copy an entry into catalog\tags.json to share it)" }
 }
 
 $list = @($games.Values | Sort-Object { $_.category }, { $_.title })
@@ -188,3 +260,21 @@ $list | Group-Object { $_['category'] } | ForEach-Object {
   $fan = @($_.Group | Where-Object { $_.media.Contains('fanart') }).Count
   Write-Host ("  {0,-9} {1,3} games  {2,3} launchable  {3,3} with fanart  {4,3} multi-variant" -f $_.Name, $_.Count, $ok, $fan, @($_.Group | Where-Object { $_.variants.Count -gt 1 }).Count)
 }
+$cant = @($list | Where-Object { -not (& $launchable $_) })
+if ($doctor.moved -or $cant) {
+  Write-Host ("games that can't start: {0} (moved {1}, incomplete copy {2}, not installed {3}, never set up in TeknoParrot {4}, no path {5})" -f $cant.Count, $doctor.moved, $doctor.incomplete, $doctor['not-installed'], $doctor['not-set-up'], $doctor['no-path'])
+  foreach ($g in $list) { foreach ($v in $g.variants.Values) { if ($v.problem) { Write-Host ("  {0,-34} {1,-13} {2}" -f $g.title, $v.problem, $v.why) } } }
+}
+# the same list in plain words beside the catalog (the System Health page points here)
+$txt = @("Games that can't start on $env:COMPUTERNAME ($((Get-Date).ToString('yyyy-MM-dd HH:mm'))). Rebuilt with the catalog (Tools > Rebuild Game Menus).", '')
+# games for this cabinet's modes first; the others (a shooter on a racing cabinet ...) would not be in its menus anyway
+$cabModes = @(); $cabJson = Join-Path (Split-Path $Out) 'cabinet.json'
+if (Test-Path $cabJson) { $cabModes = @((Get-Content $cabJson -Raw | ConvertFrom-Json).capabilities.modes) }
+$mine = @($cant | Where-Object { -not $cabModes -or $cabModes -contains $_.category }); $other = @($cant | Where-Object { $mine -notcontains $_ })
+foreach ($g in $mine | Sort-Object { $_.title }) { $txt += "$($g.title)"; foreach ($v in $g.variants.Values) { if ($v.why) { $txt += "    $($v.why)" } } }
+if ($other) { $txt += ''; $txt += ("For other cabinet types (not in this cabinet's menus): " + (($other | Sort-Object { $_.title } | ForEach-Object { "$($_.title) [$($_.category)]" }) -join ', ')) }
+$moved = @($list | Where-Object { @($_.variants.Values | Where-Object { $_.movedFrom }).Count })
+if ($moved) { $txt += '', 'Found in a new place (they start again):'; foreach ($g in $moved) { foreach ($v in $g.variants.Values) { if ($v.movedFrom) { $txt += "    $($g.title): $($v.why)" } } } }
+if (-not $cant -and -not $moved) { $txt += 'Every game in the catalog can start.' }
+Set-Content (Join-Path (Split-Path $Out) 'games-cant-start.txt') $txt -Encoding UTF8
+if ($script:brokenPaths) { Write-Host ("{0} TeknoParrot profile(s) with a GamePath above the drive root (fix with Repair-TPProfiles.ps1):" -f $script:brokenPaths.Count); $script:brokenPaths | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" } }

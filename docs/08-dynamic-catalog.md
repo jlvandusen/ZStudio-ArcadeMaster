@@ -242,6 +242,7 @@ At every boot, before RetroFE starts, and from **Tools → System Health** (a vi
 | screens | second-screen layouts declare `monitor=`; `mouseTouchScreens` follows whether a mouse-type touch board is plugged in (docs/07, patch 0006) |
 | menu | main-menu entries point at real collections; the menu's Exit leaves a note so the launcher stops instead of restarting (2026-11-22) |
 | launchers | report only; emulators are never touched |
+| games | TeknoParrot profiles inside this frontend whose game path is gone are repaired by `Repair-TPProfiles.ps1`, which backs up first and only writes when it found the game. The path comes from the same profile in another TeknoParrot install, or by file name. Profiles that can't be fixed are remembered, so the disks aren't searched on every boot. The check also says how many catalog games can start and why the others can't (2026-11-23). |
 | logs | log rotation above 20 MB, crash folders capped at 10 |
 | disk | free space |
 | art | intro and Tools art (regenerated when missing) |
@@ -253,6 +254,37 @@ Fixes are conservative and backed up. Results go to `manifest\health.json`; `-No
 - **3 crashes within 2 minutes:** the last-known-good configs are restored once (the current files are kept as `*.before-lkg`) and RetroFE is retried. It gives up only after that.
 
 Tested by breaking settings.conf (missing theme, 2 screens on a 1-display cabinet); both were repaired.
+
+## Game names and art for versions of the same game (2026-11-23)
+
+Sega Model 3 clones (regional or updated versions such as `scudau`, `ecaj`, `dirtdvlsj`) had no name in RetroFE's list. The menu showed them as their set name or as "NA", without art. Now:
+- **Names:** `Build-Manifest` reads Supermodel's `Config\Games.xml`, which has each set's title, version/region, year and parent. A clone is named "Scud Race (Australia, Twin/DX)". `New-RetroFECollections` writes that name into `meta\hyperlist\<collection>.xml` only where the entry was a placeholder (empty, "NA", or the set name). Real names are never overwritten, and the original file is kept as `.am-backup`.
+- **Art:** a version with no art of its own uses its family's art from the same collection: the parent first, then the other versions. Emergency Call Ambulance's art exists only for the US set, so `eca`, `ecaj` and `ecap` all use it. RetroFE finds art by the item's own name, so the menu builder adds a **hard link** under that name. That's the same file on disk, using no extra space (it falls back to a copy). Only missing files are added, and every one is listed in `medium_artwork\ARCADEMASTER-borrowed-art.txt`. On this cabinet 72 files were linked, and racing games with background art went from 93 to 105.
+
+## Games that can't start (2026-11-23)
+
+Every catalog build (`Build-Manifest`, Tools → Rebuild Game Menus) runs `tools\lib\AmGameDoctor.ps1` over each game copy that can't start. It gives each one a reason, in `games.json` (`problem`, `why`) and in plain words in `manifest\games-cant-start.txt`:
+
+| Reason | Meaning | What happens |
+|---|---|---|
+| moved | the program file is in another folder on this PC, with the same file name and the same folder name | PC games: the catalog points there and the game is back in the menu. TeknoParrot: the health check repairs the profile. |
+| incomplete | the game's folder is here but its program file isn't (a partial copy) | listed: copy the game in again |
+| not installed | neither the file nor its folder is on this PC | listed |
+| not set up | TeknoParrot has never been set up for the game (no profile) | looks for a folder named after the game (its TeknoParrot name, its title, or the usual short names of arcade dumps such as `FFSB` and `SNOTP`). It reports either **ready to set up**, with the `Add-TPGame.ps1` line to run, or **data only** (program files missing). |
+
+**Program files are not always `.exe`.** Linux-based boards (Sega Lindbergh / Nu, Taito Type X3, some Raw Thrills) start from a Linux program file: `.elf` or no extension at all (`abc`, `Jennifer`, `car`). 16 working TeknoParrot profiles here point at one. The doctor searches by the exact file name, whatever the extension, and tells a program from data by its header (`.exe`, or a Linux file starting with `ELF`).
+
+**Setting a game up:** `tools\Add-TPGame.ps1 -Id <TeknoParrot name> -GamePath <program file> [-Apply]` does what TeknoParrotUI's "add game" does, with this cabinet's controls already bound by the wheel tool (pedals clutch LEFT, brake MIDDLE, gas RIGHT). It does a dry run by default, never replaces an existing profile, and accepts `.exe` or Linux program files. Then run Tools → Rebuild Game Menus.
+
+Games that can't start are never shown in the menus. First run on DESKTOP-RACE1:
+- Road Fighters 3D moved (`D:\Arcade PC\PC\...` → `D:\Arcade PC\Konami\...`) and is back.
+- Nicktoons Nitro, Fast & Furious Drift and Fast & Furious SuperCars had broken relative paths in the frontend's own TeknoParrot copy, left over from copying the frontend from E: to D:. They were repaired.
+- Valve Limit R (`VirtuaRLimit`, Taito Type X) was installed at `D:\Arcade PC\Taito Type X\Valve Limit R` but never set up. It was set up with `Add-TPGame.ps1` and is in the Racing menu.
+- These have their data but none of their program files (no `.exe` and no Linux program), although each was set up and run once (a `teknoparrot.ini` is there):
+  - Chaos Code, Guitar Hero Arcade, Under Defeat (Windows boards)
+  - Fast & Furious, Super Bikes 1 and 2, SnoCross (`Raw Thrills\FF`, `FFSB`, `FFSB2`, `SNOTP`; the working Raw Thrills games keep `sdaemon.exe` in `rawart\`)
+  - Missing program files with the data left behind usually means an antivirus removed them.
+- 7 PC games are not installed, and Blazing Angels is not on this cabinet.
 
 ## Boot speed (2026-11-22)
 
@@ -269,3 +301,4 @@ On DESKTOP-RACE1, boot prep went from **9.6 s to 5.5 s**:
 | The intro and the Tools art render side by side | ~0.8 s |
 | The Tools art finishes in the background at low priority while RetroFE starts. It only shows inside Tools, never during the intro. Its images are swapped in atomically (temp file, then replace). | ~1.1 s |
 | The health check only starts the touch re-check when there is a touch board or a touch setting | ~0.4 s |
+| Boot tools run inside the launcher's own PowerShell instead of one new `powershell.exe` each. Each still gets its own script scope, and `exit` in a tool ends only that tool. `Get-CabinetDevices` also runs the controller scan in-process. Set `AM_BOOT_SEPARATE=1` to go back to separate processes when a tool misbehaves. | 6.1 s -> 4.6 s here; about 1.2 s per tool on the pedestal's i3 |

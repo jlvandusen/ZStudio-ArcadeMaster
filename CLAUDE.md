@@ -13,6 +13,7 @@ They coordinate on the NAS board, **`Z:\ArcadeMaster\board`**. Read `BOARD.md` t
 2. `powershell -ExecutionPolicy Bypass -File tools\Board.ps1 beat -Doing "joined; claiming open jobs" -Can "<what this machine has>"`
 3. Run `tools\Board.ps1 list`. Jobs for your machine are listed first. Claim one (`claim -Id`), do it, then finish with `done -Id -Report`.
 4. Results go into the repo through a **pull request**: make a branch, commit, push the branch, `gh pr create`, then merge the PR once it is tested (`gh pr merge --merge`). Never push straight to main. The board only carries jobs and reports.
+   Before opening or merging a PR, run `tools\Test-ArcadeMaster.ps1 -Watchdog` (about 20 s, touches nothing live) and put its result in the PR.
 5. Once per clone: `git config core.hooksPath tools/git-hooks`. Its commit-msg hook removes any "Co-Authored-By" line.
 
 **Rules:**

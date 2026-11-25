@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   ArcadeMaster boot launcher (replaces DRIVE.exe):
     1. deals a new random set/order of horizon backgrounds (Set-LayoutThemes -Shuffle -BackgroundsOnly)
@@ -20,17 +20,38 @@ param(
   [switch]$PrepOnly                    # run every boot step and log the timings, but do not start RetroFE
 )
 $ErrorActionPreference = 'Stop'
-$exe = Join-Path $Root 'retrofe\retrofe.exe'
-if (-not (Test-Path $exe)) { throw "RetroFE not found: $exe" }
+. (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1')
+$exe = Get-AmRetroFEExe $Root   # retrofe\retrofe.exe, core\retrofe.exe (CoinOPS LEGENDS / CORE) or <root>\retrofe.exe
+if (-not $exe) { throw "RetroFE not found under $Root (looked in retrofe\, core\ and the root)" }
+# CoinOPS builds (core\retrofe.exe) run from the build's root folder, like their own CabinetLauncher.exe: their launchers
+# use paths relative to it (emulators\MAME\mame64.exe). Started inside core\, every game failed to start.
+$exeDir = if ((Split-Path (Split-Path $exe) -Leaf) -eq 'core') { $Root } else { Split-Path $exe }
 $log = Join-Path $Root 'arcademaster-launcher.log'
 function Write-Log($m) { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) }
 
 $bootClock = [Diagnostics.Stopwatch]::StartNew(); $script:timings = New-Object System.Collections.Generic.List[string]
+# Boot tools run inside this PowerShell, not one new powershell.exe each: a PowerShell start costs ~0.3 s on the racing
+# PC and ~1.2 s on the pedestal's i3, and compiled helper types (Add-AmCachedType) stay loaded for the next tool.
+# Each tool still gets its own script scope; 'exit N' in a tool ends only that tool. AM_BOOT_SEPARATE=1 goes back to
+# one process per tool (to rule this out when a tool misbehaves).
+$separate = $env:AM_BOOT_SEPARATE -eq '1'
 function Invoke-Tool([string]$name, [string[]]$toolArgs) {
-  $sw = [Diagnostics.Stopwatch]::StartNew()
-  $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot $name) @toolArgs 2>&1 | Out-String
+  $sw = [Diagnostics.Stopwatch]::StartNew(); $path = Join-Path $PSScriptRoot $name
+  if ($separate) {
+    $out = & powershell -NoProfile -ExecutionPolicy Bypass -File $path @toolArgs 2>&1 | Out-String; $code = $LASTEXITCODE
+  } else {
+    # '-Name value' / '-Switch' string list -> named parameters
+    $named = @{}; for ($i = 0; $i -lt $toolArgs.Count; $i++) {
+      $k = $toolArgs[$i].TrimStart('-')
+      if ($i + 1 -lt $toolArgs.Count -and -not $toolArgs[$i + 1].StartsWith('-')) { $named[$k] = $toolArgs[$i + 1]; $i++ } else { $named[$k] = $true }
+    }
+    $ErrorActionPreference = 'Continue'   # a tool that sets none gets PowerShell's default, as in its own process
+    $global:LASTEXITCODE = 0; $code = 0
+    try { $out = & $path @named *>&1 | Out-String; $code = $global:LASTEXITCODE }
+    catch { $out = "$($_.Exception.Message)"; $code = 1 }
+  }
   $script:timings.Add(('{0} {1:N1}s' -f ($name -replace '\.ps1$'), $sw.Elapsed.TotalSeconds))
-  if ($LASTEXITCODE) { Write-Log "$name failed ($LASTEXITCODE): $($out.Trim())" }
+  if ($code) { Write-Log "$name failed ($code): $($out.Trim())" }
   return $out
 }
 
@@ -49,7 +70,7 @@ if (-not $NoDeviceCheck) {
     if ($prev -and $prev.wheel -and -not $now.wheel) { Write-Log "WARNING: racing wheel not detected after $WaitForWheelSec s - wheel games will not respond until it is plugged in" }
     # Dolphin follows what is plugged in: real Wii Remotes / Balance Board / GC adapter, stale device names
     $dol = Invoke-Tool 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir); if ($dol -match '->') { Write-Log ('dolphin: ' + (($dol -split "`r?`n" | Where-Object { $_ -match '->' } | ForEach-Object { $_.Trim() }) -join '; ')) }
-    $ids = Invoke-Tool 'Update-ControllerIds.ps1' @('-Cabinet', $cabFile, '-History', (Join-Path $ManifestDir 'device-history.json'), '-Apply')
+    $ids = Invoke-Tool 'Update-ControllerIds.ps1' @('-RetroFE', $Root, '-Cabinet', $cabFile, '-History', (Join-Path $ManifestDir 'device-history.json'), '-Apply')
     if ($ids -match 'APPLIED: (\d+)' -and [int]$Matches[1] -gt 0) { Write-Log "controller IDs changed - re-pointed $($Matches[1]) profile files" }
     $modesNow = (@($now.modes) | Sort-Object) -join ','; $modesFile = Join-Path $ManifestDir 'last-modes.txt'
     $modesLast = if (Test-Path $modesFile) { (Get-Content $modesFile -Raw).Trim() } else { '' }
@@ -61,10 +82,13 @@ if (-not $NoDeviceCheck) {
   } catch { Write-Log "device check failed: $($_.Exception.Message)" }   # never block boot on diagnostics
 }
 
+# the main menu's wheel shows the wheel this cabinet really has (G HUB's picture of it); redrawn only when it changed
+try { $rw = Invoke-Tool 'New-RealWheelArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout); if ($rw -match '->|removed') { Write-Log (($rw -split "`r?`n" | Where-Object { $_ -match 'real wheel' }) -join ' ') } } catch { Write-Log "real wheel art failed: $($_.Exception.Message)" }
+
 if (-not $NoShuffle) {
   try {
     $sw = [Diagnostics.Stopwatch]::StartNew()
-    & (Join-Path $PSScriptRoot 'Set-LayoutThemes.ps1') -LayoutDir (Join-Path $Root "layouts\$Layout") -CollectionsDir (Join-Path $Root 'collections') -Shuffle -BackgroundsOnly | Out-Null
+    & (Join-Path $PSScriptRoot 'Set-LayoutThemes.ps1') -LayoutDir (Join-Path $Root "layouts\$Layout") -CollectionsDir (Join-Path $Root 'collections') -ManifestDir $ManifestDir -Shuffle -BackgroundsOnly | Out-Null
     $script:timings.Add(('Shuffle {0:N1}s' -f $sw.Elapsed.TotalSeconds)); Write-Log 'backgrounds shuffled'
   } catch { Write-Log "shuffle failed: $($_.Exception.Message)" }   # never block boot on cosmetics
 }
@@ -110,7 +134,27 @@ if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-H
 # and Python + the streamdeck package are present. It exits on its own if no deck is found or Elgato's app owns it,
 # and its named mutex (Global\ArcadeMasterStreamDeck) keeps a single copy - so no process scan here (~0.1-1 s of WMI)
 $deck = Join-Path $PSScriptRoot 'streamdeck\amdeck.py'
-$pyw = (Get-Command pythonw.exe -ErrorAction SilentlyContinue).Source
+$pyw = (Get-Command pythonw.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source   # not the Store stub
+$deckOk = Join-Path $ManifestDir 'amdeck-packages.ok'   # first boot on a cabinet: install the deck's Python packages once, then never check again (no Python start on every boot)
+$deckTried = Join-Path $ManifestDir 'amdeck-packages.tried'   # a failed install is retried once a day, not on every boot
+$deckRetry = -not (Test-Path $deckTried) -or ((Get-Date) - (Get-Item $deckTried).LastWriteTime).TotalHours -ge 24
+if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
+  # Python writes to stderr when a package is missing. Under 'Stop', Windows PowerShell turns that into a fatal error
+  # (even with 2>$null) - it ended the launcher before RetroFE started on a cabinet without the deck packages.
+  # The deck is optional: nothing here may stop the boot.
+  $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try {
+    $py = Join-Path (Split-Path $pyw) 'python.exe'
+    & $py -c "import StreamDeck, PIL" 2>&1 | Out-Null
+    if ($LASTEXITCODE) {
+      $o = & $py -m pip install --user --quiet -r (Join-Path $PSScriptRoot 'streamdeck\requirements.txt') 2>&1 | Out-String
+      Write-Log "Stream Deck packages install (exit $LASTEXITCODE) $($o.Trim())"
+      & $py -c "import StreamDeck, PIL" 2>&1 | Out-Null
+    }
+    if (-not $LASTEXITCODE) { Set-Content $deckOk (Get-Date).ToString('s') } else { Set-Content $deckTried (Get-Date).ToString('s'); Write-Log 'Stream Deck packages not available - deck skipped, retried in a day' }
+  } catch { Set-Content $deckTried (Get-Date).ToString('s'); Write-Log "Stream Deck package check failed: $($_.Exception.Message)" }
+  finally { $ErrorActionPreference = $eap }
+}
 if ($pyw -and (Test-Path $deck)) {
   try { Start-Process $pyw -ArgumentList @("`"$deck`"", '--retrofe', "`"$Root`"", '--manifest', "`"$ManifestDir`"") -WindowStyle Hidden; Write-Log 'Stream Deck controller started' } catch { Write-Log "Stream Deck controller failed: $($_.Exception.Message)" }
 }
@@ -124,10 +168,10 @@ Remove-Item -LiteralPath $restartFlag -Force -ErrorAction SilentlyContinue
 $exitFlag = Join-Path $Root 'exit.request'
 Remove-Item -LiteralPath $exitFlag -Force -ErrorAction SilentlyContinue
 $crashes = New-Object System.Collections.Generic.List[datetime]
-$snapshotDone = $false; $lkgRestored = $false
+$snapshotDone = $false; $lkgRestored = $false; $themeFallback = $false
 while ($true) {
   Write-Log 'starting RetroFE'
-  $p = Start-Process $exe -WorkingDirectory (Split-Path $exe) -PassThru
+  $p = Start-Process $exe -WorkingDirectory $exeDir -PassThru
   # stable for 3 minutes -> remember this configuration as last-known-good (once per boot)
   if (-not $snapshotDone -and -not $p.WaitForExit(180000)) {
     try { Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Snapshot', '-NoFix') | Out-Null; Write-Log 'stable 3 min - last-known-good configs saved' } catch { }
@@ -146,7 +190,9 @@ while ($true) {
   $crashed = ($code -ne 0) -or (Select-String -Path (Join-Path $Root 'log.txt') -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue)
   if (-not $crashed) { Write-Log "RetroFE exited cleanly ($code)"; break }
   $now = Get-Date; $crashes.Add($now); $recent = @($crashes | Where-Object { ($now - $_).TotalSeconds -le $CrashWindowSec })
-  $keep = Join-Path $Root ("crash-{0:yyyyMMdd-HHmmss}" -f $now); New-Item -ItemType Directory $keep | Out-Null
+  # milliseconds + -Force: after a settings restore the retry is immediate, and two crashes in the same second used to
+  # collide on the folder name - that error stopped the watchdog itself
+  $keep = Join-Path $Root ("crash-{0:yyyyMMdd-HHmmss-fff}" -f $now); New-Item -ItemType Directory -Force $keep | Out-Null
   foreach ($f in 'log.txt', 'retrofe_crash.dmp') { $src = Join-Path $Root $f; if (Test-Path $src) { Copy-Item $src $keep } }
   Write-Log "RetroFE crashed (exit $code) - evidence in $keep"
   # crash loop: put the last-known-good configs back once and try again before giving up
@@ -155,6 +201,21 @@ while ($true) {
     $r = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-RestoreLkg'); Write-Log "crash loop - $($r.Trim())"
     continue
   }
-  if ($recent.Count -ge $MaxCrashes) { Write-Log "$MaxCrashes crashes in $CrashWindowSec s - giving up"; break }
+  if ($recent.Count -ge $MaxCrashes) {
+    # last try before giving up: an imported theme (CO-*, a CoinOPS layout ...) that crashes RetroFE -> back to the
+    # ArcadeMaster layout, which ships with the repo. Only settings.conf 'layout =' changes; a copy is kept.
+    $sc = Join-Path $Root 'settings.conf'
+    $cur = (Select-String -LiteralPath $sc -Pattern '^\s*layout\s*=\s*(.+)$' -ErrorAction SilentlyContinue | Select-Object -Last 1)
+    $curLayout = if ($cur) { $cur.Matches[0].Groups[1].Value.Trim() } else { '' }
+    if (-not $themeFallback -and $curLayout -and $curLayout -ne $Layout -and (Test-Path (Join-Path $Root "layouts\$Layout\layout.xml"))) {
+      $themeFallback = $true; $crashes.Clear()
+      Copy-Item -LiteralPath $sc "$sc.before-theme-fallback" -Force
+      $txt = [IO.File]::ReadAllText($sc); $txt = [regex]::Replace($txt, '(?m)^(\s*layout\s*=\s*).+?(\r?)$', "`${1}$Layout`${2}")
+      [IO.File]::WriteAllText($sc, $txt, (New-Object Text.UTF8Encoding $false))
+      Write-Log "theme '$curLayout' keeps crashing RetroFE - switched back to the $Layout theme (old settings: settings.conf.before-theme-fallback)"
+      continue
+    }
+    Write-Log "$MaxCrashes crashes in $CrashWindowSec s - giving up"; break
+  }
   Start-Sleep -Seconds 2
 }

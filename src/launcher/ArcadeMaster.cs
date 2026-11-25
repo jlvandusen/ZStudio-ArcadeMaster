@@ -174,6 +174,17 @@ namespace ArcadeMaster
 
             // ---- launch
             bool dry = a.Contains("--dry-run"); Action<string> say = m => { Log(c, m); if (dry) Console.WriteLine(m); };
+            // one launch at a time: players press the icon again when nothing seems to happen. A second press brings
+            // the running frontend (or the starting splash) to the front instead of starting a second boot.
+            bool first;
+            var only = new Mutex(true, @"Local\ArcadeMaster.Launch", out first);
+            if (!dry && (!first || Splash.FrontendWindow(c.RetroFERoot) != IntPtr.Zero))
+            {
+                say(first ? "frontend already running - brought to the front" : "already starting - brought to the front");
+                Splash.BringToFront(c.RetroFERoot);
+                return 0;
+            }
+            Splash splash = dry ? null : Splash.Show(c);
             Updater.SwapInStagedExe();
             if (c.AutoUpdate && !a.Contains("--no-update"))
             {
@@ -183,12 +194,180 @@ namespace ArcadeMaster
                 else say(Updater.Apply(c, u, say));
             }
             var start = Path.Combine(c.RepoPath, @"tools\Start-ArcadeMaster.ps1");
-            if (!File.Exists(start)) { say("missing " + start + " - run ArcadeMaster.exe --setup"); return 2; }
+            if (!File.Exists(start)) { say("missing " + start + " - run ArcadeMaster.exe --setup"); if (splash != null) splash.Fail("ArcadeMaster is not set up yet - run ArcadeMaster.exe --setup"); return 2; }
             string psArgs = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + start + "\" -Root \"" + c.RetroFERoot + "\" -ManifestDir \"" + c.ManifestDir + "\"";
             if (dry) { say("would run: powershell " + psArgs); return 0; }
             say("starting ArcadeMaster: " + c.RetroFERoot);
-            return Run.Exec(Run.PowerShell, psArgs, c.RepoPath, null);
+            if (splash != null) splash.Watch();
+            int rc = Run.Exec(Run.PowerShell, psArgs, c.RepoPath, null);
+            if (splash != null) splash.Close();
+            GC.KeepAlive(only);
+            return rc;
         }
+    }
+
+    // ---------------------------------------------------------------- start-up splash
+    // Boot prep (devices, controllers, menus, health check) takes 30-60 s with no window of its own. The splash covers
+    // the main screen from the first click, shows the current step from <RetroFE>\arcademaster-launcher.log, and goes
+    // away when RetroFE's window appears (or the boot ends).
+    public class Splash
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
+        const string Title = "ArcadeMaster - starting";
+
+        Form form; Label step; Panel bar; int pos; readonly Config c; volatile bool closing; long logStart = -1;
+        readonly ManualResetEvent ready = new ManualResetEvent(false);
+
+        public static IntPtr FrontendWindow(string root)
+        {
+            try
+            {
+                foreach (var p in Process.GetProcessesByName("retrofe"))
+                {
+                    string path = null; try { path = p.MainModule.FileName; } catch { }
+                    if (path != null && path.StartsWith(root, StringComparison.OrdinalIgnoreCase) && p.MainWindowHandle != IntPtr.Zero && IsWindowVisible(p.MainWindowHandle)) return p.MainWindowHandle;
+                }
+            }
+            catch { }
+            return IntPtr.Zero;
+        }
+
+        public static void BringToFront(string root)
+        {
+            var h = FrontendWindow(root);
+            if (h == IntPtr.Zero) h = FindWindow(null, Title);
+            if (h != IntPtr.Zero) { ShowWindow(h, 9); SetForegroundWindow(h); }
+        }
+
+        Splash(Config cfg) { c = cfg; }
+
+        public static Splash Show(Config cfg)
+        {
+            var s = new Splash(cfg);
+            var t = new Thread(s.UiThread) { IsBackground = true }; t.SetApartmentState(ApartmentState.STA); t.Start();
+            s.ready.WaitOne(3000);
+            return s;
+        }
+
+        void UiThread()
+        {
+            Application.EnableVisualStyles();
+            var scr = Screen.PrimaryScreen.Bounds;
+            form = new Form { Text = Title, FormBorderStyle = FormBorderStyle.None, StartPosition = FormStartPosition.Manual, Bounds = scr, BackColor = Ui.Bg, TopMost = true, ShowInTaskbar = true };
+            try { form.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+            int cx = scr.Width / 2, cy = scr.Height / 2, u = Math.Max(1, scr.Height / 1080);
+            Image logo = null;
+            foreach (var f in new[] { Path.Combine(c.RetroFERoot, @"layouts\ArcadeMaster\images\studio_realz.png"), Path.Combine(c.RepoPath, @"layouts\ArcadeMaster\images\studio_realz.png") })
+                if (File.Exists(f)) { try { logo = Image.FromFile(f); break; } catch { } }
+            int ls = 260 * u;
+            if (logo != null) form.Controls.Add(new PictureBox { Image = logo, SizeMode = PictureBoxSizeMode.Zoom, Bounds = new Rectangle(cx - ls / 2, cy - ls - 40 * u, ls, ls), BackColor = Color.Transparent });
+            var title = new Label { Text = "ARCADEMASTER", ForeColor = Ui.Text, Font = Ui.F(64 * u, FontStyle.Bold, "Segoe UI Black"), AutoSize = false, TextAlign = ContentAlignment.MiddleCenter, Bounds = new Rectangle(0, cy - 10 * u, scr.Width, 90 * u) };
+            step = new Label { Text = "Starting up...", ForeColor = Ui.Dim, Font = Ui.F(26 * u), AutoSize = false, TextAlign = ContentAlignment.MiddleCenter, Bounds = new Rectangle(0, cy + 190 * u, scr.Width, 44 * u) };
+            var track = new Panel { BackColor = Ui.Panel, Bounds = new Rectangle(cx - 300 * u, cy + 160 * u, 600 * u, 8 * u) };
+            bar = new Panel { BackColor = Ui.Magenta, Bounds = new Rectangle(0, 0, 140 * u, 8 * u) };
+            track.Controls.Add(bar);
+            var count = new Label { Text = "", ForeColor = Ui.Cyan, Font = Ui.F(30 * u, FontStyle.Bold), AutoSize = false, TextAlign = ContentAlignment.MiddleCenter, Bounds = new Rectangle(0, cy + 95 * u, scr.Width, 44 * u) };
+            form.Controls.AddRange(new Control[] { title, count, track, step });
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                int systems; int games = CountGames(c.RetroFERoot, out systems);
+                if (games > 0) OnUi(() => count.Text = games.ToString("N0") + " games  ·  " + systems + " systems");
+            });
+            var tick = new System.Windows.Forms.Timer { Interval = 33 };
+            tick.Tick += (s, e) => { pos = (pos + 9 * u) % (track.Width + bar.Width); bar.Left = pos - bar.Width; };
+            var poll = new System.Windows.Forms.Timer { Interval = 400 };
+            var started = DateTime.Now;
+            poll.Tick += (s, e) =>
+            {
+                string m = LastStep(); if (m != null) step.Text = m;
+                // RetroFE's own window is up: hand the screen over
+                if (FrontendWindow(c.RetroFERoot) != IntPtr.Zero || (DateTime.Now - started).TotalMinutes > 4) { poll.Stop(); tick.Stop(); form.Close(); }
+            };
+            form.Shown += (s, e) => { tick.Start(); poll.Start(); ready.Set(); form.Activate(); };
+            form.FormClosed += (s, e) => { closing = true; ready.Set(); };
+            Application.Run(form);
+        }
+
+        // Games the frontend will list: every real game collection (a launcher or list.path, no menu.txt; merged .sub
+        // views are not counted twice), its include.txt, else the files in its list folder with the listed extensions.
+        public static int CountGames(string root, out int systems)
+        {
+            systems = 0;
+            // lists that read the same folder (LEGENDS' Arcades, ArcadesMini and Fight all list MAME's roms) count once
+            var games = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                foreach (var d in Directory.GetDirectories(Path.Combine(root, "collections")))
+                {
+                    var name = Path.GetFileName(d);
+                    if (name.StartsWith("_") || name.StartsWith("zzz", StringComparison.OrdinalIgnoreCase) || name.Equals("Main", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (File.Exists(Path.Combine(d, "menu.txt"))) continue;
+                    var conf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var sc = Path.Combine(d, "settings.conf");
+                    if (File.Exists(sc))
+                        foreach (var raw in File.ReadAllLines(sc))
+                        {
+                            var l = raw.Trim(); int eq = l.IndexOf('=');
+                            if (l.Length == 0 || l.StartsWith("#") || eq < 1) continue;
+                            conf[l.Substring(0, eq).Trim()] = l.Substring(eq + 1).Trim();
+                        }
+                    var inc = Path.Combine(d, "include.txt");
+                    if (!conf.ContainsKey("launcher") && !conf.ContainsKey("list.path") && !File.Exists(inc)) continue;
+                    int before = games.Count; string folder;
+                    if (File.Exists(inc))
+                    {
+                        folder = inc;
+                        foreach (var x in File.ReadAllLines(inc)) if (x.Trim().Length > 0 && !x.Trim().StartsWith("#")) games.Add(name + "|" + x.Trim());
+                    }
+                    else
+                    {
+                        string lp; var dir = conf.TryGetValue("list.path", out lp) ? Path.Combine(root, lp.Replace("%ITEM_COLLECTION_NAME%", name)) : Path.Combine(d, "roms");
+                        folder = Path.GetFullPath(dir).TrimEnd('\\');
+                        string ex; var exts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (conf.TryGetValue("list.extensions", out ex)) foreach (var e in ex.Split(',')) if (e.Trim().Length > 0) exts.Add("." + e.Trim().TrimStart('.'));
+                        if (Directory.Exists(dir))
+                            foreach (var f in Directory.EnumerateFiles(dir)) if (exts.Count == 0 || exts.Contains(Path.GetExtension(f))) games.Add(Path.GetFullPath(f));
+                    }
+                    if (games.Count > before && folders.Add(folder)) systems++;
+                }
+            }
+            catch { }
+            return games.Count;
+        }
+
+        // the boot log is appended for every start: only show lines written since this launch
+        public void Watch() { try { var f = new FileInfo(Path.Combine(c.RetroFERoot, "arcademaster-launcher.log")); logStart = f.Exists ? f.Length : 0; } catch { } }
+
+        string LastStep()
+        {
+            try
+            {
+                var f = Path.Combine(c.RetroFERoot, "arcademaster-launcher.log");
+                if (logStart < 0 || !File.Exists(f)) return null;
+                using (var fs = new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                {
+                    if (fs.Length <= logStart) return null;
+                    fs.Seek(logStart, SeekOrigin.Begin);
+                    var lines = new StreamReader(fs).ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (lines.Length == 0) return null;
+                    var l = lines[lines.Length - 1];
+                    if (l.StartsWith("[") && l.IndexOf(']') > 0) l = l.Substring(l.IndexOf(']') + 1).Trim();
+                    if (l.StartsWith("boot prep")) return "Starting the game menu...";
+                    if (l.Contains("health:")) return "System check done";
+                    if (l.StartsWith("WARN") || l.StartsWith("FIXED")) return "Checking the system...";
+                    return l.Length > 90 ? l.Substring(0, 87) + "..." : l;
+                }
+            }
+            catch { return null; }
+        }
+
+        void OnUi(Action a) { try { if (form != null && !closing && form.IsHandleCreated) form.BeginInvoke(a); } catch { } }
+        public void Close() { OnUi(() => form.Close()); }
+        public void Fail(string m) { OnUi(() => { step.Text = m; step.ForeColor = Ui.Amber; }); Thread.Sleep(6000); Close(); }
     }
 
     // ---------------------------------------------------------------- UI helpers

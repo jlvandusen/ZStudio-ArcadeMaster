@@ -14,9 +14,25 @@ param(
   [string]$Mame = 'E:\DRIVE Collection\emulators\MAME\mame.exe',
   [string[]]$MameSetCollections = @('MAME', 'Sega Model 2', 'Sega Model 3'),
   [string[]]$NewestTPFirst = @('E:\DRIVE Collection\emulators\TeknoParrot', 'E:\DRIVE Collection\emulators\TeknoParrotMulti', 'D:\Emulators\TeknoParrot'),
-  [string]$Report = (Join-Path $PSScriptRoot '..\reports\game-controls.md')
+  # the readable report goes to this cabinet's manifest folder, not the repo (every cabinet rewrote the shared copy)
+  [string]$Report = (Join-Path (Split-Path $Manifest) 'reports\game-controls.md')
 )
 $ErrorActionPreference = 'Stop'
+if (-not $PSBoundParameters.ContainsKey('NewestTPFirst')) {
+  # this cabinet's TeknoParrot installs (wheelmap\targets\<PC>.json), newest TeknoParrotUi.exe version first;
+  # the defaults above are DESKTOP-RACE1's and only used when they exist
+  $roots = @($NewestTPFirst)
+  $tgt = Join-Path $PSScriptRoot "wheelmap\targets\$env:COMPUTERNAME.json"
+  if (Test-Path $tgt) { $roots += @((Get-Content $tgt -Raw | ConvertFrom-Json).teknoparrot | ForEach-Object { $_.root }) }
+  $NewestTPFirst = @($roots | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique | Sort-Object {
+    $ui = Join-Path $_ 'TeknoParrotUi.exe'; if (Test-Path $ui) { [version]((Get-Item $ui).VersionInfo.FileVersion -replace '[^\d.].*$', '') } else { [version]'0.0' } } -Descending)
+  Write-Host ("TeknoParrot installs, newest first: {0}" -f ($NewestTPFirst -join '; '))
+}
+if (-not (Test-Path -LiteralPath $Mame)) {
+  $tgt = Join-Path $PSScriptRoot "wheelmap\targets\$env:COMPUTERNAME.json"
+  $alt = if (Test-Path $tgt) { @((Get-Content $tgt -Raw | ConvertFrom-Json).mame | ForEach-Object { Join-Path $_.root 'mame.exe' } | Where-Object { Test-Path -LiteralPath $_ }) | Select-Object -First 1 }
+  if ($alt) { $Mame = $alt; Write-Host "MAME: $Mame" }
+}
 $m = Get-Content $Manifest -Raw | ConvertFrom-Json
 $cab = (Get-Content $Cabinet -Raw | ConvertFrom-Json).capabilities
 

@@ -432,3 +432,20 @@ The previous owner's per-wheel sets were copied unchanged. They encode that mach
 **In the frontend:** the game list fades the card in bottom-right about 1 s after you stop on a game (`am_controls` art type). PC games use their own in-game control menus, so they get no card.
 
 **First run:** 64 cards. They already show real binding problems, e.g. GRID (TeknoParrot) has Brake bound to the clutch pedal.
+## The menu follows your hands (2026-11-24)
+
+On wheel cabinets the main menu and the game lists react to the real controls. This uses RetroFE's live attributes (patches 0007, 0008 and 0010 on the controls card pull request), with `liveDevice="wheel"`, so nothing moves on cabinets without a wheel:
+
+| What you do | What the menu shows | Layout attribute |
+|---|---|---|
+| turn the wheel | the centre wheel turns: upright when centred, G HUB's picture of your wheel (`New-RealWheelArt`) | `am_realwheel`: `liveSteer="450"` |
+| press the gas | both needles rise: the rev counter quickly, the speedo with a lag | `liveNeedle="1" liveNeedleSpan liveNeedleSmooth` |
+| press the brake | red glow around the speedo, brighter the harder you press | `liveAxis="2"` |
+| put the shifter in a gear | 1-6 or R above the rev counter's hub | `liveButton="12"`...`"18"` |
+| pull a shift paddle | up or down arrow beside the hub | `liveButton="4"` / `"5"` |
+
+The overlay pictures come from `tools\New-LiveDashArt.ps1` (about 100 KB in all).
+
+**Wheels and pedals read stale values until their first report.** Until a wheel or pedal sends its first report, SDL holds a stale value (full lock, or half travel). Steering and pedals therefore count as centred or released until the reading first changes.
+
+**Menu clicks in the wheel are off** (`ffbTick = 0`, the default since patch 0009). On the G29, the click on each menu scroll pushed the rim the same way every time, and the wheel stepped round with every scroll. The centring spring is `ffbCenter` (50 on the racing cabinet).

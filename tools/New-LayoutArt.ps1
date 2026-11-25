@@ -209,6 +209,115 @@ $g.FillEllipse((RadialBrush ([Drawing.RectangleF]::new(40, 40, 320, 320)) 'fff3b
 $rnd = New-Object Random 3; for ($i = 0; $i -lt 14; $i++) { $d = $rnd.Next(0, 360); $g.DrawLine((Pen 'ffd166' ($rnd.Next(6, 14)) 200), (Polar 200 200 40 $d), (Polar 200 200 ($rnd.Next(130, 195)) $d)) }
 Save-Canvas $c 'gun_flash.png'
 
+# ======================================================= ARCADE
+# --- joystick with 6-button ring (640x640, spins on scroll)
+$c = New-Canvas 640 640; $g = $c.G; $cx = 320; $cy = 320
+$g.FillEllipse((RadialBrush ([Drawing.RectangleF]::new(10, 10, 620, 620)) '000000' '000000' 90 0), 10, 14, 620, 620)   # drop shadow
+$g.FillEllipse((RadialBrush ([Drawing.RectangleF]::new(30, 30, 580, 580)) '1d2028' '0a0b10'), 30, 30, 580, 580)
+$g.DrawEllipse((Pen '7b5cff' 8 160), 34, 34, 572, 572)                                       # neon purple ring
+$g.DrawEllipse((Pen 'b89aff' 2 100), 38, 38, 564, 564)                                       # inner glow
+$btnCols = @('ff3b3b', '2ec8ff', 'ffe259', 'ff3b3b', '2ec8ff', 'ffe259')
+$btnHi  = @('ff9a9a', '9be7ff', 'fff4b8', 'ff9a9a', '9be7ff', 'fff4b8')
+$btnR = 44; $ringR = 178
+for ($i = 0; $i -lt 6; $i++) {
+  $bp = Polar $cx $cy $ringR ($i * 60 + 30); $bx = $bp.X; $by = $bp.Y
+  $g.FillEllipse((Brush '000000' 80), [float]($bx - $btnR - 2), [float]($by - $btnR + 5), [float](2 * $btnR + 4), [float](2 * $btnR + 4))
+  $g.FillEllipse((Brush $btnCols[$i]), [float]($bx - $btnR), [float]($by - $btnR), [float](2 * $btnR), [float](2 * $btnR))
+  $g.FillEllipse((Brush $btnHi[$i] 110), [float]($bx - $btnR * 0.5), [float]($by - $btnR * 0.7), [float]($btnR * 0.9), [float]($btnR * 0.5))
+  $g.DrawEllipse((Pen '0a0b10' 3), [float]($bx - $btnR), [float]($by - $btnR), [float](2 * $btnR), [float](2 * $btnR))
+}
+$gateR = 56                                                                                   # octagonal restrictor gate
+$g.FillEllipse((Brush '15171b'), $cx - $gateR, $cy - $gateR, 2 * $gateR, 2 * $gateR)
+$g.DrawEllipse((Pen '3b3f48' 3), $cx - $gateR, $cy - $gateR, 2 * $gateR, 2 * $gateR)
+foreach ($deg in 0, 45, 90, 135, 180, 225, 270, 315) { $p1 = Polar $cx $cy ($gateR - 2) $deg; $p2 = Polar $cx $cy ($gateR + 10) $deg; $g.DrawLine((Pen '4b5260' 2 200), $p1, $p2) }
+$ballR = 64; $ballRect = [Drawing.RectangleF]::new($cx - $ballR, $cy - $ballR, 2 * $ballR, 2 * $ballR)
+$g.FillEllipse((RadialBrush ([Drawing.RectangleF]::new($cx - $ballR - 20, $cy - $ballR - 20, 2 * $ballR + 40, 2 * $ballR + 40)) 'ff4fb0' 'ff4fb0' 120 0), $cx - $ballR - 20, $cy - $ballR - 20, 2 * $ballR + 40, 2 * $ballR + 40)
+$g.FillEllipse((RadialBrush $ballRect 'ff5fbf' '8a1050'), $ballRect)                         # ball gradient
+$g.FillEllipse((Brush 'ffffff' 130), [float]($cx - $ballR * 0.5), [float]($cy - $ballR * 0.65), [float]($ballR * 0.8), [float]($ballR * 0.45))
+$g.FillEllipse((Brush 'ffffff' 55), [float]($cx - $ballR * 0.3), [float]($cy - $ballR * 0.5), [float]($ballR * 0.3), [float]($ballR * 0.2))
+$g.DrawEllipse((Pen 'ff8fd0' 2 200), $ballRect)
+Text-Center $g 'AM' (Font 34 'Bold') (Brush 'ffffff' 220) $cx ($cy + 2)
+Save-Canvas $c 'arcade_joystick.png'
+
+# --- CREDITS gauge face (0-9 coin counter; purple accent, same 270-deg sweep: zero = -135, max = +135)
+$c = New-Canvas 512 512; $g = $c.G; $cx = 256; $cy = 256
+$g.FillEllipse((RadialBrush ([Drawing.RectangleF]::new(6, 6, 500, 500)) '1d2028' '07080a'), 6, 6, 500, 500)
+$g.DrawEllipse((Pen '4b5260' 10), 11, 11, 490, 490); $g.DrawEllipse((Pen '9aa3b2' 2 120), 18, 18, 476, 476)
+$span = 270.0; $start = -135.0; $max = 9; $red = 7
+$g.DrawArc((Pen '7b5cff' 18 220), 46, 46, 420, 420, [float]($start + $span * $red / $max - 90), [float]($span * (1 - $red / $max)))
+for ($v = 0; $v -le $max; $v++) {
+  $deg = $start + $span * $v / $max; $col = if ($v -ge $red) { 'b89aff' } else { 'e8ecf2' }
+  $p1 = Polar $cx $cy 222 $deg; $p2 = Polar $cx $cy 186 $deg; $g.DrawLine((Pen $col 6), $p1, $p2)
+  $pt = Polar $cx $cy 152 $deg; Text-Center $g ([string]$v) (Font 34 'Bold') (Brush $col) $pt.X $pt.Y
+}
+for ($v = 0.5; $v -lt $max; $v += 1) { $deg = $start + $span * $v / $max; $g.DrawLine((Pen 'e8ecf2' 3), (Polar $cx $cy 222 $deg), (Polar $cx $cy 204 $deg)) }
+Text-Center $g 'CREDITS' (Font 30 'Bold') (Brush '8d95a3') $cx ($cy + 92)
+Text-Center $g 'INSERT COIN' (Font 22 'Regular') (Brush '6c7380') $cx ($cy + 126)
+Save-Canvas $c 'arcade_credits_face.png'
+
+# --- HI-SCORE gauge face (0-100 in 10s; green accent)
+$c = New-Canvas 512 512; $g = $c.G; $cx = 256; $cy = 256
+$g.FillEllipse((RadialBrush ([Drawing.RectangleF]::new(6, 6, 500, 500)) '1d2028' '07080a'), 6, 6, 500, 500)
+$g.DrawEllipse((Pen '4b5260' 10), 11, 11, 490, 490); $g.DrawEllipse((Pen '9aa3b2' 2 120), 18, 18, 476, 476)
+$max = 100; $red = 80; $step = 10
+$g.DrawArc((Pen '39ff9e' 18 220), 46, 46, 420, 420, [float]($start + $span * $red / $max - 90), [float]($span * (1 - $red / $max)))
+for ($v = 0; $v -le $max; $v += $step / 2) {
+  $deg = $start + $span * $v / $max; $major = ($v % $step) -eq 0
+  $p1 = Polar $cx $cy 222 $deg; $p2 = Polar $cx $cy ($(if ($major) { 186 } else { 204 })) $deg
+  $col = if ($v -ge $red) { '7bffb8' } else { 'e8ecf2' }
+  $g.DrawLine((Pen $col ($(if ($major) { 6 } else { 3 }))), $p1, $p2)
+  if ($major) { $pt = Polar $cx $cy 152 $deg; Text-Center $g ([string]$v) (Font 30 'Bold') (Brush $col) $pt.X $pt.Y }
+}
+Text-Center $g 'HI-SCORE' (Font 30 'Bold') (Brush '8d95a3') $cx ($cy + 92)
+Text-Center $g 'x1000' (Font 22 'Regular') (Brush '6c7380') $cx ($cy + 126)
+Save-Canvas $c 'arcade_power_face.png'
+
+# --- arcade needle (purple; same pivot as racing: tip UP at angle 0, pivot = 256,256)
+$c = New-Canvas 512 512; $g = $c.G
+$needle = New-Object Drawing.Drawing2D.GraphicsPath
+$needle.AddPolygon([Drawing.PointF[]]@([Drawing.PointF]::new(256, 46), [Drawing.PointF]::new(267, 256), [Drawing.PointF]::new(256, 300), [Drawing.PointF]::new(245, 256)))
+$g.FillPath((Brush '000000' 90), $needle.Clone()); $g.TranslateTransform(-3, 3); $g.FillPath((Brush '000000' 60), $needle); $g.ResetTransform()
+$g.FillPath((Brush '7b5cff'), $needle); $g.DrawPath((Pen 'b89aff' 1.5 180), $needle)
+$g.FillEllipse((RadialBrush ([Drawing.RectangleF]::new(226, 226, 60, 60)) '5b606b' '111216'), 226, 226, 60, 60)
+Save-Canvas $c 'arcade_needle.png'
+
+# --- pixel starburst (1920x1080 transparent, flashes on select)
+$c = New-Canvas 1920 1080; $g = $c.G; $rnd = New-Object Random 42
+$burstCols = @('7b5cff', '2ec8ff', 'ff2fa0', 'ffe259', '39ff9e', 'ffffff')
+for ($i = 0; $i -lt 180; $i++) {
+  $deg = $rnd.Next(0, 360); $r1 = $rnd.Next(80, 440); $r2 = $r1 + $rnd.Next(100, 480)
+  $p1 = Polar 960 540 $r1 $deg; $p2 = Polar 960 540 $r2 $deg
+  $col = $burstCols[$rnd.Next(0, $burstCols.Length)]
+  $pen = New-Object Drawing.Pen (C $col ($rnd.Next(50, 180))), ([float]($rnd.Next(4, 16))); $pen.StartCap = 'Flat'; $pen.EndCap = 'Flat'
+  $g.DrawLine($pen, $p1, $p2)
+}
+for ($i = 0; $i -lt 30; $i++) {                                                               # 8-bit star cross shapes
+  $sx = $rnd.Next(100, 1820); $sy = $rnd.Next(60, 1020); $ss = $rnd.Next(16, 48)
+  $col = $burstCols[$rnd.Next(0, $burstCols.Length)]; $a = $rnd.Next(100, 220)
+  $g.FillRectangle((Brush $col $a), $sx - $ss / 2, $sy, $ss, 4); $g.FillRectangle((Brush $col $a), $sx, $sy - $ss / 2, 4, $ss)
+  $g.FillRectangle((Brush $col ([int]($a * 0.6))), $sx - 3, $sy - 3, 6, 6)
+}
+Save-Canvas $c 'arcade_burst.png'
+
+# --- drifting pixel sprites strip (3840x420, seamless at 1920; transparent)
+$c = New-Canvas 3840 420; $g = $c.G; $rnd = New-Object Random 55
+$driftCols = @('7b5cff', '2ec8ff', 'ff2fa0', 'ffe259', '39ff9e')
+for ($i = 0; $i -lt 50; $i++) {
+  $x = $rnd.Next(0, 1920); $yy = $rnd.Next(40, 380); $sz = $rnd.Next(28, 56)
+  $kind = $rnd.Next(0, 5); $col = $driftCols[$rnd.Next(0, $driftCols.Length)]; $a = $rnd.Next(35, 90)
+  foreach ($off in 0, 1920) {
+    $xx = $x + $off
+    switch ($kind) {
+      0 { $g.FillEllipse((Brush 'ffe259' $a), $xx - $sz / 2, $yy - $sz / 2, $sz, $sz); $g.FillEllipse((Brush 'ffffff' ([int]($a * 0.4))), $xx - $sz / 4, $yy - $sz / 3, $sz / 2, $sz / 3) }
+      1 { $th = [int][Math]::Max(4, $sz * 0.2); $g.FillRectangle((Brush $col $a), $xx - $sz / 2, $yy - $th / 2, $sz, $th); $g.FillRectangle((Brush $col $a), $xx - $th / 2, $yy - $sz / 2, $th, $sz) }
+      2 { $g.FillRectangle((Brush $col $a), $xx - $sz / 2, $yy - $sz / 2, $sz, $sz) }
+      3 { $g.FillPolygon((Brush $col $a), [Drawing.PointF[]]@([Drawing.PointF]::new($xx, $yy - $sz / 2), [Drawing.PointF]::new($xx + $sz / 2, $yy), [Drawing.PointF]::new($xx, $yy + $sz / 2), [Drawing.PointF]::new($xx - $sz / 2, $yy))) }
+      4 { $g.FillPolygon((Brush $col $a), [Drawing.PointF[]]@([Drawing.PointF]::new($xx - $sz / 3, $yy - $sz / 3), [Drawing.PointF]::new($xx + $sz / 3, $yy), [Drawing.PointF]::new($xx - $sz / 3, $yy + $sz / 3))) }
+    }
+  }
+}
+Save-Canvas $c 'arcade_drift.png'
+
 # ======================================================= SYNTHWAVE BACKDROP (matches the Real Z Studios mark)
 $c = New-Canvas 1920 1080; $g = $c.G; $hz = 600
 $sky = New-Object Drawing.Drawing2D.LinearGradientBrush ([Drawing.Point]::new(0, 0)), ([Drawing.Point]::new(0, $hz)), (C '0b0420'), (C 'ff2f7a')

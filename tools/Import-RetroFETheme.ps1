@@ -156,8 +156,8 @@ foreach ($name in $Layout) {
 
   # 5. preview: run RetroFE on the theme for a moment
   if (-not $NoPreview) {
-    $exe = Join-Path $RetroFE 'retrofe\retrofe.exe'; $sc = Join-Path $RetroFE 'settings.conf'
-    if ((Test-Path $exe) -and -not (Get-Process retrofe -ErrorAction SilentlyContinue)) {
+    . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $exe = Get-AmRetroFEExe $RetroFE; $sc = Join-Path $RetroFE 'settings.conf'   # retrofe\, core\ (CoinOPS) or the root
+    if ($exe -and -not (Get-Process retrofe -ErrorAction SilentlyContinue)) {
       $orig = [IO.File]::ReadAllText($sc)
       try {
         [IO.File]::WriteAllText($sc, ($orig -replace '(?m)^layout\s*=.*$', "layout = $destName"), (New-Object Text.ASCIIEncoding))

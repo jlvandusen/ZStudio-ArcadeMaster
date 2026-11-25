@@ -12,7 +12,8 @@ param(
   [string[]]$Modes                       # override: racing, flight, standup, lightgun (default: derived from hardware)
 )
 $ErrorActionPreference = 'Stop'
-$text = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'wheelmap\WheelMap.ps1') -Detect 2>&1 | Out-String
+# in this PowerShell, not a new one (~0.35 s here, ~1.2 s on the pedestal's i3); same text either way
+$text = & (Join-Path $PSScriptRoot 'wheelmap\WheelMap.ps1') -Detect *>&1 | Out-String
 
 # known lightgun / trackball vendors (USB VID[:PID])
 $gunIds = @{ '16C0:0F38' = 'Sinden'; '16C0:0F39' = 'Sinden'; '16C0:0F01' = 'Sinden'; '16C0:0F02' = 'Sinden'; '2341:8042' = 'Gun4IR'; '2341:8043' = 'Gun4IR'; '2341:8044' = 'Gun4IR'; '2341:8045' = 'Gun4IR'; 'D209:16' = 'Ultimarc AimTrak' }
