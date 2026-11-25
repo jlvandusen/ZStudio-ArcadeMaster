@@ -60,6 +60,14 @@ tools\New-CabinetToolsCollection.ps1 -RetroFE <root>
 ```
 
 - **Put the patched RetroFE in place: this step is required.** Copy a package's `retrofe\` folder from `Z:\ArcadeMaster\builds\retrofe-*` to `<root>\retrofe\`, with RetroFE closed; `Start-ArcadeMaster` prefers `<root>\retrofe\retrofe.exe` over a CoinOPS `core\retrofe.exe`. With only the stock exe, the layout still loads, but every button, gear and pedal glow is drawn all the time, the wheel and needles don't move, and the styles look broken. The health check reports this under `runtime`. To build one yourself: `retrofe\Build-RetroFE.ps1` under **pwsh 7** (Windows PowerShell 5.1 stops on git's stderr), with VS 2022 Build Tools and GStreamer 1.24.13 (see README).
+- **Stay on the latest build: run this once per cabinet.** `pwsh tools\Update-Cabinet.ps1 -Root <root> -Install` registers the task "ArcadeMaster Update". It runs every 15 minutes and does the following:
+  - pulls main (only when the clone is on main with no edits)
+  - when the RetroFE patches or the build script changed, compiles RetroFE in its own folder (`D:\ArcadeMaster\build`) and installs it while RetroFE is closed
+  - if RetroFE is open, leaves the new build for the next start; the boot installs a waiting build before RetroFE starts
+  - keeps the previous files in `<root>\retrofe.am-prev\`
+  - logs to `<manifest>\update-cabinet.log`
+  - on a cabinet without the build tools, logs which one is missing and keeps its exe (copy a package from Z: instead)
+  To try it without changing Windows, set `$env:AM_SYSTEM_DRYRUN = 1` first.
 - Copy `layouts\ArcadeMaster` into `<root>\layouts\` and set `layout = ArcadeMaster` in settings.conf.
 - **Themes:** `tools\Import-RetroFETheme.ps1 -Source <root> -RetroFE <root> -All -NoPreview` registers the layouts already in the frontend (ArcadeMaster and the CoinOPS theme). Then run `python tools\New-ArcadeThemes.py --install <root> --manifest <manifest>`, which needs `pip install pillow`; don't run it with `python -I`, which hides user-installed packages. That adds the five AM-* layouts. Tools → Themes lists everything in `<manifest>\themes.json`.
 - Set `cabinetType = pedestal` in settings.conf, or `standup+lightgun` etc., or leave it on `auto`.

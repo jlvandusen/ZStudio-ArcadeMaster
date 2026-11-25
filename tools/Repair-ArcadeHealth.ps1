@@ -13,6 +13,8 @@
     logs       log.txt rotated above 20 MB, crash-* evidence folders capped at 10
     disk       free space on the frontend drive
     art        boot intro + Tools art present (regenerated when missing)
+    wheel      every TeknoParrot driving game's wheel / pedals / paddles / gears on the G29 (report only)
+    updates    the "ArcadeMaster Update" task exists (put back when missing) and the last pull / build did not fail
   -Snapshot   when everything is OK: save a last-known-good copy of the configs (manifest\lkg\<stamp>, keeps 3)
   -RestoreLkg put the newest last-known-good configs back (used by the watchdog after a crash loop)
   Writes manifest\health.json; with AM_VISUAL=1 it emits @AM step events for the visual tool page.
@@ -50,7 +52,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games';panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -328,6 +330,30 @@ else {
     elseif ([int]$sum.Groups[4].Value -gt 0) { Add-Result 'wheel' $checks.wheel 'WARN' ("{0} control(s) to look at in {1} - run tools\Test-WheelBindings.ps1, fix with WheelMap" -f $sum.Groups[4].Value, (($games | Select-Object -First 6) -join ', ') + $(if ($games.Count -gt 6) { " (+$($games.Count - 6) more)" })) }
     else { Add-Result 'wheel' $checks.wheel 'OK' ("{0} driving games, all {1} controls on the G29" -f $sum.Groups[1].Value, $sum.Groups[2].Value); Set-Content $wfpFile $wfp -Encoding ascii }
   }
+}
+# updates: the cabinet keeps itself on the latest main + RetroFE build (Update-Cabinet.ps1, scheduled task "ArcadeMaster
+# Update"). A missing task is put back (AM_SYSTEM_DRYRUN=1: only shown); the last failed pull / build is reported.
+# Not for the self-test's temporary frontends.
+Emit @{ type = 'step'; id = 'updates'; label = $checks.updates; status = 'run' }
+if ($RetroFE.StartsWith($env:TEMP, [StringComparison]::OrdinalIgnoreCase)) { Add-Result 'updates' $checks.updates 'OK' 'temporary frontend - not checked' }
+else {
+  $uDid = @(); $uWarn = @()
+  $task = Get-ScheduledTask -TaskName 'ArcadeMaster Update' -ErrorAction SilentlyContinue
+  $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
+  if (-not $task) {
+    if ($fix -and $pwsh -and -not $env:AM_SYSTEM_DRYRUN) {
+      & $pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Update-Cabinet.ps1') -Root $RetroFE -ManifestDir $ManifestDir -Install *>&1 | Out-Null
+      if (Get-ScheduledTask -TaskName 'ArcadeMaster Update' -ErrorAction SilentlyContinue) { $uDid += 'automatic updates were off - scheduled again (every 15 min)' } else { $uWarn += 'automatic updates are off and could not be scheduled' }
+    } else { $uWarn += "automatic updates are off - run: pwsh tools\Update-Cabinet.ps1 -Root '$RetroFE' -Install$(if (-not $pwsh) { ' (needs PowerShell 7)' })" }
+  }
+  $ulog = Join-Path $ManifestDir 'update-cabinet.log'
+  $last = if (Test-Path $ulog) { Get-Content $ulog -Tail 1 } else { '' }
+  if ($last -match 'FAILED|can''t compile|pull failed') { $uWarn += ($last -replace '^\[[^\]]+\]\s*', 'last update: ') }
+  $exeNow = Get-ChildItem (Join-Path $RetroFE 'retrofe\am-build.txt') -ErrorAction SilentlyContinue
+  $buildTxt = if ($exeNow) { ((Get-Content $exeNow.FullName | Where-Object { $_ -match '^key=' }) -replace '^key=', '') } else { 'not from Update-Cabinet' }
+  if ($uWarn) { Add-Result 'updates' $checks.updates 'WARN' (($uWarn + $uDid) -join '; ') }
+  elseif ($uDid) { Add-Result 'updates' $checks.updates 'FIXED' ($uDid -join '; ') }
+  else { Add-Result 'updates' $checks.updates 'OK' "every 15 min; RetroFE build $buildTxt" }
 }
 # logs
 Emit @{ type = 'step'; id = 'logs'; label = $checks.logs; status = 'run' }

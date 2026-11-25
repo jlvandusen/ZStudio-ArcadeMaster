@@ -84,7 +84,7 @@ if ($Watchdog) {
     "fullscreen = yes`r`nlayout = CO-Broken`r`nnumScreens = 1" | Set-Content "$t\root\settings.conf"
     '{ "streamDeck": false }' | Set-Content "$t\manifest\ui.json"   # Python is found off PATH too: keep the deck helper away from the fake
     # no Python on PATH: the Stream Deck helper must not start against the fake frontend
-    $oldPath = $env:PATH; $env:PATH = "$env:WINDIR\System32;$env:WINDIR\System32\WindowsPowerShell\v1.0"
+    $env:AM_NO_UPDATE = '1'; $oldPath = $env:PATH; $env:PATH = "$env:WINDIR\System32;$env:WINDIR\System32\WindowsPowerShell\v1.0"
     $ErrorActionPreference = 'Continue'   # the launcher's own error output must not stop this test; its log is checked below
     try { $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Start-ArcadeMaster.ps1') -Root "$t\root" -ManifestDir "$t\manifest" -NoDeviceCheck -NoShuffle -MaxCrashes 4 2>&1 | Out-String }
     finally { $env:PATH = $oldPath; $ErrorActionPreference = 'Stop' }
@@ -118,7 +118,7 @@ if ($Watchdog) {
       if ($crash) { 'x' | Set-Content "$t\root\crash.flag" }
       '{ "streamDeck": false }' | Set-Content "$t\manifest\ui.json"
       '{ "at": "2026-01-01T00:00:00", "choice": "CO-New", "mode": "racing", "previous": { "layout": "ArcadeMaster", "cabinetThemeKey": "cabinetTheme.racing", "cabinetTheme": null, "skins": null } }' | Set-Content "$t\manifest\theme-pending.json"
-      $oldPath = $env:PATH; $env:PATH = "$env:WINDIR\System32;$env:WINDIR\System32\WindowsPowerShell\v1.0"
+      $env:AM_NO_UPDATE = '1'; $oldPath = $env:PATH; $env:PATH = "$env:WINDIR\System32;$env:WINDIR\System32\WindowsPowerShell\v1.0"
       $env:AM_THEME_CONFIRM_NOUI = '1'; $env:AM_THEME_NOART = '1'; $ErrorActionPreference = 'Continue'
       try { $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Start-ArcadeMaster.ps1') -Root "$t\root" -ManifestDir "$t\manifest" -NoDeviceCheck -NoShuffle -ThemeConfirmSec 2 -ThemeSettleSec 2 2>&1 | Out-String }
       finally { $env:PATH = $oldPath; $env:AM_THEME_CONFIRM_NOUI = $null; $env:AM_THEME_NOART = $null; $ErrorActionPreference = 'Stop' }
