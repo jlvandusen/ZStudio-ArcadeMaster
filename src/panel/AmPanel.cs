@@ -286,8 +286,8 @@ static class AmPanel
                 else if (c == "4")
                 {
                     // back in the menus: no game animation outlives the game; the selected game's colours again
-                    leds.Animate("stop");
-                    string sel = Convert.ToString(State.ContainsKey("selected") && State["selected"] != null ? State["selected"] : State.ContainsKey("game") ? State["game"] : null);
+                    leds.Animate("stop"); leds.AudioFollowOff();
+                    string sel =Convert.ToString(State.ContainsKey("selected") && State["selected"] != null ? State["selected"] : State.ContainsKey("game") ? State["game"] : null);
                     State["lights"] = leds.LightGame(sel);
                 }
                 else if (c == "14") State["lights"] = leds.SetPorts(string.Join(",", a, 1, a.Length - 1));
@@ -445,6 +445,18 @@ static class AmPanel
                         Log("choose: " + game + " -> " + picked);
                     }
                 }
+            }
+            else if (cmd == "simulate")   // {"cmd":"simulate","output":"lamp0","value":1,"game":"sf2"} - a game output, as if MAME sent it
+            {
+                string name = req.ContainsKey("output") ? Convert.ToString(req["output"]) : "", g = req.ContainsKey("game") ? Convert.ToString(req["game"]) : null;
+                int value = req.ContainsKey("value") ? Convert.ToInt32(req["value"]) : 1;
+                lock (Gate)
+                {
+                    if (g == null) g = State.ContainsKey("game") && State["game"] != null ? Convert.ToString(State["game"]) : Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null);
+                    string sys = State.ContainsKey("emulator") ? Convert.ToString(State["emulator"]) : null;
+                    rep["result"] = rules == null ? null : rules.Apply(name, value, g, sys, leds, Log);
+                }
+                rep["ok"] = true;
             }
             else if (cmd == "buttons")   // {"cmd":"buttons"} - open the Buttons window on the cabinet (Tools)
             {
