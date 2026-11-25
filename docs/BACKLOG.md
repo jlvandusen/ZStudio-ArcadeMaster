@@ -263,8 +263,11 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       (art folder is a link onto E:, which the stories tool won't write into), Model 3 clones, GameCube, Sega Racing Classic.
       [RACE1] then 31 -> 19: an EMPTY menu.txt (CoinOPS leftover) made the stories and controls-card tools skip MAME and
       GameCube entirely; fixed, + 12 hand-written (Out Run, Virtua Racing, OutRunners, Cruis'n USA/World, Off Road
-      Challenge, California Speed, Rush The Rock / 2049, F-Zero GX, Double Dash, Auto Modellista). Left: Model 3 regional
-      versions (Dirt Devils, Emergency Call Ambulance, Scud Race, Sega Rally 2 DX), Sega Racing Classic, Valve Limit R, MachStorm, Cars.
+      Challenge, California Speed, Rush The Rock / 2049, F-Zero GX, Double Dash, Auto Modellista). Correction: the Model 3
+      regional versions are hidden by Sega Model 3\exclude.txt and never shown, so the real count of visible racing/flight
+      games with a one-line story is 7: Road Fighters 3D, Gaelco Championship Tuning Race, K.O. Drive, Sega Racing Classic,
+      Valve Limit R, MachStorm, Cars. (A 'use the parent's story' rule was tried and dropped: by name prefix it pairs
+      different TeknoParrot games, e.g. Dead Heat / Dead Heat Riders.)
 - [ ] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
 - [ ] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
 - [ ] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
