@@ -130,6 +130,8 @@ try {
       if ($br -ne 'main' -or $dirty.Count) { Write-Host "RetroFE build $key not made: the clone is on '$br'$(if ($dirty.Count) { " with edited RetroFE files" }) - only main is built automatically"; return }
     }
     $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
+# Build-RetroFE.ps1 also runs under Windows PowerShell 5.1 (PR 109), so a cabinet without pwsh 7 still builds
+if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue).Source }
     if (-not $GstRoot) { $GstRoot = @('D:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'R:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'C:\gstreamer\1.0\msvc_x86_64') | Where-Object { Test-Path (Join-Path $_ 'include') } | Select-Object -First 1 }
     # Visual Studio (any drive - RACE1 has it on D:\VS) through vswhere, and its own cmake
     $vswhere = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
