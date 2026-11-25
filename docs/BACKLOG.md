@@ -44,7 +44,9 @@ The loop works like this (James, 2026-11-25):
       - [x] AmPanel steps 1, 2, 5, 6, 7, 9, 10, 11a/b and the Settings engine switch (#54–#73).
       - **Gaps to 100% LEDBlinky (James asked 2026-11-25; honest list):**
         - [ ] Play LEDBlinky's `.lwax` animation files (`LEDBlinky\lwa\`), including `random.lwax` and the S/N options.
-        - [ ] Audio-reactive animation (`audio.lwax`): read the system sound level and drive the LEDs from it.
+        - [x] Audio-reactive animation: `audio` (AudioLevel.cs, the Windows peak meter) is a VU meter in the game's
+              colours. Cabinet Settings > ATTRACT LIGHTS picks chase / breathe / to the music. Tested live 2026-11-25.
+        - [ ] Audio "via triggers": a trigger rule action `audio` (a lamp or the music drives a button group).
         - [x] Command `14` (set LED ports by label, colour, board:port or number). Tested live 2026-11-25.
         - [x] Command `13` + automatic UltraStik map per game (Sticks.cs, New-StickMaps.py). Tested live on both sticks.
         - [x] `16`/`17`: dim the panel to 25% on pause. Tested live.

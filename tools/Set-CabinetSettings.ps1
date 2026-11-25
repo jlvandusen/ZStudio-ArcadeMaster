@@ -124,6 +124,16 @@ $S.lightsEngine = @{ group = 'LIGHTS AND DECK'; label = 'BUTTON LIGHTS ENGINE'; 
   presets = @('LEDBlinky', 'ArcadeMaster'); default = 'LEDBlinky'
   get = { $c = Conf 'LEDBlinkyDirectory'; if ($c -and $c.TrimEnd('\') -ieq (Join-Path (Split-Path $ManifestDir) 'ampanel-shim')) { 'ArcadeMaster' } else { 'LEDBlinky' } }
   set = { param($v) (& (Join-Path $PSScriptRoot 'Set-ButtonLights.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -Engine $v 6>&1 | Out-String).Trim() } }
+$amCfg = Join-Path (Split-Path $ManifestDir) 'AmPanel.json'
+$S.lightsAttract = @{ group = 'LIGHTS AND DECK'; label = 'ATTRACT LIGHTS'; detail = 'What the buttons do while the arcade is idle (ArcadeMaster engine): a rainbow chase, the game''s colours breathing, or dancing to the music'; kind = 'cycle'
+  presets = @('chase', 'breathe', 'audio'); default = 'chase'
+  get = { $v = $null; if (Test-Path $amCfg) { $v = (Get-Content $amCfg -Raw | ConvertFrom-Json).AttractAnimation }; if ($v) { "$v".ToLower() } else { 'chase' } }
+  show = { param($v) switch ("$v") { 'breathe' { 'BREATHE' } 'audio' { 'TO THE MUSIC' } default { 'CHASE' } } }
+  set = { param($v)
+    $cfg = [ordered]@{}; if (Test-Path $amCfg) { foreach ($p in (Get-Content $amCfg -Raw | ConvertFrom-Json).PSObject.Properties) { $cfg[$p.Name] = $p.Value } }
+    $cfg['AttractAnimation'] = "$v"; $cfg | ConvertTo-Json | Set-Content $amCfg -Encoding ascii
+    # the running AmPanel takes it now (else at its next start)
+    try { $c = New-Object IO.Pipes.NamedPipeClientStream('.', 'ArcadeMaster.Panel', [IO.Pipes.PipeDirection]::InOut); $c.Connect(500); $w = New-Object IO.StreamWriter($c); $w.AutoFlush = $true; $w.WriteLine("{`"cmd`":`"attract`",`"kind`":`"$v`",`"noreply`":true}"); $c.Dispose(); 'AmPanel updated' } catch { 'saved - AmPanel takes it at its next start' } } }
 $S.ledCloseOnExit = @{ group = 'LIGHTS AND DECK'; label = 'LIGHTS OFF WHEN THE ARCADE CLOSES'; detail = 'LEDBlinky is closed together with the frontend'; kind = 'switch'; default = $false
   get = { IsYes (Conf 'LEDBlinkyCloseOnExit') }
   set = { param($on) SetConf 'LEDBlinkyCloseOnExit' $(if ($on) { 'yes' } else { 'no' }); '' } }
