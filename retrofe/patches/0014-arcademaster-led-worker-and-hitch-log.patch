@@ -1,0 +1,124 @@
+diff --git a/RetroFE/Source/Execute/Launcher.cpp b/RetroFE/Source/Execute/Launcher.cpp
+index a25e1cdd..466935f9 100644
+--- a/RetroFE/Source/Execute/Launcher.cpp
++++ b/RetroFE/Source/Execute/Launcher.cpp
+@@ -660,6 +660,54 @@ void Launcher::exitScript() {
+ 	}
+ }
+ 
++#ifdef WIN32
++// ArcadeMaster: LEDBlinky (or AmPanel) is started on a worker thread, not on the render thread.
++// Fire-and-forget still ran CreateProcess on the main loop at every selection; on the pedestal that cost
++// 235-345 ms frames now and then (antivirus / disk on process start) - visible scroll stutter.
++// Selection events ("9") are coalesced: a newer one replaces any still queued, so a fast scroll starts
++// the helper once for where it stops, not once per item passed.
++#include <condition_variable>
++#include <deque>
++#include <mutex>
++namespace {
++struct LedJob { std::string exe, args, dir; int command; };
++std::mutex g_ledMutex;
++std::condition_variable g_ledCv;
++std::deque<LedJob> g_ledQueue;
++bool g_ledWorkerStarted = false;
++
++void ledWorker() {
++	for (;;) {
++		LedJob job;
++		{
++			std::unique_lock<std::mutex> lock(g_ledMutex);
++			g_ledCv.wait(lock, [] { return !g_ledQueue.empty(); });
++			job = std::move(g_ledQueue.front());
++			g_ledQueue.pop_front();
++		}
++		std::unique_ptr<IProcessManager> pm = std::make_unique<WindowsProcessManager>();
++		if (!pm->simpleLaunch(job.exe, job.args, job.dir)) {
++			LOG_WARNING("LEDBlinky", "Failed to launch (no-wait mode).");
++		}
++	}
++}
++
++void ledEnqueue(LedJob job) {
++	std::lock_guard<std::mutex> lock(g_ledMutex);
++	if (!g_ledWorkerStarted) {
++		std::thread(ledWorker).detach();
++		g_ledWorkerStarted = true;
++	}
++	if (job.command == 9 || job.command == 8) {   // only the latest selection / list change matters
++		g_ledQueue.erase(std::remove_if(g_ledQueue.begin(), g_ledQueue.end(),
++			[&](const LedJob& j) { return j.command == job.command; }), g_ledQueue.end());
++	}
++	g_ledQueue.push_back(std::move(job));
++	g_ledCv.notify_one();
++}
++} // namespace
++#endif
++
+ void Launcher::LEDBlinky(int command, std::string collection, Item* collectionItem) {
+ 	// This entire feature is Windows-specific. On other platforms, this function is a no-op.
+ #ifdef WIN32
+@@ -714,6 +762,10 @@ void Launcher::LEDBlinky(int command, std::string collection, Item* collectionIt
+ 	}
+ 
+ 	// --- Execution Logic ---
++	if (!wait) {
++		ledEnqueue(LedJob{ exe, args, LEDBlinkyDirectory, command });   // ArcadeMaster: off the render thread
++		return;
++	}
+ 	std::unique_ptr<IProcessManager> processManager = std::make_unique<WindowsProcessManager>();
+ 
+ 	if (wait) {
+diff --git a/RetroFE/Source/RetroFE.cpp b/RetroFE/Source/RetroFE.cpp
+index 9bfa2f2a..a5d7c5f6 100644
+--- a/RetroFE/Source/RetroFE.cpp
++++ b/RetroFE/Source/RetroFE.cpp
+@@ -145,6 +145,9 @@ RetroFE::~RetroFE() {
+ 	deInitialize();
+ }
+ 
++// ArcadeMaster: hitch attribution - the last render()'s draw and present times (main thread only)
++static double g_amDrawMs = 0.0, g_amPresentMs = 0.0;
++
+ void RetroFE::render() {
+ 	static double accumulatedRenderMs = 0.0;
+ 	static int framesSinceFpsUpdate = 0;
+@@ -195,6 +198,8 @@ void RetroFE::render() {
+ 		}
+ 	}
+ 
++	const uint64_t amDrawEnd = SDL_GetPerformanceCounter();   // ArcadeMaster: hitch attribution
++	g_amDrawMs = (double)(amDrawEnd - r_startTicks) * 1000.0 / (double)freq_;
+ 	// --- 2. Blit to backbuffer & present ---
+ 	for (int i = 0; i < SDL::getScreenCount(); ++i) {
+ 		SDL_Renderer* rr = SDL::getRenderer(i);
+@@ -208,6 +213,7 @@ void RetroFE::render() {
+ 
+ 	// --- 3. Timing for THIS render() call ---
+ 	const uint64_t r_endTicks = SDL_GetPerformanceCounter();
++	g_amPresentMs = (double)(r_endTicks - amDrawEnd) * 1000.0 / (double)freq_;   // ArcadeMaster
+ 	const double currentRenderDurationMs = (double)(r_endTicks - r_startTicks) * 1000.0 / (double)freq_;
+ 
+ 	// --- 4. FPS display logic ---
+@@ -2990,8 +2996,22 @@ bool RetroFE::run() {
+ 				}
+ 			}
+ 
++			// ArcadeMaster: hitch attribution. A frame whose work (logic + draw + present, before pacing) takes over
++			// 33 ms is logged with where the time went and what was selected, so stutter has a cause, not a guess.
++			const uint64_t amLogicEnd = SDL_GetPerformanceCounter();
+ 			if (!currentPage_->getIsLaunched())
+ 				render();
++			if (g_perfLogSec > 0) {
++				const double amTotal = (double)(SDL_GetPerformanceCounter() - frameStartTicks) * 1000.0 / (double)freq_;
++				if (amTotal > 33.3) {
++					const double amLogic = (double)(amLogicEnd - frameStartTicks) * 1000.0 / (double)freq_;
++					Item* amSel = currentPage_ ? currentPage_->getSelectedItem() : nullptr;
++					char amBuf[320];
++					snprintf(amBuf, sizeof(amBuf), "hitch %.1f ms: logic %.1f  draw %.1f  present %.1f | state %d | item %s",
++						amTotal, amLogic, g_amDrawMs, g_amPresentMs, (int)state_, amSel ? amSel->name.c_str() : "-");
++					LOG_INFO("Perf", amBuf);
++				}
++			}
+ 
+ 			// Only do custom frame pacing if vsync is OFF
+ 			if (!vSync)
