@@ -43,7 +43,9 @@ The loop works like this (James, 2026-11-25):
         and UltraStik maps (UltraStik32). Steps 1–8 are in that doc; the old steps below fold into them.
       - [x] AmPanel steps 1, 2, 5, 6, 7, 9, 10, 11a/b and the Settings engine switch (#54–#73).
       - **Gaps to 100% LEDBlinky (James asked 2026-11-25; honest list):**
-        - [ ] Play LEDBlinky's `.lwax` animation files (`LEDBlinky\lwa\`), including `random.lwax` and the S/N options.
+        - [x] Play LEDBlinky's `.lwax` files: the `<file>.lwax` command loops one until `11`. AmPanel.json
+              AttractAnimation can name one. Newer (LedHwType) and older (PACLED64) files work. Tested live 2026-11-25.
+        - [ ] `.lwax` leftovers: `random.lwax`, the S/N options, the `lwa\GameSpecific` folders (CabGameStart, CabGamePause...).
         - [x] Audio-reactive animation: `audio` (AudioLevel.cs, the Windows peak meter) is a VU meter in the game's
               colours. Cabinet Settings > ATTRACT LIGHTS picks chase / breathe / to the music. Tested live 2026-11-25.
         - [ ] Audio "via triggers": a trigger rule action `audio` (a lamp or the music drives a button group).

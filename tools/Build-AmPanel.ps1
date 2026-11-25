@@ -15,7 +15,7 @@ $fw = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319'      # 32-bit f
 if (-not $csc) { $csc = @(Get-Item (Join-Path $fw 'csc.exe') -ErrorAction SilentlyContinue) }
 if (-not $csc) { throw 'no C# compiler found (Visual Studio Build Tools Roslyn or the .NET Framework csc.exe)' }
 Write-Host "compiler: $($csc[0].FullName)"
-$refs = 'System.dll', 'System.Core.dll', 'System.Drawing.dll', 'System.Windows.Forms.dll', 'System.Web.Extensions.dll', 'System.Management.dll' | ForEach-Object { "/reference:$(Join-Path $fw $_)" }
+$refs = 'System.dll', 'System.Core.dll', 'System.Drawing.dll', 'System.Windows.Forms.dll', 'System.Web.Extensions.dll', 'System.Management.dll', 'System.Xml.dll' | ForEach-Object { "/reference:$(Join-Path $fw $_)" }
 $dist = Join-Path $repo 'dist'; New-Item -ItemType Directory -Force $dist | Out-Null
 $out = Join-Path $dist 'AmPanel.exe'
 $srcs = @(Get-ChildItem (Join-Path $repo 'src\panel') -Filter *.cs | ForEach-Object { $_.FullName })

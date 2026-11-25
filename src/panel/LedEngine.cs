@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml;
 
@@ -128,6 +129,79 @@ class LedEngine
         anim = new System.Threading.Thread(delegate () { AnimLoop(kind, labels); }) { IsBackground = true, Name = "led-anim" };
         anim.Start();
         return kind + " on " + labels.Count + " buttons";
+    }
+
+    // ---------------------------------------------------------------- LEDBlinky .lwax animations (the "<file>.lwax" command)
+    // LEDBlinkyAnimationEditor's XML: <Frame Duration="ms"> with <Intensity .../> (0-48 per port) and <State .../> (0/1)
+    // per board. Newer files name a board LedHwType="6" Id="1" (Id = the input map's LED controller number); older ones
+    // Device="PACLED64" Id="0" (0-based). LED-Wiz / PacDrive lists are skipped (no such boards here). A list that is not
+    // repeated keeps its last value. Every frame is resolved to final board bytes once, at load: playback is a copy.
+    public string LwaDir;
+    List<KeyValuePair<int, Dictionary<int, byte[]>>> lwaFrames;
+
+    public string Play(string file, bool loop)
+    {
+        string path = file;
+        if (!File.Exists(path) && LwaDir != null) { path = Path.Combine(LwaDir, file); if (!File.Exists(path) && !file.EndsWith(".lwax", StringComparison.OrdinalIgnoreCase)) path += ".lwax"; }
+        if (!File.Exists(path)) return "no animation " + file;
+        if (!open) return "LED boards not open";
+        var frames = new List<KeyValuePair<int, Dictionary<int, byte[]>>>();
+        var inten = new Dictionary<int, int[]>(); var state = new Dictionary<int, int[]>();
+        try
+        {
+            var x = new System.Xml.XmlDocument(); x.Load(path);
+            foreach (System.Xml.XmlElement f in x.SelectNodes("/LEDAnimation/Frame"))
+            {
+                int ms; if (!int.TryParse(f.GetAttribute("Duration"), out ms) || ms < 10) ms = 10;
+                foreach (System.Xml.XmlElement e in f.ChildNodes.OfType<System.Xml.XmlElement>())
+                {
+                    int board;
+                    string hw = e.GetAttribute("LedHwType"), dev = e.GetAttribute("Device"), id = e.GetAttribute("Id");
+                    if (hw != "") { if (!int.TryParse(id, out board)) continue; }
+                    else if (dev.Equals("PACLED64", StringComparison.OrdinalIgnoreCase) || dev.Equals("NanoLED", StringComparison.OrdinalIgnoreCase) || dev.StartsWith("Ultimate", StringComparison.OrdinalIgnoreCase)) { if (!int.TryParse(id, out board)) continue; board++; }
+                    else continue;
+                    var vals = e.GetAttribute("Value").Split(',').Select(s => { int v; int.TryParse(s.Trim(), out v); return v; }).ToArray();
+                    if (e.Name == "Intensity") inten[board] = vals; else if (e.Name == "State") state[board] = vals;
+                }
+                var bytes = new Dictionary<int, byte[]>();
+                foreach (var b in frame.Keys)
+                {
+                    var o = new byte[96]; int[] iv, sv;
+                    inten.TryGetValue(b, out iv); state.TryGetValue(b, out sv);
+                    for (int p = 0; p < 96; p++)
+                    {
+                        bool on = sv != null && p < sv.Length && sv[p] != 0;
+                        int lvl = iv != null && p < iv.Length ? iv[p] : 48;
+                        o[p] = on ? (byte)(Math.Max(0, Math.Min(48, lvl)) * 255 / 48) : (byte)0;
+                    }
+                    bytes[b] = o;
+                }
+                frames.Add(new KeyValuePair<int, Dictionary<int, byte[]>>(ms, bytes));
+            }
+        }
+        catch (Exception e) { return "animation " + Path.GetFileName(path) + ": " + e.Message; }
+        if (frames.Count == 0) return "animation " + Path.GetFileName(path) + " has no frames for these boards";
+        StopAnim();
+        lwaFrames = frames; animRun = true; Animation = Path.GetFileName(path);
+        anim = new System.Threading.Thread(delegate () { LwaLoop(loop); }) { IsBackground = true, Name = "led-lwax" };
+        anim.Start();
+        int total = 0; foreach (var f in frames) total += f.Key;
+        return Animation + ": " + frames.Count + " frames, " + total + " ms" + (loop ? ", looping" : "");
+    }
+
+    void LwaLoop(bool loop)
+    {
+        var frames = lwaFrames;
+        do
+        {
+            foreach (var f in frames)
+            {
+                if (!animRun) return;
+                foreach (var kv in f.Value) { byte[] dst; if (frame.TryGetValue(kv.Key, out dst)) Buffer.BlockCopy(kv.Value, 0, dst, 0, Math.Min(dst.Length, kv.Value.Length)); }
+                Flush();
+                System.Threading.Thread.Sleep(f.Key);
+            }
+        } while (loop && animRun);
     }
 
     bool StopAnim()

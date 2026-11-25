@@ -152,6 +152,7 @@ static class AmPanel
         if (string.Equals(Str(cfg, "Lights"), "own", StringComparison.OrdinalIgnoreCase) && ledBlinkyDir != null) {
             leds = new LedEngine(ledBlinkyDir);
             leds.LoadOverrides(Path.Combine(manifestDir, "led-colors.json"));   // this cabinet's own colours (step 11)
+            leds.LwaDir = Path.Combine(ledBlinkyDir, "lwa");                     // LEDBlinky's .lwax animations
             passThrough = false;       // two programs must never drive the same boards
         }
         // the sticks follow the lights unless AmPanel.json says otherwise ("Sticks": "own" | "ledblinky")
@@ -216,7 +217,9 @@ static class AmPanel
                 // the documented events that change what the panel shows
                 if (c == "9" || c == "15") State["lights"] = leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null));
                 else if (c == "2") { leds.AllOff(); State["lights"] = "off (frontend quit)"; }
-                else if (c == "5") State["lights"] = "attract: " + leds.Animate(attractAnimation);
+                else if (c == "5") State["lights"] = "attract: " + (attractAnimation.EndsWith(".lwax") ? leds.Play(attractAnimation, true) : leds.Animate(attractAnimation));
+                else if (c == "11") State["lights"] = leds.Animate("stop");
+                else if (what == "animation start") State["lights"] = leds.Play(c, true);
                 else if (c == "6") State["lights"] = leds.Animate("stop");
                 else if (what == "game start") State["lights"] = leds.LightGame(c);
                 else if (c == "14") State["lights"] = leds.SetPorts(string.Join(",", a, 1, a.Length - 1));
@@ -331,7 +334,7 @@ static class AmPanel
             else if (cmd == "attract")   // {"cmd":"attract","kind":"audio"} - the idle animation from now on (Cabinet Settings)
             {
                 string k = req.ContainsKey("kind") ? Convert.ToString(req["kind"]).ToLowerInvariant() : "";
-                if (k == "chase" || k == "breathe" || k == "audio") { attractAnimation = k; rep["ok"] = true; rep["attract"] = k; }
+                if (k == "chase" || k == "breathe" || k == "audio" || k.EndsWith(".lwax")) { attractAnimation = k; rep["ok"] = true; rep["attract"] = k; }
                 else { rep["ok"] = false; rep["error"] = "attract: chase, breathe or audio"; }
             }
             else if (cmd == "devicechange") { if (devices != null) devices.Poke(); rep["ok"] = devices != null; }   // as if a controller was plugged in
