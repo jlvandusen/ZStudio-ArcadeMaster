@@ -1,5 +1,5 @@
 {
-  "_help": "Art for games that have none of their own. 'aliases': the same game under another name in another list. Key: '<collection>/<item>' as the game lists name it; value: the '<collection>/<item>' whose medium_artwork it uses. 'files': single files, '<collection>/<item>': { '<art type>': '<file>' }, e.g. a PC game's own intro movie as its video (skipped on a cabinet that doesn't have the file). New-RetroFECollections.ps1 hard-links each art type the game has none of (video, fanart, logo, artwork, controls cards ...), never replaces its own art, and lists each link in medium_artwork\\ARCADEMASTER-borrowed-art.txt so it can be removed. Stories are not linked: write those in tools\\game-stories.json.",
+  "_help": "Art for games that have none of their own. 'aliases': the same game under another name in another list. Key: '<collection>/<item>' as the game lists name it; value: the '<collection>/<item>' whose medium_artwork it uses. 'files': single files, '<collection>/<item>': { '<art type>': '<file>' }, e.g. a PC game's own intro movie as its video (skipped on a cabinet that doesn't have the file). New-RetroFECollections.ps1 hard-links each art type the game has none of (video, fanart, logo, artwork, controls cards ...), never replaces its own art, and lists each link in medium_artwork\\ARCADEMASTER-borrowed-art.txt so it can be removed. Stories are not linked: write those in tools\\game-stories.json. 'clips': a game's own movie (attract / intro / trailer) made into a 45 s 720p menu video by tools\\New-GameClips.ps1 (into D:\\ArcadeMaster\\media\\clips\\<collection>\\<item>.mp4) and used as its video; 'start' skips logos (seconds).",
   "aliases": {
     "AM_TP_Emulators_TeknoParrot/Daytona3Single": "TeknoParrot/Daytona3",
     "AM_TP_Emulators_TeknoParrot/Daytona3Multi": "TeknoParrotMulti/Daytona3",
@@ -7,6 +7,50 @@
     "TeknoParrot/Daytona3Multi": "TeknoParrotMulti/Daytona3"
   },
   "files": {
-    "AM_PC/Crazy Taxi 3 High Roller": { "video": "D:\\Arcade PC\\PC\\Crazy taxi 3 High Roller\\avi\\go_an.avi" }
+    "AM_PC/Crazy Taxi 3 High Roller": {
+      "video": "D:\\Arcade PC\\PC\\Crazy taxi 3 High Roller\\avi\\go_an.avi"
+    }
+  },
+  "clips": {
+    "AM_PC/NASCAR Heat 5": {
+      "from": "D:\\Arcade PC\\PC\\NASCAR Heat 5\\NascarHeat5_Data\\StreamingAssets\\PC\\Movies\\Intros\\NewIntro.mp4",
+      "start": 0
+    },
+    "AM_PC/Project CARS": {
+      "from": "D:\\Arcade PC\\PC\\Project CARS\\Movies\\projectcars_boottrailer.bik",
+      "start": 8
+    },
+    "AM_PC/Road Fighters 3D": {
+      "from": "D:\\Arcade PC\\Konami\\Road Fighters 3d\\data\\movie\\demo-3d.wmv",
+      "start": 0
+    },
+    "AM_PC/V-Rally 4": {
+      "from": "D:\\Arcade PC\\PC\\V Rally 4\\WIN32\\Movies\\CareerIntro\\CareerIntro.mp4",
+      "start": 0
+    },
+    "AM_TP_Emulators_TeknoParrot/GtiClub3": {
+      "from": "D:\\Arcade PC\\Konami\\GTI Club - Supermini Festa\\movie\\demo-v002.wmv",
+      "start": 0
+    },
+    "AM_TP_Emulators_TeknoParrot/ID7": {
+      "from": "D:\\Arcade PC\\Sega Ring Edge\\Initial D arcade Stage 7 AAX\\data\\ADVERTISE\\initialD7.wmv",
+      "start": 0
+    },
+    "AM_TP_Emulators_TeknoParrot/ID8": {
+      "from": "D:\\Arcade PC\\Sega Ring Edge\\Initial D Arcade Stage 8 Infinity\\data\\ADVERTISE\\initialD8.wmv",
+      "start": 0
+    },
+    "AM_TP_Emulators_TeknoParrot/IDZ": {
+      "from": "D:\\Arcade PC\\Sega Nu\\Initial D Zero\\app\\package\\data\\ADVERTISE\\InitialD0.usm",
+      "start": 0
+    },
+    "AM_TP_Emulators_TeknoParrot/WMMT5": {
+      "from": "D:\\Arcade PC\\Namco ES3X\\wangan Midnight Max Tune 5\\data_jp\\movie\\w5_d01.wmv",
+      "start": 0
+    },
+    "TeknoParrot/IDTA": {
+      "from": "E:\\DRIVE Collection\\collections\\TeknoParrot\\roms\\Initial D The Arcade - Season 3\\Option\\MV01\\advinfo1.usm",
+      "start": 0
+    }
   }
 }

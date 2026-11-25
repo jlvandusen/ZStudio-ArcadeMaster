@@ -107,6 +107,7 @@ switch ($Tool) {
       devices     = @('Detect controllers', 'Get-CabinetDevices.ps1', @('-Out', $cab, '-History', $hist))
       catalog     = @('Scan game library', 'Build-Manifest.ps1', @('-RetroFE', $RetroFE, '-Out', $games))
       controls    = @('Match games to controls', 'Add-GameControls.ps1', @('-Manifest', $games, '-Cabinet', $cab))
+      clips       = @('Menu videos from the games'' own movies', 'New-GameClips.ps1', @())
       collections = @('Build Racing / Flight / Arcade menus', 'New-RetroFECollections.ps1', @('-Manifest', $games, '-RetroFE', $RetroFE, '-Cabinet', $cab, '-RebuildDatabase'))
       # the menu builder lists every mode that has games; the cabinet mode then hides the ones whose controls are not
       # plugged in (as at boot) - without this, Flight showed on a wheel-only cabinet until the next boot
