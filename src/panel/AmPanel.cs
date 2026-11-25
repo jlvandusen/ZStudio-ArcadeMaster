@@ -118,6 +118,7 @@ static class AmPanel
         if (ledBlinkyDir != null && Directory.Exists(ledBlinkyDir)) SetDllDirectory(ledBlinkyDir);   // PacDrive32.dll lives there
         if (string.Equals(Str(cfg, "Lights"), "own", StringComparison.OrdinalIgnoreCase) && ledBlinkyDir != null) {
             leds = new LedEngine(ledBlinkyDir);
+            leds.LoadOverrides(Path.Combine(manifestDir, "led-colors.json"));   // this cabinet's own colours (step 11)
             passThrough = false;       // two programs must never drive the same boards
         }
     }
@@ -282,6 +283,30 @@ static class AmPanel
                 else { string res; lock (Gate) { res = leds.LightGame(req.ContainsKey("rom") ? Convert.ToString(req["rom"]) : null); State["lights"] = res; } rep["result"] = res; rep["ok"] = true; }
             }
             else if (cmd == "off") { if (leds != null) lock (Gate) leds.AllOff(); rep["ok"] = leds != null; }
+            else if (cmd == "colors" || cmd == "setcolor")
+            {
+                // {"cmd":"colors","rom":"sf2"} -> every button's colour for that game (0-48 R,G,B, after this cabinet's changes)
+                // {"cmd":"setcolor","rom":"sf2","label":"P1B1","rgb":[0,48,0]} (rgb omitted = back to the game's own colour)
+                if (leds == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
+                else
+                {
+                    string rom = req.ContainsKey("rom") ? Convert.ToString(req["rom"]) : null;
+                    lock (Gate)
+                    {
+                        if (cmd == "setcolor")
+                        {
+                            var a = req.ContainsKey("rgb") ? req["rgb"] as System.Collections.ArrayList : null;
+                            int[] rgb = a != null && a.Count == 3 ? new[] { Convert.ToInt32(a[0]), Convert.ToInt32(a[1]), Convert.ToInt32(a[2]) } : null;
+                            leds.SetGameColor(rom, Convert.ToString(req["label"]), rgb);
+                            leds.LightGame(rom);
+                        }
+                        var map = new Dictionary<string, object>();
+                        foreach (var kv in leds.GameColors(rom)) map[kv.Key] = kv.Value;
+                        rep["colors"] = map;
+                    }
+                    rep["ok"] = true;
+                }
+            }
             else if (cmd == "animate")   // {"cmd":"animate","kind":"chase"|"breathe"|"stop"}
             {
                 if (leds == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
@@ -337,6 +362,11 @@ static class AmPanel
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
+        if (leds != null)
+            menu.Items.Add("Lights && Colours...", null, delegate {
+                string g; lock (Gate) g = State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : "";
+                new ColorStudio(leds, Gate, g).Show();
+            });
         menu.Items.Add("Re-scan boards", null, delegate { var b = ReadBoards(); lock (Gate) State["boards"] = b; SaveState(); });
         menu.Items.Add("Open log", null, delegate { try { Process.Start(logFile); } catch { } });
         menu.Items.Add(new ToolStripSeparator());
