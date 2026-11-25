@@ -503,3 +503,21 @@ another game or PC can name an id that never matches, and the game then has no f
 `tools\Repair-FFBPluginDevice.ps1` asks each folder's SDL2.dll for the wheel's id and fixes DeviceGUID (dry run;
 `-Apply` backs up first).
 
+
+## Flight games on a racing cabinet
+
+A racing cabinet has no flight stick, so the arcade flight games (After Burner Climax, MachStorm, Star Wars Battle Pod) had no controls at all. `tools\Set-FlightOnWheel.ps1` maps them to the G29:
+
+| Flight control | G29 |
+|---|---|
+| Bank / turn | wheel |
+| Nose up | right paddle |
+| Nose down | left paddle |
+| Throttle | gas pedal |
+| Air brake | brake pedal |
+| Guns / missiles | face buttons |
+| Start | start button |
+
+- The bindings are copied from a driving game that already works on this wheel (Daytona3), so the device and axes are right.
+- Only controls with nothing bound are filled in, so a cabinet with a real stick keeps its own bindings.
+- Dry run by default. `-Apply` backs up to `*.am-flight-<time>.bak`.
