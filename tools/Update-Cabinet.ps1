@@ -136,6 +136,32 @@ try {
   # 3. build (not at boot: -DeployOnly only installs a finished build)
   if (-not (Test-Path (Join-Path $built 'retrofe.exe'))) {
     if ($DeployOnly -or $NoBuild) { Write-Host "RetroFE build $key not built yet (installed: $(if ($have) { $have } else { 'unknown' }))"; return }
+    # 3a. the build GitHub made (.github\workflows\build-retrofe.yml publishes release "retrofe-<key>" for every merged
+    #     patch change): download it, check its SHA-256, unpack it where a local build would go. Only when that is not
+    #     there (not built yet, no network) does this cabinet compile.
+    $remote = if ($git) { [string](& $git -C $repo remote get-url origin 2>$null) } else { '' }
+    if ($remote -match 'github\.com[:/]([^/]+)/([^/.]+?)(\.git)?$') {
+      $rel = "https://github.com/$($Matches[1])/$($Matches[2])/releases/download/retrofe-$key"
+      $dlDir = Join-Path $BuildRoot "download-$key"; New-Item -ItemType Directory -Force $dlDir | Out-Null
+      $zip = Join-Path $dlDir "retrofe-$key.zip"
+      $ErrorActionPreference = 'Continue'
+      & curl.exe -fsSL -o "$zip.sha256" "$rel/retrofe-$key.zip.sha256" 2>$null
+      $got = $LASTEXITCODE -eq 0
+      if ($got) { & curl.exe -fsSL -o $zip "$rel/retrofe-$key.zip" 2>$null; $got = $LASTEXITCODE -eq 0 }
+      $ErrorActionPreference = 'Stop'
+      if ($got) {
+        $want = ((Get-Content "$zip.sha256" -Raw) -split '\s+')[0].ToLower()
+        if ((Get-FileHash $zip -Algorithm SHA256).Hash.ToLower() -eq $want) {
+          $out = Join-Path $BuildRoot "retrofe-$key"
+          if (Test-Path $out) { Remove-Item $out -Recurse -Force }
+          Expand-Archive -LiteralPath $zip -DestinationPath $out
+          if (Test-Path (Join-Path $built 'retrofe.exe')) { Say "downloaded RetroFE $key from GitHub ($([math]::Round((Get-Item $zip).Length / 1MB)) MB, checksum ok)" }
+        } else { Say "GitHub build $key failed its checksum - compiling here instead" }
+      }
+      Remove-Item $dlDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  }
+  if (-not (Test-Path (Join-Path $built 'retrofe.exe'))) {
     # only what is merged: a clone on a branch or with edited files (someone developing a patch) is never built and
     # installed by the timer - that is the developer's job, by hand
     if ($git) {
