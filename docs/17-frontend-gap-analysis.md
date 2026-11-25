@@ -35,7 +35,11 @@ Versions read: LaunchBox 14.1 (2026-10-30), Batocera 44 "Malachite" (2026-11-17)
 
 ## Order of work
 
-1. AmPanel universal exit combo (#1).
+1. **Done (2026-11-25):** the universal end-game key (#1).
+   - **The bug it fixed:** RetroFE treats every `quit` key as a one-press kill of the running game, and ArcadeMaster's profiles said `quit = Q`, which is P2 button 3 on the pedestal. Now `quit = F8` (no panel key), with `quitCombo = 1, 5` (P1 Start + P1 Coin together) as RetroFE's own exit. Repair-ArcadeHealth replaces any quit key that is a panel button.
+   - **AmPanel's ExitGuard (Esc, the cabinet's universal "end game"):** while a game runs, Esc ends it per `exit-rules.json`. James's CabinetLauncher AutoHotkey list (WinUAE, ePSXe, RPCS3, Cemu, PCSX2, Dolphin, VICE, Qt / wx window classes) is now rules, plus xemu, MAME, RetroArch and TeknoParrot. The methods are self, altf4, close and kill, and after 3 s the whole process chain up to what the frontend started is ended.
+   - **Computers keep Esc:** C64 / Amiga / Spectrum / PC games keep Esc for the game. A tap reaches the game, and only holding Esc for 1.5 s ends it (rules by launcher, because inside RetroArch they all look the same).
+   - **Tested on the pedestal:** xemu closed cleanly on one Esc; C64 in RetroArch survived a tap and closed on a 2.2 s hold.
 2. Kiosk lock with a panel button code (#3).
 3. AmPanel pause overlay v1: resume, controls card, story, exit (#2). Save / load states come in v2, per emulator.
 4. Fix hi2txt and show high scores (#4).

@@ -128,11 +128,22 @@ if (Test-Path $cc) {
   $prof = Join-Path $profDir "controls-$profName.conf"
   $profQuit = 'Q'
   if (Test-Path $prof) { $pq = Select-String -Path $prof -Pattern '^\s*quit\s*=\s*(.+)$' | Select-Object -First 1; if ($pq) { $profQuit = $pq.Matches[0].Groups[1].Value.Trim() } }
+  # RetroFE also treats every "quit" key as a ONE-PRESS kill of the running game. A quit key that is a panel button
+  # (pedestal: Q = P2 button 3) ended any game the moment player 2 pressed it. So a quit key found on this cabinet's
+  # panel (manifest\panel.json) is replaced too, and the profile's quitCombo (the deliberate in-game exit, e.g. P1 Start
+  # + P1 Coin pressed together) is added when the file has none.
+  $profCombo = $null
+  if (Test-Path $prof) { $pc = Select-String -Path $prof -Pattern '^\s*quitCombo\s*=\s*(.+)$' | Select-Object -First 1; if ($pc) { $profCombo = $pc.Matches[0].Groups[1].Value.Trim() } }
+  $panelKeys = @()
+  $pj = if ($ManifestDir) { Join-Path $ManifestDir 'panel.json' } else { '' }
+  if ($pj -and (Test-Path $pj)) { foreach ($pl in (Get-Content $pj -Raw | ConvertFrom-Json).players) { foreach ($kp in $pl.keys.PSObject.Properties) { $panelKeys += "$($kp.Value)".ToUpper() } } }
   $escFix = @()
   for ($i = 0; $i -lt $lines.Count; $i++) {
     if ($lines[$i] -match '^\s*quit\s*=\s*(.*)$') {
       $qv = $Matches[1]
-      if (@($qv -split ',' | ForEach-Object { $_.Trim() }) -contains 'Escape') { $lines[$i] = "quit = $profQuit"; $escFix += "quit '$($qv.Trim())' -> '$profQuit'" }
+      $qk = @($qv -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+      $onPanel = @($qk | Where-Object { $panelKeys -contains $_.ToUpper() })
+      if (($qk -contains 'Escape') -or ($onPanel -and $qv.Trim() -ne $profQuit)) { $lines[$i] = "quit = $profQuit"; $escFix += "quit '$($qv.Trim())' -> '$profQuit'$(if ($onPanel) { " ($($onPanel -join ',') is a panel button: one press ended the game)" })" }
     }
     elseif ($lines[$i] -match '^\s*back\s*=\s*(.*)$') {
       $bv = $Matches[1]
@@ -141,6 +152,9 @@ if (Test-Path $cc) {
         $lines[$i] = "back = $nb"; $escFix += "back '$($bv.Trim())' -> '$nb'"
       }
     }
+  }
+  if ($profCombo -and -not @($lines | Where-Object { $_ -match '^\s*quitCombo\s*=' }).Count) {
+    $lines = @($lines) + "quitCombo = $profCombo"; $escFix += "quitCombo '$profCombo' added (exit any game: press these together)"
   }
   # a key with no value ("random =") is an error at every RetroFE start ("Unsupported property value"); commented out
   # it means the same thing - no key for that action - without the error
