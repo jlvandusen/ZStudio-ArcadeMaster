@@ -1,0 +1,967 @@
+﻿{
+    "machine":  "DESKTOP-RACE2",
+    "surveyed":  "2026-11-25T07:40:34",
+    "roots":  [
+                  "C:\\",
+                  "D:\\",
+                  "E:\\"
+              ],
+    "frontends":  [
+                      {
+                          "kind":  "RetroFE",
+                          "root":  "D:\\FLIGHT Collection",
+                          "version":  null,
+                          "base":  "D:\\FLIGHT Collection",
+                          "settings":  {
+                                           "layout":  "FLIGHT",
+                                           "firstCollection":  "Main",
+                                           "numScreens":  "1",
+                                           "horizontal":  null,
+                                           "vertical":  null,
+                                           "fullscreen":  null
+                                       },
+                          "layouts":  [
+                                          {
+                                              "name":  "FLIGHT",
+                                              "resolution":  "1920x1080",
+                                              "monitors":  1,
+                                              "collectionLayouts":  [
+
+                                                                    ],
+                                              "artTypes":  [
+                                                               "alpha",
+                                                               "angle",
+                                                               "artwork_3D",
+                                                               "bezel",
+                                                               "border",
+                                                               "custom",
+                                                               "fanart",
+                                                               "firstLetter",
+                                                               "gallery",
+                                                               "height",
+                                                               "highlight",
+                                                               "load",
+                                                               "logo",
+                                                               "maxHeight",
+                                                               "mwheel",
+                                                               "nop",
+                                                               "option",
+                                                               "select",
+                                                               "story",
+                                                               "title",
+                                                               "video",
+                                                               "volume",
+                                                               "width",
+                                                               "x",
+                                                               "y",
+                                                               "year",
+                                                               "yOrigin"
+                                                           ],
+                                              "usesVideo":  true,
+                                              "sounds":  [
+                                                             "highlight",
+                                                             "load",
+                                                             "select"
+                                                         ],
+                                              "animations":  329,
+                                              "splash":  true,
+                                              "fonts":  [
+                                                            "ZabalDEMO-Black.otf",
+                                                            "ZabalDEMO-Black.otf"
+                                                        ],
+                                              "preview":  "D:\\FLIGHT Collection\\layouts\\FLIGHT\\images\\archives\\OLDmain1.jpg"
+                                          },
+                                          {
+                                              "name":  "TITAN",
+                                              "resolution":  "1920x1080",
+                                              "monitors":  1,
+                                              "collectionLayouts":  [
+                                                                        "Doom Slayers Collection",
+                                                                        "Music Player",
+                                                                        "SETTINGS BEZELS",
+                                                                        "SETTINGS TITAN",
+                                                                        "THEMES"
+                                                                    ],
+                                              "artTypes":  [
+                                                               "alpha",
+                                                               "angle",
+                                                               "artwork_3d",
+                                                               "artwork_front",
+                                                               "backgroundAlpha",
+                                                               "banner",
+                                                               "bezel_night",
+                                                               "bottom",
+                                                               "Character",
+                                                               "collectionIndexSize",
+                                                               "containerY",
+                                                               "Controller",
+                                                               "custom",
+                                                               "device",
+                                                               "fanart",
+                                                               "firstLetter",
+                                                               "gallery",
+                                                               "genre",
+                                                               "height",
+                                                               "highlight",
+                                                               "icon",
+                                                               "icon2",
+                                                               "landscape",
+                                                               "layer",
+                                                               "logo",
+                                                               "manufacturer",
+                                                               "maxHeight",
+                                                               "maxWidth",
+                                                               "medium_disc",
+                                                               "medium_front",
+                                                               "menuextra1",
+                                                               "menuextra2",
+                                                               "nop",
+                                                               "numberPlayers",
+                                                               "playlist",
+                                                               "score",
+                                                               "sectional",
+                                                               "select",
+                                                               "story",
+                                                               "time",
+                                                               "title",
+                                                               "video",
+                                                               "vignette",
+                                                               "volume",
+                                                               "width",
+                                                               "x",
+                                                               "xOffset",
+                                                               "xOrigin",
+                                                               "y",
+                                                               "year",
+                                                               "yOffset",
+                                                               "yOrigin"
+                                                           ],
+                                              "usesVideo":  true,
+                                              "sounds":  [
+                                                             "highlight",
+                                                             "select"
+                                                         ],
+                                              "animations":  6053,
+                                              "splash":  true,
+                                              "fonts":  [
+                                                            "DooM.ttf",
+                                                            "Geforce_Bold.ttf",
+                                                            "Titan.ttf",
+                                                            "Titan_Bold.ttf"
+                                                        ],
+                                              "preview":  "D:\\FLIGHT Collection\\layouts\\TITAN\\collections\\Zelda Collection\\system_artwork\\Menuextra2.png"
+                                          }
+                                      ],
+                          "collections":  [
+                                              {
+                                                  "name":  "Amiga",
+                                                  "include":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_cover":  2,
+                                                                  "cabinets":  2,
+                                                                  "cabs":  4,
+                                                                  "logo":  2,
+                                                                  "marquee":  2,
+                                                                  "story":  1,
+                                                                  "video":  2
+                                                              },
+                                                  "launcher":  "Amiga"
+                                              },
+                                              {
+                                                  "name":  "ArcadeAll",
+                                                  "include":  0,
+                                                  "subs":  [
+                                                               "Naomi"
+                                                           ],
+                                                  "artwork":  {
+                                                                  "bezels":  239,
+                                                                  "cabinets":  1291,
+                                                                  "cabs":  1290,
+                                                                  "cover":  1297,
+                                                                  "logo":  1296,
+                                                                  "marquee":  1327,
+                                                                  "screenshot":  0,
+                                                                  "video":  5
+                                                              },
+                                                  "launcher":  "mame"
+                                              },
+                                              {
+                                                  "name":  "COLLECTIONS",
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "logo":  9
+                                                              }
+                                              },
+                                              {
+                                                  "name":  "GAMES",
+                                                  "subs":  [
+                                                               "Amiga",
+                                                               "Laser Disc",
+                                                               "MAME",
+                                                               "Nintendo 64",
+                                                               "Nintendo Gamecube",
+                                                               "Nintendo Switch",
+                                                               "Nintendo Wii U",
+                                                               "Nintendo Wii",
+                                                               "PC Games",
+                                                               "Sega 32X",
+                                                               "Sega CD",
+                                                               "Sega Model 2",
+                                                               "Sega Model 3",
+                                                               "Sega Triforce",
+                                                               "TeknoParrot"
+                                                           ],
+                                                  "artwork":  {
+
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Laser Disc",
+                                                  "include":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  2,
+                                                                  "cabinets":  8,
+                                                                  "cabs":  8,
+                                                                  "fanart":  8,
+                                                                  "logo":  8,
+                                                                  "marquee":  8,
+                                                                  "story":  2,
+                                                                  "video":  8
+                                                              },
+                                                  "launcher":  "Laser Disc"
+                                              },
+                                              {
+                                                  "name":  "Main",
+                                                  "roms":  2,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+
+                                                              },
+                                                  "menu":  [
+                                                               "GAMES",
+                                                               "SETTINGS"
+                                                           ],
+                                                  "launcher":  "Main"
+                                              },
+                                              {
+                                                  "name":  "MAME",
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  6,
+                                                                  "artwork_front":  0,
+                                                                  "bezel_day":  1,
+                                                                  "bezel_night":  1,
+                                                                  "fanart":  1297,
+                                                                  "logo":  1296,
+                                                                  "story":  6,
+                                                                  "video":  5
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Nintendo 64",
+                                                  "roms":  3,
+                                                  "include":  0,
+                                                  "subs":  [
+                                                               "Nintendo 64 Project64 SUB"
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  3,
+                                                                  "artwork_front":  0,
+                                                                  "bezel_day":  2,
+                                                                  "bezel_night":  2,
+                                                                  "cabinets":  45,
+                                                                  "cabs":  2,
+                                                                  "cover":  45,
+                                                                  "fanart":  4,
+                                                                  "logo":  46,
+                                                                  "marquee":  45,
+                                                                  "medium_front":  1,
+                                                                  "story":  2,
+                                                                  "video":  46
+                                                              },
+                                                  "launcher":  "Nintendo 64"
+                                              },
+                                              {
+                                                  "name":  "Nintendo GameCube",
+                                                  "roms":  4,
+                                                  "include":  0,
+                                                  "subs":  [
+                                                               "Nintendo GameCube Dolphin SUB"
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "bezel_day":  1,
+                                                                  "bezel_night":  1,
+                                                                  "cabinets":  1,
+                                                                  "cabs":  1,
+                                                                  "cover":  1,
+                                                                  "fanart":  3,
+                                                                  "logo":  2,
+                                                                  "marquee":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  2
+                                                              },
+                                                  "launcher":  "GameCube"
+                                              },
+                                              {
+                                                  "name":  "Nintendo Switch",
+                                                  "roms":  1,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "fanart":  3,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Nintendo Wii",
+                                                  "roms":  3,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "fanart":  3,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Nintendo Wii U",
+                                                  "roms":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "fanart":  3,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "PC Games",
+                                                  "roms":  7,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  2,
+                                                                  "artwork_front":  1,
+                                                                  "fanart":  4,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  2,
+                                                                  "story":  2,
+                                                                  "video":  2
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sega 32X",
+                                                  "roms":  1,
+                                                  "include":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "bezel_day":  1,
+                                                                  "bezel_night":  1,
+                                                                  "cabinets":  34,
+                                                                  "cabs":  2,
+                                                                  "cover":  34,
+                                                                  "fanart":  2,
+                                                                  "logo":  2,
+                                                                  "marquee":  34,
+                                                                  "medium_front":  1,
+                                                                  "story":  1,
+                                                                  "video":  2
+                                                              },
+                                                  "launcher":  "Sega 32X"
+                                              },
+                                              {
+                                                  "name":  "Sega CD",
+                                                  "roms":  2,
+                                                  "include":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  2,
+                                                                  "cabinets":  33,
+                                                                  "cabs":  2,
+                                                                  "fanart":  34,
+                                                                  "logo":  33,
+                                                                  "marquee":  33,
+                                                                  "story":  2,
+                                                                  "video":  5
+                                                              },
+                                                  "launcher":  "SegaCD"
+                                              },
+                                              {
+                                                  "name":  "Sega Dreamcast",
+                                                  "roms":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "bezel_day":  2,
+                                                                  "bezel_night":  2,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sega Game Gear",
+                                                  "roms":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "bezel_day":  1,
+                                                                  "bezel_night":  1,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_front":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sega Saturn",
+                                                  "roms":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "bezel_day":  3,
+                                                                  "bezel_night":  3,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sega Triforce",
+                                                  "roms":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "bezel_day":  1,
+                                                                  "bezel_night":  1,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_front":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "SETTINGS",
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+
+                                                              },
+                                                  "menu":  [
+                                                               "SETTINGS BEZELS",
+                                                               "SETTINGS TITAN"
+                                                           ]
+                                              },
+                                              {
+                                                  "name":  "SETTINGS BEZELS",
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "logo":  2,
+                                                                  "story":  2,
+                                                                  "video":  2
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "SETTINGS TITAN",
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "fanart":  1,
+                                                                  "option":  32,
+                                                                  "png":  3,
+                                                                  "story":  26,
+                                                                  "video":  28
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sony PlayStation",
+                                                  "roms":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "bezel_day":  1,
+                                                                  "bezel_night":  1,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sony PSP",
+                                                  "roms":  0,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_front":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "TeknoParrot",
+                                                  "roms":  4,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  45,
+                                                                  "artwork_front":  44,
+                                                                  "bezel":  3,
+                                                                  "fanart":  41,
+                                                                  "logo":  41,
+                                                                  "medium_front":  25,
+                                                                  "story":  44,
+                                                                  "video":  5
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "_common",
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "firstLetter":  36,
+                                                                  "genre":  176,
+                                                                  "manufacturer":  829,
+                                                                  "numberPlayers":  9,
+                                                                  "playlist":  1,
+                                                                  "rating":  33,
+                                                                  "score":  52
+                                                              }
+                                              }
+                                          ],
+                          "flow":  [
+                                       {
+                                           "name":  "GAMES",
+                                           "children":  [
+                                                            "Amiga (merged)",
+                                                            "Laser Disc (merged)",
+                                                            "MAME (merged)",
+                                                            "Nintendo 64 (merged)",
+                                                            "Nintendo Gamecube (merged)",
+                                                            "Nintendo Switch (merged)",
+                                                            "Nintendo Wii U (merged)",
+                                                            "Nintendo Wii (merged)",
+                                                            "PC Games (merged)",
+                                                            "Sega 32X (merged)",
+                                                            "Sega CD (merged)",
+                                                            "Sega Model 2 (merged)",
+                                                            "Sega Model 3 (merged)",
+                                                            "Sega Triforce (merged)",
+                                                            "TeknoParrot (merged)"
+                                                        ]
+                                       },
+                                       {
+                                           "name":  "SETTINGS",
+                                           "children":  [
+                                                            "SETTINGS BEZELS",
+                                                            "SETTINGS TITAN"
+                                                        ]
+                                       }
+                                   ]
+                      },
+                      {
+                          "kind":  "RetroFE",
+                          "root":  "E:\\DRIVE Collection",
+                          "version":  null,
+                          "base":  "E:\\DRIVE Collection",
+                          "settings":  {
+                                           "layout":  "DRIVE",
+                                           "firstCollection":  "Main",
+                                           "numScreens":  "1",
+                                           "horizontal":  null,
+                                           "vertical":  null,
+                                           "fullscreen":  null
+                                       },
+                          "layouts":  [
+                                          {
+                                              "name":  "DRIVE",
+                                              "resolution":  "1920x1080",
+                                              "monitors":  1,
+                                              "collectionLayouts":  [
+
+                                                                    ],
+                                              "artTypes":  [
+                                                               "alpha",
+                                                               "angle",
+                                                               "artwork_3D",
+                                                               "bezel",
+                                                               "border",
+                                                               "custom",
+                                                               "fanart",
+                                                               "firstLetter",
+                                                               "gallery",
+                                                               "height",
+                                                               "highlight",
+                                                               "load",
+                                                               "logo",
+                                                               "maxHeight",
+                                                               "mwheel",
+                                                               "nop",
+                                                               "option",
+                                                               "select",
+                                                               "story",
+                                                               "title",
+                                                               "video",
+                                                               "volume",
+                                                               "width",
+                                                               "x",
+                                                               "y",
+                                                               "year",
+                                                               "yOrigin"
+                                                           ],
+                                              "usesVideo":  true,
+                                              "sounds":  [
+                                                             "highlight",
+                                                             "load",
+                                                             "select"
+                                                         ],
+                                              "animations":  329,
+                                              "splash":  true,
+                                              "fonts":  [
+                                                            "ZabalDEMO-Black.otf"
+                                                        ],
+                                              "preview":  "E:\\DRIVE Collection\\layouts\\DRIVE\\images\\main7.jpg"
+                                          }
+                                      ],
+                          "collections":  [
+                                              {
+                                                  "name":  "Controller",
+                                                  "roms":  4,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "fanart":  1,
+                                                                  "logo":  3,
+                                                                  "option":  3,
+                                                                  "story":  3,
+                                                                  "video":  3
+                                                              },
+                                                  "launcher":  "Controller"
+                                              },
+                                              {
+                                                  "name":  "GAMES",
+                                                  "subs":  [
+                                                               "MAME",
+                                                               "Nintendo Gamecube",
+                                                               "Nintendo Wii U",
+                                                               "Nintendo Wii",
+                                                               "PC Games",
+                                                               "Sega Model 2",
+                                                               "Sega Model 3",
+                                                               "Sega Triforce",
+                                                               "TeknoParrot",
+                                                               "TeknoParrotMulti"
+                                                           ],
+                                                  "artwork":  {
+
+                                                              }
+                                              },
+                                              {
+                                                  "name":  "Main",
+                                                  "roms":  2,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+
+                                                              },
+                                                  "menu":  [
+                                                               "GAMES",
+                                                               "SETTINGS"
+                                                           ],
+                                                  "launcher":  "Main"
+                                              },
+                                              {
+                                                  "name":  "MAME",
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  9,
+                                                                  "artwork_front":  7,
+                                                                  "bezel":  8,
+                                                                  "fanart":  9,
+                                                                  "logo":  9,
+                                                                  "story":  9,
+                                                                  "video":  9
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Nintendo Gamecube",
+                                                  "roms":  3,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  4,
+                                                                  "artwork_front":  4,
+                                                                  "bezel":  1,
+                                                                  "fanart":  4,
+                                                                  "logo":  4,
+                                                                  "medium_disc":  4,
+                                                                  "story":  4,
+                                                                  "video":  4
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Nintendo Wii",
+                                                  "roms":  1,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Nintendo Wii U",
+                                                  "roms":  3,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  1,
+                                                                  "artwork_front":  1,
+                                                                  "fanart":  2,
+                                                                  "logo":  1,
+                                                                  "medium_disc":  1,
+                                                                  "story":  1,
+                                                                  "video":  1
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "PC Games",
+                                                  "roms":  17,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  10,
+                                                                  "artwork_front":  9,
+                                                                  "fanart":  9,
+                                                                  "logo":  9,
+                                                                  "medium_disc":  9,
+                                                                  "story":  9,
+                                                                  "video":  9
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sega Model 2",
+                                                  "roms":  6,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  7,
+                                                                  "artwork_front":  7,
+                                                                  "bezel":  2,
+                                                                  "fanart":  7,
+                                                                  "logo":  6,
+                                                                  "story":  6,
+                                                                  "video":  6
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sega Model 3",
+                                                  "roms":  25,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  8,
+                                                                  "artwork_front":  8,
+                                                                  "fanart":  8,
+                                                                  "logo":  7,
+                                                                  "story":  7,
+                                                                  "video":  7
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "Sega Triforce",
+                                                  "roms":  7,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  3,
+                                                                  "artwork_front":  3,
+                                                                  "bezel":  1,
+                                                                  "fanart":  3,
+                                                                  "logo":  3,
+                                                                  "story":  3,
+                                                                  "video":  3
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "SETTINGS",
+                                                  "subs":  [
+                                                               "Controller"
+                                                           ],
+                                                  "artwork":  {
+
+                                                              }
+                                              },
+                                              {
+                                                  "name":  "TeknoParrot",
+                                                  "roms":  36,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  177,
+                                                                  "artwork_front":  207,
+                                                                  "bezel":  3,
+                                                                  "fanart":  67,
+                                                                  "logo":  249,
+                                                                  "medium_front":  141,
+                                                                  "story":  173,
+                                                                  "video":  176
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              },
+                                              {
+                                                  "name":  "TeknoParrotMulti",
+                                                  "roms":  1,
+                                                  "subs":  [
+
+                                                           ],
+                                                  "artwork":  {
+                                                                  "artwork_3d":  22,
+                                                                  "artwork_front":  22,
+                                                                  "bezel":  3,
+                                                                  "fanart":  22,
+                                                                  "logo":  22,
+                                                                  "story":  22,
+                                                                  "video":  22
+                                                              },
+                                                  "launcher":  "%ITEM_COLLECTION_NAME%"
+                                              }
+                                          ],
+                          "flow":  [
+                                       {
+                                           "name":  "GAMES",
+                                           "children":  [
+                                                            "MAME (merged)",
+                                                            "Nintendo Gamecube (merged)",
+                                                            "Nintendo Wii U (merged)",
+                                                            "Nintendo Wii (merged)",
+                                                            "PC Games (merged)",
+                                                            "Sega Model 2 (merged)",
+                                                            "Sega Model 3 (merged)",
+                                                            "Sega Triforce (merged)",
+                                                            "TeknoParrot (merged)",
+                                                            "TeknoParrotMulti (merged)"
+                                                        ]
+                                       },
+                                       {
+                                           "name":  "SETTINGS",
+                                           "children":  [
+                                                            "Controller (merged)"
+                                                        ]
+                                       }
+                                   ]
+                      }
+                  ]
+}

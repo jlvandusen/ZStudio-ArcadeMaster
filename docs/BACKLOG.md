@@ -21,6 +21,34 @@ The loop works like this (James, 2026-11-25):
 - Open PRs: CI, review comments, conflicts.
 - Delete merged branches and stale worktrees.
 
+## 2a. James 2026-11-25: full settings like the race cabinet, and our own LED engine
+- [ ] **[PEDESTAL] CONTROLS settings group** (the pedestal's counterpart of the race cab's wheel / FFB / pedal
+      settings), in Tools > Cabinet Settings and as Tools items:
+      - [x] PANEL TEST (Tools > 1 Panel Test, control-panel cabinets): 30 s, and every control pressed shows with its
+            panel name from panel.json ("P1 BUTTON 1 - key LCONTROL") or its joystick axis / button. Saved to
+            manifest\input-capture.txt. (2026-11-25)
+      - LEARN THE PANEL: Import-LEDBlinkyPanel, or button capture on marquee-only cabinets.
+      - STICK RESTRICTOR: ServoStik (found: D209:1700) set to auto per game (joyways), always 8-way or always 4-way.
+      - ROLLERBALL / DIAL: separate mice (multimouse) and sensitivity.
+      - BUTTON LIGHTS: brightness, colours on or off, attract animation on or off (LED engine below).
+- [ ] **[PEDESTAL] LED engine: ArcadeMaster drives the panel lights itself.** Built from Ultimarc's published PacDrive
+      SDK (PacDrive32.dll, 32-bit: run through Windows' 32-bit PowerShell) and LEDBlinky's documented files: Colors.ini
+      (per-game colours), Color-RGB.ini, LEDBlinkyInputMap.xml (which LED pin is which button). We do NOT
+      disassemble LEDBlinky.exe; its own files and Ultimarc's SDK give everything needed.
+      - [x] Step 1: `Get-UltimarcBoards.ps1` lists the boards through the SDK. Read-only, writes manifest\ultimarc.json.
+            Pedestal: 2 × I-PAC Ultimate I/O (D209:0410 / 0411, 96 LEDs each) + 1 ServoStik (D209:1700).
+            The two Ultimate I/O boards are also 2 of the 3 "Ultimarc mice" (their trackball/spinner inputs).
+      - **Now AmPanel (docs/13-panel-service.md, James 2026-11-25):** a tray service that accepts LEDBlinky's documented
+        command line, talks to the frontend over \\.\pipe\ArcadeMaster.Panel, and drives LEDs + ServoStik (PacDrive32)
+        and UltraStik maps (UltraStik32). Steps 1–8 are in that doc; the old steps below fold into them.
+      - [ ] AmPanel step 1: tray + pipe + LEDBlinky-compatible command line + panel-state.json.
+      - [ ] Step 2: an LED test in Tools. Light each button in turn and in each player's colour. Only while LEDBlinky is
+            not running (they would fight over the boards).
+      - [ ] Step 3: per-game colours on game select (Colors.ini + InputMap), from the RetroFE launcher hook that now
+            calls LEDBlinky.exe with "9 <game> mame".
+      - [ ] Step 4: reactive lights: a held button glows brighter (LEDBlinky cannot do this).
+      - [ ] Step 5: attract animations (chase, breathe in the game's colours) while idle. Then LEDBlinky becomes optional.
+
 ## 2. Game mechanics and controls
 - [ ] **[PEDESTAL] Two-stick and special-control games, deep dive** (James 2026-11-25). For each game: the card says
       what each stick, dial and button really does, and MAME maps it to the right physical control. MAME 0.196 port
@@ -88,7 +116,11 @@ The loop works like this (James, 2026-11-25):
 - [x] Get-CabinetDevices 1.3–1.5 s → 0.3 s at boot. The DirectInput scan (1.1 s) is kept in
       `manifest\directinput-scan.txt`, keyed on every present USB/HID device, so plugging anything in or out forces a
       new scan. The display helper now uses the type cache. (2026-11-25)
-- [ ] Boot time, next: Shuffle 1.7 s (now the largest).
+- [x] Shuffle 1.7 s → 0.7 s at boot. Plain loops replace the Where-Object/ForEach-Object pipelines, HashSet/List
+      replace array += and Sort-Object -Unique, each folder's art is read once, and the slots are listed once per menu.
+      Tool tiles no longer reach Main's backgrounds. **Boot prep 1.8 s** (6.9 s this morning). (2026-11-25)
+- [ ] Boot time, next: Repair-ArcadeHealth 0.6 s and Get-CabinetDevices 0.3 s are left; most of the rest is
+      PowerShell itself.
 - [x] `Test-ArcadeMaster.ps1 -Cabinet` runs the health check (`-NoFix`) and the panel learn (`--dry-run`) against
       this cabinet's frontend, and fails on any error. It refuses a protected live frontend. A planted bug was caught
       (2026-11-25).

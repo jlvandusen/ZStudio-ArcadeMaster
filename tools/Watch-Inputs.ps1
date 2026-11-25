@@ -9,8 +9,23 @@
   tools\Watch-Inputs.ps1 -Seconds 30
   tools\Watch-Inputs.ps1 -Seconds 60 -Out R:\ArcadeMaster\manifest\input-capture.txt
 #>
-param([int]$Seconds = 30, [string]$Out)
+param([int]$Seconds = 30, [string]$Out, [string]$Panel)   # -Panel: <manifest>\panel.json names each key ("P1 BUTTON 1")
 $ErrorActionPreference = 'Stop'
+# key -> what it is on this panel, from panel.json (learned from LEDBlinky). MAME's default.cfg puts the P1 stick on the
+# arrows and the P2 stick on R/F/D/G, so those are named even when the LED map does not list stick directions.
+$label = @{ UP = 'P1 STICK UP'; DOWN = 'P1 STICK DOWN'; LEFT = 'P1 STICK LEFT'; RIGHT = 'P1 STICK RIGHT'; R = 'P2 STICK UP'; F = 'P2 STICK DOWN'; D = 'P2 STICK LEFT'; G = 'P2 STICK RIGHT'; ESC = 'BACK / EXIT'; MOUSE1 = 'ROLLERBALL / DIAL BUTTON 1'; MOUSE2 = 'ROLLERBALL / DIAL BUTTON 2' }
+if ($Panel -and (Test-Path $Panel)) {
+  $pj = Get-Content $Panel -Raw | ConvertFrom-Json
+  $add = { param($name, $key) if ($key -and "$key" -ne '0') { $label["$key".ToUpper()] = (($name -replace '^P(\d)B(\d+)JOY$', 'P$1 FLIGHT STICK BUTTON $2' -replace '^P(\d)B(\d+)$', 'P$1 BUTTON $2' -replace '^P(\d)(START|COIN)$', 'P$1 $2')) } }
+  foreach ($p in @($pj.players)) { if ($p.keys) { foreach ($k in $p.keys.PSObject.Properties) { & $add $k.Name $k.Value } } }
+  foreach ($sec in 'flightStick', 'trackball', 'spinner') { if ($pj.$sec -and $pj.$sec.keys) { foreach ($k in $pj.$sec.keys.PSObject.Properties) { & $add $k.Name $k.Value } } }
+  foreach ($sec in 'admin', 'pinball') { if ($pj.$sec) { foreach ($k in $pj.$sec.PSObject.Properties) { & $add $k.Name $k.Value } } }
+}
+$visual = $env:AM_VISUAL -eq '1'
+# the tool screen (Show-ToolScreen): every control pressed becomes a ticked line, newest at the bottom
+function Show-Hit([string]$id, [string]$what) {
+  if ($visual) { [Console]::Out.WriteLine('@AM ' + (ConvertTo-Json @{ type = 'step'; id = $id; label = $what; status = 'ok' } -Compress)) }
+}
 if (-not ('AmInput.Native' -as [type])) {
   Add-Type -Namespace AmInput -Name Native -MemberDefinition @'
 [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vKey);
@@ -55,7 +70,9 @@ while ($clock.Elapsed.TotalSeconds -lt $Seconds) {
       $keyDown[$vk] = $down
       $n = if ($vkName.ContainsKey($vk)) { $vkName[$vk] } else { 'VK_0x{0:X2}' -f $vk }
       if ($vk -in 1, 2, 4) { $n = @{ 1 = 'MOUSE1'; 2 = 'MOUSE2'; 4 = 'MOUSE3' }[$vk] }
-      Say ("key  KEYCODE_{0,-12} {1}" -f $n, $(if ($down) { 'down' } else { 'up' }))
+      $nm = if ($label.ContainsKey($n)) { $label[$n] } else { '' }
+      Say ("key  KEYCODE_{0,-12} {1,-5} {2}" -f $n, $(if ($down) { 'down' } else { 'up' }), $nm)
+      if ($down) { Show-Hit "k$n" $(if ($nm) { "$nm  -  key $n" } else { "key $n (not on the LEDBlinky map)" }) }
     }
   }
   foreach ($j in $joys) {
@@ -65,11 +82,18 @@ while ($clock.Elapsed.TotalSeconds -lt $Seconds) {
     foreach ($ax in @(@('X', 'dwXpos'), @('Y', 'dwYpos'), @('Z', 'dwZpos'), @('RZ', 'dwRpos'), @('U', 'dwUpos'), @('V', 'dwVpos'))) {
       $v = $info.($ax[1]); $dir = if ($v -lt 16384) { 'NEG' } elseif ($v -gt 49151) { 'POS' } else { 'MID' }
       $k = "$jn$($ax[0])"
-      if ($axisDir.ContainsKey($k) -and $axisDir[$k] -ne $dir) { Say ("joy  JOYCODE_{0}_{1}AXIS {2,-3} ({3})  [{4}]" -f $jn, $ax[0], $dir, $v, $j.name) }
+      if ($axisDir.ContainsKey($k) -and $axisDir[$k] -ne $dir) {
+        Say ("joy  JOYCODE_{0}_{1}AXIS {2,-3} ({3})  [{4}]" -f $jn, $ax[0], $dir, $v, $j.name)
+        if ($dir -ne 'MID') { Show-Hit "j$jn$($ax[0])$dir" ("JOYSTICK {0} ({1}) {2} axis {3}" -f $jn, $j.name, $ax[0], $(if ($dir -eq 'NEG') { '-' } else { '+' })) }
+      }
       $axisDir[$k] = $dir
     }
     $changed = $info.dwButtons -bxor $j.last.dwButtons
-    for ($b = 0; $b -lt 32; $b++) { if ($changed -band (1 -shl $b)) { Say ("joy  JOYCODE_{0}_BUTTON{1,-3} {2}  [{3}]" -f $jn, ($b + 1), $(if ($info.dwButtons -band (1 -shl $b)) { 'down' } else { 'up' }), $j.name) } }
+    for ($b = 0; $b -lt 32; $b++) { if ($changed -band (1 -shl $b)) {
+      $isDown = [bool]($info.dwButtons -band (1 -shl $b))
+      Say ("joy  JOYCODE_{0}_BUTTON{1,-3} {2}  [{3}]" -f $jn, ($b + 1), $(if ($isDown) { 'down' } else { 'up' }), $j.name)
+      if ($isDown) { Show-Hit "j$jn b$($b + 1)" ("JOYSTICK {0} ({1}) button {2}" -f $jn, $j.name, ($b + 1)) }
+    } }
     if ($info.dwPOV -ne $j.last.dwPOV) { Say ("joy  JOYCODE_{0} POV {1}  [{2}]" -f $jn, $info.dwPOV, $j.name) }
     $j.last = $info
   }

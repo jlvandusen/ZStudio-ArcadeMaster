@@ -1,0 +1,100 @@
+﻿{
+    "machine":  "DESKTOP-RACE2",
+    "detected":  "2026-11-25T07:28:04",
+    "capabilities":  {
+                         "wheel":  true,
+                         "ffb":  true,
+                         "pedals":  true,
+                         "clutch":  true,
+                         "handbrake":  true,
+                         "shifterPaddles":  true,
+                         "hShifter":  null,
+                         "flightStick":  false,
+                         "gamepads":  0,
+                         "lightguns":  0,
+                         "lightgunModels":  [
+
+                                            ],
+                         "trackball":  false,
+                         "keyboard":  true,
+                         "mice":  1,
+                         "controlPanel":  false,
+                         "encoders":  0,
+                         "arcadeSticks":  0,
+                         "displays":  [
+                                          {
+                                              "name":  "\\\\.\\DISPLAY1",
+                                              "primary":  true,
+                                              "width":  1920,
+                                              "height":  1080,
+                                              "x":  0,
+                                              "y":  0,
+                                              "adapter":  "NVIDIA GeForce GTX 1060 6GB",
+                                              "usb":  false
+                                          }
+                                      ],
+                         "usbDisplayAdapters":  [
+
+                                                ],
+                         "touchScreens":  0,
+                         "touchControllers":  [
+
+                                              ],
+                         "touchProblems":  [
+
+                                           ],
+                         "restrictor":  false,
+                         "wii":  {
+                                     "wiimotes":  0,
+                                     "wiiUPro":  0,
+                                     "balanceBoard":  0,
+                                     "gcAdapter":  false,
+                                     "joycons":  0,
+                                     "switchPro":  0,
+                                     "dolphinBar":  false
+                                 },
+                         "players":  1,
+                         "modes":  [
+                                       "racing",
+                                       "flight"
+                                   ]
+                     },
+    "devices":  [
+                    {
+                        "joy":  1,
+                        "name":  "handbrake",
+                        "id":  "VID_8888\u0026PID_8888",
+                        "type":  "Supplemental",
+                        "role":  "handbrake",
+                        "ffb":  false,
+                        "axes":  [
+                                     "Slider"
+                                 ],
+                        "buttons":  0,
+                        "hats":  0,
+                        "guid":  "63e95880-8e9d-11ed-8002-444553540000",
+                        "historyKey":  "VID_8888\u0026PID_8888|handbrake|#1"
+                    },
+                    {
+                        "joy":  2,
+                        "name":  "Logitech G HUB G29 Driving Force Racing Wheel USB",
+                        "id":  "VID_046D\u0026PID_C24F",
+                        "type":  "Driving",
+                        "role":  "wheel",
+                        "ffb":  true,
+                        "axes":  [
+                                     "Wheel axis",
+                                     "Y Axis",
+                                     "Brake",
+                                     "Accelerator"
+                                 ],
+                        "buttons":  25,
+                        "hats":  1,
+                        "guid":  "3f3e6010-1bd1-11ec-8002-444553540000",
+                        "historyKey":  "VID_046D\u0026PID_C24F|Logitech G HUB G29 Driving Force Racing Wheel USB|#1"
+                    }
+                ],
+    "rawMice":  [
+                    "248A:8367"
+                ]
+}
