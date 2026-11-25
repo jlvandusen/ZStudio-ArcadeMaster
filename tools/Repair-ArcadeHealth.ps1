@@ -121,12 +121,17 @@ if (Test-Path $cc) {
       }
     }
   }
-  if (($moved -or $escFix) -and $fix) {
+  # a key with no value ("random =") is an error at every RetroFE start ("Unsupported property value"); commented out
+  # it means the same thing - no key for that action - without the error
+  $emptyFix = @()
+  for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^\s*([A-Za-z][A-Za-z0-9.]*)\s*=\s*$') { $emptyFix += $Matches[1]; $lines[$i] = "# $($Matches[1]) =   (no key; left empty it is an error in the RetroFE log)" } }
+  if (($moved -or $escFix -or $emptyFix) -and $fix) {
     if ($moved -and -not (Test-Path "$cc.am-playlist-keys")) { Copy-Item $cc "$cc.am-playlist-keys" }
-    if ($escFix) { Copy-Item $cc "$cc.bak" -Force }
+    if ($escFix -or $emptyFix) { Copy-Item $cc "$cc.bak" -Force }
     Set-Content $cc $lines -Encoding ascii
     $what = @(); if ($moved) { $what += 'filters (playlists) moved to Left/Right: the ArcadeMaster list scrolls up/down' }
     if ($escFix) { $what += "Esc goes back instead of quitting ($($escFix -join '; '); profile $profName)" }
+    if ($emptyFix) { $what += "$($emptyFix.Count) empty key(s) commented out ($(($emptyFix | Select-Object -Unique) -join ', '))" }
     Add-Result 'controls' $checks.controls 'FIXED' ($what -join '; ')
   } elseif ($escFix) { Add-Result 'controls' $checks.controls 'WARN' "Esc quits the frontend ($($escFix -join '; '))" }
   else { Add-Result 'controls' $checks.controls 'OK' 'present; Esc goes back' }
