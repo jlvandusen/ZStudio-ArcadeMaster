@@ -137,7 +137,18 @@ The loop works like this (James, 2026-11-25):
 Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets never do the same one.
 - [x] Performance: boot steps are timed in the launcher log; the title card is skipped when unchanged (PR 29).
       RACE1 boot prep 4.5 s, every step under 1 s.
-- [ ] [RACE1] Performance: menu frame time with the live wheel, needles and moving backdrops on. Fix any drop below 60 fps.
+- [x] [RACE1] Performance: menu frame time with the live wheel, needles and moving backdrops on. Fix any drop below 60 fps.
+      Still menu: a steady 60 fps. Scrolling the main menu stuttered (4-9 frames over 33 ms every 5 s, worst 113 ms):
+      7 full-screen pictures were uploaded to the graphics card on every move. Main menu now keeps them
+      (useTextureCache): 1 stutter on the first visit, then a clean 60 fps. How to measure: settings.conf
+      "perfLog = 5" and "log = ERROR,WARNING,INFO", then read the [Perf] lines in log.txt.
+- [x] [RACE1] Performance: game lists reloaded the backdrop at about 6 ms of main-thread time per move. Patch 0012
+      converts each picture on the loader thread, so the main thread only uploads it: 5.8 -> 2.4 ms (JPEG),
+      6.4 -> 1.8 ms (PNG), and 0 frames over 33 ms while scrolling even with the cache off. A size limit on the
+      cache was dropped: cached textures are shared without a use count, so trimming them could crash the menu.
+- [ ] Performance: warm the main menu's cache at start (load each item's backdrops once while the intro plays), so even
+      the first scroll is smooth.
+- [ ] Graphics: the main menu's Exit page has no backdrop (plain black). Give it art of its own.
 - [ ] Performance: Build-Manifest / Rebuild Game Menus. Time each part and remove the repeated scans.
 - [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
 - [ ] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).

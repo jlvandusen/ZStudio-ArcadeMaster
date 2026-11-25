@@ -1,0 +1,45 @@
+From 253ee22498e25a1d37bfb69d023c7f868af8856d Mon Sep 17 00:00:00 2001
+From: James VanDusen <jlvandusen@msn.com>
+Date: Wed, 25 Nov 2026 06:51:19 -0500
+Subject: [PATCH] Smooth menu scrolling: pictures are converted on the loader
+ thread
+
+Direct3D 11 takes XRGB8888 / ARGB8888 textures. JPEGs load as RGB24 and PNGs
+as ABGR8888, so SDL_CreateTextureFromSurface converted every picture on the
+main thread before uploading it: 4-6 ms for each 1080p picture, several per
+menu move, which showed as stutter while scrolling. The loader thread now
+converts to the same format SDL would pick, so the main thread only uploads.
+
+Measured on the racing cabinet (main menu, texture cache off): main-thread
+time per 1080p picture 5.8 ms -> 2.4 ms (JPEG), 6.4 ms -> 1.8 ms (PNG);
+frames over 33 ms while scrolling 4-9 per 5 s -> 0.
+---
+ RetroFE/Source/Graphics/Component/Image.cpp | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/RetroFE/Source/Graphics/Component/Image.cpp b/RetroFE/Source/Graphics/Component/Image.cpp
+index 21cb078c..cd3bc159 100644
+--- a/RetroFE/Source/Graphics/Component/Image.cpp
++++ b/RetroFE/Source/Graphics/Component/Image.cpp
+@@ -122,6 +122,18 @@ bool Image::startAsyncLoad(const std::string& path) {
+ 		}
+ 		else {
+ 			SDL_Surface* s = IMG_Load_RW(rw, 1);
++			// ArcadeMaster: convert to the layout the Direct3D 11 renderer takes (XRGB8888 for pictures without
++			// alpha, ARGB8888 with alpha - the same choice SDL_CreateTextureFromSurface makes) here on the loader
++			// thread. Otherwise that conversion ran on the main thread at upload time: ~4-6 ms per 1080p picture,
++			// several per menu move, which showed as stutter while scrolling.
++			if (s && s->format->format != SDL_PIXELFORMAT_ARGB8888 && s->format->format != SDL_PIXELFORMAT_RGB888 &&
++				!SDL_ISPIXELFORMAT_INDEXED(s->format->format)) {
++				bool hasAlpha = s->format->Amask != 0 || SDL_HasColorKey(s);
++				if (!SDL_HasColorKey(s)) {
++					SDL_Surface* conv = SDL_ConvertSurfaceFormat(s, hasAlpha ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB888, 0);
++					if (conv) { SDL_FreeSurface(s); s = conv; }
++				}
++			}
+ 			if (s) {
+ 				res.staticSurface = SharedSurface(s, SurfaceDeleter());
+ 				res.w = s->w; res.h = s->h;
+-- 
+2.56.1.windows.1
+
