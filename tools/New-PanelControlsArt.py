@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 5        # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 8     # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -170,12 +170,25 @@ class LedColors:
                 line = line.strip()
                 if line.startswith('[') and line.endswith(']'):
                     cur = self.names.setdefault(line[1:-1].strip().lower(), {})
+                elif cur is not None and '=' in line and line.split('=', 1)[0].strip().lower() in ('numplayers', 'alternating', 'p1controls', 'p1numbuttons'):
+                    k, v = line.split('=', 1)
+                    cur['_' + k.strip().lower()] = v.strip()
                 elif cur is not None and line.upper().startswith('P1_BUTTON') and '=' in line:
                     k, v = line.split('=', 1)
                     m = re.match(r'P1_BUTTON(\d+)$', k.strip().upper())
                     if m:
                         cur[int(m.group(1))] = v.strip()
-            log(f'button names: {sum(1 for g in self.names.values() if g)} games from {ci}')
+            log(f'button names: {sum(1 for g in self.names.values() if any(isinstance(k, int) for k in g))} games from {ci}')
+
+    def cabinet(self, item: str):
+        """the real cabinet as controls.dat describes it: (players, alternating, controls) or None. MAME's -listxml
+        lists every input the board has (Centipede: a joystick AND the trackball); controls.dat says what the cabinet
+        had (Centipede: "Trackball+trackball", 2 players taking turns)."""
+        g = self.names.get(item.lower())
+        if not g or '_p1controls' not in g:
+            return None
+        return (to_int(g.get('_numplayers'), 0), g.get('_alternating') == '1', g['_p1controls'].lower(),
+                to_int(g.get('_p1numbuttons'), -1))
 
     def labels_of(self, item: str, buttons: int) -> tuple:
         """the game's button names, only when they say something ("A" / "B" / "Button 1" do not)"""
@@ -184,7 +197,7 @@ class LedColors:
             return ()
         out = []
         for i in range(1, buttons + 1):
-            v = g.get(i, '')
+            v = str(g.get(i, ''))
             out.append('' if (len(v) <= 1 or re.fullmatch(r'(?i)(button|btn|b)\s*\d+', v)) else v)
         return tuple(out) if any(out) else ()
 
@@ -437,13 +450,37 @@ def fit_label(c: Card, s, maxw, px=22):
     return s + '…'
 
 
+ABBREV = {'ROUNDHOUSE': 'R.HOUSE', 'FORWARD': 'FWD', 'BACKWARD': 'BACK', 'SPECIAL': 'SPEC.', 'SELECT': 'SEL.',
+          'ACCELERATE': 'GAS', 'ACCELERATOR': 'GAS'}   # used only when the full name does not fit
+
+
 def draw_label(c: Card, cx, cy, s, maxw):
     """a button's name under it: shrink to fit, else two lines (LIGHT / PUNCH), else shorten"""
     for px in (22, 20, 18, 16):
         if c.width(s, font('semi', px)) <= maxw:
             c.text((cx, cy), s, font('semi', px), TEXT + (255,), 'mm')
             return
+    for long_, short in ABBREV.items():                         # the arcade's own short forms, before cutting words
+        s = s.replace(long_, short)
+    for px in (22, 20, 18, 16):
+        if c.width(s, font('semi', px)) <= maxw:
+            c.text((cx, cy), s, font('semi', px), TEXT + (255,), 'mm')
+            return
     words = s.split()
+    # a word too long even at 13 px breaks in two with a hyphen (HYPERSPACE -> HYPER- / SPACE, ROUNDHOUSE -> ROUND- / HOUSE)
+    if any(c.width(w, font('semi', 13)) > maxw for w in words) and len(words) <= 2:
+        long_ = max(words, key=len)
+        h = (len(long_) + 1) // 2
+        a, b = long_[:h] + '-', long_[h:]
+        if len(words) == 2:                                   # ROUNDHOUSE KICK -> ROUND- / HOUSE KICK when that fits
+            other = words[1] if words[0] == long_ else words[0]
+            b = f'{b} {other}' if words[0] == long_ else b
+            a = a if words[0] == long_ else f'{other} {a}'
+        px = next((p for p in (15, 14, 13, 12) if max(c.width(a, font('semi', p)), c.width(b, font('semi', p))) <= maxw), None)
+        if px:
+            c.text((cx, cy - 8), a, font('semi', px), TEXT + (255,), 'mm')
+            c.text((cx, cy + 10), b, font('semi', px), TEXT + (255,), 'mm')
+            return
     if len(words) > 1:
         best = None
         for k in range(1, len(words)):
@@ -452,10 +489,13 @@ def draw_label(c: Card, cx, cy, s, maxw):
             if best is None or w < best[0]:
                 best = (w, a, b)
         _, a, b = best
-        c.text((cx, cy - 8), fit_label(c, a, maxw, 16), font('semi', 16), TEXT + (255,), 'mm')
-        c.text((cx, cy + 10), fit_label(c, b, maxw, 16), font('semi', 16), TEXT + (255,), 'mm')
+        # the size at which both lines fit ("MUTANT / POWER"); only then cut a word short
+        px = next((p for p in (16, 15, 14, 13) if max(c.width(a, font('semi', p)), c.width(b, font('semi', p))) <= maxw), 13)
+        c.text((cx, cy - 8), fit_label(c, a, maxw, px), font('semi', px), TEXT + (255,), 'mm')
+        c.text((cx, cy + 10), fit_label(c, b, maxw, px), font('semi', px), TEXT + (255,), 'mm')
         return
-    c.text((cx, cy), fit_label(c, s, maxw, 16), font('semi', 16), TEXT + (255,), 'mm')
+    px = next((p for p in (15, 14, 13) if c.width(s, font('semi', p)) <= maxw), 13)   # one long word: ROUNDHOUSE
+    c.text((cx, cy), fit_label(c, s, maxw, px), font('semi', px), TEXT + (255,), 'mm')
 
 
 def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None):
@@ -492,7 +532,13 @@ def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None)
         else:
             c.d.ellipse(box, fill=CARD2 + (255,), outline=FAINT + (255,), width=3 * S)
         if lit and i < len(labels) and labels[i]:
-            draw_label(c, cx, cy + rad + 15, labels[i].upper(), gapx - 4)
+            # a label is centred under its button: it may use the room of a neighbour that has no label of its own
+            def named(j):
+                return 0 <= j < min(sig.buttons, len(labels)) and bool(labels[j])
+            half = (gapx - 4) / 2
+            left = half if (k > 0 and named(i - 1)) else (gapx * .9 if k > 0 else gapx * .6)
+            right = half if (k < cols - 1 and named(i + 1)) else (gapx * .9 if k < cols - 1 else max(half, x_max + 4 - cx))
+            draw_label(c, cx, cy + rad + 15, labels[i].upper(), int(2 * min(left, right)))
     if sig.buttons > n:
         c.text((x0 + (cols - 1) * gapx + rad + 6, y0 + (rows - 1) * gapy + rad), '+' if sig.buttons >= 9 else f'+{sig.buttons - n}',
                font('black', 34), AMBER + (255,), 'ls')
@@ -1146,7 +1192,7 @@ def main(argv=None):
         for scol, it in pairs:
             mt = mtype_of(scol).lower()
             k = it.lower()
-            ov = overrides.get(f'{scol.lower()}/{k}')
+            ov = overrides.get(f'{scol.lower()}/{k}') or overrides.get(f'*/{k}')   # "*/mslug": in every collection
             s = ov or by_item.get((scol.lower(), k)) or by_norm.get(norm(it))
             src = 'games.json'
             # MAME games: MAME's own -listxml knows the real players / buttons / controls. games.json only wins with
@@ -1169,6 +1215,16 @@ def main(argv=None):
                 if len(ex) < 5:
                     ex.append(it)
                 continue
+            if src == 'mame':                                      # the cabinet, not every input the board has
+                cab = leds.cabinet(it)
+                if cab:
+                    np, alt, pc, nb = cab
+                    if 0 <= nb < s.buttons:
+                        s.buttons = nb                             # MK: 5 on the cabinet (MAME adds a half-working 6th)
+                    if s.stick and s.stick != 'analog' and 'joy' not in pc and re.search(r'trackball|dial|paddle', pc):
+                        s.stick = None                             # Centipede, Millipede: trackball only
+                    if np > (s.players or 0):
+                        s.players, s.alt = np, alt                 # Centipede, Robotron: 2 players taking turns
             src_count[src] += 1
             s = s.with_emu(emus.item(scol, it), leds.of(it, s.buttons))
             if not s.labels and 'wheel' not in s.extras:          # the game's own button names (Fire, Light Punch ...)
