@@ -216,8 +216,11 @@ function Start-ThemeConfirm([int]$id) {
   $cp = Start-Process powershell -ArgumentList ($q -join ' ') -WindowStyle Hidden -PassThru; [void]$cp.Handle
   Write-Log 'theme change waiting - asking to keep it'; return $cp
 }
+# Picture decoding threads: RetroFE uses at most 3 by default. Half this PC's cores (3 to 8) cut entering Racing on
+# RACE1 (16 threads) from 92 to 84 ms (2026-11-25, docs/14 item 5). A value set by hand is kept.
+if (-not $env:RETROFE_THREADPOOL_SIZE) { $env:RETROFE_THREADPOOL_SIZE = "$([Math]::Max(3, [Math]::Min(8, [int]([Environment]::ProcessorCount / 2))))" }
 while ($true) {
-  Write-Log 'starting RetroFE'
+  Write-Log "starting RetroFE ($($env:RETROFE_THREADPOOL_SIZE) picture threads)"
   $p = Start-Process $exe -WorkingDirectory $exeDir -PassThru; [void]$p.Handle
   $startedAt = Get-Date; $quietSince = $startedAt; $confirm = $null
   while (-not $p.WaitForExit(1000)) {
