@@ -50,7 +50,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games';panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -309,6 +309,24 @@ else {
       $fp = ($tpDirs | ForEach-Object { $fs = @(Get-ChildItem (Join-Path $_ 'UserProfiles') -Filter *.xml -File -ErrorAction SilentlyContinue); $n = 0L; foreach ($f in $fs) { if ($f.LastWriteTimeUtc.Ticks -gt $n) { $n = $f.LastWriteTimeUtc.Ticks } }; "$_|$($fs.Count)|$n" }) -join ';'
       Set-Content $fpFile $fp -Encoding ascii
     }
+  }
+}
+# wheel: every TeknoParrot driving game this frontend launches has its steering, gas, brake, paddles and gears on the
+# G29 (Test-WheelBindings.ps1, read-only). Only reported, never changed here: a wrong or missing binding needs a person
+# to choose the fix (WheelMap). Skipped while no profile changed since the last clean check.
+Emit @{ type = 'step'; id = 'wheel'; label = $checks.wheel; status = 'run' }
+if (-not $tpDirs) { Add-Result 'wheel' $checks.wheel 'OK' 'no TeknoParrot launcher in this frontend' }
+else {
+  $wfp = ($tpDirs | ForEach-Object { $fs = @(Get-ChildItem (Join-Path $_ 'UserProfiles') -Filter *.xml -File -ErrorAction SilentlyContinue); $n = 0L; foreach ($f in $fs) { if ($f.LastWriteTimeUtc.Ticks -gt $n) { $n = $f.LastWriteTimeUtc.Ticks } }; "$_|$($fs.Count)|$n" }) -join ';'
+  $wfpFile = Join-Path $ManifestDir 'wheel-bindings.fingerprint'
+  if ((Test-Path $wfpFile) -and (Get-Content $wfpFile -Raw).Trim() -eq $wfp) { Add-Result 'wheel' $checks.wheel 'OK' 'unchanged since the last check' }
+  else {
+    $wo = & (Join-Path $PSScriptRoot 'Test-WheelBindings.ps1') -TeknoParrot $tpDirs *>&1 | Out-String
+    $sum = [regex]::Match($wo, '(\d+) driving game profiles, (\d+) controls checked: (\d+) ok, (\d+) to look at')
+    $games = @([regex]::Matches($wo, '(?m)^  \S.*\\UserProfiles\\([^\\\r\n]+)\.xml\s*$') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+    if (-not $sum.Success) { Add-Result 'wheel' $checks.wheel 'WARN' 'Test-WheelBindings.ps1 gave no result' }
+    elseif ([int]$sum.Groups[4].Value -gt 0) { Add-Result 'wheel' $checks.wheel 'WARN' ("{0} control(s) to look at in {1} - run tools\Test-WheelBindings.ps1, fix with WheelMap" -f $sum.Groups[4].Value, (($games | Select-Object -First 6) -join ', ') + $(if ($games.Count -gt 6) { " (+$($games.Count - 6) more)" })) }
+    else { Add-Result 'wheel' $checks.wheel 'OK' ("{0} driving games, all {1} controls on the G29" -f $sum.Groups[1].Value, $sum.Groups[2].Value); Set-Content $wfpFile $wfp -Encoding ascii }
   }
 }
 # logs
