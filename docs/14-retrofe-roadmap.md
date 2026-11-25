@@ -36,7 +36,11 @@ scroll.
 
 Each item says what it fixes, what we expect, and how we'll know it worked (before/after with `perfLog = 5`).
 
-### 1. Turn vsync on and let the screen set the pace (small, big win)
+### 1. Vsync: measured, no gain on RACE1 (2026-11-25)
+**Measured:** 60 Down presses in Racing, `perfLog = 5`, vsync off vs on: both p50 16.67 ms, p99 16.7-17.3 ms, max
+17.6 ms, 0 hitches; RetroFE used 24-29 % of one core either way. The sleep-then-spin pacer is better than it reads, so
+vsync stays off (a tear line can't be seen in the log; switch it on only if James sees tearing). The original note:
+**Was:** 1. Turn vsync on and let the screen set the pace
 **Now:** vsync defaults off. A 60 fps timer sleeps and then spins the CPU (up to 1.5 ms a frame,
 `sleepUntilTicks`) to hit the frame time on its own clock. That clock is not the screen's, so frames drift against the
 refresh: a tear line or a doubled frame every few seconds, and a CPU core busy for nothing.
@@ -79,7 +83,19 @@ before you reach it.
 **Expect:** the cold-cache hitches below 33 ms (two frames). **Check:** the hitch log on the first scroll after a
 reboot, before and after.
 
-### 5. Loading a list on a thread, not the frame (medium)
+### 5. Loading a list on a thread, not the frame (medium) - now the top speed item
+**Measured on RACE1 (2026-11-25, timing build, not installed):** entering Racing is one 100-136 ms frame:
+| step | ms |
+|---|---|
+| read the Racing menu from disk (`getCollection`): 12 sub-collections built + sorted 24, info files 4, rest 1 | 29-49 |
+| build the page from its layout (`buildPage`) | 6-14 |
+| pick playlist and item | 3-8 |
+| wait for every background picture decode before the first frame (`preparePageForFirstRender` -> `ThreadPool::wait`) | 60-64 |
+Fixes, in order: (a) keep a built collection between visits instead of reading it again each time, and build Main's
+menus once in the background after boot; (b) start decoding a menu's first-screen art while its tile is highlighted on
+the menu before, so the wait is already done; (c) wait only for the pictures on the first screen, not every job in the
+pool. Only 9 of 431 racing pictures are bigger than 1920x1080 (worst: Burnout Paradise logo 4096x2048, 5 MB), so
+shrinking art helps little here.
 **Now:** entering a list spends 44 ms in `logic` on the main thread building the first item. Startup also waits for
 the thread pool to drain (`ThreadPool::wait()` in RetroFE.cpp) before the menu draws.
 **Do:** draw the menu with placeholders and fill items as they finish; the pool already exists.
@@ -210,7 +226,7 @@ and copy save folders (RetroArch, Dolphin, PCSX2, TeknoParrot) to the NAS after 
 Optional menu music per collection (the cabinet's own tracks), quieter during video, off by a Tools switch.
 
 ### Order
-Items 1 (vsync) and 3 (cache) first, because speed is the promise. Then A1 (the biggest gap), A4 (lock the speed in),
+Items 5 (list entry, measured 100-136 ms) and 3 (cache) first, because speed is the promise. Then A1 (the biggest gap), A4 (lock the speed in),
 A3, A2, A10, then A5-A11. Each is its own PR with before/after numbers.
 
 ## Order of work

@@ -168,7 +168,10 @@ The loop works like this (James, 2026-11-25):
       to pull. The 1,443 commits are the old `master` line. The fork's history is still unrelated (fresh import), so a
       future upstream change needs a one-time --allow-unrelated-histories merge.
 - [ ] RetroFE roadmap (docs/14-retrofe-roadmap.md), items in order; each with perfLog before/after:
-  - [ ] 1. vsync on: today a 60 fps timer sleeps then spins the CPU on its own clock, not the screen's (drift, tearing).
+  - [x] [RACE1] 1. vsync measured: no gain (off and on both p50 16.67 ms, max 17.6 ms, 0 hitches, 24-29 % of a core). Stays off.
+  - [ ] 5. Entering a list costs one 100-136 ms frame on RACE1: menu read 29-49 ms (12 sub-collections), page 6-14,
+        wait for all picture decodes 60-64. Keep built collections, decode the next menu's first screen while its tile is
+        highlighted, wait only for first-screen pictures. Then a page-switch line in the perf log (A4).
   - [ ] 3. Picture cache with a size limit (LRU + use count, `textureCacheMB`): today it never lets go of anything.
   - [ ] 4b. Load the next / previous 3 items' art when the list moves (cold-cache hitches of 116-359 ms).
   - [ ] 2. Video frames stay on the graphics card (D3D11 memory into SDL), dropping two copies per frame.
