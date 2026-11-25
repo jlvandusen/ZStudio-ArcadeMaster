@@ -52,12 +52,14 @@ The loop works like this (James, 2026-11-25):
         - [x] Command `14` (set LED ports by label, colour, board:port or number). Tested live 2026-11-25.
         - [x] Command `13` + automatic UltraStik map per game (Sticks.cs, New-StickMaps.py). Tested live on both sticks.
         - [x] `16`/`17`: dim the panel to 25% on pause. Tested live.
-        - [ ] Command `12` (load a MAME controller file): pick the game's MAME ctrlr cfg.
+        - [x] Command `12` is accepted and recorded (status `ctrlr`). LEDBlinky uses it to translate MAME input codes;
+              AmPanel lights by Colors.ini labels, so there is nothing to translate.
         - [x] Graphical stick screen: tray > Sticks & Guns (StickStudio.cs). It draws the 9x9 map, tries a map on the
               sticks, keeps a pick per game (stick-maps-cabinet.json), has ServoStik 4/8 buttons and the gun list.
               Picture: docs/img/ampanel-sticks.png.
         - [ ] Draw your own map in that window (click cells), saved as a new .um.
-        - [ ] Speech: announce the game name on select (Windows SAPI), as LEDBlinky's voice option does.
+        - [x] Speech: "Now playing <real title>" at game start (Speech.cs; game-titles.json from history.dat).
+              Cabinet Settings > ANNOUNCE THE GAME, off by default. Verified: speaker peak 0.00 -> 0.97 while it spoke.
         - [ ] Pixelcade / LED marquee output (the 2-player cabinet uses LEDBlinky only for that).
         - [ ] Other LED boards: LED-Wiz (ledwiz.dll), Howler (HowlerDLL.dll), GPWiz.
         - [ ] Buttons tab: blink-to-learn each LED pin, so we no longer need LEDBlinky's input-map wizard.
