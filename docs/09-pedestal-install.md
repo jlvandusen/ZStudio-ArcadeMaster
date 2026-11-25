@@ -65,6 +65,7 @@ tools\New-CabinetToolsCollection.ps1 -RetroFE <root>
   - when the RetroFE patches or the build script changed, compiles RetroFE in its own folder (`D:\ArcadeMaster\build`) and installs it while RetroFE is closed
   - if RetroFE is open, leaves the new build for the next start; the boot installs a waiting build before RetroFE starts
   - keeps the previous files in `<root>\retrofe.am-prev\`
+  - installs main's `layouts\ArcadeMaster` (layout files, images) while RetroFE is closed: per-collection art and the intro are left alone, replaced files go to `<manifest>\backup`, Cabinet Settings options are put back, and the game list waits until the cabinet has preview videos
   - logs to `<manifest>\update-cabinet.log`
   - on a cabinet without the build tools, logs which one is missing and keeps its exe (copy a package from Z: instead)
   To try it without changing Windows, set `$env:AM_SYSTEM_DRYRUN = 1` first.

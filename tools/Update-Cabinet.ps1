@@ -82,6 +82,34 @@ try {
     }
   }
 
+  # 1b. layout: main's layouts\ArcadeMaster (layout files, images) into the frontend, so every cabinet shows the latest
+  #     look without anyone copying it. Only while RetroFE is closed and only from a clean main; per-collection art
+  #     (system_artwork / medium_artwork) and the intro pictures are made on each cabinet and are never touched. Files
+  #     about to be replaced are backed up first; Cabinet Settings options (manifest\ui.json) are put back afterwards.
+  #     The game list plays am_video previews: on a cabinet with none it would show no video, so it waits for them.
+  $onMain = $true
+  if ($git) { $onMain = ((& $git -C $repo rev-parse --abbrev-ref HEAD 2>$null) -eq 'main') -and -not @(& $git -C $repo status --porcelain --untracked-files=no -- layouts 2>$null).Count }
+  $lsrc = Join-Path $repo 'layouts\ArcadeMaster'; $ldst = Join-Path $Root 'layouts\ArcadeMaster'
+  if ($onMain -and -not $running -and (Test-Path $lsrc) -and (Test-Path $ldst)) {
+    $xf = @()
+    if ((Select-String -LiteralPath (Join-Path $lsrc 'layout.xml') -Pattern 'type="am_video"' -Quiet) -and
+        -not @(Get-ChildItem (Join-Path $Root 'collections') -Recurse -Depth 3 -Directory -Filter am_video -ErrorAction SilentlyContinue | Where-Object { Get-ChildItem $_.FullName -File -ErrorAction SilentlyContinue | Select-Object -First 1 }).Count) {
+      $xf = @('layout.xml'); Write-Host "layout: game list kept - it plays preview videos and this cabinet has none yet (tools\New-PreviewMedia.py)"
+    }
+    $robo = @($lsrc, $ldst, '/E', '/XD', 'system_artwork', 'medium_artwork', (Join-Path $lsrc 'images\intro'), '/NJH', '/NJS', '/NDL', '/NC', '/NS', '/NP', '/R:1', '/W:1') + $(if ($xf) { @('/XF') + $xf } else { @() })
+    $changes = @(robocopy @robo /L 2>$null | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -like "$lsrc\*" })
+    if ($changes.Count) {
+      $bk = Join-Path $ManifestDir ("backup\layout-ArcadeMaster-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+      foreach ($c in $changes) { $rel = $c.Substring($lsrc.Length + 1); $old = Join-Path $ldst $rel; if (Test-Path -LiteralPath $old) { $to = Join-Path $bk $rel; New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null; Copy-Item -LiteralPath $old $to } }
+      robocopy @robo | Out-Null
+      if ($LASTEXITCODE -ge 8) { Say "layout update FAILED (robocopy $LASTEXITCODE)" }
+      else {
+        if (Test-Path (Join-Path $ManifestDir 'ui.json')) { & (Join-Path $PSScriptRoot 'Set-LayoutUi.ps1') -RetroFE $Root -ManifestDir $ManifestDir *>&1 | Out-Null }
+        Say "layout: $($changes.Count) file(s) from main installed$(if (Test-Path $bk) { " (replaced files kept in $bk)" })"
+      }
+    }
+  }
+
   # 2. the build this repo wants
   $parts = @(Get-ChildItem (Join-Path $repo 'retrofe\patches') -Filter *.patch -File | Sort-Object Name) + @(Get-Item (Join-Path $repo 'retrofe\Build-RetroFE.ps1'))
   $sha = [Security.Cryptography.SHA1]::Create()
