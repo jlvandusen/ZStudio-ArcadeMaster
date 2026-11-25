@@ -1,0 +1,22 @@
+{
+  "_help": "Racing series shown as playlists in the Racing menu (cycle them with the wheel's button 3 / P, back with button 2 / O). Each series: the words its games' titles contain (case-insensitive regular expressions). A game can be in more than one series; only series with at least 2 games on the cabinet get a playlist. Every version of a game is kept - playlists only group them. Order here = order when cycling. Edit freely, then run tools\\New-SeriesPlaylists.ps1 (Rebuild Game Menus runs it too).",
+  "series": [
+    { "name": "Daytona", "match": ["daytona"] },
+    { "name": "Sega Rally", "match": ["sega rally"] },
+    { "name": "Initial D", "match": ["initial d"] },
+    { "name": "Wangan Midnight", "match": ["wangan midnight"] },
+    { "name": "Out Run", "match": ["out ?run"] },
+    { "name": "Cruis'n", "match": ["cruis'?n"] },
+    { "name": "San Francisco Rush", "match": ["\\brush\\b"] },
+    { "name": "Mario Kart", "match": ["mario kart"] },
+    { "name": "F-Zero", "match": ["f-zero"] },
+    { "name": "GRID and DiRT", "match": ["\\bgrid\\b", "\\bdirt\\b(?! devils)"] },
+    { "name": "Fast and Furious", "match": ["fast (and|&) (the )?furious", "super bikes"] },
+    { "name": "Scud Race", "match": ["scud race", "sega super gt"] },
+    { "name": "Dead Heat", "match": ["dead heat"] },
+    { "name": "Battle Gear", "match": ["battle gear"] },
+    { "name": "Le Mans", "match": ["le mans"] },
+    { "name": "Indy and NASCAR", "match": ["\\bindy\\b", "nascar"] },
+    { "name": "Off-road and Rally", "match": ["\\brally\\b", "off ?road", "dirt devils", "v-rally"] }
+  ]
+}

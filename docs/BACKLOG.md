@@ -281,7 +281,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       games with a one-line story is 7: Road Fighters 3D, Gaelco Championship Tuning Race, K.O. Drive, Sega Racing Classic,
       Valve Limit R, MachStorm, Cars. (A 'use the parent's story' rule was tried and dropped: by name prefix it pairs
       different TeknoParrot games, e.g. Dead Heat / Dead Heat Riders.)
-- [ ] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
+- [x] [RACE1] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
+      catalog\series.json + tools\New-SeriesPlaylists.ps1: 13 series playlists in Racing; wheel button 3 / P next, 2 / O back.
 - [x] [RACE1] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
       tools\tactile\Set-ShakerAudio.ps1 (check / -Apply / -Off, dry-run safe) through the VoiceMeeter already installed.
 - [x] [RACE1] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
