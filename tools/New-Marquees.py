@@ -13,8 +13,10 @@ RGB marquee panels and in layouts with type="marquee". Many games in a build hav
      media\\marquee(s), with gamelist.xml titles). Matched by item name, then by normalised title. Only real images
      at least 400 px wide and 2.5:1 or wider count. Copied (never linked across builds), at most 1920 px wide.
   3. otherwise draws a placeholder, 1920x480: the game's backdrop (am_backdrop, a blurred video frame), else its
-     fanart, else a neon gradient; the game's logo centred with a glow, or its title in Segoe UI Black with a neon
-     outline; a thin neon frame, scanlines and a light vignette.
+     fanart - art from the game itself - else a calm dark gradient; the game's logo centred with a soft glow, or
+     its title in Segoe UI Black with a coloured outline; a subtle thin frame and a light vignette. No retro / CRT
+     effects (no scanlines, no synthwave grid): James, 2026-11-22, "I want something related to each game as the
+     background".
 
 Main menu: every collection on the main menu (collections\\Main\\menu.txt + <manifest>\\main-menu-full.txt) gets a
 collection marquee in layouts\\ArcadeMaster\\collections\\Main\\medium_artwork\\marquee\\<collection>.png - the same
@@ -61,7 +63,7 @@ LAYOUT = 'ArcadeMaster'
 IMG_EXTS = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')
 MW, MH = 1920, 480                     # placeholder size
 MIN_W, MIN_RATIO, MAX_W = 400, 2.5, 1920
-PLACEHOLDER_VERSION = 2               # bump to redraw every placeholder of ours on the next run
+PLACEHOLDER_VERSION = 3              # bump to redraw every placeholder of ours on the next run
 
 # tools/lib/AmVisual.ps1 AmPal
 BG = (8, 9, 14)
@@ -379,12 +381,6 @@ _static_lock = threading.Lock()
 def statics():
     with _static_lock:
         if not _statics:
-            # scanlines: one dark row in three
-            sl = Image.new('RGBA', (MW, MH), (0, 0, 0, 0))
-            d = ImageDraw.Draw(sl)
-            for y in range(0, MH, 3):
-                d.line([(0, y), (MW, y)], fill=(0, 0, 0, 34))
-            _statics['scan'] = sl
             # vignette: black, stronger towards the edges
             vw, vh = 192, 48
             v = Image.new('L', (vw, vh))
@@ -393,7 +389,7 @@ def statics():
                 for xx in range(vw):
                     dx, dy = (xx + .5) / vw * 2 - 1, (yy + .5) / vh * 2 - 1
                     r = math.sqrt(dx * dx * 0.85 + dy * dy * 0.55)
-                    px[xx, yy] = int(max(0.0, min(1.0, (r - 0.45) / 0.75)) ** 1.6 * 175)
+                    px[xx, yy] = int(max(0.0, min(1.0, (r - 0.45) / 0.75)) ** 1.6 * 130)
             vig = Image.new('RGBA', (MW, MH), (0, 0, 0, 255))
             vig.putalpha(v.resize((MW, MH), Image.BICUBIC))
             _statics['vig'] = vig
@@ -413,55 +409,30 @@ _frames: dict = {}
 def frame(accent) -> Image.Image:
     with _static_lock:
         if accent not in _frames:
+            # subtle and modern: one thin line in a softened accent, part transparent, no glow
             f = Image.new('RGBA', (MW, MH), (0, 0, 0, 0))
-            box = (12, 12, MW - 13, MH - 13)
-            glow = Image.new('L', (MW, MH), 0)
-            ImageDraw.Draw(glow).rounded_rectangle(box, 22, outline=255, width=10)
-            glow = glow.filter(ImageFilter.GaussianBlur(9)).point(lambda v: min(255, int(v * 1.3)))
-            g = Image.new('RGBA', (MW, MH), accent + (255,))
-            g.putalpha(glow)
-            f.alpha_composite(g)
-            d = ImageDraw.Draw(f)
-            d.rounded_rectangle(box, 22, outline=accent + (255,), width=3)
-            d.rounded_rectangle((box[0] + 1, box[1] + 1, box[2] - 1, box[3] - 1), 21, outline=lighten(accent, .7) + (150,), width=1)
+            box = (14, 14, MW - 15, MH - 15)
+            ImageDraw.Draw(f).rounded_rectangle(box, 18, outline=lighten(accent, .35) + (120,), width=2)
             _frames[accent] = f
         return _frames[accent]
 
 
 def gradient_bg(accent, key: str) -> Image.Image:
-    rnd = random.Random(key)
-    other = ACCENTS[(ACCENTS.index(accent) + rnd.choice((1, 2, 3))) % len(ACCENTS)]
-    a, b = tuple(int(c * .28) for c in accent), tuple(int(c * .22) for c in other)
-    small = Image.new('RGB', (2, 1))
-    small.putpixel((0, 0), a)
-    small.putpixel((1, 0), b)
-    bg = small.resize((MW, MH), Image.BILINEAR)
-    bg = Image.blend(bg, Image.new('RGB', (MW, MH), BG), 0.25).convert('RGBA')
-    # synthwave floor: a horizon and a grid that runs to the centre
-    grid = Image.new('L', (MW, MH), 0)
-    d = ImageDraw.Draw(grid)
-    hz = int(MH * 0.58)
-    for i in range(1, 12):
-        y = hz + int((MH - hz) * (i / 11) ** 2.1)
-        d.line([(0, y), (MW, y)], fill=110, width=2)
-    for i in range(-18, 19):
-        d.line([(MW / 2 + i * 22, hz), (MW / 2 + i * 260, MH)], fill=90, width=2)
-    d.line([(0, hz), (MW, hz)], fill=200, width=3)
-    glow = grid.filter(ImageFilter.GaussianBlur(4))
-    lay = Image.new('RGBA', (MW, MH), other + (255,))
-    lay.putalpha(Image.eval(glow, lambda v: min(255, v * 2)).point(lambda v: int(v * .55)))
-    bg.alpha_composite(lay)
-    lay = Image.new('RGBA', (MW, MH), lighten(other, .3) + (255,))
-    lay.putalpha(grid.point(lambda v: int(v * .7)))
-    bg.alpha_composite(lay)
-    # a soft sun behind the centre
-    sun = Image.new('L', (MW // 4, MH // 4), 0)
-    ImageDraw.Draw(sun).ellipse((MW // 8 - 70, MH // 4 * .58 - 70, MW // 8 + 70, MH // 4 * .58 + 70), fill=170)
-    sun = sun.filter(ImageFilter.GaussianBlur(22)).resize((MW, MH), Image.BICUBIC)
-    lay = Image.new('RGBA', (MW, MH), accent + (255,))
-    lay.putalpha(sun)
-    bg.alpha_composite(lay)
-    return bg
+    """a calm dark gradient for a game with no art of its own: near-black with a faint tint of the accent,
+    a little lighter in the middle"""
+    edge = tuple(int(c * .06 + b * .94) for c, b in zip(accent, BG))
+    mid = tuple(int(c * .16 + b * .84) for c, b in zip(accent, (24, 26, 36)))
+    small = Image.new('RGB', (3, 1))
+    small.putpixel((0, 0), edge)
+    small.putpixel((1, 0), mid)
+    small.putpixel((2, 0), edge)
+    bg = small.resize((MW, MH), Image.BICUBIC)
+    # the same soft fall-off vertically
+    lift = Image.new('L', (MW // 8, MH // 8), 0)
+    ImageDraw.Draw(lift).ellipse((-MW // 16, -MH // 32, MW // 8 + MW // 16, MH // 8 + MH // 32), fill=60)
+    lift = lift.filter(ImageFilter.GaussianBlur(10)).resize((MW, MH), Image.BICUBIC)
+    bg = Image.composite(Image.new('RGB', (MW, MH), lighten(mid, .08)), bg, lift)
+    return bg.convert('RGBA')
 
 
 def load_bg(backdrop: Path | None, fanart: Path | None, accent, key: str):
@@ -577,8 +548,7 @@ def place_title(canvas: Image.Image, title: str, accent):
         pos = (MW / 2, y0 + i * lh)
         df.text(pos, l, font=f, fill=255, anchor='mm')
         ds.text(pos, l, font=f, fill=255, anchor='mm', stroke_width=sw, stroke_fill=255)
-    canvas.alpha_composite(glow_layer(stroke_mask, accent, 40, 1.6))
-    canvas.alpha_composite(glow_layer(stroke_mask, lighten(accent, .2), 12, 1.3))
+    canvas.alpha_composite(glow_layer(stroke_mask, accent, 40, 0.9))
     sh = Image.new('RGBA', (MW, MH), (0, 0, 0, 255))
     sh.putalpha(stroke_mask.filter(ImageFilter.GaussianBlur(5)).point(lambda v: int(v * .7)))
     canvas.alpha_composite(sh, (5, 7))
@@ -607,7 +577,6 @@ def render_placeholder(title: str, key: str, logo: Path | None, backdrop: Path |
     used = 'logo' if (logo and place_logo(canvas, logo, accent)) else 'title'
     if used == 'title':
         place_title(canvas, title, accent)
-    canvas.alpha_composite(st['scan'])
     canvas.alpha_composite(frame(accent))
     return canvas.convert('RGB'), f'{bgkind}+{used}'
 
