@@ -551,24 +551,30 @@ function Invoke-WMGenFFBPlugin($Prof, $Targets, $Manifest) {
         $depth = $(if ($r.Contains('depth')) { [int]$r.depth } else { 3 })
         $files += @(Get-ChildItem -LiteralPath $r.root -Filter FFBPlugin.ini -Recurse -Depth $depth -ErrorAction SilentlyContinue)
     }
-    # SDL GUID = bus/crc/vid/pid; keep the name-CRC that the existing files already use for this VID/PID.
-    $vidLe = $wheel.vid.Substring(2, 2) + $wheel.vid.Substring(0, 2); $pidLe = $wheel.pid.Substring(2, 2) + $wheel.pid.Substring(0, 2)
-    $pat = "^0300([0-9a-f]{4})$($vidLe.ToLower())0000$($pidLe.ToLower())0000"
-    $crcs = @{}
-    foreach ($f in $files) { $m = Select-String -LiteralPath $f.FullName -Pattern '^DeviceGUID=(\w+)' | Select-Object -First 1; if ($m) { $g = $m.Matches[0].Groups[1].Value.ToLower(); if ($g -match $pat) { $crcs[$Matches[1]] = 1 + [int]$crcs[$Matches[1]] } } }
-    $crc = $null
-    $nonZero = @($crcs.Keys | Where-Object { $_ -ne '0000' } | Sort-Object { - $crcs[$_] })
-    if ($nonZero) { $crc = $nonZero[0] } elseif ($crcs.Count) { $crc = '0000' }
-    if (-not $crc) { $crc = '0000'; Add-WMWarning $Manifest "FFBPlugin: no existing DeviceGUID for VID_$($wheel.vid)&PID_$($wheel.pid); using CRC 0000 - confirm with FFBPluginGUI.exe (it shows the SDL GUID)" }
-    $guid = Get-WMSdlGuid $wheel $crc
+    # SDL GUID = bus / name-CRC / vid / pid, and the plugin compares it with the id computed by the SDL2.dll in ITS OWN
+    # folder. SDL before 2.26 leaves the CRC at 0000; 2.26 and later put the CRC-16 of the device name there (G29:
+    # "Logitech G HUB G29 Driving Force Racing Wheel USB" -> 4ed7). So the id is chosen PER FOLDER from that folder's
+    # SDL2.dll version - one id for every file (the old way) sent the force to nothing in 13 games on DESKTOP-RACE1.
+    # Checked against the real SDL builds: 2.0.9 / 2.0.18 / 2.0.22 -> CRC 0000, 2.28.5 -> 4ed7 (tools\Repair-FFBPluginDevice.ps1
+    # asks each SDL2.dll directly and is the way to verify a cabinet).
+    $name = @($wheel.productName, $wheel.sdlName, $wheel.name) | Where-Object { $_ } | Select-Object -First 1
+    $newCrc = if ($name) { $c = 0; foreach ($b in [Text.Encoding]::UTF8.GetBytes([string]$name)) { $c = $c -bxor $b; for ($i = 0; $i -lt 8; $i++) { $c = $(if ($c -band 1) { ($c -shr 1) -bxor 0xA001 } else { $c -shr 1 }) } }; '{0:x2}{1:x2}' -f ($c -band 0xFF), ($c -shr 8) } else { $null }
+    if (-not $newCrc) { Add-WMWarning $Manifest "FFBPlugin: the device profile has no product name, so folders with SDL 2.26 or later are left as they are - set productName, or run tools\Repair-FFBPluginDevice.ps1" }
+    $oldGuid = Get-WMSdlGuid $wheel '0000'; $newGuid = if ($newCrc) { Get-WMSdlGuid $wheel $newCrc } else { $null }
     foreach ($f in $files) {
+        $dll = Join-Path $f.DirectoryName 'SDL2.dll'
+        if (-not (Test-Path -LiteralPath $dll)) { Add-WMWarning $Manifest "FFBPlugin: no SDL2.dll beside $($f.FullName) - left as it is"; continue }
+        $v = (Get-Item -LiteralPath $dll).VersionInfo
+        $modern = $v.FileMajorPart -gt 2 -or ($v.FileMajorPart -eq 2 -and $v.FileMinorPart -ge 26)
+        $guid = if ($modern) { $newGuid } else { $oldGuid }
+        if (-not $guid) { continue }
         $text = [IO.File]::ReadAllText($f.FullName)
         $new = [regex]::Replace($text, '(?m)^DeviceGUID=[^\r\n]*', "DeviceGUID=$guid")
         if ($new -ne $text) {
-            Add-WMStaged $Manifest $f.FullName $new 'ffbplugin' "DeviceGUID -> $guid"
+            Add-WMStaged $Manifest $f.FullName $new 'ffbplugin' "DeviceGUID -> $guid (SDL $($v.FileMajorPart).$($v.FileMinorPart).$($v.FileBuildPart))"
             [void]$rep.Add([pscustomobject]@{ file = $f.FullName; deviceGuid = $guid })
         }
     }
-    if (-not $rep.Count) { Write-Host "  FFBPlugin: all $($files.Count) FFBPlugin.ini already use $guid" }
+    if (-not $rep.Count) { Write-Host "  FFBPlugin: all $($files.Count) FFBPlugin.ini already name the wheel's id for their own SDL version" }
     return $rep
 }
