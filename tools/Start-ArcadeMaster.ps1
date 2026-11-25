@@ -134,7 +134,9 @@ if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-H
 # and Python + the streamdeck package are present. It exits on its own if no deck is found or Elgato's app owns it,
 # and its named mutex (Global\ArcadeMasterStreamDeck) keeps a single copy - so no process scan here (~0.1-1 s of WMI)
 $deck = Join-Path $PSScriptRoot 'streamdeck\amdeck.py'
-$pyw = (Get-Command pythonw.exe -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch '\\WindowsApps\\' } | Select-Object -First 1).Source   # not the Store stub
+. (Join-Path $PSScriptRoot 'lib\AmPython.ps1')
+$pyw = Find-AmPython -Windowed   # not the Store stub; found even when Python is not on this process's PATH
+if (-not $pyw -and (Test-Path $deck)) { Write-Log 'Stream Deck controller skipped: no Python found' }
 $deckOk = Join-Path $ManifestDir 'amdeck-packages.ok'   # first boot on a cabinet: install the deck's Python packages once, then never check again (no Python start on every boot)
 $deckTried = Join-Path $ManifestDir 'amdeck-packages.tried'   # a failed install is retried once a day, not on every boot
 $deckRetry = -not (Test-Path $deckTried) -or ((Get-Date) - (Get-Item $deckTried).LastWriteTime).TotalHours -ge 24
