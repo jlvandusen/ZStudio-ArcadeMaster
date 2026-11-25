@@ -124,6 +124,12 @@ switch ($Tool) {
     . (Join-Path $t 'lib\AmPython.ps1')
     $py = Find-AmPython   # found even when Python is not on this process's PATH
     if (-not $py) { Write-Host 'cards, stories and preview videos skipped: no Python found' }
+    # learn the control panel from LEDBlinky when it lights the buttons (keys, positions, devices, clashes -> panel.json)
+    if ($py) {
+      Step 'panel' 'Learn the control panel from LEDBlinky' 'run'
+      & $py (Join-Path $t 'Import-LEDBlinkyPanel.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'panel' 'Learn the control panel from LEDBlinky' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+    }
     if ($capNow -and $capNow.controlPanel -and -not $capNow.wheel -and $py) {
       Step 'panelcards' 'Button layout cards' 'run'
       & $py (Join-Path $t 'New-PanelControlsArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
