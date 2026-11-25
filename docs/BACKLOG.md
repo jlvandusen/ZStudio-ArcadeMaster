@@ -253,6 +253,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       about -1800 after the force feedback starts. Check whether the real wheel is held off centre (G HUB centre /
       RetroFE's spring and page-change push), with James at the wheel.
 
+- [x] [RACE1] Board: two jobs with the same title posted in the same second got the same id and the second replaced
+      the first (it happened with one job per cabinet). Board.ps1 post now adds -2, -3 and creates the file only if new.
+
 ## Needs James (skip, never wait)
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).

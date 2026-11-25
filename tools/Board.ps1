@@ -46,9 +46,18 @@ switch ($Cmd) {
   'post' {
     if (-not $Title) { throw '-Title required' }
     $slug = ($Title.ToLower() -replace '[^a-z0-9]+', '-').Trim('-'); if ($slug.Length -gt 40) { $slug = $slug.Substring(0, 40).Trim('-') }
-    $newId = "{0:yyyyMMdd-HHmmss}-{1}" -f (Get-Date), $slug
-    $txt = "---`r`nid: $newId`r`ntitle: $Title`r`nfor: $For`r`nfrom: $me`r`ncreated: $((Get-Date).ToString('s'))`r`nstatus: open`r`n---`r`n`r`n$Body`r`n"
-    [IO.File]::WriteAllText((Join-Path $Root "jobs\open\$newId.md"), $txt, $u8)
+    # the id is the time to the second + the title: the same title posted twice in one second (one job per machine)
+    # gave the same id and the second post replaced the first. A taken id gets -2, -3 ... and the file is created
+    # with CreateNew, so two machines posting at the same moment can't overwrite each other either.
+    $base = "{0:yyyyMMdd-HHmmss}-{1}" -f (Get-Date), $slug
+    $taken = { param($i) @('open', 'done') + @(Get-ChildItem (Join-Path $Root 'jobs\claimed') -Directory -ErrorAction SilentlyContinue | ForEach-Object { "claimed\$($_.Name)" }) | Where-Object { Test-Path (Join-Path $Root "jobs\$_\$i.md") } }
+    $n = 1; $newId = $base
+    while ($true) {
+      while (& $taken $newId) { $n++; $newId = "$base-$n" }
+      $txt = "---`r`nid: $newId`r`ntitle: $Title`r`nfor: $For`r`nfrom: $me`r`ncreated: $((Get-Date).ToString('s'))`r`nstatus: open`r`n---`r`n`r`n$Body`r`n"
+      try { $fs = [IO.File]::Open((Join-Path $Root "jobs\open\$newId.md"), [IO.FileMode]::CreateNew, [IO.FileAccess]::Write); $b = $u8.GetPreamble() + $u8.GetBytes($txt); $fs.Write($b, 0, $b.Length); $fs.Close(); break }
+      catch [IO.IOException] { $n++; $newId = "$base-$n" }
+    }
     Write-Log "posted $newId for $For : $Title"; Write-Host "posted $newId"
   }
   { $_ -in 'list', 'who' } {
