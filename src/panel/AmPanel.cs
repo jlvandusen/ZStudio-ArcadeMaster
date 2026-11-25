@@ -52,6 +52,7 @@ static class AmPanel
     static Sticks sticks;              // UltraStik maps per game: AmPanel.json "Sticks": "own" (default: on when Lights = own)
     static bool sticksOwn;
     static string speech = "off";         // AmPanel.json "Speech": off | start
+    static string gameStartAnimation, gamePauseAnimation;   // AmPanel.json defaults (.lwax name or "random"); per-game files win
     static ControllerChoices choicesDb;   // "which controller will you use?" (controller-choices.json)
     static Control ui;                    // created on the tray thread: pipe threads show windows through it
     static string toolsDir, retroFERoot;
@@ -163,6 +164,7 @@ static class AmPanel
         if (Str(cfg, "Reactive") != null) reactive = Convert.ToBoolean(cfg["Reactive"]);
         if (Str(cfg, "AttractAnimation") != null) attractAnimation = Str(cfg, "AttractAnimation").ToLowerInvariant();
         if (Str(cfg, "Speech") != null) speech = Str(cfg, "Speech").ToLowerInvariant();
+        gameStartAnimation = Str(cfg, "GameStartAnimation"); gamePauseAnimation = Str(cfg, "GamePauseAnimation");
         if (manifestDir == null)
         {
             // the launcher's config (ArcadeMaster.config.json) next to this exe or one folder up
@@ -259,14 +261,37 @@ static class AmPanel
                 // the documented events that change what the panel shows
                 if (c == "9" || c == "15") State["lights"] = leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null));
                 else if (c == "2") { leds.AllOff(); State["lights"] = "off (frontend quit)"; }
-                else if (c == "5") State["lights"] = "attract: " + (attractAnimation.EndsWith(".lwax") ? leds.Play(attractAnimation, true) : leds.Animate(attractAnimation));
+                else if (c == "5") State["lights"] = "attract: " + (attractAnimation.EndsWith(".lwax") || attractAnimation == "random" ? leds.Play(attractAnimation, true) : leds.Animate(attractAnimation));
                 else if (c == "11") State["lights"] = leds.Animate("stop");
                 else if (what == "animation start") State["lights"] = leds.Play(c, true);
                 else if (c == "6") State["lights"] = leds.Animate("stop");
-                else if (what == "game start") State["lights"] = leds.LightGame(c);
+                else if (what == "game start")
+                {
+                    // the game's colours, then LEDBlinky's per-game animations (lwa\GameSpecific): GamePlay loops for
+                    // the whole game, else GameStart (the game's own file, or AmPanel.json GameStartAnimation) plays once
+                    State["lights"] = leds.LightGame(c);
+                    string play = leds.GameAnimation("GamePlay", c), start = leds.GameAnimation("GameStart", c) ?? gameStartAnimation;
+                    if (play != null) State["lights"] = leds.Play(play, true);
+                    else if (start != null) State["lights"] = leds.Play(start, false);
+                }
+                else if (c == "4")
+                {
+                    // back in the menus: no game animation outlives the game; the selected game's colours again
+                    leds.Animate("stop");
+                    string sel = Convert.ToString(State.ContainsKey("selected") && State["selected"] != null ? State["selected"] : State.ContainsKey("game") ? State["game"] : null);
+                    State["lights"] = leds.LightGame(sel);
+                }
                 else if (c == "14") State["lights"] = leds.SetPorts(string.Join(",", a, 1, a.Length - 1));
-                else if (c == "16") State["lights"] = leds.Dim(true);
-                else if (c == "17") State["lights"] = leds.Dim(false);
+                else if (c == "16")
+                {
+                    string g = Convert.ToString(State.ContainsKey("game") ? State["game"] : null), pause = leds.GameAnimation("GamePause", g) ?? gamePauseAnimation;
+                    State["lights"] = pause != null ? leds.Play(pause, true) : leds.Dim(true);
+                }
+                else if (c == "17")
+                {
+                    string g = Convert.ToString(State.ContainsKey("game") ? State["game"] : null), play = leds.GameAnimation("GamePlay", g);
+                    State["lights"] = play != null ? leds.Play(play, true) : leds.Dim(false);
+                }
             }
             // UltraStik: the game's map at start (written only when it changes), 8-way back in the menus, 13 = this map now
             if (sticks != null)

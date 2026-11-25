@@ -139,8 +139,26 @@ class LedEngine
     public string LwaDir;
     List<KeyValuePair<int, Dictionary<int, byte[]>>> lwaFrames;
 
+    // LEDBlinky's per-game animations: lwa\GameSpecific\<GameStart|GamePlay|GamePause>\<rom>.lwax (its documented
+    // folders). Returns the file for this game, else null.
+    public string GameAnimation(string evt, string rom)
+    {
+        if (LwaDir == null || string.IsNullOrEmpty(rom)) return null;
+        string p = Path.Combine(LwaDir, "GameSpecific", evt, rom + ".lwax");
+        return File.Exists(p) ? p : null;
+    }
+
+    static readonly Random rnd = new Random();
+
+    // loop = false: one pass, then the panel goes back to the game's own colours
     public string Play(string file, bool loop)
     {
+        // "random" / "random.lwax": any animation in lwa\ (LEDBlinky's random option)
+        if (LwaDir != null && Directory.Exists(LwaDir) && (file.Equals("random", StringComparison.OrdinalIgnoreCase) || file.Equals("random.lwax", StringComparison.OrdinalIgnoreCase)))
+        {
+            var all = Directory.GetFiles(LwaDir, "*.lwax");
+            if (all.Length > 0) lock (rnd) file = all[rnd.Next(all.Length)];
+        }
         string path = file;
         if (!File.Exists(path) && LwaDir != null) { path = Path.Combine(LwaDir, file); if (!File.Exists(path) && !file.EndsWith(".lwax", StringComparison.OrdinalIgnoreCase)) path += ".lwax"; }
         if (!File.Exists(path)) return "no animation " + file;
@@ -202,6 +220,7 @@ class LedEngine
                 System.Threading.Thread.Sleep(f.Key);
             }
         } while (loop && animRun);
+        if (!loop && animRun) { RestoreBase(); Animation = null; }   // a start animation hands the panel back to the game
     }
 
     bool StopAnim()
