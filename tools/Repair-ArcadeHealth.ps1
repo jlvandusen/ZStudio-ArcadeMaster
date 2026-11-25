@@ -17,6 +17,7 @@
     updates    the "ArcadeMaster Update" task exists (put back when missing) and the last pull / build did not fail
     previews   how many games in each menu have a preview video (am_video); WARN when a menu has none at all
     crashes    games, emulators or the frontend that crashed in the last 24 h (Windows' Application Error log), in plain words
+    emulators  each emulator the menus use against its newest release (looked up once a day in the background)
     tactile    bass shakers switched on (manifest\tactile.json): VoiceMeeter running (started when not), shaker card present
   -Snapshot   when everything is OK: save a last-known-good copy of the configs (manifest\lkg\<stamp>, keeps 3)
   -RestoreLkg put the newest last-known-good configs back (used by the watchdog after a crash loop)
@@ -56,7 +57,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; gpu = 'Graphics driver'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; gpu = 'Graphics driver'; emulators = 'Emulator versions'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -466,6 +467,22 @@ else {
   if ($old) { Add-Result 'gpu' $checks.gpu 'WARN' (($old | ForEach-Object { "$($_.card): $($_.installed) installed, $($_.latest) available ($($_.date)) - Tools > Graphics Driver" }) -join '; ') }
   else { Add-Result 'gpu' $checks.gpu 'OK' ((@($gd.cards) | ForEach-Object { "$($_.card) $($_.installed)$(if ($_.latest) { ' (newest)' })" }) -join '; ') }
 }
+# emulators: each one the menus use against its newest official release (Update-Emulators.ps1, once a day in the
+# background, like the driver); this check only reads the last answer. Updates are offered in Tools > Emulator Updates.
+Emit @{ type = 'step'; id = 'emulators'; label = $checks.emulators; status = 'run' }
+$ef = Join-Path $ManifestDir 'emulator-versions.json'; $ev = $null; if (Test-Path $ef) { try { $ev = Get-Content $ef -Raw | ConvertFrom-Json } catch { } }
+if (-not $ev -or ((Get-Date) - [datetime]$ev.checked).TotalHours -ge 24) {
+  try { Start-Process powershell -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'Update-Emulators.ps1')`"", '-RetroFE', "`"$RetroFE`"", '-ManifestDir', "`"$ManifestDir`"") | Out-Null } catch { }
+}
+if (-not $ev) { Add-Result 'emulators' $checks.emulators 'OK' 'looking up the newest versions (answer at the next check)' }
+else {
+  $can = @($ev.emulators | Where-Object { $_.status -eq 'newer' -and $_.action -eq 'update' })
+  $info = @($ev.emulators | Where-Object { $_.status -eq 'newer' -and $_.action -ne 'update' })
+  $txt = @($can | ForEach-Object { "$($_.name) $($_.installed) -> $($_.latest)" }) + @($info | ForEach-Object { "$($_.name) $($_.latest) exists (shown only)" })
+  if ($can) { Add-Result 'emulators' $checks.emulators 'WARN' ("$($can.Count) update(s) ready - Tools > Emulator Updates: " + ($txt -join '; ')) }
+  else { Add-Result 'emulators' $checks.emulators 'OK' ("$(@($ev.emulators).Count) checked, none to update" + $(if ($info) { '; ' + ($txt -join '; ') })) }
+}
+
 # logs
 Emit @{ type = 'step'; id = 'logs'; label = $checks.logs; status = 'run' }
 $did = @(); $log = Join-Path $RetroFE 'log.txt'

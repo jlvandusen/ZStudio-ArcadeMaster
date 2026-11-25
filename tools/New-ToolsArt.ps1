@@ -35,6 +35,7 @@ $state = @{
 
 $meta = @{
   WheelSetup         = @{ icon = 'setup'; color = 'ff2fa0'; what = 'Turn, press and release each control once. Every game gets a best-practice mapping for this wheel.' }
+  EmulatorUpdates    = @{ icon = 'rebuild'; color = '3ddc84'; what = 'Check every emulator against its newest release and update the ones that can be: settings, saves and wheel bindings are kept, old files backed up.' }
   GpuDriver          = @{ icon = 'display'; color = '3ddc84'; what = 'Get the newest graphics driver for this card from NVIDIA or AMD, old cards included. Asks for admin; restart afterwards.' }
   FlightSetup        = @{ icon = 'joystick'; color = '2ec8ff'; what = 'Move the stick, twist it, slide the throttle and press each button once. The flight games get a mapping for this stick.' }
   PanelTest          = @{ icon = 'buttons'; color = 'ff2fa0'; what = 'Press every button, move every stick, spin the dial: each control lights up on screen with its name and the key it sends.' }
@@ -165,6 +166,23 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
         [AmDraw]::Text($g, 'Not set up yet', $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
       }
     }
+    'EmulatorUpdates' {
+      $ef = Join-Path $ManifestDir 'emulator-versions.json'
+      $ev = if (Test-Path $ef) { try { Get-Content $ef -Raw | ConvertFrom-Json } catch { } }
+      $can = if ($ev) { @($ev.emulators | Where-Object { $_.status -eq 'newer' -and $_.action -eq 'update' }) } else { @() }
+      if ($can.Count) {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 0, 0)
+        [AmDraw]::Text($g, "$($can.Count) update(s) ready", $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+        [AmDraw]::Text($g, (($can | ForEach-Object { $_.name -replace ' \(.*$', '' }) -join ', '), $small, [AmPal]::Dim, (RectF ($r.X + 86) ($r.Y + 58) ($r.Width - 86) 34), 'Near', 'Center')
+      } elseif ($ev) {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 2, 0)
+        [AmDraw]::Text($g, 'All up to date', $val, [AmPal]::Text, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+        [AmDraw]::Text($g, "$(@($ev.emulators).Count) emulators checked", $small, [AmPal]::Dim, (RectF ($r.X + 86) ($r.Y + 58) ($r.Width - 86) 34), 'Near', 'Center')
+      } else {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 0, 0)
+        [AmDraw]::Text($g, 'Not checked yet', $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+      }
+    }
     'GpuDriver' {
       $gf = Join-Path $ManifestDir 'gpu-driver.json'
       $gd = if (Test-Path $gf) { try { Get-Content $gf -Raw | ConvertFrom-Json } catch { } }
@@ -221,7 +239,7 @@ foreach ($bat in Get-ChildItem (Join-Path $col 'roms') -Filter *.bat -File) {
   $g.DrawPath((New-Object Drawing.Pen ([AmPal]::A($acc, 220)), 4), [AmDraw]::Round((RectF 2 2 1036 581), 26))
   $live = if ($m.icon -eq 'perf') { 0.62 } elseif ($m.icon -in 'wheel', 'setup', 'ffb') { -18 } else { 0 }
   [AmDraw]::Icon($g, $m.icon, (RectF 46 46 250 250), $acc, [float]$live)
-  [AmDraw]::Neon($g, $label, $ffBlack, [Drawing.FontStyle]::Italic, $(if ($label.Length -gt 16) { 50 } else { 62 }), [AmPal]::Cyan, (RectF 330 40 690 110), 'Near')
+  [AmDraw]::Neon($g, $label, $ffBlack, [Drawing.FontStyle]::Italic, $(if ($label.Length -gt 14) { 50 } else { 62 }), [AmPal]::Cyan, (RectF 330 40 690 110), 'Near')
   [AmDraw]::Text($g, $m.what, (PxFont 'Segoe UI' 28), [AmPal]::Text, (RectF 334 150 670 150), 'Near', 'Near')
   $g.FillRectangle((New-Object Drawing.SolidBrush ([AmPal]::A($acc, 120))), (RectF 46 330 948 3))
   Draw-Now $g $tool $acc (RectF 46 395 948 140)
