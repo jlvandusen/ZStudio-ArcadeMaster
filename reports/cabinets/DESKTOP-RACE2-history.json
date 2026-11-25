@@ -1,0 +1,28 @@
+﻿{
+    "devices":  [
+                    {
+                        "key":  "VID_8888\u0026PID_8888|handbrake|#1",
+                        "id":  "VID_8888\u0026PID_8888",
+                        "name":  "handbrake",
+                        "type":  "Supplemental",
+                        "role":  "handbrake",
+                        "guids":  [
+                                      "63e95880-8e9d-11ed-8002-444553540000"
+                                  ],
+                        "firstSeen":  "2026-11-25T07:28:04",
+                        "lastSeen":  "2026-11-25T07:28:04"
+                    },
+                    {
+                        "key":  "VID_046D\u0026PID_C24F|Logitech G HUB G29 Driving Force Racing Wheel USB|#1",
+                        "id":  "VID_046D\u0026PID_C24F",
+                        "name":  "Logitech G HUB G29 Driving Force Racing Wheel USB",
+                        "type":  "Driving",
+                        "role":  "wheel",
+                        "guids":  [
+                                      "3f3e6010-1bd1-11ec-8002-444553540000"
+                                  ],
+                        "firstSeen":  "2026-11-25T07:28:04",
+                        "lastSeen":  "2026-11-25T07:28:04"
+                    }
+                ]
+}

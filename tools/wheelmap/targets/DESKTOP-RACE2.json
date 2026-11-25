@@ -1,0 +1,77 @@
+{
+  "schema": "wheelmap.targets/1",
+  "description": "Where the live emulator configs live on this cabinet (RACE2: second racing/flight cabinet, Logitech G29, 3 pedals, handbrake). Same E:\\DRIVE Collection layout as RACE1; no D:\\Emulators or LaunchBox here. WheelMap only READS these when generating; -Apply -Commit is the only thing that writes them.",
+  "teknoparrot": [
+    {
+      "name": "E-TeknoParrot-1919",
+      "root": "E:\\DRIVE Collection\\emulators\\TeknoParrot",
+      "note": "primary, healthy (v1.0.0.1919); also generates LaunchBox-listed games that have a GameProfile"
+    },
+    {
+      "name": "E-TeknoParrotMulti",
+      "root": "E:\\DRIVE Collection\\emulators\\TeknoParrotMulti",
+      "onlyExisting": true
+    }
+  ],
+  "dolphin": [
+    {
+      "name": "Dolphin",
+      "user": "E:\\DRIVE Collection\\emulators\\Dolphin\\User",
+      "axisStyle": "fullaxis"
+    }
+  ],
+  "dolphinTriforce": [
+    {
+      "game": "F-Zero AX",
+      "config": "E:\\DRIVE Collection\\emulators\\Dolphin Triforce\\F-Zero AX\\User\\Config\\GCPadNew.ini",
+      "axisStyle": "surface"
+    },
+    {
+      "game": "Mario Kart Arcade GP",
+      "config": "E:\\DRIVE Collection\\emulators\\Dolphin Triforce\\Mario Kart Arcade GP\\User\\Config\\GCPadNew.ini",
+      "axisStyle": "surface"
+    },
+    {
+      "game": "Mario Kart Arcade GP 2",
+      "config": "E:\\DRIVE Collection\\emulators\\Dolphin Triforce\\Mario Kart Arcade GP 2\\User\\Config\\GCPadNew.ini",
+      "axisStyle": "surface"
+    }
+  ],
+  "supermodel": [
+    {
+      "ini": "E:\\DRIVE Collection\\emulators\\Supermodel\\Config\\Supermodel.ini"
+    }
+  ],
+  "mame": [
+    {
+      "root": "E:\\DRIVE Collection\\emulators\\MAME",
+      "reference": "E:\\DRIVE Collection\\controllers\\MAME\\G29"
+    }
+  ],
+  "cemu": [
+    {
+      "root": "E:\\DRIVE Collection\\emulators\\Cemu",
+      "reference": "E:\\DRIVE Collection\\controllers\\Cemu\\G29"
+    }
+  ],
+  "m2emulator": [
+    {
+      "root": "E:\\DRIVE Collection\\emulators\\m2emulator",
+      "reference": "E:\\DRIVE Collection\\controllers\\m2emulator\\G29"
+    }
+  ],
+  "ffbplugin": [
+    {
+      "root": "E:\\DRIVE Collection\\collections\\TeknoParrot\\roms",
+      "depth": 4
+    },
+    {
+      "root": "E:\\DRIVE Collection\\emulators",
+      "depth": 2
+    }
+  ],
+  "controllerSets": {
+    "note": "The previous owner's per-wheel config sets (copied live by E:\\DRIVE Collection\\collections\\Controller\\roms\\*.bat). Used as read-only references for MAME/Cemu/m2emulator.",
+    "root": "E:\\DRIVE Collection\\controllers"
+  }
+}
