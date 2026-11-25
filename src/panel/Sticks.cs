@@ -98,8 +98,12 @@ class Sticks
         return g;
     }
 
+    // the player's answer to "which controller?" for the game about to start wins over the game's own map, once
+    public string PickRom, PickMap;
+
     public string MapFor(string rom)
     {
+        if (rom != null && PickMap != null && string.Equals(rom, PickRom, StringComparison.OrdinalIgnoreCase)) return PickMap;
         string m; return rom != null && games.TryGetValue(rom, out m) ? m : defaultMap;
     }
 

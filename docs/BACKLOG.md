@@ -65,7 +65,12 @@ The loop works like this (James, 2026-11-25):
         - [x] The data: tools/New-ControllerChoices.py -> `<manifest>\controller-choices.json`. It runs in the hot-plug
               refresh and Rebuild Menus, so it follows what is plugged in. Pedestal: 311 games have a choice (222
               trackball/joystick, 53 analog/8-way stick, 36 gun games trackball/mouse).
-        - [ ] The question (proposed; James can redirect):
+        - [x] AmPanel's side: ControllerChooser.cs, the `choose` pipe command (on its own thread) and
+              `AmPanel.exe choose <item> [collection]`, which waits and prints the pick. Picks go to controller-picks.json,
+              and the picked stick map wins over the game's own at game start. Picture: docs/img/ampanel-choose.png.
+              Tested: no answer -> best fit after 8 s; a game with no choice answers in 274 ms.
+        - [ ] Show the real title (library items have the rom name as their games.json title).
+        - [ ] The fork's Launcher.cpp calls `AmPanel.exe choose` before starting the emulator. The design:
               - The ZStudio-retrofe fork's Launcher.cpp makes a blocking pipe call to AmPanel (`choose <game>`, 15 s cap)
                 before the emulator starts, and only for games in the file.
               - AmPanel shows a full-screen, top-most chooser driven by the panel: stick left/right, button 1 picks.
