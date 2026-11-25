@@ -483,13 +483,42 @@
     <onGameEnter><set duration=".35"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1"/></set></onGameEnter>
     <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
   </image>
-  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="600" maxHeight="340" alpha="0" layer="19">
+  <!-- launch screen: the game's own art full screen (dimmed, slow push-in), its logo, and how to play it on this
+       cabinet (the controls card) while the game loads -->
+  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="19">
+    <onGameEnter>
+      <set duration=".55"><animate type="nop"/></set>
+      <set duration=".45"><animate type="alpha" to=".55" algorithm="easeOutCubic"/><animate type="width" to="1960"/><animate type="height" to="1103"/></set>
+      <set duration="1.6"><animate type="width" to="2060" algorithm="easeInOutSine"/><animate type="height" to="1159" algorithm="easeInOutSine"/></set>
+      <set duration=".3"><animate type="alpha" to="0"/></set>
+    </onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onGameExit>
+  </reloadableImage>
+  <reloadableImage type="logo" x="center" y="400" xOrigin="center" yOrigin="center" width="600" maxHeight="340" alpha="0" layer="19">
     <onGameEnter>
       <set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="900" algorithm="easeOutCubic"/></set>
-      <set duration="1"><animate type="nop"/></set>
+      <set duration="2.2"><animate type="nop"/></set>
       <set duration=".3"><animate type="alpha" to="0"/><animate type="width" to="1800"/></set>
     </onGameEnter>
     <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="600"/></set></onGameExit>
+  </reloadableImage>
+  <reloadableImage type="am_controls" x="960" y="840" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="19">
+    <onGameEnter>
+      <set duration=".8"><animate type="nop"/></set>
+      <set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" from="880" to="840" algorithm="easeOutCubic"/></set>
+      <set duration="1.4"><animate type="nop"/></set>
+      <set duration=".3"><animate type="alpha" to="0"/></set>
+    </onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
+  </reloadableImage>
+  <reloadableImage type="am_controls_wheel" x="570" y="840" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="19" liveDevice="wheel" liveSteer="450">
+    <onGameEnter>
+      <set duration=".8"><animate type="nop"/></set>
+      <set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" from="880" to="840" algorithm="easeOutCubic"/></set>
+      <set duration="1.4"><animate type="nop"/></set>
+      <set duration=".3"><animate type="alpha" to="0"/></set>
+    </onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
   </reloadableImage>
 
 </layout>
