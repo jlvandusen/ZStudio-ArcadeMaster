@@ -277,7 +277,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       Valve Limit R, MachStorm, Cars. (A 'use the parent's story' rule was tried and dropped: by name prefix it pairs
       different TeknoParrot games, e.g. Dead Heat / Dead Heat Riders.)
 - [ ] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
-- [ ] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
+- [x] [RACE1] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
+      tools\tactile\Set-ShakerAudio.ps1 (check / -Apply / -Off, dry-run safe) through the VoiceMeeter already installed.
 - [ ] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
 - [ ] Bass shakers: telemetry on in every PC racing game that has it, beyond the 6 Codemasters games.
 - [ ] Reliability: the health check notices a game whose last start crashed and says why in plain words.
@@ -311,7 +312,7 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
   the wheel should now push back. Before today 13 of them sent their force to nothing.
 - RACE1: turn the G29 during a short menu test run, so the wheel picture problem can be measured.
 - RACE1: install SimHub (D:\ArcadeMaster\installers\SimHubSetup_9.13.5.exe, accept the admin prompt).
-- RACE1: plug in the USB sound card for the bass shakers.
+- RACE1: plug in the USB sound card for the bass shakers, then run tools\tactile\Set-ShakerAudio.ps1 -Apply (or tell RACE1's session).
 - RACE1: test the live wheel, needles, gear lights, moving backdrops and D-pad menu at the cabinet; merge PR #3.
 
 ## Done
