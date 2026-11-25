@@ -68,6 +68,7 @@ tools\New-CabinetToolsCollection.ps1 -RetroFE <root>
   - logs to `<manifest>\update-cabinet.log`
   - on a cabinet without the build tools, logs which one is missing and keeps its exe (copy a package from Z: instead)
   To try it without changing Windows, set `$env:AM_SYSTEM_DRYRUN = 1` first.
+- **Working on a copy of a protected frontend (E:, or `ProtectedPaths`):** junction the big read-only parts back, but give MAME a real folder. If `<copy>\emulators` is a single junction to E:, MAME's `cfg`, `nvram` and `diff` live on E:, and `Set-MameControls` (and the cabinet self-test) refuse to write there. Make `<copy>\emulators` a real folder holding one junction per emulator, except `MAME`. Copy `MAME` itself (about 500 MB) with `roms` and `hash` as junctions back to E:. RACE2 is set up this way.
 - Copy `layouts\ArcadeMaster` into `<root>\layouts\` and set `layout = ArcadeMaster` in settings.conf.
 - **Themes:** `tools\Import-RetroFETheme.ps1 -Source <root> -RetroFE <root> -All -NoPreview` registers the layouts already in the frontend (ArcadeMaster and the CoinOPS theme). Then run `python tools\New-ArcadeThemes.py --install <root> --manifest <manifest>`, which needs `pip install pillow`; don't run it with `python -I`, which hides user-installed packages. That adds the five AM-* layouts. Tools → Themes lists everything in `<manifest>\themes.json`.
 - Set `cabinetType = pedestal` in settings.conf, or `standup+lightgun` etc., or leave it on `auto`.
