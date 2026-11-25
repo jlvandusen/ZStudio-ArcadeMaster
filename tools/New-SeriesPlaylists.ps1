@@ -4,6 +4,9 @@
   collections\<Menu>\playlists\<Series>.txt for the games of that menu whose title matches, one "_<collection>:<item>"
   line each, and sets settings.conf "cyclePlaylist = all,<series>,..." so the wheel's button 3 (P) steps through them
   and button 2 (O) back (controls.conf nextCyclePlaylist / prevCyclePlaylist, added when missing).
+  Favourites, as CoinOPS does them: the wheel's Options button (10, F) marks or unmarks the selected game
+  (togglePlaylist; RetroFE saves the list as playlists/favorites.txt), Share (11, V) jumps to the Favourites list
+  (favPlaylist), and "favorites" is second in the cycle (skipped by RetroFE while nothing is marked).
   Every version of a game stays: a playlist only groups. Only playlists it made itself are replaced or removed (listed
   in playlists\ARCADEMASTER-SERIES.txt); playlists from other tools or the original build are never touched.
 .EXAMPLE
@@ -78,6 +81,8 @@ if (Test-Path $cc) {
   $add = @()
   if (-not ($c -match '^\s*nextCyclePlaylist\s*=')) { $add += 'nextCyclePlaylist = P,joyButton3' }
   if (-not ($c -match '^\s*prevCyclePlaylist\s*=')) { $add += 'prevCyclePlaylist = O,joyButton2' }
+  if (-not ($c -match '^\s*togglePlaylist\s*=')) { $add += 'togglePlaylist = F,joyButton10' }   # Options: mark / unmark a favourite
+  if (-not ($c -match '^\s*favPlaylist\s*=')) { $add += 'favPlaylist = V,joyButton11' }         # Share: the Favourites list
   if ($add) { if (([IO.File]::ReadAllText($cc)) -notmatch "\n$") { Add-Content $cc '' -Encoding ascii }   # the file may not end with a line break: a new line would run into the last one
     Add-Content $cc $add -Encoding ascii; Write-Host "controls.conf: $($add -join '; ')" }
 }
