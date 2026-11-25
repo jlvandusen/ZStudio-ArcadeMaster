@@ -141,6 +141,11 @@ switch ($Tool) {
       Step 'previews' $pvLabel 'run'
       & $py (Join-Path $t 'New-PreviewMedia.py') --retrofe $RetroFE --max-minutes 10 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'previews' $pvLabel $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # a marquee for every game (a real one from another build when there is one, else a placeholder) and for
+      # every main-menu collection; only the missing ones are made
+      Step 'marquees' 'Game marquees' 'run'
+      & $py (Join-Path $t 'New-Marquees.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'marquees' 'Game marquees' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }
