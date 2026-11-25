@@ -125,25 +125,46 @@ function Get-Listing([string]$dir, [string]$filter) {
   if (-not $script:dirMemo.ContainsKey($k)) { $script:dirMemo[$k] = @(if ([IO.Directory]::Exists($dir)) { ([IO.DirectoryInfo]$dir).GetFiles($filter) }) }
   $script:dirMemo[$k]
 }
-function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = @{}, [string[]]$only = $null) {
+# the game pictures of one collection folder (fanart + am_backdrop), as (full path, game name) pairs, read once per run.
+# Plain loops, not Where-Object / ForEach-Object: with ~2,000 pictures walked again for each menu, the pipelines were
+# most of the boot "Shuffle" time.
+$script:artMemo = @{}
+function Get-ArtOf([string]$dir) {
+  if (-not $script:artMemo.ContainsKey($dir)) {
+    $l = New-Object System.Collections.Generic.List[object]
+    foreach ($k in 'fanart', 'am_backdrop') {
+      foreach ($f in Get-Listing (Join-Path $dir "medium_artwork\$k") '*') {
+        $e = $f.Extension.ToLowerInvariant()
+        if (($e -eq '.jpg' -or $e -eq '.jpeg' -or $e -eq '.png') -and $f.BaseName -ne 'default') { $l.Add(@($f.FullName, $f.BaseName)) }
+      }
+    }
+    $script:artMemo[$dir] = $l
+  }
+  $script:artMemo[$dir]
+}
+function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = @{}, [string[]]$only = $null, $acc = $null) {
+  $top = $null -eq $acc
+  if ($top) { $acc = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase) }
   if (-not $CollectionsDir -or $depth -gt 3) { return @() }
+  if ($depth -gt 0 -and $col -in 'Tools', 'Settings', 'zzzShutdown') { return @() }   # tool tiles are not game art: only the Tools menu shows them
   $key = "$col|$($only -join ',')"; if ($seen.ContainsKey($key)) { return @() }; $seen[$key] = $true
   $dir = Join-Path $CollectionsDir $col
+  $onlySet = $null
+  if ($only) { $onlySet = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase); foreach ($o in $only) { [void]$onlySet.Add($o) } }
   # fanart, and the 1920x1080 stills New-PreviewMedia.py takes from each game's own video (am_backdrop)
-  $files = @(@(Get-Listing (Join-Path $dir 'medium_artwork\fanart') '*') + @(Get-Listing (Join-Path $dir 'medium_artwork\am_backdrop') '*') |
-             Where-Object { $_.Extension -match '^\.(jpe?g|png)$' -and $_.BaseName -ne 'default' -and (-not $only -or $only -contains $_.BaseName) } |
-             ForEach-Object { $_.FullName })
+  foreach ($a in Get-ArtOf $dir) { if (-not $onlySet -or $onlySet.Contains($a[1])) { [void]$acc.Add($a[0]) } }
   # merged collections: a .sub that LISTS items means "only these games"; an empty .sub means "the whole collection"
   foreach ($sf in Get-Listing $dir '*.sub') {
-    $list = @(Get-Content $sf.FullName | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-    $files += Get-CollectionFanart $sf.BaseName ($depth + 1) $seen ($(if ($list.Count) { $list } else { $null }))
+    $list = @(foreach ($ln in [IO.File]::ReadAllLines($sf.FullName)) { $t = $ln.Trim(); if ($t) { $t } })
+    [void](Get-CollectionFanart $sf.BaseName ($depth + 1) $seen ($(if ($list.Count) { $list } else { $null })) $acc)
   }
-  $menus = @()
+  $menus = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
   $menuTxt = Join-Path $dir 'menu.txt'
-  if (Test-Path $menuTxt) { $menus += @(Get-Content $menuTxt | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }) }
-  $menus += @(Get-Listing (Join-Path $dir 'menu') '*' | ForEach-Object { $_.BaseName })
-  foreach ($s in $menus | Sort-Object -Unique) { $files += Get-CollectionFanart $s ($depth + 1) $seen }
-  return @($files | Sort-Object -Unique)
+  if ([IO.File]::Exists($menuTxt)) { foreach ($ln in [IO.File]::ReadAllLines($menuTxt)) { $t = $ln.Trim(); if ($t) { [void]$menus.Add($t) } } }
+  foreach ($f in Get-Listing (Join-Path $dir 'menu') '*') { [void]$menus.Add($f.BaseName) }
+  foreach ($s in $menus) { [void](Get-CollectionFanart $s ($depth + 1) $seen $null $acc) }
+  if ($top) { $r = New-Object string[] $acc.Count; $acc.CopyTo($r); [Array]::Sort($r, [StringComparer]::OrdinalIgnoreCase); return $r }   # callers wrap it in @()
+  return @()
 }
 
 # every game picture in the build (fanart + am_backdrop of all collections), read once: the backdrop of a menu that
@@ -151,8 +172,7 @@ function Get-CollectionFanart([string]$col, [int]$depth = 0, [hashtable]$seen = 
 $script:libraryArt = $null
 function Get-LibraryArt {
   if ($null -eq $script:libraryArt) {
-    $script:libraryArt = @(if ($CollectionsDir) { foreach ($d in Get-ChildItem $CollectionsDir -Directory) { foreach ($k in 'fanart', 'am_backdrop') {
-      Get-Listing (Join-Path $d.FullName "medium_artwork\$k") '*' | Where-Object { $_.Extension -match '^\.(jpe?g|png)$' -and $_.BaseName -ne 'default' } | ForEach-Object { $_.FullName } } } })
+    $script:libraryArt = @(if ($CollectionsDir) { foreach ($d in [IO.Directory]::GetDirectories($CollectionsDir)) { foreach ($a in Get-ArtOf $d) { $a[0] } } })
   }
   $script:libraryArt
 }
@@ -194,7 +214,7 @@ function Get-BgPool([string]$col, [string]$themeName) {
   $fam = ($themeName -split '-')[0]
   $ids = Get-FamilyIds $fam
   if ($ids -and $ids.Count) {
-    $own = @($lib | Where-Object { $ids.Contains([IO.Path]::GetFileNameWithoutExtension($_)) })
+    $own = @(foreach ($p in $lib) { if ($ids.Contains([IO.Path]::GetFileNameWithoutExtension($p))) { $p } })
     if ($own.Count) { return $own }
   }
   if ($lib.Count -gt 0) { return $lib }
@@ -228,15 +248,17 @@ foreach ($col in $map.Keys) {
   # pictures too small or portrait-shaped to fill the screen (Find-LowResArt.py, at Rebuild Game Menus): left out
   # whenever the menu still has enough others
   if ($script:lowRes.Count) {
-    $good = @($pool | Where-Object { -not $script:lowRes.Contains($_) })
+    $good = @(foreach ($p in $pool) { if (-not $script:lowRes.Contains($p)) { $p } })
     if ($good.Count -ge [Math]::Min($BgSlots, $pool.Count)) { $pool = $good }
   }
   if ($Shuffle) { $pool = Get-Shuffled $pool }
   $pool = Select-Distinct $pool $BgSlots
+  # the menu's current slot files, listed once (not once per slot): a slot may change extension, so its old file goes
+  $oldSlots = ([IO.DirectoryInfo]$dst).GetFiles('am_bg*.*')
   for ($i = 1; $i -le $BgSlots; $i++) {
     $src = $pool[($i - 1) % $pool.Count]
-    if (-not (Test-Path -LiteralPath $src)) { throw "missing background $src" }
-    foreach ($old in ([IO.DirectoryInfo]$dst).GetFiles("am_bg$i.*")) { $old.Delete() }   # slot may change extension
+    if (-not [IO.File]::Exists($src)) { throw "missing background $src" }
+    foreach ($old in $oldSlots) { if ($old.Name.StartsWith("am_bg$i.", [StringComparison]::OrdinalIgnoreCase)) { $old.Delete() } }
     # a hard link on the same drive: fanart can be several MB, and copying ~270 of them every boot cost seconds. The slot
     # is deleted above before it is linked again, so nothing ever writes through the link into the game's own art.
     $slotFile = Join-Path $dst ("am_bg$i" + [IO.Path]::GetExtension($src).ToLower())
