@@ -1,5 +1,7 @@
 # 15. Feature by feature: Big Box, Batocera / RetroBat, CoinOPS, and how we beat each
 
+> **Merged into [docs/16-rivals-master.md](16-rivals-master.md)** (2026-11-25): one numbered list (R1-R26) with owners and status. This file keeps its detail; plan and claim from docs/16.
+
 Read from their own pages on 2026-11-25 (launchbox-app.com premium / windows pages; wiki.batocera.org: basic_commands,
 configure_a_controller, emulators:wheel_games, emulators:lightgun_games, decoration, emulationstation_savestates,
 retroachievements_settings, netplay, es-webserver, ledspicer; coinops.pages.dev, the whole page). docs/14 has the

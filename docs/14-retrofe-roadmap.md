@@ -260,6 +260,8 @@ and copy save folders (RetroArch, Dolphin, PCSX2, TeknoParrot) to the NAS after 
 - **Note:** MAME on this frontend didn't close on Escape when the key was sent by a script. Use the cabinet's exit button.
 
 ### A12-A20: second deep dive (RACE2, 2026-11-25)
+
+> **Merged into [docs/16-rivals-master.md](16-rivals-master.md)** (2026-11-25): one numbered list (R1-R26) with owners and status. This file keeps its detail; plan and claim from docs/16.
 The rivals' own pages (sources below) list these, and the table above doesn't cover them yet.
 Value is judged for a public arcade cabinet.
 
@@ -268,7 +270,7 @@ Value is judged for a public arcade cabinet.
 | **A12 Kiosk / guest mode** | Locks Tools, settings and exit to Windows. A held button combo unlocks it. A kid list is a playlist of safe games | Batocera UI modes; CoinOPS ARISE Micro (kiosk by default) | high: guests can't break the cabinet | S-M | all |
 | **A13 Light guns end to end** | Sinden border on by itself, guns written per emulator at launch, crosshairs off, calibration in Tools, a Light Gun menu from the catalog | Batocera (Sinden, GunCon, Gun4IR, AimTrak, several guns) | high on the pedestal | M-L | pedestal |
 | **A14 Insert Coin / free play** | Opens on an Insert Coin screen; free play or credits set in cabinet.json | CoinOPS kiosk config | high: the arcade feel | S | pedestal, both race cabs |
-| **A15 Bezels and shaders for 4:3 games** | Bezel art per game (Bezel Project), optional scanlines, from the catalog's orientation | Batocera decorations, CoinOPS, Big Box | high for arcade games | M | pedestal |
+| **A15 Clean bezels for 4:3 games** | Bezel art per game (Bezel Project), clean frames only, no scanlines (James), from the catalog's orientation | Batocera decorations, CoinOPS, Big Box | high for arcade games | M | pedestal |
 | **A16 Run-ahead by game** | RetroArch run-ahead 1-2 frames for 2D arcade cores, written at launch; a lag figure added to A4 | Batocera (RetroArch) | medium-high | S-M | pedestal |
 | **A17 Phone page: play / kill / now playing** | On top of A7: start a game, close a stuck one, see what is running (the A10 hooks know) | Batocera ES web server | medium | S | all |
 | **A18 Random game + Game of the Month** | One button picks a game; a monthly featured playlist that attract mode (A8) leans on | CoinOPS (Y button, Game of the Month), Big Box | medium, cheap | S | all |
