@@ -69,7 +69,11 @@ adapter; `SDL_RenderGetD3D11Device`). This drops both copies. Fall back to today
 **Expect:** a much smaller `draw` share on video-heavy screens (the launch screen, the pedestal's grids), and room for two
 videos at once. **Check:** hitch log `draw` ms with one and with two videos playing.
 
-### 3. Picture cache with a size limit (small, stops slow growth)
+### 3. Picture cache with a size limit - measured, not needed now (2026-11-25)
+**Measured on RACE1:** Racing entered, then 4 full passes through its 91 games (380 scroll steps): GPU memory 665 -> 670 MB,
+RetroFE RAM 442 -> 449 MB, 0 stutters. The never-emptied cache (`useTextureCache`) is only on Main's layout, so game
+lists don't fill it. Revisit only if a list layout turns `useTextureCache` on. The original note:
+**Was:** 3. Picture cache with a size limit (small, stops slow growth)
 **Now:** `Image::textureCache_` keeps every picture ever shown until the layout is torn down. There's no size limit and
 no reference count (shared by raw pointer). Scroll through all 900 racing games and every backdrop and logo stays in
 video memory; on the 4 GB GTX 1650 that ends in the driver paging, which shows up as random long hitches after an hour.
