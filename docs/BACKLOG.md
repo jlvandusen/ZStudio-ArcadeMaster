@@ -6,7 +6,8 @@ gets added. Items that need James move to **Needs James** and are skipped, not w
 
 The loop works like this (James, 2026-11-25):
 
-- **Branch and PR every change.** Run `tools/Test-ArcadeMaster.ps1`, then merge your own PR (`gh pr merge --merge`).
+- **Branch and PR every change.** Run `tools/Test-ArcadeMaster.ps1 -Cabinet` (on a machine with a test frontend),
+  then merge your own PR (`gh pr merge --merge`).
 - **Try it on the R: copy** (`R:\ArcadeMaster\frontend\LEGENDS-am`), never on the live `E:\CoinOPS LEGENDS 4 Max`.
 - **Driver and display changes are approved.** Write down what changed and how to undo it.
 - **Measure first.** A performance or visuals change states its before and after numbers, or before and after
@@ -53,8 +54,9 @@ The loop works like this (James, 2026-11-25):
       `games-summary.txt`. Boot prep 6.9 s → **2.7 s** today. Also fixed: since #27 a comment had swallowed the
       TeknoParrot path check, which then errored on every profile. (2026-11-25)
 - [ ] Boot time, next: Shuffle 1.7 s (now the largest), and Get-CabinetDevices on a cold start (1.3 s).
-- [ ] Self-test: run Repair-ArcadeHealth -NoFix against the R: copy and fail on any PowerShell error. It would have
-      caught the #27 comment bug.
+- [x] `Test-ArcadeMaster.ps1 -Cabinet` runs the health check (`-NoFix`) and the panel learn (`--dry-run`) against
+      this cabinet's frontend, and fails on any error. It refuses a protected live frontend. A planted bug was caught
+      (2026-11-25).
 - [ ] Menu scrolling: turn on the perf log, measure frame time on Main and Arcades, and find the heavy layers.
 - [ ] Backdrops and marquees: no texture bigger than it is drawn. Downscale anything over 1920x1080 and check memory
       before and after.
