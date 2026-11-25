@@ -1,5 +1,7 @@
 # 17. LaunchBox / Big Box, Batocera, RetroBat: what they do, and where ArcadeMaster matches or beats them
 
+> **Merged into [docs/16-rivals-master.md](16-rivals-master.md)** (2026-11-25): one numbered list (R1-R26) with owners and status. This file keeps its detail; plan and claim from docs/16.
+
 James, 2026-11-25: *"keep doing deep dive into the big 3 frontends and we need to mimic and exceed those functions"*. The big 3 are LaunchBox / Big Box, Batocera and RetroBat.
 
 Versions read: LaunchBox 14.1 (2026-10-30), Batocera 44 "Malachite" (2026-11-17), RetroBat 8.4.0 (2026-11-21). Sources: feedback.launchbox-app.com/changelog, batocera.org/changelog, wiki.batocera.org, github.com/RetroBat-Official, wiki.retrobat.org, pluginapi.launchbox-app.com. The research brief and every source link are in the PR that added this file.

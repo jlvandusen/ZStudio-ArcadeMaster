@@ -203,5 +203,7 @@ if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue)
   if ((Get-FileHash (Join-Path $built 'retrofe.exe')).Hash -ne (Get-FileHash (Join-Path $rtDir 'retrofe.exe')).Hash) { Say "deploy of RetroFE $key did not take (retrofe.exe differs) - previous files in $prev"; return }
   Say "installed RetroFE $key into $rtDir (was $(if ($have) { $have } else { 'unknown' }); previous files kept in $prev)"
 } finally { Remove-Item $lock -Force -ErrorAction SilentlyContinue }
+# what this cabinet now runs -> Z:\ArcadeMaster\reports\state\<PC>.json (Compare-Cabinets.ps1 lines the cabinets up)
+if (-not $Install) { try { & (Join-Path $PSScriptRoot 'Write-CabinetState.ps1') -Root $Root -ManifestDir $ManifestDir 6>$null | Out-Null } catch { } }
 # robocopy's 1-7 (files copied) must not leak out as the task's 'last run result'
 exit 0
