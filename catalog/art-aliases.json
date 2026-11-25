@@ -1,0 +1,12 @@
+{
+  "_help": "Art for games that have none of their own. 'aliases': the same game under another name in another list. Key: '<collection>/<item>' as the game lists name it; value: the '<collection>/<item>' whose medium_artwork it uses. 'files': single files, '<collection>/<item>': { '<art type>': '<file>' }, e.g. a PC game's own intro movie as its video (skipped on a cabinet that doesn't have the file). New-RetroFECollections.ps1 hard-links each art type the game has none of (video, fanart, logo, artwork, controls cards ...), never replaces its own art, and lists each link in medium_artwork\\ARCADEMASTER-borrowed-art.txt so it can be removed. Stories are not linked: write those in tools\\game-stories.json.",
+  "aliases": {
+    "AM_TP_Emulators_TeknoParrot/Daytona3Single": "TeknoParrot/Daytona3",
+    "AM_TP_Emulators_TeknoParrot/Daytona3Multi": "TeknoParrotMulti/Daytona3",
+    "TeknoParrot/Daytona3Single": "TeknoParrot/Daytona3",
+    "TeknoParrot/Daytona3Multi": "TeknoParrotMulti/Daytona3"
+  },
+  "files": {
+    "AM_PC/Crazy Taxi 3 High Roller": { "video": "D:\\Arcade PC\\PC\\Crazy taxi 3 High Roller\\avi\\go_an.avi" }
+  }
+}

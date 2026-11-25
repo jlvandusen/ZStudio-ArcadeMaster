@@ -168,6 +168,52 @@ if ($pcGames.Count) {
   Write-Host ("source collection AM_PC: {0} native Windows games" -f $pcGames.Count)
 }
 
+# --- art aliases (catalog\art-aliases.json): the same game listed under another name in another list (Daytona3Single
+# in AM_TP_Emulators_TeknoParrot is TeknoParrot's Daytona3) borrows that list's art and video: hard links for the art
+# types it has none of, never replacing its own, every one listed for removal. No stories (hand-written in
+# tools\game-stories.json). Runs after AM_PC / AM_TP_* are rebuilt above: they are deleted and remade on every run, so
+# links made earlier would be lost. Large files that can't be linked (another drive) are skipped rather than copied.
+$aliased = 0
+$aliasFile = Join-Path $PSScriptRoot '..\catalog\art-aliases.json'
+if (Test-Path $aliasFile) {
+  $aliases = (Get-Content $aliasFile -Raw | ConvertFrom-Json).aliases
+  # single files: { "<collection>/<item>": { "<art type>": "<file>" } } - e.g. a PC game's own intro movie as its video
+  $files = (Get-Content $aliasFile -Raw | ConvertFrom-Json).files
+  foreach ($a in @(if ($files) { $files.PSObject.Properties })) {
+    $dstCol, $dstItem = $a.Name -split '/', 2
+    if (-not (Test-Path -LiteralPath (Join-Path $cols $dstCol))) { continue }
+    foreach ($t in @($a.Value.PSObject.Properties)) {
+      $src = [string]$t.Value; if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { continue }
+      $dir = Join-Path $cols "$dstCol\medium_artwork\$($t.Name)"
+      if (@(Get-ChildItem -LiteralPath $dir -Filter "$dstItem.*" -File -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -eq $dstItem }).Count) { continue }   # has its own
+      New-Item -ItemType Directory -Force $dir | Out-Null
+      $dst = Join-Path $dir ($dstItem + [IO.Path]::GetExtension($src).ToLower())
+      try { New-Item -ItemType HardLink -Path $dst -Target $src -ErrorAction Stop | Out-Null } catch { Write-Host "art: $dstCol/$dstItem $($t.Name) not linked ($($_.Exception.Message.Split("`n")[0]))"; continue }
+      Add-Content (Join-Path $cols "$dstCol\medium_artwork\ARCADEMASTER-borrowed-art.txt") $dst -Encoding UTF8
+      $aliased++
+    }
+  }
+  foreach ($a in @($aliases.PSObject.Properties)) {
+    $dstCol, $dstItem = $a.Name -split '/', 2; $srcCol, $srcItem = ([string]$a.Value) -split '/', 2
+    $dstArt = Join-Path $cols "$dstCol\medium_artwork"; $srcArt = Join-Path $cols "$srcCol\medium_artwork"
+    if (-not (Test-Path -LiteralPath (Join-Path $cols $dstCol)) -or -not (Test-Path -LiteralPath $srcArt)) { continue }
+    foreach ($typeDir in Get-ChildItem -LiteralPath $srcArt -Directory) {
+      if ($typeDir.Name -match '^(am_)?story$') { continue }
+      $src = Get-ChildItem -LiteralPath $typeDir.FullName -Filter "$srcItem.*" -File -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -eq $srcItem } | Select-Object -First 1
+      if (-not $src) { continue }
+      $dir = Join-Path $dstArt $typeDir.Name
+      if (@(Get-ChildItem -LiteralPath $dir -Filter "$dstItem.*" -File -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -eq $dstItem }).Count) { continue }   # has its own
+      New-Item -ItemType Directory -Force $dir | Out-Null
+      $dst = Join-Path $dir ($dstItem + $src.Extension.ToLower())
+      try { New-Item -ItemType HardLink -Path $dst -Target $src.FullName -ErrorAction Stop | Out-Null }
+      catch { if ($src.Length -gt 20MB) { Write-Host "art: $dstCol/$dstItem $($typeDir.Name) not linked ($($_.Exception.Message.Split("`n")[0]))"; continue }; Copy-Item -LiteralPath $src.FullName $dst }
+      Add-Content (Join-Path $dstArt 'ARCADEMASTER-borrowed-art.txt') $dst -Encoding UTF8
+      $aliased++
+    }
+  }
+}
+if ($aliased) { Write-Host "art: $aliased file(s) linked from the same game in another list (catalog\art-aliases.json)" }
+
 # --- category collections (merged .sub views)
 $menu = New-Object System.Collections.Generic.List[string]
 foreach ($cat in $Order) {
