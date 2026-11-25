@@ -87,6 +87,9 @@ if (-not $NoDeviceCheck) {
     $dol = Invoke-Tool 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir); if ($dol -match '->') { Write-Log ('dolphin: ' + (($dol -split "`r?`n" | Where-Object { $_ -match '->' } | ForEach-Object { $_.Trim() }) -join '; ')) }
     $ids = Invoke-Tool 'Update-ControllerIds.ps1' @('-RetroFE', $Root, '-Cabinet', $cabFile, '-History', (Join-Path $ManifestDir 'device-history.json'), '-Apply')
     if ($ids -match 'APPLIED: (\d+)' -and [int]$Matches[1] -gt 0) { Write-Log "controller IDs changed - re-pointed $($Matches[1]) profile files" }
+    # MAME, Supermodel (Model 3), Model 2 and Cemu store a device id or number too: follow it after a reboot / port change
+    $emu = Invoke-Tool 'Repair-EmulatorDevices.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-ScanFile', (Join-Path $ManifestDir 'directinput-scan.txt'), '-Apply')
+    if ($emu -match '(\d+) file\(s\) fixed') { Write-Log ("controllers renumbered - re-pointed $($Matches[1]) emulator file(s): " + (($emu -split "`r?`n" | Where-Object { $_ -match ' -> ' } | ForEach-Object { $_.Trim() }) -join '; ')) }
     $modesNow = (@($now.modes) | Sort-Object) -join ','; $modesFile = Join-Path $ManifestDir 'last-modes.txt'
     $modesLast = if (Test-Path $modesFile) { (Get-Content $modesFile -Raw).Trim() } else { '' }
     if ($modesNow -ne $modesLast) {

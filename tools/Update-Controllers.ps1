@@ -5,6 +5,7 @@
     Get-CabinetDevices    capabilities + device history (cabinet.json)
     Set-DolphinControllers   Dolphin follows what is plugged in
     Update-ControllerIds  game profiles re-pointed when a device's id moved
+    Repair-EmulatorDevices  MAME / Supermodel / Model 2 / Cemu follow a device's new id or number
     Set-CabinetMode       racing / flight / gun mode follows the hardware
     menus                 rebuilt only when the cabinet's modes changed
   Ends with one line for the tray:  CHANGED: wheel False -> True; gamepads 0 -> 1     (or  CHANGED: nothing)
@@ -22,6 +23,7 @@ function Run([string]$script, [string[]]$a) { & powershell -NoProfile -Execution
 $now = (Get-Content $cab -Raw | ConvertFrom-Json).capabilities
 $dol = Run 'Set-DolphinControllers.ps1' @('-ManifestDir', $ManifestDir)
 $ids = Run 'Update-ControllerIds.ps1' @('-RetroFE', $RetroFE, '-Cabinet', $cab, '-History', $hist, '-Apply')
+$emu = Run 'Repair-EmulatorDevices.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir, '-ScanFile', (Join-Path $ManifestDir 'directinput-scan.txt'), '-Apply')   # MAME, Supermodel, Model 2, Cemu
 [void](Run 'Set-CabinetMode.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir))
 $notes = @()
 # which games now give a choice of controller (asked at game start)
@@ -29,6 +31,7 @@ $notes = @()
 if ($py) { $ch = & $py (Join-Path $t 'New-ControllerChoices.py') --manifest $ManifestDir 2>&1 | Out-String; if ($ch -match 'on this cabinet: (\d+)') { $choiceGames = [int]$Matches[1] } }
 if ($ids -match 'APPLIED: (\d+)' -and [int]$Matches[1] -gt 0) { $notes += "re-pointed $($Matches[1]) game profile(s)" }
 if ($dol -match '->') { $notes += 'Dolphin updated' }
+if ($emu -match '(\d+) file\(s\) fixed') { $notes += "re-pointed $($Matches[1]) MAME / Model 2 / Model 3 / Cemu file(s)" }
 
 # menus only when what the cabinet can play changed (a wheel or a flight stick arrived / left)
 $modesNow = (@($now.modes) | Sort-Object) -join ','; $modesFile = Join-Path $ManifestDir 'last-modes.txt'
