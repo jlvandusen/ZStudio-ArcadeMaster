@@ -41,7 +41,17 @@ The loop works like this (James, 2026-11-25):
       - **Now AmPanel (docs/13-panel-service.md, James 2026-11-25):** a tray service that accepts LEDBlinky's documented
         command line, talks to the frontend over \\.\pipe\ArcadeMaster.Panel, and drives LEDs + ServoStik (PacDrive32)
         and UltraStik maps (UltraStik32). Steps 1–8 are in that doc; the old steps below fold into them.
-      - [ ] AmPanel step 1: tray + pipe + LEDBlinky-compatible command line + panel-state.json.
+      - [x] AmPanel steps 1, 2, 5, 6, 7, 9, 10, 11a/b and the Settings engine switch (#54–#73).
+      - **Gaps to 100% LEDBlinky (James asked 2026-11-25; honest list):**
+        - [ ] Play LEDBlinky's `.lwax` animation files (`LEDBlinky\lwa\`), including `random.lwax` and the S/N options.
+        - [ ] Audio-reactive animation (`audio.lwax`): read the system sound level and drive the LEDs from it.
+        - [ ] Command `14` (set LED ports by number, label + channel, or controller + id + port).
+        - [ ] Command `13` (UltraStik map per game) via UltraStik32 `UltraStik_LoadMap(File)`; auto from controls.dat.
+        - [ ] Command `12` (load a MAME controller file) and `16`/`17` pause behaviour (dim the panel on pause).
+        - [ ] Speech: announce the game name on select (Windows SAPI), as LEDBlinky's voice option does.
+        - [ ] Pixelcade / LED marquee output (the 2-player cabinet uses LEDBlinky only for that).
+        - [ ] Other LED boards: LED-Wiz (ledwiz.dll), Howler (HowlerDLL.dll), GPWiz.
+        - [ ] Buttons tab: blink-to-learn each LED pin, so we no longer need LEDBlinky's input-map wizard.
       - [ ] Step 2: an LED test in Tools. Light each button in turn and in each player's colour. Only while LEDBlinky is
             not running (they would fight over the boards).
       - [ ] Step 3: per-game colours on game select (Colors.ini + InputMap), from the RetroFE launcher hook that now
