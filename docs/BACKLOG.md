@@ -289,7 +289,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       Tools > 5a Bass Shakers On-Off (strength: -Choice strength:NN, kept in tactile.json); health 'Bass shakers' starts
       VoiceMeeter again when the shakers are on and it isn't running (otherwise no game sound), warns on an unplugged card.
 - [ ] Bass shakers: telemetry on in every PC racing game that has it, beyond the 6 Codemasters games.
-- [ ] Reliability: the health check notices a game whose last start crashed and says why in plain words.
+- [x] [RACE1] Reliability: the health check notices a game whose last start crashed and says why in plain words.
+      System Health 'Games that crashed': Windows' Application Error log, last 24 h (-CrashHours), games / emulators / RetroFE by title.
 
 - [x] [RACE1] Daytona Championship USA single and linked versions: clear names, the full Daytona video and art, and
       stories saying which to pick; Crazy Taxi 3 plays the game's own Glitter Oasis movie (catalog/art-aliases.json).

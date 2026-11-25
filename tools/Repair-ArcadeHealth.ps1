@@ -15,6 +15,7 @@
     art        boot intro + Tools art present (regenerated when missing)
     wheel      every TeknoParrot driving game's wheel / pedals / paddles / gears on the G29 (report only)
     updates    the "ArcadeMaster Update" task exists (put back when missing) and the last pull / build did not fail
+    crashes    games, emulators or the frontend that crashed in the last 24 h (Windows' Application Error log), in plain words
     tactile    bass shakers switched on (manifest\tactile.json): VoiceMeeter running (started when not), shaker card present
   -Snapshot   when everything is OK: save a last-known-good copy of the configs (manifest\lkg\<stamp>, keeps 3)
   -RestoreLkg put the newest last-known-good configs back (used by the watchdog after a crash loop)
@@ -25,7 +26,8 @@ param(
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
   [switch]$Snapshot,
   [switch]$RestoreLkg,
-  [switch]$NoFix
+  [switch]$NoFix,
+  [int]$CrashHours = 24               # how far back 'crashes' looks
 )
 $ErrorActionPreference = 'Continue'
 $visual = $env:AM_VISUAL -eq '1'
@@ -53,7 +55,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -374,6 +376,39 @@ else {
   if ($tWarn) { Add-Result 'tactile' $checks.tactile 'WARN' (($tWarn + $tDid) -join '; ') }
   elseif ($tDid) { Add-Result 'tactile' $checks.tactile 'FIXED' ($tDid -join '; ') }
   else { Add-Result 'tactile' $checks.tactile 'OK' "on: $card at $($ts.strength)%" }
+}
+# crashes: Windows writes every program crash to the Application log (source "Application Error", event 1000) with the
+# program, the module it crashed in and the exception code. Report the last 24 h for this cabinet's games, their
+# emulators and the frontend, by game title, with a plain reason where the module says something. Report only.
+Emit @{ type = 'step'; id = 'crashes'; label = $checks.crashes; status = 'run' }
+$names = @{}   # lower-case program file name -> what to call it
+$gj = Join-Path $ManifestDir 'games.json'
+if (Test-Path $gj) {
+  foreach ($g in @((Get-Content $gj -Raw | ConvertFrom-Json).games)) {
+    foreach ($v in @($g.variants.PSObject.Properties | ForEach-Object { $_.Value })) {
+      foreach ($pp in @($v.file, $v.gamePath)) { if ($pp -and $pp -match '(?i)\.exe$') { $k = [IO.Path]::GetFileName($pp).ToLower(); if (-not $names.ContainsKey($k)) { $names[$k] = $g.title } } }
+    }
+  }
+}
+foreach ($lc in Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter *.conf -File -ErrorAction SilentlyContinue) {
+  $m = Select-String -LiteralPath $lc.FullName -Pattern '^\s*executable\s*=\s*(.+\.exe)\s*$' | Select-Object -First 1
+  if ($m) { $k = [IO.Path]::GetFileName($m.Matches[0].Groups[1].Value.Trim().Trim('"')).ToLower(); if (-not $names.ContainsKey($k)) { $names[$k] = "$($lc.BaseName) (emulator)" } }
+}
+$names['retrofe.exe'] = 'the frontend (RetroFE)'
+$why = { param($mod, $code)
+  switch -Regex ($mod) {
+    '^(nvwgf2umx|nvoglv64|nvd3dumx|atiumd|amdxx|igd)' { 'in the graphics driver'; break }
+    '^(xinput|dinput8|opengl32|d3d9|d3d11|dxgi)\.dll$' { "in $mod - often TeknoParrot's / the FFB plugin's controller or graphics layer"; break }
+    '^(OpenParrot|TeknoParrot|ElfLdr|budgieloader)' { 'in the TeknoParrot loader'; break }
+    '^(ntdll|KERNELBASE|ucrtbase|USER32)\.dll$' { "inside the program itself ($mod, code 0x$code)"; break }
+    default { "in $mod (code 0x$code)" }
+  } }
+$crash = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'Application Error'; Id = 1000; StartTime = (Get-Date).AddHours(-$CrashHours) } -ErrorAction SilentlyContinue |
+  ForEach-Object { $p = $_.Properties; $exe = ([string]$p[0].Value).ToLower(); if ($names.ContainsKey($exe)) { [pscustomobject]@{ who = $names[$exe]; when = $_.TimeCreated; why = (& $why ([string]$p[3].Value) ([string]$p[6].Value)) } } })
+if (-not $crash.Count) { Add-Result 'crashes' $checks.crashes 'OK' "no game, emulator or frontend crash in the last $CrashHours h ($($names.Count) programs watched)" }
+else {
+  $lines = foreach ($grp in $crash | Group-Object who) { $last = $grp.Group | Sort-Object when | Select-Object -Last 1; "{0} crashed {1}x, last {2:HH:mm} {3}" -f $grp.Name, $grp.Count, $last.when, $last.why }
+  Add-Result 'crashes' $checks.crashes 'WARN' ($lines -join '; ')
 }
 # logs
 Emit @{ type = 'step'; id = 'logs'; label = $checks.logs; status = 'run' }
