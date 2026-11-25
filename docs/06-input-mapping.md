@@ -478,3 +478,14 @@ The overlay pictures come from `tools\New-LiveDashArt.ps1` (about 100 KB in all)
 **Wheels and pedals read stale values until their first report.** Until a wheel or pedal sends its first report, SDL holds a stale value (full lock, or half travel). Steering and pedals therefore count as centred or released until the reading first changes.
 
 **Menu clicks in the wheel are off** (`ffbTick = 0`, the default since patch 0009). On the G29, the click on each menu scroll pushed the rim the same way every time, and the wheel stepped round with every scroll. The centring spring is `ffbCenter` (50 on the racing cabinet).
+
+## Checking the wheel bindings
+
+`tools\Test-WheelBindings.ps1` reads every TeknoParrot game profile and checks its wheel, pedal, paddle and gear
+bindings against the G29: steering X axis, gas Y, brake RotationZ, clutch Slider 0 (clutch LEFT, brake MIDDLE, gas
+RIGHT), right paddle button 4 = shift up, left paddle button 5 = shift down, shifter gears 1-6 = buttons 12-17,
+reverse = button 18 (a 4-speed game may put gears 3 and 4 on shifter 5 and 6, like Daytona). It changes nothing. It
+reports WRONG (another axis or button), MISSING (no steering, gas or brake: the game can't be driven) and KEYS
+(keyboard only). Fix a profile with WheelMap (`tools\wheelmap\WheelMap.ps1 -Generate`, then `-Apply -Commit`, or copy
+only the staged files you checked), which backs up every live file first.
+

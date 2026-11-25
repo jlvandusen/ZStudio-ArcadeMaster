@@ -188,7 +188,10 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [ ] Graphics: Driving Force Pro picture: only small photos with the pedals in frame were found (wheel ~150 px).
       Look for a bigger front view. The MOMO cut-out keeps a light edge along its base (small source photo).
 - [ ] Graphics: game launch screen with the game's own art full screen and that game's wheel and pedal controls.
-- [ ] Controls: check the wheel, pedals and paddles in every TeknoParrot racing profile (clutch L, brake M, gas R).
+- [x] [RACE1] Controls: check the wheel, pedals and paddles in every TeknoParrot racing profile (clutch L, brake M, gas R).
+      New read-only tools\Test-WheelBindings.ps1. RACE1: 303 of 313 ok -> 313 of 313. Fixed (backups *.wheelmap-*.bak):
+      WMMT5, ID4Exp and FNFSB2 had no steering, gas or brake bound; OutRun 2 SP DX (E:) had its brake on the gas pedal.
+- [ ] Controls: run Test-WheelBindings in the health check, so a profile that loses its wheel bindings is reported.
 - [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
 - [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
 - [ ] Controls: set up the "ready to set up" games from games-cant-start.txt with Add-TPGame (dry run first).
@@ -213,6 +216,8 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.
 - Azure sign-in (device code) at a browser.
+- RACE1: drive Daytona Championship USA (Linked Cabinets): its steering is bound "X -" where the single version has
+  "X +"; check it does not steer backwards. Also try Wangan Midnight 5, Initial D 4 Export and OutRun 2 SP DX (bindings fixed).
 - RACE1: turn the G29 during a short menu test run, so the wheel picture problem can be measured.
 - RACE1: install SimHub (D:\ArcadeMaster\installers\SimHubSetup_9.13.5.exe, accept the admin prompt).
 - RACE1: plug in the USB sound card for the bass shakers.
