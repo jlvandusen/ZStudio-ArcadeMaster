@@ -44,6 +44,7 @@ static class AmPanel
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
     static string manifestDir, ledBlinkyDir, logFile;
     static bool passThrough = true;    // AmPanel.json "PassThrough": false = do not hand commands to LEDBlinky.exe (tests)
+    static LedEngine leds;             // AmPanel.json "Lights": "own" = AmPanel drives the button LEDs (step 2), not LEDBlinky
     static NotifyIcon tray;
     static volatile bool quitting;
 
@@ -60,15 +61,23 @@ static class AmPanel
             {
                 State["service"] = "AmPanel";
                 State["version"] = 1;
-                State["mode"] = "shadow";            // step 1: LEDBlinky still drives the lights
+                State["mode"] = leds != null ? "own" : "shadow";   // shadow: LEDBlinky still drives the lights
                 State["startedAt"] = DateTime.Now.ToString("s");
                 State["boards"] = ReadBoards();
+                if (leds != null)
+                {
+                    bool ok = leds.Open();
+                    State["lights"] = ok ? string.Format("own: {0} LED board(s), {1} buttons mapped, colours for {2} games", leds.Boards, leds.Buttons, leds.Games)
+                                         : "own, but LED boards not opened: " + leds.LastError;
+                    if (!ok) leds = null;
+                }
                 State["ledBlinkyRunning"] = Process.GetProcessesByName("LEDBlinky").Length > 0;
             }
             Handle(args, false);
             new Thread(PipeServer) { IsBackground = true, Name = "pipe" }.Start();
             RunTray();
             quitting = true;
+            if (leds != null) leds.Close();
             Log("AmPanel stopped");
             return 0;
         }
@@ -99,6 +108,10 @@ static class AmPanel
         Directory.CreateDirectory(manifestDir);
         logFile = Path.Combine(manifestDir, "ampanel.log");
         if (ledBlinkyDir != null && Directory.Exists(ledBlinkyDir)) SetDllDirectory(ledBlinkyDir);   // PacDrive32.dll lives there
+        if (string.Equals(Str(cfg, "Lights"), "own", StringComparison.OrdinalIgnoreCase) && ledBlinkyDir != null) {
+            leds = new LedEngine(ledBlinkyDir);
+            passThrough = false;       // two programs must never drive the same boards
+        }
     }
 
     // ---------------------------------------------------------------- boards (PacDrive SDK)
@@ -152,6 +165,13 @@ static class AmPanel
                     if (c.EndsWith(".lwax", StringComparison.OrdinalIgnoreCase)) { State["animation"] = c; what = "animation start"; }
                     else { State["playing"] = true; State["game"] = c; if (arg1 != null) State["emulator"] = arg1; State["paused"] = false; what = "game start"; }
                     break;
+            }
+            if (leds != null)
+            {
+                // the documented events that change what the panel shows
+                if (c == "9" || c == "15") State["lights"] = leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null));
+                else if (c == "2") { leds.AllOff(); State["lights"] = "off (frontend quit)"; }
+                else if (what == "game start") State["lights"] = leds.LightGame(c);
             }
             State["lastEvent"] = what;
             State["lastArgs"] = string.Join(" ", a);
@@ -246,7 +266,13 @@ static class AmPanel
             }
             else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); rep["ok"] = true; }
             else if (cmd == "boards") { var b = ReadBoards(); lock (Gate) State["boards"] = b; rep["boards"] = b; rep["ok"] = true; }
-            else { rep["ok"] = false; rep["error"] = "unknown command '" + cmd + "' (args, status, boards)"; }
+            else if (cmd == "light")   // {"cmd":"light","rom":"sf2"} - light a game's controls now (tests, Tools)
+            {
+                if (leds == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
+                else { string res; lock (Gate) { res = leds.LightGame(req.ContainsKey("rom") ? Convert.ToString(req["rom"]) : null); State["lights"] = res; } rep["result"] = res; rep["ok"] = true; }
+            }
+            else if (cmd == "off") { if (leds != null) lock (Gate) leds.AllOff(); rep["ok"] = leds != null; }
+            else { rep["ok"] = false; rep["error"] = "unknown command '" + cmd + "' (args, status, boards, light, off)"; }
         }
         catch (Exception e) { rep["ok"] = false; rep["error"] = e.Message; }
         return Json.Serialize(rep);
