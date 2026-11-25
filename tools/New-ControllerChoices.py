@@ -84,11 +84,24 @@ def main():
     items = games if isinstance(games, list) else list(games.values())
     cab = load(os.path.join(a.manifest, "cabinet.json"))
     cap = cab.get("capabilities", {})
+    # real titles: library games carry their rom name as title; history.dat (history-index.json, New-GameStories.py)
+    # knows "After Burner II" for info:aburner2
+    titles = {}
+    hp = os.path.join(a.manifest, "history-index.json")
+    if os.path.exists(hp):
+        for e in load(hp).get("entries", []):
+            for k in e.get("keys", []):
+                if k.startswith("info:") and e.get("title"):
+                    titles.setdefault(k[5:], e["title"])
     out, kinds = {}, collections.Counter()
     for g in items:
         ch = choices_for(g.get("controls") or {}, cap)
         if len(ch) >= 2:
-            out[g["id"]] = {"title": g.get("title"), "choices": ch}
+            item = g["id"].split(":")[-1]
+            title = g.get("title") or item
+            if title == item and item in titles:
+                title = titles[item]
+            out[g["id"]] = {"title": title, "choices": ch}
             kinds[" / ".join(x["id"] for x in ch)] += 1
     print("controller choices on this cabinet: %d of %d games" % (len(out), len(items)))
     for k, n in kinds.most_common():
