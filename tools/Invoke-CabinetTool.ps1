@@ -167,6 +167,10 @@ switch ($Tool) {
       Step 'sticks' 'UltraStik maps per game' 'run'
       & $py (Join-Path $t 'New-StickMaps.py') --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'sticks' 'UltraStik maps per game' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
+      # games where this cabinet offers more than one controller (the "which controller?" question at game start)
+      Step 'choices' 'Controller choices per game' 'run'
+      & $py (Join-Path $t 'New-ControllerChoices.py') --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      Step 'choices' 'Controller choices per game' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections
   }
