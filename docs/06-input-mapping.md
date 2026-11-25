@@ -521,3 +521,26 @@ A racing cabinet has no flight stick, so the arcade flight games (After Burner C
 - The bindings are copied from a driving game that already works on this wheel (Daytona3), so the device and axes are right.
 - Only controls with nothing bound are filled in, so a cabinet with a real stick keeps its own bindings.
 - Dry run by default. `-Apply` backs up to `*.am-flight-<time>.bak`.
+
+## After a reboot or a USB port change (2026-11-25)
+Windows can give a controller a new DirectInput id (instance GUID) and a new place in the list (JOY1, JOY2) after a
+reboot, a USB port change, or unplugging and replugging. Each emulator records the controllers its own way:
+
+| Emulator | Stores | Kept right by |
+|---|---|---|
+| TeknoParrot (all copies) | the device's id | `Update-ControllerIds.ps1` (device history) |
+| Dolphin / Triforce | the device's name | nothing needed; `Set-DolphinControllers.ps1` for Wii Remotes / GC adapter |
+| FFB Arcade Plugin | SDL id (from VID / PID / name) | `Repair-FFBPluginDevice.ps1` |
+| MAME | `mapdevice` id in `ctrlr\wheelmap.cfg` (JOYCODE_n pinned to it) | `Repair-EmulatorDevices.ps1` |
+| Cemu | `<uuid>` id in `controllerProfiles\*.xml` | `Repair-EmulatorDevices.ps1` |
+| Supermodel (Model 3) | `JOYn_` numbers in `Config\Supermodel.ini` | `Repair-EmulatorDevices.ps1` |
+| Model 2 | device number inside each control code in `CFG\*.input` (keys untouched) | `Repair-EmulatorDevices.ps1` |
+
+`Repair-EmulatorDevices.ps1` keeps `manifest\emulator-devices.json` (the ids and numbers the files are written with;
+on RACE1 seeded from `profiles\G29.json`, on other cabinets the first run records what is plugged in). Each run
+matches devices by USB VID / PID (then name, then old id when two are the same), swaps only those tokens, and backs
+each changed file up as `<file>.ids-<time>.bak`. It covers the frontend's own `emulators\` folder and the WheelMap
+targets of this cabinet. It runs at boot (Start-ArcadeMaster, after Update-ControllerIds) and on plug / unplug
+(Update-Controllers), reading the DirectInput scan Get-CabinetDevices has just refreshed (about 0.4 s).
+Tested on copies with the wheel and handbrake swapped and new ids: 9 files fixed (MAME, Cemu, Supermodel, six Model 2
+games), and a second run changed nothing.

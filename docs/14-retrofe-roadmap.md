@@ -100,6 +100,12 @@ shrinking art helps little here.
 has 16. Start-ArcadeMaster now sets `RETROFE_THREADPOOL_SIZE` to half the cores (3 to 8; a value set by hand wins).
 Two runs each on RACE1: 91.4 / 93.1 ms at 3 threads, 83.8 / 83.8 ms at 8. A 9 % cut, so most of the wait is not
 the thread count: fixes (a)-(c) above are still the way to get under 33 ms.
+**Inside the 60 ms (timing build, 2026-11-25):** two passes of wait-then-prepare: waiting for background decodes
+7 + 16 = 24 ms, then making textures and starting videos on the main thread 28 + 12 = 40 ms (pass 1 starts new loads,
+so a second pass is needed). The bigger share is main-thread texture / video setup, so fix (c) becomes: show the page
+once the list and backdrop are ready and make the remaining textures over the next frames, behind the page's enter
+animation. (Test builds must be swapped in between the 15-minute update runs: Update-Cabinet puts the installed
+build back within 15 minutes, by design.)
 **Now:** entering a list spends 44 ms in `logic` on the main thread building the first item. Startup also waits for
 the thread pool to drain (`ThreadPool::wait()` in RetroFE.cpp) before the menu draws.
 **Do:** draw the menu with placeholders and fill items as they finish; the pool already exists.
@@ -154,7 +160,7 @@ What each one is:
 
 | Feature | Big Box | Batocera / RetroBat | CoinOPS | ArcadeMaster today | Plan |
 |---|---|---|---|---|---|
-| Controllers set up for each emulator automatically | Premium "controller automation" | **yes**, at each launch | pads + encoders "out of the box", fixed maps | boot and plug / unplug: TeknoParrot, Dolphin, MAME, cabinet mode | **A1** |
+| Controllers set up for each emulator automatically | Premium "controller automation" | **yes**, at each launch | pads + encoders "out of the box", fixed maps | boot and plug / unplug: TeknoParrot, Dolphin, MAME, Supermodel, Model 2, Cemu and the FFB plugin follow renumbered USB devices | **A1** (step 1 done) |
 | New controller set up on screen | no | yes ("map a controller") | no (edit controls.conf) | no | **A2** |
 | In-game menu | Premium pause screens | Control Center on hotkey + button; hotkey combos | MAME's TAB menu | exit combo only | **A3** |
 | Wheels, pedals, force feedback | no | yes, growing (Logitech TrueForce, MOZA, FFB on several emulators) | no | **yes**: per-game wheel bindings, FFB device repair, clutch / handbrake, flight on a wheel | keep ahead: per-game force strength |

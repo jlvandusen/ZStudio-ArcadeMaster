@@ -179,6 +179,10 @@ The loop works like this (James, 2026-11-25):
   - [ ] 9. Crash dumps to the NAS from the health check; meta.db in WAL mode.
 - [ ] Ahead of Big Box / Batocera / RetroBat / CoinOPS (docs/14, James 2026-11-25), after vsync and the cache:
   - [ ] A1. Controllers set up at every game start for each emulator from what is plugged in (150 ms budget).
+    - [x] [RACE1] Step 1, survive reboots / USB renumbering: Repair-EmulatorDevices keeps MAME, Cemu, Supermodel and
+          Model 2 on the right device (id and JOY number) at boot and on plug / unplug, as TeknoParrot already was.
+    - [ ] Step 2: RetroArch, PCSX2, Flycast and PC games: check how each stores the controller and add it.
+    - [ ] Step 3: run the same checks at game start (launcher hook), so a controller plugged in mid-session is right.
   - [ ] A4. Speed promises as self-test checks: boot, 60 fps with video, video start 150 ms, launch 1 s.
   - [ ] A3. In-game menu on a hotkey combo: pause, save / load state, controls card, exit.
   - [ ] A2. On-screen controller setup for an unknown controller (RetroFE page + hot-plug listener).
