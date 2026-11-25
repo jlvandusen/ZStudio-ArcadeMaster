@@ -257,6 +257,10 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.
 - [ ] Controls: set up the "ready to set up" games from games-cant-start.txt with Add-TPGame (dry run first).
 - [ ] Stories: every racing and flight game has a story line (year, maker, cabinet, what makes it special).
+      [RACE1] 2026-11-25: 73 of 106 racing/flight games had a one-line or no story -> 31 (stories tool run for every
+      list + 15 hand-written: Initial D 4/5/7/8/Zero, Wangan Midnight 5, Battle Gear 4, GTI Club 3, After Burner Climax,
+      Wreckfest, Burnout Paradise, Project CARS, V-Rally 4, NASCAR Heat 5, American Truck Simulator). Left: MAME racers
+      (art folder is a link onto E:, which the stories tool won't write into), Model 3 clones, GameCube, Sega Racing Classic.
 - [ ] Menus: group racing by series (Daytona, Sega Rally, Initial D, Wangan...), keeping every variant.
 - [ ] Bass shakers: sound-driven shaker path for the games without telemetry, ready to switch on (docs/12).
 - [ ] Bass shakers: a Tactile On-Off switch and strength setting in Tools, plus a health check line.
