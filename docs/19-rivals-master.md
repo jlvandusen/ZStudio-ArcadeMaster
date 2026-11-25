@@ -1,4 +1,4 @@
-# 16. Beating the rivals: the one list
+# 19. Beating the rivals: the one list
 
 James, 2026-11-25: *"lets have all 3 merge and compare updates/enhancements for the system"*.
 
@@ -8,6 +8,8 @@ Three cabinets researched the same rivals on the same day:
 - `docs/17-frontend-gap-analysis.md`, the ranked gaps (pedestal)
 
 This file merges them into **one numbered list**. Every row says where its old numbers came from, who owns it and where it stands. Claim a row on the board before starting it, and change its status in this file in the same PR that does the work.
+
+**Plan of record: [docs/18-way-forward.md](18-way-forward.md)** (pedestal, James 2026-11-25: AmPanel grows into the ArcadeMaster Host; todo per machine). Owners below follow docs/18.
 
 Rivals: **LaunchBox / Big Box** 14.1, **Batocera** 44 / **RetroBat** 8.4, **CoinOPS** ARISE / LEGENDS / DRIVE.
 
@@ -33,13 +35,13 @@ House rules that apply to every row:
 | # | Feature | Was | Rivals | Value on a cabinet | Size | Owner |
 |---|---|---|---|---|---|---|
 | R8 | **Universal exit combo**: hold Start + Coin (wheel: PS + Options) 2 s; the game closes cleanly in every emulator | 17 #1, 15 §1, A3 | Batocera / RetroBat hotkey + Start | high: a guest can always get back | S | pedestal (AmPanel) |
-| R9 | **Kiosk / guest lock**: Tools, settings and exit-to-Windows hidden; a button code on the panel or wheel unlocks; kid list = a playlist | A12, 17 #3, 15 §3 (lock) | Batocera UI modes + passkey, Big Box PIN, CoinOPS ARISE Micro | high: guests can't break it | S-M | **RACE2** |
+| R9 | **Kiosk / guest lock**: Tools, settings and exit-to-Windows hidden; a button code on the panel or wheel unlocks; kid list = a playlist | A12, 17 #3, 15 §3 (lock) | Batocera UI modes + passkey, Big Box PIN, CoinOPS ARISE Micro | high: guests can't break it | S-M | pedestal (Host, docs/18) |
 | R10 | **Pause menu over any game**: resume, controls card, story, hi-score, force strength, shakers, save / load, exit | A3, 15 §2, 17 #2 | Big Box (paid), Batocera Control Center | high | M-L | pedestal (AmPanel overlay) |
-| R11 | **Hi-scores + lap records**: fix hi2txt, show best scores / best laps on the game screen and in attract; Hall of Fame on the NAS / touch screen | A9, A19, 15 §8, 17 #4 | CoinOPS (iScored, Discord), LaunchBox 14.1 leaderboards | high, and racing **lap records nobody shows** | M | open |
-| R12 | **Phone page**: health, settings, play a game, end a stuck one, now playing, board status | A7, A17, 15 §12, 17 #5 | Batocera web manager / ES web server | medium-high | M | open (pedestal sketched it on AmPanel) |
+| R11 | **Hi-scores + lap records**: fix hi2txt, show best scores / best laps on the game screen and in attract; Hall of Fame on the NAS / touch screen | A9, A19, 15 §8, 17 #4 | CoinOPS (iScored, Discord), LaunchBox 14.1 leaderboards | high, and racing **lap records nobody shows** | M | RACE1 (hi2txt, docs/18) |
+| R12 | **Phone page**: health, settings, play a game, end a stuck one, now playing, board status | A7, A17, 15 §12, 17 #5 | Batocera web manager / ES web server | medium-high | M | pedestal (Host web page) + RACE1 (API contract), docs/18 |
 | R13 | **Light guns end to end**: Sinden border, per-emulator gun setup at launch, crosshair off, calibration in Tools | A13, 15 §5, 17 #7 | Batocera (deepest) | high on the pedestal | M-L | pedestal |
 | R14 | **Insert Coin / free play** start screen | A14 | CoinOPS kiosk config | high: arcade feel | S | open |
-| R15 | **Clean bezels for 4:3 games**, per game then per system | A15, 15 §10, 17 #6 | Batocera decorations, CoinOPS, Big Box | medium-high (pedestal) | M | open |
+| R15 | **Clean bezels for 4:3 games**, per game then per system | A15, 15 §10, 17 #6 | Batocera decorations, CoinOPS, Big Box | medium-high (pedestal) | M | RACE1 (docs/18) |
 | R16 | **Per-game wheel profiles**: force strength, rotation (900° sim / 270° arcade), deadzones from the catalog | 15 §4, backlog 7 | **none of them** | high on the race cabs | M | RACE1 (posted) |
 | R17 | **Linked cabinets**: RACE1 + RACE2 head to head on the LAN, "Join RACE2?" in the menu | (A12-A20 "exceed") | **none of them** | very high for the race pair | L | RACE2 study |
 | R18 | **Attract mode that sells**: cycles series / Game of the Month, dims after 10 min, any pedal / wheel exits; later real MAME demos | A8, 15 §7, 17 #8 | CoinOPS themed attract | medium | S-M | open |
@@ -52,6 +54,8 @@ House rules that apply to every row:
 | R25 | **Fleet page**: every cabinet's state, health, play time and saves on one page | (exceed) | **none of them** | high for running 3+ cabinets | S on top of R26 | RACE2 |
 | R26 | **Cabinets side by side** (what each actually runs): `Write-CabinetState` at boot and every update, `Compare-Cabinets` | (new) | **none** | the base of R25 | S | **RACE2, this PR** |
 | R1b | Restore a save from the NAS in Tools (pick a slot) | 15 §6 | Big Box Vault | medium | S | RACE2 |
+| R27 | **Pause menu on a wheel cabinet**: which wheel buttons open it, force feedback released on pause | docs/18 | Big Box (no wheels) | high on the race cabs | S-M | RACE2 (docs/18) |
+| R28 | **Exit rules for the racing emulators** (TeknoParrot, Model 2 / 3, Supermodel): Esc ends each cleanly | docs/18 | Batocera hotkey + Start | high | S | RACE2 (docs/18) |
 
 Not planned: CRT 15 kHz (LCD cabinets), manuals reader, Steam store import, 3D boxes.
 

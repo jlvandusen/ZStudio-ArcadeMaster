@@ -261,7 +261,7 @@ and copy save folders (RetroArch, Dolphin, PCSX2, TeknoParrot) to the NAS after 
 
 ### A12-A20: second deep dive (RACE2, 2026-11-25)
 
-> **Merged into [docs/16-rivals-master.md](16-rivals-master.md)** (2026-11-25): one numbered list (R1-R26) with owners and status. This file keeps its detail; plan and claim from docs/16.
+> **Merged into [docs/19-rivals-master.md](19-rivals-master.md)** (2026-11-25): one numbered list (R1-R26) with owners and status. This file keeps its detail; plan and claim from docs/16.
 The rivals' own pages (sources below) list these, and the table above doesn't cover them yet.
 Value is judged for a public arcade cabinet.
 
