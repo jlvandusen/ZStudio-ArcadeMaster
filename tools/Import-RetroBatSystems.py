@@ -31,6 +31,8 @@ DEFAULT = ["c64", "amiga500", "nes", "snes", "megadrive", "mastersystem", "pceng
            "wiiu", "xbox", "dreamcast", "saturn", "atari2600"]
 MADE_HERE = "am-retrobat.txt"          # marker file: this collection belongs to the importer
 FOLDER = {"dolphin": "dolphin-emu", "cxbx": "cxbx-reloaded", "pcsx2": "pcsx2", "duckstation": "duckstation"}
+# the better choice when es_systems lists another first (docs/16): VICE x64sc is the accurate C64
+PREFER = {"c64": ("libretro", "vice_x64sc")}
 MEDIA = [("marquee", ["logo"]), ("image", ["screenshot", "am_backdrop"]), ("thumb", ["cover"]), ("video", ["video"])]
 
 
@@ -164,6 +166,8 @@ def main():
         games = games_in(romdir, s["extensions"])
         choice = None
         p = picks.get(s["name"])
+        if not p and s["name"] in PREFER:
+            p = {"emulator": PREFER[s["name"]][0], "core": PREFER[s["name"]][1]}
         if p and installed(rb, p.get("emulator"), p.get("core")):
             choice = (p.get("emulator"), p.get("core"))
         for emu, cores in s["emulators"]:
