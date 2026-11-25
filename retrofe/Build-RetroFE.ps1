@@ -26,29 +26,40 @@ param(
   [string]$Commit = 'caab32e604a831d89b1f7f5905457de6ba5c4018',
   [string]$Repo = 'https://github.com/CoinOPS-Official/RetroFE.git',
   [string]$Git = 'git',
-  [string]$CMake = 'cmake'
+  [string]$CMake = 'cmake',
+  # build an existing checkout as it is - e.g. the ZStudio fork (jlvandusen/zstudio-retrofe), which already contains
+  # every ArcadeMaster change: no clone, no checkout, no patches (steps 1-2 skipped)
+  [string]$Source
 )
 $ErrorActionPreference = 'Stop'
 function Step($m) { Write-Host "==> $m" -ForegroundColor Cyan }
 $here = $PSScriptRoot
-$src = Join-Path $Work 'RetroFE'
+$src = if ($Source) { (Resolve-Path $Source).Path } else { Join-Path $Work 'RetroFE' }
+# cmake from Visual Studio Build Tools when it is not on PATH
+if ($CMake -eq 'cmake' -and -not (Get-Command cmake -ErrorAction SilentlyContinue)) {
+  $vsCm = @(Get-ChildItem 'C:\Program Files (x86)\Microsoft Visual Studio', 'C:\Program Files\Microsoft Visual Studio' -Recurse -Filter cmake.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\CMake\\bin\\cmake\.exe$' })
+  if ($vsCm) { $CMake = $vsCm[0].FullName; Step "cmake: $CMake" }
+}
 
+if ($Source) { Step "building the checkout at $src as it is (no clone / patches)"; & $Git -C $src submodule update --init --recursive }
 # --- 1. source
-if (-not (Test-Path (Join-Path $src '.git'))) {
+elseif (-not (Test-Path (Join-Path $src '.git'))) {
   Step "clone $Repo"
   & $Git clone --branch current --recurse-submodules --shallow-submodules $Repo $src
   if ($LASTEXITCODE) { throw 'clone failed' }
 }
-Step "checkout $Commit"
-& $Git -C $src fetch --depth 200 origin current 2>$null
-& $Git -C $src checkout --force $Commit; if ($LASTEXITCODE) { throw "commit $Commit not available" }
-& $Git -C $src submodule update --init --recursive
+if (-not $Source) {
+  Step "checkout $Commit"
+  & $Git -C $src fetch --depth 200 origin current 2>$null
+  & $Git -C $src checkout --force $Commit; if ($LASTEXITCODE) { throw "commit $Commit not available" }
+  & $Git -C $src submodule update --init --recursive
 
-# --- 2. patches
-foreach ($p in Get-ChildItem (Join-Path $here 'patches') -Filter *.patch | Sort-Object Name) {
-  & $Git -C $src apply --check --reverse $p.FullName 2>$null
-  if ($LASTEXITCODE -eq 0) { Step "patch already applied: $($p.Name)"; continue }
-  Step "apply $($p.Name)"; & $Git -C $src apply $p.FullName; if ($LASTEXITCODE) { throw "patch failed: $($p.Name)" }
+  # --- 2. patches
+  foreach ($p in Get-ChildItem (Join-Path $here 'patches') -Filter *.patch | Sort-Object Name) {
+    & $Git -C $src apply --check --reverse $p.FullName 2>$null
+    if ($LASTEXITCODE -eq 0) { Step "patch already applied: $($p.Name)"; continue }
+    Step "apply $($p.Name)"; & $Git -C $src apply $p.FullName; if ($LASTEXITCODE) { throw "patch failed: $($p.Name)" }
+  }
 }
 
 # --- 3. SDL include shim
@@ -59,6 +70,9 @@ foreach ($d in Get-ChildItem $tp -Directory -Filter 'SDL2*') { Copy-Item (Join-P
 
 # --- 4. build
 $build = Join-Path $src 'RetroFE\Build'
+# cmake / MSBuild print warnings on stderr; with 'Stop' and redirected output PowerShell 5.1 turns each stderr line into
+# a terminating error (a dev warning stopped the configure). Success is judged by $LASTEXITCODE below instead.
+$ErrorActionPreference = 'Continue'
 Step 'cmake configure'
 & $CMake -A x64 -B $build -S (Join-Path $src 'RetroFE\Source') "-DGSTREAMER_ROOT=$GstRoot" `
   "-DSDL2_INCLUDE_DIR=$shim" "-DSDL2_IMAGE_INCLUDE_DIR=$shim" "-DSDL2_MIXER_INCLUDE_DIR=$shim" "-DSDL2_TTF_INCLUDE_DIR=$shim" `
@@ -67,6 +81,7 @@ Step 'cmake configure'
 if ($LASTEXITCODE) { throw 'configure failed' }
 Step 'cmake build'
 & $CMake --build $build --config Release --parallel; if ($LASTEXITCODE) { throw 'build failed' }
+$ErrorActionPreference = 'Stop'
 
 # --- 5. runtime folder
 $rt = Join-Path $Out 'retrofe'
