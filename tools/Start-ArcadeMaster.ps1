@@ -58,6 +58,18 @@ function Invoke-Tool([string]$name, [string[]]$toolArgs) {
   return $out
 }
 
+# ---------- latest RetroFE: a build made in the background while the frontend was open goes in now (seconds; nothing
+# to do when it is current). Then the full update - pull main, compile RetroFE when the patches changed - starts in the
+# background at low priority and never holds up the boot (Update-Cabinet.ps1; also every 15 min by its scheduled task).
+# Not for the self-test's temporary frontends, nor with AM_NO_UPDATE=1.
+if (-not $PrepOnly -and $env:AM_NO_UPDATE -ne '1' -and -not $Root.StartsWith($env:TEMP, [StringComparison]::OrdinalIgnoreCase)) {
+  try { $u = Invoke-Tool 'Update-Cabinet.ps1' @('-Root', $Root, '-ManifestDir', $ManifestDir, '-DeployOnly'); if ($u -match 'installed RetroFE') { Write-Log ((($u -split "`r?`n") | Where-Object { $_ -match 'installed RetroFE' }) -join ' ') } } catch { Write-Log "update (install a waiting build) failed: $($_.Exception.Message)" }
+  try {
+    $pw = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
+    if ($pw) { $up = Start-Process $pw -ArgumentList @('-NoProfile', '-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'Update-Cabinet.ps1')`"", '-Root', "`"$Root`"", '-ManifestDir', "`"$ManifestDir`"") -WindowStyle Hidden -PassThru; try { $up.PriorityClass = 'BelowNormal' } catch { } }
+  } catch { Write-Log "background update did not start: $($_.Exception.Message)" }
+}
+
 # ---------- controllers: wait for the wheel, refresh capabilities, re-point profiles if device IDs moved
 if (-not $NoDeviceCheck) {
   try {
