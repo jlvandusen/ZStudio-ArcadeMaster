@@ -158,6 +158,9 @@ The loop works like this (James, 2026-11-25):
 - [x] Fork #4: meta.db schema migration. Under the new build, no game had metadata (missing iscoredId/iscoredType).
 - [ ] Scroll hitches on a cold cache (116–359 ms on the first run): read the new `hitch` lines to see which phase
       and item, then fix that (image / video first load off the main thread).
+      - 2026-11-25 warm cache, build 0001-0016, 60 scripted Down presses: 0 scroll hitches (max frame 17 ms). One
+        46 ms hitch on entering a list: `logic 44.1 draw 0.1 present 1.6 | state 66 | item 000 Bit Wars` (loading).
+        Still to do: the first run after a reboot (cold file cache), read its `hitch` lines the same way.
 - [ ] Settings errors under the new build: 5 menus have no collection settings.conf (All Trackball, All Twin Stick,
       All Vector, Console Arcade - Retro Arcade PC, Main); hi2txt defaults zip / scores folder missing. TOS GRS "not
       found" is expected (this cabinet has a ServoStik).
