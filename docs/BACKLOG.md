@@ -229,11 +229,13 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       converts each picture on the loader thread, so the main thread only uploads it: 5.8 -> 2.4 ms (JPEG),
       6.4 -> 1.8 ms (PNG), and 0 frames over 33 ms while scrolling even with the cache off. A size limit on the
       cache was dropped: cached textures are shared without a use count, so trimming them could crash the menu.
-- [ ] Performance: warm the main menu's cache at start (load each item's backdrops once while the intro plays), so even
-      the first scroll is smooth.
+- [x] [RACE1] Performance: warm the main menu's cache at start - not needed: since patch 0012 a picture upload is ~2 ms,
+      and with the main menu's cache switched off scrolling had 0 frames over 33 ms (measured 2026-11-25).
 - [x] [RACE1] Graphics: the main menu's Exit page had no backdrop (plain black). EXIT is a main-menu entry, not a
       collection, so the shuffle never dealt it backdrops; now it gets the main menu's game-art pool like the others.
-- [ ] Performance: Build-Manifest / Rebuild Game Menus. Time each part and remove the repeated scans.
+- [x] [RACE1] Performance: Build-Manifest / Rebuild Game Menus. Timed: the folder listing behind 'games that can't
+      start' was most of it (3 s warm, up to ~9 s cold). It is now saved (manifest\dir-index.json) and reused while the
+      game folders' first two levels are unchanged (24 h at most): catalog 9.4-15 s -> 3.8 s, results identical.
 - [ ] Graphics: more racing and flight styles (night city, snow rally, desert, F1 pit, carrier deck, aerobatics).
 - [x] [RACE1] Graphics: wheel pictures for the 4 wheels with none (G25, Driving Force GT, Driving Force Pro, MOMO).
       G25, Driving Force GT and MOMO now have pictures (Newegg product photos, rim crop). 34 of 35 wheels have one.

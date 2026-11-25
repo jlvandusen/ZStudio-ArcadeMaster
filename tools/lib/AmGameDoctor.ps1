@@ -23,9 +23,33 @@ function Test-AmProgramFile([string]$p) {
   return ($n -eq 4 -and $b[0] -eq 0x7F -and $b[1] -eq 0x45 -and $b[2] -eq 0x4C -and $b[3] -eq 0x46)   # Linux ELF
 }
 
-function Get-AmDirIndex([string[]]$Roots, [int]$Levels = 6) {
+function Get-AmDirIndex([string[]]$Roots, [int]$Levels = 6, [string]$CacheFile) {
   # every folder up to 6 levels under the roots, by lower-case folder name (several folders can share a name).
   # Folders only: listing them takes ~2 s; listing every file under D:\Arcade PC (700,000+) took 9-14 s.
+  # Saved in $CacheFile and reused while the roots and the change times of their first two folder levels are the same
+  # (a game folder added, removed or renamed there changes them) and the copy is under 24 h old: the listing cost 3 s
+  # warm and up to ~9 s cold on every catalog build, for folders that rarely change.
+  $fp = $null
+  if ($CacheFile) {
+    $parts = foreach ($r in $Roots | Select-Object -Unique) {
+      if (-not (Test-Path -LiteralPath $r)) { "$r|missing"; continue }
+      "$r|$((Get-Item -LiteralPath $r).LastWriteTimeUtc.Ticks)"
+      foreach ($d1 in Get-ChildItem -LiteralPath $r -Directory -ErrorAction SilentlyContinue) {
+        "$($d1.Name)|$($d1.LastWriteTimeUtc.Ticks)"
+        foreach ($d2 in Get-ChildItem -LiteralPath $d1.FullName -Directory -ErrorAction SilentlyContinue) { "$($d1.Name)\$($d2.Name)|$($d2.LastWriteTimeUtc.Ticks)" }
+      }
+    }
+    $sha = [Security.Cryptography.SHA1]::Create(); $fp = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($parts -join "`n") + "|L$Levels")) | ForEach-Object { $_.ToString('x2') })
+    if ((Test-Path -LiteralPath $CacheFile) -and ((Get-Date) - (Get-Item -LiteralPath $CacheFile).LastWriteTime).TotalHours -lt 24) {
+      try {
+        $c = [IO.File]::ReadAllText($CacheFile) | ConvertFrom-Json
+        if ($c.fingerprint -eq $fp) {
+          $ix = @{}; foreach ($p in $c.index.PSObject.Properties) { $l = New-Object System.Collections.Generic.List[string]; foreach ($v in @($p.Value)) { $l.Add([string]$v) }; $ix[$p.Name] = $l }
+          return $ix
+        }
+      } catch { }
+    }
+  }
   $ix = @{}
   foreach ($r in $Roots | Select-Object -Unique) {
     if (-not (Test-Path -LiteralPath $r)) { continue }
@@ -35,6 +59,9 @@ function Get-AmDirIndex([string[]]$Roots, [int]$Levels = 6) {
       if (-not $ix.ContainsKey($k)) { $ix[$k] = New-Object System.Collections.Generic.List[string] }
       $ix[$k].Add($d)
     }
+  }
+  if ($CacheFile -and $fp) {
+    try { [IO.File]::WriteAllText($CacheFile, (ConvertTo-Json @{ fingerprint = $fp; roots = @($Roots); index = $ix } -Depth 4 -Compress), (New-Object Text.UTF8Encoding($false))) } catch { }
   }
   $ix
 }
@@ -94,11 +121,11 @@ function Find-AmProgram([string]$dir, [string]$expected) {
   if ($cand) { $cand.FullName }
 }
 
-function Invoke-AmGameDoctor($games) {
+function Invoke-AmGameDoctor($games, [string]$CacheFile) {
   $list = @($games)
   $roots = Get-AmGameRoots $list
   $script:amDirIndex = $null
-  $dirIx = { if ($null -eq $script:amDirIndex) { $script:amDirIndex = Get-AmDirIndex $roots }; $script:amDirIndex }
+  $dirIx = { if ($null -eq $script:amDirIndex) { $script:amDirIndex = Get-AmDirIndex $roots -CacheFile $CacheFile }; $script:amDirIndex }
   $stats =[ordered]@{ moved = 0; incomplete = 0; 'not-installed' = 0; 'not-set-up' = 0; 'no-path' = 0 }
   foreach ($g in $list) {
     foreach ($name in @($g.variants.Keys)) {
