@@ -208,7 +208,7 @@ foreach ($plat in @(if ($LaunchBox) { $LaunchBoxPlatforms })) {
 
 # ---------------- games that can't start: find moved files, give every other one a plain reason (lib\AmGameDoctor.ps1)
 . (Join-Path $PSScriptRoot 'lib\AmGameDoctor.ps1')
-$doctor = Invoke-AmGameDoctor $games.Values
+$doctor = Invoke-AmGameDoctor $games.Values -CacheFile (Join-Path (Split-Path $Out) 'dir-index.json')   # the folder listing, reused while the game folders are unchanged
 
 # ---------------- categories + write
 foreach ($g in $games.Values) {
