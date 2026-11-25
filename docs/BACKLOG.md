@@ -275,17 +275,14 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
 - [x] [RACE1] Board: two jobs with the same title posted in the same second got the same id and the second replaced
       the first (it happened with one job per cabinet). Board.ps1 post now adds -2, -3 and creates the file only if new.
 
-- [ ] RACE1: install main's game-list layout (story panel, light preview videos). It plays am_video, made by
-      tools\New-PreviewMedia.py, which needs ffmpeg - none on RACE1, the NAS or E:. Tried 2026-11-25: put back the old
-      layout (no video otherwise); main's images and main menu are installed (backup manifest\backup\layout-ArcadeMaster-*).
+- [x] [RACE1] Main's game-list layout installed on RACE1 (story panel, light preview videos). Portable ffmpeg 7.1 in
+      D:\ArcadeMaster\_tools\ffmpeg (James ok); New-PreviewMedia made 110 previews (10.97 GB -> 1.69 GB) + 110 backdrops.
 
 ## Needs James (skip, never wait)
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.
 - Azure sign-in (device code) at a browser.
-- RACE1: OK to put a portable ffmpeg (a zip, nothing installed) in D:\ArcadeMaster\_tools\ffmpeg? Then the preview videos
-  and main's game-list layout can go on RACE1.
 - RACE1: drive Daytona Championship USA (Linked Cabinets): its steering is bound "X -" where the single version has
   "X +"; check it does not steer backwards. Also try Wangan Midnight 5, Initial D 4 Export and OutRun 2 SP DX (bindings fixed).
 - RACE1: drive a few force-feedback games (Batman, Daytona 3, Initial D Zero, Wangan Midnight 6R, OutRun 2 SP DX):
