@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-New-LayoutFx.py - motion layers for the ArcadeMaster layout (all original art, generated).
+New-LayoutFx.py - effect images for the ArcadeMaster layout (all original art, generated).
 
-  fx_stars.png      3840x1080 starfield, 2 screens wide: the layout slides it left and wraps -> endless drift
-  fx_grid.png       1920x600 neon perspective floor whose lines repeat every 120 px: the layout moves it up by 120 px
-                    and snaps back -> the floor runs towards the viewer forever
-  fx_scan.png       1920x1080 faint scanlines + soft top light (a CRT sheen over everything)
-  fx_sweep.png      1920x160 bright horizontal band for the game-launch sweep
+  fx_sweep.png      1920x160 bright horizontal band for the game-launch sweep (only drawn while a game starts)
+
+The starfield / neon grid floor / scanline layers this script used to make are NOT written any more: James wants no
+retro look - each game's own art is the background (2026-11-22) - and they were three always-on full-screen layers.
+The functions stay for reference only.
 
   python tools/New-LayoutFx.py [--out layouts/ArcadeMaster/images]
 """
@@ -101,7 +101,7 @@ def main():
     ap.add_argument('--out', type=Path, default=Path(__file__).resolve().parent.parent / 'layouts' / 'ArcadeMaster' / 'images')
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
-    for name, fn in (('fx_stars.png', stars), ('fx_grid.png', grid), ('fx_scan.png', scan), ('fx_sweep.png', sweep)):
+    for name, fn in (('fx_sweep.png', sweep),):
         im = fn()
         im.save(a.out / name, 'PNG', optimize=True)
         print(f'{name}: {im.size[0]}x{im.size[1]}, {(a.out / name).stat().st_size // 1024} KB')
