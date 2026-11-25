@@ -33,6 +33,7 @@ $names = @{ racing = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup
 # back once the collection is made again below: this runs at every boot, and deleting them left the PC and extra
 # TeknoParrot games without a story until the next Rebuild Game Menus.
 $storyKeep = Join-Path $RetroFE 'am-story-keep'
+$listKeep = Join-Path $RetroFE 'am-lists-keep'   # not cleared here: lists of a menu not made this time wait for the next rebuild
 if (Test-Path -LiteralPath $storyKeep) { Remove-Item -LiteralPath $storyKeep -Recurse -Force }
 $ownLaunchers = @(foreach ($d in Get-ChildItem $cols -Directory) {
   if (-not (Test-Path (Join-Path $d.FullName $marker))) { continue }
@@ -44,6 +45,10 @@ $ownLaunchers = @(foreach ($d in Get-ChildItem $cols -Directory) {
       $to = Join-Path $storyKeep "$($d.Name)\$($st.Name)"; New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null; Move-Item -LiteralPath $st.FullName $to
     }
   }
+  # the players' lists (playlists\: favourites, last played, series, Most played) are kept too and put back at the end,
+  # even with -Remove: favourites must never be lost to a rebuild
+  $pl = Join-Path $d.FullName 'playlists'
+  if (Test-Path -LiteralPath $pl) { $to = Join-Path $listKeep $d.Name; New-Item -ItemType Directory -Force $to | Out-Null; foreach ($f in Get-ChildItem -LiteralPath $pl -File) { Copy-Item -LiteralPath $f.FullName (Join-Path $to $f.Name) -Force } }
   Remove-Item $d.FullName -Recurse -Force
 })
 foreach ($l in $ownLaunchers) { Remove-Item (Join-Path $RetroFE "launchers.windows\$l.conf") -Force -ErrorAction SilentlyContinue }
@@ -326,6 +331,18 @@ if ($RebuildDatabase) {
   Write-Host ("metadata written for {0} collections -> rebuilding meta.db" -f $metaItems.Count)
   . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1'); $exe = Get-AmRetroFEExe $RetroFE   # retrofe\, core\ (CoinOPS) or the root
   if ($exe) { $p = Start-Process $exe -ArgumentList '-rebuilddatabase' -WorkingDirectory (Split-Path $exe) -PassThru -WindowStyle Hidden; if (-not $p.WaitForExit(120000)) { $p.Kill(); Write-Warning 'meta.db rebuild timed out' } else { Write-Host "meta.db rebuilt (exit $($p.ExitCode))" } }
+}
+
+# --- the players' lists set aside above go back (a list the rebuild made again wins)
+if (Test-Path -LiteralPath $listKeep) {
+  $back = 0
+  foreach ($k in Get-ChildItem -LiteralPath $listKeep -Directory) {
+    $col = Join-Path $cols $k.Name; if (-not (Test-Path -LiteralPath $col)) { continue }   # menu not made this time: kept for later
+    $pl = Join-Path $col 'playlists'; New-Item -ItemType Directory -Force $pl | Out-Null
+    foreach ($f in Get-ChildItem -LiteralPath $k.FullName -File) { if (-not (Test-Path -LiteralPath (Join-Path $pl $f.Name))) { Copy-Item -LiteralPath $f.FullName $pl; $back++ } }
+    Remove-Item -LiteralPath $k.FullName -Recurse -Force
+  }
+  if ($back) { Write-Host "playlists: $back file(s) kept through the rebuild (favourites, last played, series)" }
 }
 
 # the launchers rewritten above lose ArcadeMaster's start / end hooks (play time, Most played, save backups): put them back
