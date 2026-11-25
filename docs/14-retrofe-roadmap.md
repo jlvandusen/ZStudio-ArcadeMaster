@@ -39,7 +39,18 @@ Each item says what it fixes, what we expect, and how we'll know it worked (befo
 ### 1. Vsync: measured, no gain on RACE1 (2026-11-25)
 **Measured:** 60 Down presses in Racing, `perfLog = 5`, vsync off vs on: both p50 16.67 ms, p99 16.7-17.3 ms, max
 17.6 ms, 0 hitches; RetroFE used 24-29 % of one core either way. The sleep-then-spin pacer is better than it reads, so
-vsync stays off (a tear line can't be seen in the log; switch it on only if James sees tearing). The original note:
+vsync stays off (a tear line can't be seen in the log; switch it on only if James sees tearing).
+
+**Second cabinet, DESKTOP-RACE2 (GTX 1060, 2026-11-25):**
+- **Test:** the same 60 Down presses on a fresh start, with keys sent as real scan codes; with scan code 0, SDL ignores them. Full log: `Z:\ArcadeMaster\reports\perf\DESKTOP-RACE2-hitch-20261125.txt`.
+- **Vsync off vs on:** same result. p50 16.67 ms; 4 vs 7 hitches of 35-49 ms; RetroFE about 100 % of one core either way.
+- **Opening Racing:** one 150-210 ms hitch.
+- **Where the time goes:** nearly all `logic`, the next game loading.
+- **RACE1's video settings here** (`HardwareVideoAccel = true` + `SDLRenderDriver = direct3d11`): **worse**. A 36-150 ms hitch on almost every game, 7-10 per 5 s. Starting the hardware decoder for each new video costs more than it saves on this card and driver.
+- **Decision:** RACE2 stays on software decoding and the default direct3d renderer. Video settings are per cabinet, not one size fits all.
+- **Logging:** `perfLog` lines appear only when settings.conf also has `log = ERROR,WARNING,NOTICE,INFO`. The default is `log = NONE`, which writes nothing.
+
+The original note:
 **Was:** 1. Turn vsync on and let the screen set the pace
 **Now:** vsync defaults off. A 60 fps timer sleeps and then spins the CPU (up to 1.5 ms a frame,
 `sleepUntilTicks`) to hit the frame time on its own clock. That clock is not the screen's, so frames drift against the
