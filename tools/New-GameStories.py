@@ -328,6 +328,24 @@ def load_history(path: Path | None, cache: Path, force: bool, log) -> tuple[list
     return entries, keys, f'parsed-{fmt}'
 
 
+_CURATED = None
+
+
+def curated() -> dict:
+    """tools/game-stories.json: { "<item>": { title, year, maker, story, special: [...] } } keyed by the item name the
+    game lists use (case-insensitive). Written by hand for games history.dat does not cover."""
+    global _CURATED
+    if _CURATED is None:
+        p = Path(__file__).with_name('game-stories.json')
+        try:
+            raw = json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}
+        except ValueError as e:
+            print(f'WARNING: {p.name} unreadable ({e}) - hand-written stories skipped')
+            raw = {}
+        _CURATED = {k.lower(): v for k, v in raw.items() if not k.startswith('_') and isinstance(v, dict)}
+    return _CURATED
+
+
 def titles_agree(a: str, b: str) -> bool:
     """the same game by name: equal, or one title inside the other ("Daytona USA" / "Daytona USA 2")"""
     na, nb = norm_base(a), norm_base(b)
@@ -901,6 +919,15 @@ def main(argv=None):
                                     h['ports'] or (ref or {}).get('ports', []), extra_para=story)
             if para:
                 src = 'history.dat' + ('+story' if story and not desc else '')
+        # 0. hand-written stories in the repo (tools/game-stories.json) win: games no database describes well
+        cur = curated().get(item.lower())
+        if cur:
+            title = to_ascii(cur.get('title') or title)
+            year = str(cur.get('year') or year)
+            maker = to_ascii(cur.get('maker') or maker)
+            para = to_ascii(squash(cur.get('story', '')))
+            bullets = [to_ascii(squash(b)) for b in cur.get('special', []) if b]
+            src = 'curated'
         if not para and story:
             para = clip_sentences(story, PARA_MAX + 250)
             src = 'story file'

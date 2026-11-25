@@ -1,4 +1,4 @@
-# ArcadeMaster backlog
+﻿# ArcadeMaster backlog
 
 This list keeps the autonomous loop busy so it never waits on James. Each tick takes the top open item in the
 highest section that has one, does it, and ticks it off here in the same PR. Anything new found while working
@@ -29,14 +29,14 @@ The loop works like this (James, 2026-11-25):
       the fix. (2026-11-25)
 - [x] TeknoParrot profiles: the health check repairs paths from where the catalog found the game, and a generic
       folder (`Game\RingGame.exe`) no longer counts as the same game. XML-escaped paths (`Let&apos;s`) no longer look
-      broken. 2,563 → 2,580 of 2,601 games can start. (2026-11-25)
+      broken. 2,563 â†’ 2,580 of 2,601 games can start. (2026-11-25)
 - [ ] The 16 games still "moved": profiles want a different release than the copy found (GGXrd Revelator vs SIGN).
       Look for the right copy in the other builds, or point the profile at the release we have when TeknoParrot has
       a profile for it.
 - [x] Cards: checked 20 classics (no play history on the cabinet). Three changes (2026-11-25):
       - controls.dat's real cabinet now beats MAME's list of every input (Centipede: rollerball game, not a stick;
         2 players taking turns; MK: 5 buttons).
-      - Neo Geo names (Metal Slug, KOF 94–2002) come from `*/item` overrides.
+      - Neo Geo names (Metal Slug, KOF 94â€“2002) come from `*/item` overrides.
       - Long labels shrink, then hyphenate, then abbreviate, before being cut short.
 - [ ] Neo Geo and other games missing from controls.dat: add names for the most popular (Samurai Shodown, Fatal
       Fury, Garou, Blazing Star, Puzzle Bobble).
@@ -44,14 +44,14 @@ The loop works like this (James, 2026-11-25):
       MAME's `-listxml` control types.
 
 ## 3. Performance
-- [x] Boot time: prep 6.9 s → 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
+- [x] Boot time: prep 6.9 s â†’ 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
       ~2 s every boot for the same picture. (2026-11-25)
-- [x] Background shuffle: 1.7–1.9 s → 1.6 s, while it now reads every game's backdrop too. It uses .NET folder
+- [x] Background shuffle: 1.7â€“1.9 s â†’ 1.6 s, while it now reads every game's backdrop too. It uses .NET folder
       listings, a partial shuffle and hard links (the helper DLL is compiled once, cached in %LOCALAPPDATA%). Boot prep
       4.2 s. (2026-11-25)
-- [x] Health check at boot 2.0 s → 0.4 s. The touch-screen step (a PowerShell of its own, 1.65 s) runs only when the
+- [x] Health check at boot 2.0 s â†’ 0.4 s. The touch-screen step (a PowerShell of its own, 1.65 s) runs only when the
       touch hardware or controls.conf changed (`touch-key.txt`). The games summary (10 MB games.json, 1.7 s) is kept in
-      `games-summary.txt`. Boot prep 6.9 s → **2.7 s** today. Also fixed: since #27 a comment had swallowed the
+      `games-summary.txt`. Boot prep 6.9 s â†’ **2.7 s** today. Also fixed: since #27 a comment had swallowed the
       TeknoParrot path check, which then errored on every profile. (2026-11-25)
 - [ ] Boot time, next: Shuffle 1.7 s (now the largest), and Get-CabinetDevices on a cold start (1.3 s).
 - [x] `Test-ArcadeMaster.ps1 -Cabinet` runs the health check (`-NoFix`) and the panel learn (`--dry-run`) against
@@ -66,14 +66,14 @@ The loop works like this (James, 2026-11-25):
       launcher repoint).
 
 ## 4. Graphics
-- [x] No generated "retro" scenes as menu backgrounds (arcade_retro_grid, arcade_starfield…). 40 menus used them. A
+- [x] No generated "retro" scenes as menu backgrounds (arcade_retro_grid, arcade_starfieldâ€¦). 40 menus used them. A
       menu with no fanart now shows its games' own backdrops, then racing / flight / light-gun games for those menus,
       then game art from the whole library, with one picture per game. (2026-11-25)
 - [x] Theme picker shows the label ("Tile Wall"), not the folder name. (2026-11-25)
 - [ ] Polish the five AM themes: spacing, text fitting long names, and a check at 1080p and 4K.
 - [ ] Marquees: replace placeholders with real art wherever any build has it, and improve the placeholder design.
 - [x] Low-resolution backdrops: `Find-LowResArt.py` (at Rebuild Game Menus) lists art under 1024 px wide or in
-      portrait shape: 72 of 2,055, mostly TeknoParrot flyers at 300×500. The shuffle leaves them out whenever a menu
+      portrait shape: 72 of 2,055, mostly TeknoParrot flyers at 300Ã—500. The shuffle leaves them out whenever a menu
       has enough other art. (2026-11-25)
 - [ ] For the games whose only art is low-res: take a 1080p still from their video (New-PreviewMedia's backdrop) or
       find better fanart in the other builds.
@@ -84,9 +84,9 @@ The loop works like this (James, 2026-11-25):
 - [ ] Stories for the games that still lack one (2,474 written so far).
 - [x] Quality pass, wrong matches (2026-11-25). A history.dat entry found by title, or a non-MAME id taken as a rom
       name, must now agree with the catalog's year (within 2) and title. 9 games had another game's history:
-      Batman 2013 had Data East's 1990 trivia, and GRID had Midway's The Grid. Garbled UTF-8 ("PokkÃ©n") is repaired.
-- [ ] Write real stories for the ~60 TeknoParrot games that only have a one-line "A 2010 racing game…" story
-      (Battle Pod, Tekken 7 FR, Initial D 6, OutRun 2 SP, House of the Dead 4, Let's Go Jungle…). Put them in a repo
+      Batman 2013 had Data East's 1990 trivia, and GRID had Midway's The Grid. Garbled UTF-8 ("PokkÃƒÂ©n") is repaired.
+- [x] 2026-11-25: 28 hand-written in tools/game-stories.json (Battle Pod, Batman, Ikaruga, Initial D 6, OutRun 2 SP, Let's Go Jungle...). Rest still to do.`n- [ ] Write real stories for the rest of the ~60 TeknoParrot games that only have a one-line "A 2010 racing gameâ€¦" story
+      (Battle Pod, Tekken 7 FR, Initial D 6, OutRun 2 SP, House of the Dead 4, Let's Go Jungleâ€¦). Put them in a repo
       file the story tool reads as a source, and keep the claims ones a player would recognise.
 - [ ] Stories for merged-list (.sub) items and TeknoParrot and light-gun games.
 
@@ -102,5 +102,5 @@ The loop works like this (James, 2026-11-25):
 - Azure sign-in (device code) at a browser.
 
 ## Done
-- 2026-11-25: PRs #17–#23 merged (LEDBlinky panel, button names, marquees, five themes, all settings with a 15 s
+- 2026-11-25: PRs #17â€“#23 merged (LEDBlinky panel, button names, marquees, five themes, all settings with a 15 s
   theme undo, no retro look, library mover). Launcher rebuilt and installed.

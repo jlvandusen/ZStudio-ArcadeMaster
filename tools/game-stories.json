@@ -1,0 +1,115 @@
+{
+  "_comment": "Hand-written background stories for games history.dat does not describe (mostly TeknoParrot / PC-based arcade games). Key = the item name the game lists use (case-insensitive). New-GameStories.py prefers these over every other source. Keep it to facts a player would recognise; no records, sales figures or dates you are not sure of. ASCII only.",
+
+  "AAA": { "title": "America's Army Arcade", "year": 2007, "maker": "Global VR",
+    "story": "An arcade shooter built on America's Army, the free PC game the U.S. Army used to show what soldier training looks like. Players hold mounted rifles and work through training ranges and missions, scored on accuracy and on following the rules of engagement, not just on how much they hit.",
+    "special": ["Based on a game the U.S. Army itself made and gave away for free on PC.", "Rewards careful, accurate shooting over spraying bullets."] },
+
+  "Batman": { "title": "Batman", "year": 2013, "maker": "Raw Thrills",
+    "story": "A sit-down racing game in which you drive Batmobiles through Gotham City, chasing the Joker, Penguin and other villains. The garage spans the car's history, from the 1960s TV show to the armoured Tumbler of the Dark Knight films, each with its own handling and weapons.",
+    "special": ["Batmobiles from several eras of the TV series and films in one game.", "Combines street racing with boss chases against Batman's villains."] },
+
+  "BBCF": { "title": "BlazBlue: Central Fiction", "year": 2015, "maker": "Arc System Works",
+    "story": "The last chapter of the BlazBlue story, Arc System Works' 2D fighting series known for its hand-drawn, high-resolution sprites and dense lore. Every character has a unique Drive mechanic, which gives the large cast very different ways to play.",
+    "special": ["Brings the BlazBlue story arc to its conclusion.", "Each fighter's Drive button works differently: no two characters play alike."] },
+
+  "BorderBreakScramble": { "title": "Border Break Scramble", "year": 2014, "maker": "Sega",
+    "story": "Sega's online robot battle game: teams of players pilot customisable mechs called Blasts and fight over each other's cores in large team matches across Japan's arcades. The cabinet uses a joystick-style controller plus a mouse to aim, like a PC shooter.",
+    "special": ["Team battles between arcades across Japan, played online.", "Mouse aiming in an arcade cabinet."] },
+
+  "DariusBurst": { "title": "Dariusburst: Another Chronicle", "year": 2010, "maker": "Taito",
+    "story": "A Darius horizontal shooter on an extra-wide cabinet: two screens side by side make one long playfield, and up to four players fly together against Taito's giant robotic sea creatures. The branching zone map and the warning screen before each huge boss are series trademarks.",
+    "special": ["Two screens joined into one ultra-wide playfield, like the original 1986 Darius cabinet.", "Up to four players at once.", "Bosses are giant mechanical fish, a Darius tradition."] },
+
+  "EADP": { "title": "Elevator Action Death Parade", "year": 2009, "maker": "Taito",
+    "story": "A light-gun game that turns Taito's 1983 spy classic Elevator Action into a two-player shooting gallery. Agents ride elevators floor by floor through an enemy building, ducking and firing as the doors open.",
+    "special": ["A gun-game sequel to the 1983 Elevator Action.", "The action is staged around elevator doors opening on each floor."] },
+
+  "FNF": { "title": "The Fast and the Furious", "year": 2004, "maker": "Raw Thrills",
+    "story": "Raw Thrills' street racer based on the film series: tuned import cars, nitrous boosts and races through city streets. It helped re-establish the sit-down driving cabinet in American arcades and started a run of Fast and Furious arcade games.",
+    "special": ["Licensed from the Fast and the Furious films.", "Followed by Super Bikes, Drift and SuperCars games in the same series."] },
+
+  "GGXrd": { "title": "Guilty Gear Xrd REV2", "year": 2017, "maker": "Arc System Works",
+    "story": "A 2D fighting game that is actually made of 3D models, drawn and animated so carefully that it looks hand-drawn. Arc System Works limited the animation frames and hand-tuned every pose so the characters move like anime sprites. REV2 is the final arcade update of Xrd.",
+    "special": ["3D models made to look exactly like 2D animation.", "Its art technique influenced later anime-style fighting games."] },
+
+  "GGXX": { "title": "Guilty Gear XX Accent Core Plus R", "year": 2012, "maker": "Arc System Works",
+    "story": "The last revision of Guilty Gear XX, Arc System Works' fast 2D fighting game with a heavy-metal soundtrack. Plus R rebalanced the whole cast after years of play on the earlier versions.",
+    "special": ["The final version of the Guilty Gear XX line.", "Known for its rock and metal soundtrack and very fast, technical play."] },
+
+  "GHA": { "title": "Guitar Hero Arcade", "year": 2009, "maker": "Raw Thrills",
+    "story": "The arcade version of Activision's Guitar Hero: play along to rock songs on a guitar-shaped controller, hitting the coloured fret buttons and the strum bar in time with the notes. Tilting the guitar up triggers Star Power.",
+    "special": ["Brought the home rhythm-game hit into arcades.", "Tilt the guitar up for Star Power, as on the home version."] },
+
+  "GRID": { "title": "GRID", "year": 2010, "maker": "Codemasters / Sega",
+    "story": "An arcade version of Codemasters' Race Driver: GRID, the circuit racer known for its damage modelling and racing cars from touring cars to supercars. Released in arcades through Sega with linked cabinets for multiplayer.",
+    "special": ["Based on the PC and console racer Race Driver: GRID.", "Linked cabinets let players race each other."] },
+
+  "HOTD4SP": { "title": "The House of the Dead 4 Special", "year": 2006, "maker": "Sega",
+    "story": "A larger attraction version of The House of the Dead 4. Two players sit in an enclosed booth with a big screen and a seat that moves with the action, picking up the story right after House of the Dead 4.",
+    "special": ["A theatre-style cabinet with a moving seat.", "Continues the story of The House of the Dead 4."] },
+
+  "ID6": { "title": "Initial D Arcade Stage 6 AA", "year": 2011, "maker": "Sega",
+    "story": "Mountain-pass street racing from the Initial D manga and anime: race on Japanese touge roads, drifting through hairpins in Japanese cars. A card saves your car, tune-ups and progress, so players kept coming back to the same cabinet for years.",
+    "special": ["Based on Shuichi Shigeno's Initial D manga.", "Your car and progress are saved on a card between visits."] },
+
+  "Ikaruga": { "title": "Ikaruga", "year": 2013, "maker": "Treasure",
+    "story": "Treasure's vertical shooter, here in its 2013 NESiCAxLive arcade release. One button switches your ship between black and white: bullets of your own colour are absorbed and power up a homing attack, while the other colour destroys you. Destroying enemies in groups of three of the same colour builds chains.",
+    "special": ["First released in arcades in 2001 by Treasure, the makers of Radiant Silvergun.", "The whole game is built around one polarity-switch button.", "A classic for score chasing: chains of three same-colour kills."] },
+
+  "LGJ": { "title": "Let's Go Jungle! Lost on the Island of Spice", "year": 2006, "maker": "Sega",
+    "story": "A two-player gun game about a couple whose holiday goes wrong on a tropical island full of giant spiders, insects and monsters. Players hold mounted machine guns and fight back side by side, with comic scenes between the action.",
+    "special": ["A light-hearted, comic gun game rather than a horror one.", "Made for two players sharing the experience as a couple."] },
+
+  "LGJS": { "title": "Let's Go Jungle! Special", "year": 2007, "maker": "Sega",
+    "story": "The big attraction version of Let's Go Jungle: two players sit inside a dome-shaped booth facing a large curved screen, with seats that move and effects that react to the action.",
+    "special": ["A dome theatre cabinet built for the game."] },
+
+  "MaiMaiGreen": { "title": "maimai GreeN", "year": 2013, "maker": "Sega",
+    "story": "A rhythm game played on a round touch screen surrounded by eight buttons. Notes fly outward from the centre and you hit the buttons, tap and slide along the screen in time with the music. The round cabinet famously looks like a front-loading washing machine.",
+    "special": ["The cabinet's look earned it the nickname 'the washing machine'.", "Combines physical buttons with touch-screen slides."] },
+
+  "or2spdlx": { "title": "OutRun 2 SP SDX", "year": 2006, "maker": "Sega",
+    "story": "Sega's sequel to the 1986 OutRun: drive a licensed Ferrari along sunny coastal roads, choosing left or right at each fork to plot your route to one of several goals. SP added new stages, and the SDX release brought it to newer Sega hardware.",
+    "special": ["The branching road from the original OutRun returns.", "Licensed Ferrari cars throughout."] },
+
+  "pacmanbr": { "title": "Pac-Man Battle Royale", "year": 2011, "maker": "Namco",
+    "story": "Up to four players share one maze. Eat a power pellet and you can eat the other players as well as the ghosts; the last Pac-Man standing wins the round. The cocktail-style table cabinet puts everyone around the same screen.",
+    "special": ["Pac-Man turned into a party game for up to four.", "Players can eat each other after a power pellet."] },
+
+  "PokkenTournament": { "title": "Pokken Tournament", "year": 2015, "maker": "Bandai Namco",
+    "story": "A Pokemon fighting game made by Bandai Namco's Tekken team. Fights switch between a free-moving 3D Field Phase and a side-on Duel Phase, and each Pokemon fights with moves from the series. It started in Japanese arcades before coming to home consoles.",
+    "special": ["Built by the team behind Tekken.", "Each round switches between 3D movement and classic side-on fighting."] },
+
+  "ProjectDiva": { "title": "Hatsune Miku: Project DIVA Arcade", "year": 2010, "maker": "Sega",
+    "story": "A rhythm game starring the virtual singer Hatsune Miku and her fellow Vocaloids. Press the four face buttons as symbols reach their targets, in time with fan-made Vocaloid songs and full music videos.",
+    "special": ["Songs come from the Vocaloid fan community.", "Every track plays with its own 3D music video."] },
+
+  "StarWars": { "title": "Star Wars: Battle Pod", "year": 2014, "maker": "Bandai Namco",
+    "story": "You sit inside an enclosed pod facing a curved dome screen and fly through famous Star Wars battles: the Death Star trench run, the battle of Hoth, a speeder-bike chase on Endor and the attack on the second Death Star. Fans and air blast you as you fly.",
+    "special": ["A wraparound dome screen fills your view.", "Relives battles from the original film trilogy."] },
+
+  "Tekken7FR": { "title": "Tekken 7: Fated Retribution", "year": 2016, "maker": "Bandai Namco",
+    "story": "The updated arcade release of Tekken 7, the chapter that set out to end the long feud of the Mishima family. Fated Retribution added new fighters and rebalanced the game ahead of its home release.",
+    "special": ["Tekken 7's story brings the Heihachi and Kazuya Mishima feud to a head.", "Guest fighter Akuma from Street Fighter joined the roster in Tekken 7."] },
+
+  "Theatrhythm": { "title": "Theatrhythm Final Fantasy: All-Star Carnival", "year": 2016, "maker": "Square Enix",
+    "story": "A rhythm game set to music from the whole Final Fantasy series. Cute chibi versions of the heroes battle and travel in time with the songs, while you hit notes on the cabinet's controls.",
+    "special": ["Music spans decades of Final Fantasy games."] },
+
+  "TombRaider": { "title": "Tomb Raider", "year": 2018, "maker": "Adrenaline Amusements",
+    "story": "A two-player gun game following Lara Croft through ancient tombs and jungle, with mounted guns and an enclosed, themed cabinet. It draws on the rebooted Tomb Raider games.",
+    "special": ["Lara Croft's first dedicated arcade gun game."] },
+
+  "UltraStreetFighterIV": { "title": "Ultra Street Fighter IV", "year": 2014, "maker": "Capcom",
+    "story": "The final version of Street Fighter IV. It added Rolento, Elena, Hugo, Poison and the new fighter Decapre, plus the Red Focus Attack, and rebalanced a cast that had grown over five years of updates.",
+    "special": ["The last and biggest update of Street Fighter IV.", "Introduced Decapre, a new character linked to Cammy."] },
+
+  "UnderNightInBirthExeLatest": { "title": "Under Night In-Birth Exe:Late[st]", "year": 2015, "maker": "French-Bread",
+    "story": "A 2D fighting game from French-Bread, the studio behind Melty Blood. Fighters battle in the Hollow Night, and a tug-of-war over the GRD meter rewards whoever plays more aggressively.",
+    "special": ["Made by the creators of Melty Blood.", "The GRD meter rewards attacking and guarding well, not just landing hits."] },
+
+  "VT3": { "title": "Virtua Tennis 3", "year": 2006, "maker": "Sega",
+    "story": "Sega's tennis game with real professional players. Simple controls, two shot buttons and the stick to aim, hide a lot of depth in timing and placement. It came out in arcades before the home versions.",
+    "special": ["Licensed professional tennis players.", "Easy to pick up with just two buttons."] }
+}
