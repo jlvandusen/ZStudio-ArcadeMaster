@@ -102,6 +102,19 @@ if (-not $NoDeviceCheck) {
   } catch { Write-Log "device check failed: $($_.Exception.Message)" }   # never block boot on diagnostics
 }
 
+# series playlists + favourite buttons: made again only when the tool or catalog\series.json changed (a pull brought a
+# new version), so every cabinet gets them without a Rebuild Game Menus
+try {
+  $spTool = Join-Path $PSScriptRoot 'New-SeriesPlaylists.ps1'; $spCat = Join-Path (Split-Path $PSScriptRoot) 'catalog\series.json'
+  if ((Test-Path (Join-Path $Root 'collections\Racing')) -and (Test-Path $spCat)) {
+    $spKey = ((Get-FileHash $spTool).Hash + (Get-FileHash $spCat).Hash).Substring(0, 24); $spFile = Join-Path $ManifestDir 'series-key.txt'
+    if (-not (Test-Path $spFile) -or (Get-Content $spFile -Raw).Trim() -ne $spKey) {
+      $sp = Invoke-Tool 'New-SeriesPlaylists.ps1' @('-RetroFE', $Root); Set-Content $spFile $spKey
+      Write-Log ('series playlists made again: ' + (($sp -split "`r?`n" | Where-Object { $_ -match '^(settings|controls)\.conf' }) -join '; '))
+    }
+  }
+} catch { Write-Log "series playlists failed: $($_.Exception.Message)" }
+
 # the main menu's wheel shows the wheel this cabinet really has (G HUB's picture of it); redrawn only when it changed
 try { $rw = Invoke-Tool 'New-RealWheelArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout); if ($rw -match '->|removed') { Write-Log (($rw -split "`r?`n" | Where-Object { $_ -match 'real wheel' }) -join ' ') } } catch { Write-Log "real wheel art failed: $($_.Exception.Message)" }
 

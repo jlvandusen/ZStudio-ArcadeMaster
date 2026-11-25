@@ -357,8 +357,13 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       (RACE1's merge step now stops and keeps them) and give that check more time.
 - [ ] Self-healing: Update-Cabinet removes old RetroFE builds from its build folder (keeps the installed one and the one
       before); each is ~435 MB and every patch change adds one (RACE1: 3 builds, 1.3 GB on 2026-11-25).
-- [ ] Game feature: a favourites button (mark the selected game) and a Favourites playlist in Racing, using RetroFE's own
-      favourites (addPlaylist / favorites.txt); pick a free wheel button.
+- [x] [RACE1] Game feature: favourites, as CoinOPS does them. The wheel's Options button marks / unmarks the selected
+      game, Share jumps to the Favourites list, and Favourites is second in the P cycle (skipped while empty). Set by
+      New-SeriesPlaylists (Rebuild Game Menus). Tested live: marked Auto Modellista, unmarked it again (2026-11-25).
+- [x] [RACE1] Fix: rebuilding the menus deleted Racing's whole folder, playlists included, so favourites, last played,
+      the series and Most played were lost at every rebuild. New-RetroFECollections now keeps each generated menu's
+      playlists\ and puts them back (a list the rebuild made wins). Tested live: 15 lists and a favourite kept.
+      Start-ArcadeMaster makes the series playlists + favourite buttons again when the tool or series.json changed.
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.

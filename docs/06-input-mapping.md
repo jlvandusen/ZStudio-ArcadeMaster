@@ -544,3 +544,9 @@ targets of this cabinet. It runs at boot (Start-ArcadeMaster, after Update-Contr
 (Update-Controllers), reading the DirectInput scan Get-CabinetDevices has just refreshed (about 0.4 s).
 Tested on copies with the wheel and handbrake swapped and new ids: 9 files fixed (MAME, Cemu, Supermodel, six Model 2
 games), and a second run changed nothing.
+
+## Favourites on the wheel (2026-11-25)
+In the menus: **Options** (button 10, key F) marks or unmarks the selected game as a favourite; **Share** (button 11,
+key V) jumps to the Favourites list; P / O (Triangle / Circle) cycle the lists, Favourites second (skipped while
+nothing is marked). RetroFE keeps the list in `collections\<menu>\playlists\favorites.txt`; New-SeriesPlaylists only
+replaces the playlists it made, so favourites survive every rebuild. In a game, Options is still the game's Start.
