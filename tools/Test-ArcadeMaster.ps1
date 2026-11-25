@@ -13,6 +13,8 @@
   -Watchdog:
     a fake frontend that always crashes, started by Start-ArcadeMaster in a temp folder: the crash loop must put the
     ArcadeMaster theme back and then give up (about 20 s)
+    theme confirm: a fake frontend on an unconfirmed new theme - nobody answers "keep this theme?" -> old theme back
+    and the frontend restarted; and the frontend dying before the prompt -> the watchdog reverts (about 25 s)
 .EXAMPLE
   tools\Test-ArcadeMaster.ps1
   tools\Test-ArcadeMaster.ps1 -Watchdog
@@ -74,6 +76,7 @@ if ($Watchdog) {
     & $csc /nologo "/out:$t\root\retrofe\retrofe.exe" "$t\crash.cs" | Out-Null
     '<layout/>' | Set-Content "$t\root\layouts\ArcadeMaster\layout.xml"; '<layout/>' | Set-Content "$t\root\layouts\CO-Broken\layout.xml"
     "fullscreen = yes`r`nlayout = CO-Broken`r`nnumScreens = 1" | Set-Content "$t\root\settings.conf"
+    '{ "streamDeck": false }' | Set-Content "$t\manifest\ui.json"   # Python is found off PATH too: keep the deck helper away from the fake
     # no Python on PATH: the Stream Deck helper must not start against the fake frontend
     $oldPath = $env:PATH; $env:PATH = "$env:WINDIR\System32;$env:WINDIR\System32\WindowsPowerShell\v1.0"
     $ErrorActionPreference = 'Continue'   # the launcher's own error output must not stop this test; its log is checked below
@@ -91,6 +94,46 @@ if ($Watchdog) {
   } catch { $problems += $_.Exception.Message }
   finally { Remove-Item $t -Recurse -Force -ErrorAction SilentlyContinue }
   Report 'watchdog' $problems 'a crashing theme falls back to ArcadeMaster, then the watchdog gives up'
+
+  # theme confirm: a fake frontend on a new theme (CO-New) with theme-pending.json waiting. Nobody answers the prompt
+  # (no window, 2 s): the theme must be reverted, the frontend restarted on ArcadeMaster. Crash variant: it dies
+  # before the prompt - the watchdog itself reverts. Both end with a clean exit of the fake on ArcadeMaster.
+  foreach ($crash in $false, $true) {
+    $area = if ($crash) { 'confirm-crash' } else { 'confirm' }
+    $t = Join-Path $env:TEMP ("am-selftest-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
+    $problems = @()
+    try {
+      New-Item -ItemType Directory -Force "$t\root\retrofe", "$t\root\layouts\ArcadeMaster", "$t\root\layouts\CO-New", "$t\root\collections", "$t\manifest" | Out-Null
+      $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+      Set-Content "$t\fake.cs" 'class P { static int Main() { bool n = System.IO.File.ReadAllText(@"..\settings.conf").Contains("layout = CO-New"); System.IO.File.AppendAllText("runs.txt", n ? "NEW\n" : "AM\n"); if (n && System.IO.File.Exists(@"..\crash.flag")) return 3; if (n) System.Threading.Thread.Sleep(60000); return 0; } }'
+      & $csc /nologo "/out:$t\root\retrofe\retrofe.exe" "$t\fake.cs" | Out-Null
+      '<layout/>' | Set-Content "$t\root\layouts\ArcadeMaster\layout.xml"; '<layout/>' | Set-Content "$t\root\layouts\CO-New\layout.xml"
+      "fullscreen = yes`r`nlayout = CO-New`r`nnumScreens = 1`r`ncabinetTheme.racing = CO-New" | Set-Content "$t\root\settings.conf"
+      if ($crash) { 'x' | Set-Content "$t\root\crash.flag" }
+      '{ "streamDeck": false }' | Set-Content "$t\manifest\ui.json"
+      '{ "at": "2026-01-01T00:00:00", "choice": "CO-New", "mode": "racing", "previous": { "layout": "ArcadeMaster", "cabinetThemeKey": "cabinetTheme.racing", "cabinetTheme": null, "skins": null } }' | Set-Content "$t\manifest\theme-pending.json"
+      $oldPath = $env:PATH; $env:PATH = "$env:WINDIR\System32;$env:WINDIR\System32\WindowsPowerShell\v1.0"
+      $env:AM_THEME_CONFIRM_NOUI = '1'; $env:AM_THEME_NOART = '1'; $ErrorActionPreference = 'Continue'
+      try { $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Start-ArcadeMaster.ps1') -Root "$t\root" -ManifestDir "$t\manifest" -NoDeviceCheck -NoShuffle -ThemeConfirmSec 2 -ThemeSettleSec 2 2>&1 | Out-String }
+      finally { $env:PATH = $oldPath; $env:AM_THEME_CONFIRM_NOUI = $null; $env:AM_THEME_NOART = $null; $ErrorActionPreference = 'Stop' }
+      $errs = @($out -split "`r?`n" | Where-Object { $_ -match '^\S.*: ' -and $_ -match '(?i)exception|error|cannot|already exists' })
+      if ($errs) { $problems += "the launcher printed errors: $($errs[0].Trim())" }
+      $runs = @(Get-Content "$t\root\retrofe\runs.txt" -ErrorAction SilentlyContinue)
+      $log = Get-Content "$t\root\arcademaster-launcher.log" -Raw -ErrorAction SilentlyContinue
+      $sct = Get-Content "$t\root\settings.conf" -Raw
+      if (($runs -join ' ') -ne 'NEW AM') { $problems += "starts should be 'NEW AM', were '$($runs -join ' ')'" }
+      if ($sct -notmatch '(?m)^layout = ArcadeMaster\s*$') { $problems += 'settings.conf layout was not put back to ArcadeMaster' }
+      if ($sct -match 'cabinetTheme\.racing') { $problems += 'cabinetTheme.racing (absent before the change) was not removed' }
+      if (Test-Path "$t\manifest\theme-pending.json") { $problems += 'theme-pending.json is still there' }
+      $want = if ($crash) { 'not kept \(the frontend closed before it was confirmed' } else { 'not kept \(no answer in 2 s\)' }
+      if ($log -notmatch $want) { $problems += "the log has no '$want' line" }
+      if (-not $crash -and $log -notmatch 'restart requested \(theme') { $problems += 'the confirm did not restart the frontend through restart.request' }
+      if ($log -notmatch 'RetroFE exited cleanly') { $problems += 'the watchdog did not end with the clean exit on ArcadeMaster' }
+      if ($problems) { Write-Host $log }
+    } catch { $problems += $_.Exception.Message }
+    finally { Get-Process retrofe -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$t*" } | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300; Remove-Item $t -Recurse -Force -ErrorAction SilentlyContinue }
+    Report $area $problems $(if ($crash) { 'frontend dies before the theme is confirmed: the watchdog puts the old theme back' } else { 'no answer to "keep this theme?": old theme back, frontend restarted on it' })
+  }
 }
 
 Write-Host ("{0} of {1} checks passed" -f ($checks - $fails), $checks)

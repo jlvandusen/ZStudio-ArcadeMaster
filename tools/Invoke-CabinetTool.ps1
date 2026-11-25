@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -197,12 +197,25 @@ switch ($Tool) {
     Run 'New-CabinetIntro.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null
     Emit @{ type = 'intro'; dir = $out; setting = (Get-Setting 'cabinetType') }
   }  'SystemSettings' {
-    $sys = Join-Path $t 'Set-CabinetSystem.ps1'
-    $stateOf = { $j = (& powershell -NoProfile -ExecutionPolicy Bypass -File $sys -List -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String); @($j | ConvertFrom-Json | ForEach-Object { $_ }) }
-    Banner 'CABINET SYSTEM SETTINGS'
-    if (-not ($visual -and $env:AM_WIZ_KEYFILE)) { & $stateOf | ForEach-Object { Write-Host ("  {0,-24} {1}" -f $_.label, $(if ($_.on) { 'ON' } else { 'off' })) }; break }
-    $items = & $stateOf
-    Emit @{ type = 'settings'; items = @($items | ForEach-Object { @{ id = $_.id; label = $_.label; detail = $_.detail; on = [bool]$_.on } }); message = 'Pick a switch and press a button to flip it' }
+    # every cabinet setting, grouped, with its value: the frontend / cabinet ones (Set-CabinetSettings.ps1) and the
+    # Windows switches (Set-CabinetSystem.ps1). The page sends TOGGLE:<id> (flip a switch, next preset of a value,
+    # run an action) or TOGGLE:<id>=<value>; each id belongs to one of the two scripts.
+    $owners = [ordered]@{ cab = (Join-Path $t 'Set-CabinetSettings.ps1'); sys = (Join-Path $t 'Set-CabinetSystem.ps1') }
+    $listOf = { param([string]$o) $j = (& powershell -NoProfile -ExecutionPolicy Bypass -File $owners[$o] -List -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String)
+      @($j | ConvertFrom-Json | ForEach-Object { $_ } | ForEach-Object {
+          @{ id = $_.id; label = $_.label; detail = $_.detail; on = [bool]$_.on; owner = $o
+            group = $(if ($_.group) { "$($_.group)" } else { 'WINDOWS' }); kind = $(if ($_.kind) { "$($_.kind)" } else { 'switch' })
+            value = $(if ($null -ne $_.value) { "$($_.value)" } elseif ($_.on) { 'ON' } else { 'OFF' })
+            confirm = $(if ($null -ne $_.confirm) { [bool]$_.confirm } else { $true }) } }) }   # Windows switches: a confirming second press
+    $lists = @{ cab = @(& $listOf 'cab'); sys = @(& $listOf 'sys') }
+    $all = { @($lists.cab) + @($lists.sys) }
+    $toEvent = { param($items) @($items | ForEach-Object { @{ id = $_.id; label = $_.label; detail = $_.detail; on = $_.on; group = $_.group; kind = $_.kind; value = $_.value; confirm = $_.confirm } }) }
+    Banner 'CABINET SETTINGS'
+    if (-not ($visual -and $env:AM_WIZ_KEYFILE)) {
+      $g0 = $null; foreach ($it in (& $all)) { if ($it.group -ne $g0) { Write-Host ''; Write-Host "  $($it.group)" -ForegroundColor Magenta; $g0 = $it.group }; Write-Host ("    {0,-34} {1}" -f $it.label, $it.value) }
+      break
+    }
+    Emit @{ type = 'settings'; items = (& $toEvent (& $all)); message = 'Pick a setting and press a button to change it' }
     $deadline = (Get-Date).AddSeconds(300)
     while ((Get-Date) -lt $deadline) {
       Start-Sleep -Milliseconds 100
@@ -210,15 +223,24 @@ switch ($Tool) {
       $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue
       if ($k -eq 'CHOICE:done') { break }
       if ($k -notlike 'TOGGLE:*') { continue }
-      $id = $k.Substring(7); $deadline = (Get-Date).AddSeconds(300)
-      $cur = $items | Where-Object { $_.id -eq $id } | Select-Object -First 1
+      $id, $val = $k.Substring(7) -split '=', 2; $deadline = (Get-Date).AddSeconds(300)
+      $cur = (& $all) | Where-Object { $_.id -eq $id } | Select-Object -First 1
+      if (-not $cur) { continue }
       if ($id -eq 'autoLogin' -and -not $cur.on) { Emit @{ type = 'yield'; message = 'Finish the Windows sign-in box, then the arcade comes back' } }
-      $out = (& powershell -NoProfile -ExecutionPolicy Bypass -File $sys -Set "$id=toggle" -RetroFE $RetroFE -ManifestDir $ManifestDir | Out-String).Trim()
+      $out = (& powershell -NoProfile -ExecutionPolicy Bypass -File $owners[$cur.owner] -Set "$id=$(if ($val) { $val } else { 'toggle' })" -RetroFE $RetroFE -ManifestDir $ManifestDir 2>&1 | Out-String).Trim()
       Write-Host $out
-      $items = & $stateOf
+      $lists[$cur.owner] = @(& $listOf $cur.owner)
+      if ($id -eq 'restoreDefaults') { $lists.cab = @(& $listOf 'cab') }
       $msg = ($out -split "`r?`n" | Where-Object { $_ -match '->' } | Select-Object -Last 1) -replace '^\S+\s+->\s+', ''
-      Emit @{ type = 'settings'; items = @($items | ForEach-Object { @{ id = $_.id; label = $_.label; detail = $_.detail; on = [bool]$_.on } }); message = "$($cur.label): $msg"; resume = $true }
+      if (-not $msg) { $msg = ($out -split "`r?`n" | Select-Object -Last 1) }
+      Emit @{ type = 'settings'; items = (& $toEvent (& $all)); message = "$($cur.label): $msg"; resume = $true }
     }
+  }  'ResetTheme' {
+    # the manual fallback when a theme went wrong: ArcadeMaster layout, the original style, no per-mode theme overrides
+    Banner 'RESET THEME TO ARCADEMASTER'
+    Step 'reset' 'ArcadeMaster layout, original style, no per-mode themes' 'run'
+    $o = Run 'Reset-Theme.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir)
+    Step 'reset' $(if ($script:lastExit -eq 0) { (($o | Where-Object { $_ -like 'theme reset:*' } | Select-Object -Last 1) -replace '^theme reset:\s*', '') } else { 'Reset failed - see the log' }) $(if ($script:lastExit -eq 0) { 'ok' } else { 'fail' })
   }  'SystemHealth' {
     Banner 'SYSTEM HEALTH'
     Run 'Repair-ArcadeHealth.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null
@@ -248,9 +270,17 @@ switch ($Tool) {
     $chosen = $null
     if ($Choice) { $chosen = $Choice } else {
     $opts = @($skinOpts) + @($list | Sort-Object { $_.name -ne $cur }, { -[int]$_.score } | ForEach-Object { @{ id = $_.name; label = $(if ($_.name -like 'CO-*') { ($_.name -replace '^CO-', '') + ' (imported)' } else { $_.name }); sub = $(if ($_.name -eq $cur) { "IN USE - artwork $($_.score)%" } else { "artwork coverage $($_.score)%$(if ($_.name -like 'CO-*') { ' - imported' })" }); preview = $_.preview; icons = @(); color = $(if ($_.name -eq $cur) { '3ddc84' } else { '2ec8ff' }); color2 = '2ec8ff' } })
-    Emit @{ type = 'choice'; title = "PICK A THEME$(if ($mode) { " FOR $($mode.ToUpper()) MODE" })"; prompt = 'Applied after the frontend restarts'; options = $opts; selected = 0 }
+    Emit @{ type = 'choice'; title = "PICK A THEME$(if ($mode) { " FOR $($mode.ToUpper()) MODE" })"; prompt = 'After the restart press START or button 1 within 15 s to keep it'; options = $opts; selected = 0 }
     $deadline = (Get-Date).AddSeconds(180)
     while ((Get-Date) -lt $deadline) { if (Test-Path -LiteralPath $env:AM_WIZ_KEYFILE) { $k = (Get-Content -LiteralPath $env:AM_WIZ_KEYFILE -Raw).Trim(); Remove-Item -LiteralPath $env:AM_WIZ_KEYFILE -Force -ErrorAction SilentlyContinue; if ($k -like 'CHOICE:*') { $chosen = $k.Substring(7); break } }; Start-Sleep -Milliseconds 100 }
+    }
+    # every real change waits for a confirm on screen after the restart (Start-ArcadeMaster -> Confirm-ThemeChange):
+    # no START / button 1 within 15 s puts this state back (manifest\theme-pending.json)
+    . (Join-Path $t 'lib\AmSettings.ps1'); . (Join-Path $t 'lib\AmTheme.ps1')
+    $same = ($chosen -like 'skin:*' -and $cur -eq 'ArcadeMaster' -and $skinNow -eq $chosen.Substring(5)) -or ($chosen -eq $cur -and (-not $mode -or (Get-Setting "cabinetTheme.$mode") -eq $chosen))
+    if ($chosen -and -not $same -and (($chosen -like 'skin:*' -and $fam) -or ($list | Where-Object { $_.name -eq $chosen }))) {
+      Save-AmThemePending $RetroFE $ManifestDir $mode $chosen
+      Write-Host 'after the restart: press START or button 1 within 15 s to keep it - otherwise the previous theme comes back'
     }
     if ($chosen -like 'skin:*' -and $fam) {
       $sk = $chosen.Substring(5)

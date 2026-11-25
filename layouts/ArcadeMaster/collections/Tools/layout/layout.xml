@@ -6,9 +6,11 @@
 -->
 <layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
 
+  <!--am-ui:menuSounds-->
   <sound type="select"    src="sounds/select.wav"/>
   <sound type="highlight" src="sounds/highlight.wav"/>
   <sound type="load"      src="sounds/load.wav"/>
+  <!--/am-ui:menuSounds-->
 
   <!-- tool backdrop: big faint icon in the tool's colour, slow drift -->
   <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>

@@ -66,6 +66,8 @@ python tools\streamdeck\amdeck.py --retrofe <RetroFE root> --manifest <manifest 
 
 - Quit Elgato's Stream Deck app and take it out of startup.
 - `Start-ArcadeMaster.ps1` starts `amdeck.py` hidden with `pythonw` at every boot. A named mutex keeps it to one copy.
+- Tools → Cabinet Settings → **Stream Deck** switches it off (`manifest\ui.json streamDeck = false`): the running helper is stopped and the boot no longer starts it. Switching it on starts it again. **Stream Deck idle dim** steps `idleDimMinutes` in `deck.json` through never / 5 / 10 / 30 minutes; the deck reloads it within a second.
+- A theme applied from the deck has to be confirmed on the cabinet after the restart, like one from Tools (docs/10, "Safe theme change").
 - `amdeck.py` waits for the deck when it is unplugged, and reconnects when it comes back.
 - Log: `<manifest>\amdeck.log`.
 - `tools\streamdeck\bin\hidapi.dll` is libusb/hidapi 0.16.0 (x64), used under its BSD licence.
