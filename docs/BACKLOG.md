@@ -210,8 +210,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       their own SDL2.dll never produces (the newer checksum id with SDL 2.0.22), Initial D Zero named an Xbox pad.
       New tools\Repair-FFBPluginDevice.ps1 asks each folder's own SDL2.dll for the wheel's id: 31 of 31 now (backups
       *.am-ffbdevice-*.bak). RACE2 has the same E: games: run it there too.
-- [ ] WheelMap's FFBPlugin generator copies the id from existing configs (that is how the wrong ids spread): make it
-      use the id the folder's own SDL2.dll gives, like Repair-FFBPluginDevice.
+- [x] [RACE1] WheelMap's FFBPlugin generator wrote one id into every config (it would have re-broken the 13 fixed
+      games). It now picks the id per folder from that folder's SDL2.dll version (CRC-16 of the device name for SDL 2.26+).
+      It also found MAME's plugin (E:\DRIVE Collection\emulators\MAME) with the same wrong id: fixed, 34 of 34 now.
 - [ ] Controls: per-game wheel force settings (strength, spring) kept in the repo and applied when the game starts.
       Today: MinForce 0 everywhere, MaxForce 100 in most, 90 / 75 / 45 in a few.
 - [ ] Controls: flight games. Check the stick and throttle bindings and list any game that has none.

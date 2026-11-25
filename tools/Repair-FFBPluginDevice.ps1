@@ -16,7 +16,7 @@
   tools\Repair-FFBPluginDevice.ps1 -Apply
 #>
 param(
-  [string[]]$Root = @('D:\Arcade PC', 'E:\DRIVE Collection\collections\TeknoParrot\roms', 'D:\FLIGHT Collection'),
+  [string[]]$Root = @('D:\Arcade PC', 'E:\DRIVE Collection\collections\TeknoParrot\roms', 'E:\DRIVE Collection\emulators', 'D:\Emulators', 'D:\FLIGHT Collection'),
   [string]$Wheel = 'Racing Wheel',
   [switch]$Apply
 )
