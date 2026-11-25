@@ -51,6 +51,50 @@ AmPanel --PacDrive32.dll--> 2 x I-PAC Ultimate I/O (192 LEDs), ServoStik
 - **Tray icon:** status (boards found, current game, restrictor mode), test lights, pause / resume, quit.
 - **Hand-over from LEDBlinky:** a setting picks which one RetroFE calls. Only one may own the boards at a time.
 
+## Goal: our own, end to end (James 2026-11-25)
+
+"I want to eventually run without either application, just our own which does the same thing." AmPanel replaces
+LEDBlinky.exe and the Ultimarc utilities on every cabinet. Their DLL SDKs stay (they are the drivers' published API).
+Until each feature is proven, a setting picks LEDBlinky or AmPanel per cabinet, so nothing is lost on the way.
+
+## Emulator outputs: lamps, recoil, rumble, force feedback
+
+Games tell the outside world what their cabinet lamps, recoil solenoids, coin counters and motors do. MAME publishes
+this through its **Windows output protocol** (documented in MAME's source, `src/osd/windows/winoutput` / `output.h`).
+A listener creates a window and receives the registered messages `MAMEOutputStart`, `MAMEOutputStop`,
+`MAMEOutputUpdateState` (name id + value), `MAMEOutputRegister` / `Unregister`, and asks names with
+`MAMEOutputGetIdString`. Supermodel (`-outputs=win`), Model 2 Emulator, Flycast and TeknoParrot's output plugins speak the
+same protocol, so **one listener hears every emulator**. MAME itself is started with `-output windows`.
+
+AmPanel keeps a **trigger -> activity** table: what each output does on this cabinet.
+
+| Trigger (from the game) | Activity (on this cabinet) |
+|---|---|
+| `led0`, `lamp1`, `Start1_Lamp`... | light / flash a button LED in a colour |
+| `recoil`, `P1_Gun_Recoil`, `Gun1Recoil` | fire the gun's recoil (Sinden / Gun4IR serial, AimTrak solenoid output) |
+| `rumble`, `motor`, `Wheel_Motor`, `ffb_*` | rumble / force feedback on the wheel or a pad (DirectInput, through the device that owns FFB) |
+| `coin_counter0`... | ignored, or counted for the cabinet stats |
+| frontend events (`9 <rom>`, game start / stop, idle) | per-game colours, ServoStik 4/8, UltraStik map, attract animation |
+
+- **Defaults are learned, not typed:** every output name a game sends is recorded per game the first time it runs
+  (`manifest\outputs\<game>.json`). The assignment screen then lists the real names, not guesses.
+- **Rules have three levels:** global (`*lamp*Start1*` -> P1 START button LED), per system (all of `naomi`), per game.
+  The most specific wins.
+- **FFB:** wheel FFB in games is the emulator's own (TeknoParrot, Supermodel, MAME drive DirectInput directly).
+  AmPanel adds FFB effects only for outputs that have none (a MAME cabinet motor output -> a wheel rumble), and never
+  holds the FFB device while a game owns it, the same rule as RetroFE's menu FFB (released before launch).
+
+## Assignment UI: clear for a person at the cabinet
+
+One "BUTTON LIGHTS & OUTPUTS" screen (Tools, and the tray window on a desktop), three tabs:
+1. **Buttons.** The panel drawn as it really is (panel.json positions). Press a real button and it highlights on screen
+   and on the panel. Choose its LED pin (or "learn": AmPanel blinks pins one by one, you press the button that lit up).
+   This replaces LEDBlinky's InputMap wizard.
+2. **Colours.** A game's buttons with its colours from Colors.ini. Pick a colour per button from a palette (or RGB),
+   preview it live on the panel, and save as a per-game override (`manifest\led-colors.json`, never editing Colors.ini).
+3. **Triggers.** Outputs the current or last game sent (learned list) -> activity, with a live value meter for
+   each output so you can see which lamp is which while the game runs.
+
 ## What it does (each step a PR)
 
 1. Boards, pipe, tray, LEDBlinky-compatible command line, `panel-state.json`.
@@ -63,6 +107,11 @@ AmPanel --PacDrive32.dll--> 2 x I-PAC Ultimate I/O (192 LEDs), ServoStik
 7. Light guns: AimTrak / Sinden / Gun4IR presence and count in the tray and Detect Controllers. Calibration stays
    with each gun's own tool (no published AimTrak SDK).
 8. Tools > Button Lights: test every LED, brightness, colours on / off; Cabinet Settings > CONTROLS uses the pipe.
+9. Output listener: MAME Windows output protocol (MAME `-output windows`, Supermodel `-outputs=win`, Model 2, Flycast,
+   TeknoParrot output plugins). Learns each game's output names; live meters.
+10. Trigger -> activity rules (global / system / game): lamps -> LEDs, recoil -> gun, motors -> rumble / FFB.
+11. The assignment screen (Buttons / Colours / Triggers tabs above).
+12. Cut-over: AmPanel is the default; LEDBlinky.exe and the Ultimarc utilities are no longer started.
 
 ## Safety
 
