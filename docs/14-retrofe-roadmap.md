@@ -70,6 +70,12 @@ before you reach it.
 **Do:** (a) shrink on the loader thread to the size the layout draws it (or ship pre-shrunk copies: BACKLOG 3,
 "no texture bigger than it is drawn"); (b) when the list moves, start loading the next 3 and previous 3 items' art;
 (c) later, keep a compressed GPU-ready copy (BC7 / DDS) so a picture costs a read, not a decode.
+**Tried 4b on the pedestal (2026-11-25), not shipped:**
+- A background thread read the art of the selected item and 3 either side into the file cache (fork branch `perf/preload-neighbours`).
+- A/B with 80 moves over never-visited items: preload off gave 0 and 0 hitches; preload on gave 2 hitches (worst 582 ms) and 0, while reading 1.4 GB.
+- On this disk, unvisited art isn't what hitches; the reads only compete. The after-reboot hitches need their own `hitch` lines first, since they are probably first-use costs (decoder, driver), not file reads.
+- 4a (shrink to drawn size) is still worth measuring separately.
+
 **Expect:** the cold-cache hitches below 33 ms (two frames). **Check:** the hitch log on the first scroll after a
 reboot, before and after.
 
