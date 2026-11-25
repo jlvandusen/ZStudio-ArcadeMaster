@@ -323,8 +323,9 @@ Mark an item `[RACE1]` or `[PEDESTAL]` when you start it, so the two cabinets ne
       menu has none at all. It found Flight 0/3: After Burner Climax now plays its own attract movie (.sfd, silent - ffmpeg can't
       read its ADX audio; New-GameClips retries without sound). MachStorm and Star Wars Battle Pod pack their movies in archives.
 - [ ] Tools: bass-shaker strength in the menu (Cabinet Settings or a Tools item), using ToggleTactile -Choice strength:NN.
-- [x] [RACE1] Self-test: the '8 of 9' run did name its failed check - only the last output line had been shown. Not seen again
-      in 5 runs; leave it.
+- [ ] Self-test: fails 8 of 9 now and then, only right after heavy work (video encoding, menu rebuilds; twice on 2026-11-25),
+      never when idle (8 of 8 runs). Probably a timing-based watchdog check under load. Capture the FAIL lines next time
+      (RACE1's merge step now stops and keeps them) and give that check more time.
 - Play Batman, Caladrius AC and Dead or Alive 5 from `R:\ArcadeMaster\library\roms\teknoparrot\`.
 - Delete the empty `R:\_libtest` by hand (the tool refuses deletes at a drive root).
 - Touch-screen patch 0006 test at the cabinet.
