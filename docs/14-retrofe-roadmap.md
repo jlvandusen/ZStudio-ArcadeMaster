@@ -110,6 +110,103 @@ video frame.
 GitHub builds wait on `gh auth refresh -h github.com -s workflow` on RACE1 (BACKLOG 7). With them every cabinet
 downloads the same tested build instead of compiling 435 MB itself.
 
+## Ahead of LaunchBox / Big Box, Batocera / RetroBat and CoinOPS
+
+James, 2026-11-25: "we need to be 1 step ahead of them and not cave to performance issues like LaunchBox", and
+"make our system superior" over CoinOPS. Read from their own sites on 2026-11-25: launchbox-app.com,
+batocera.org (+ changelog and wiki), coinops.pages.dev. RetroBat is the Windows build of Batocera, so they share a
+column. CoinOPS is the closest rival: our RetroFE **is** their engine, so everything they ship on top of it is the
+floor, not the goal.
+
+What each one is:
+- **LaunchBox / Big Box:** Windows launcher for your own collection. Big Box (the full-screen cabinet mode) is paid.
+  Strong on library import and metadata (Games DB, "180,000+ titles"); built on .NET / WPF.
+- **Batocera 44** (17 Nov 2026) / **RetroBat:** a whole Linux system you boot from USB; hundreds of systems, ~300
+  devices. Strong on "plug in and play" controllers.
+- **CoinOPS ARISE** (latest listed: Easter 2026): curated RetroFE builds (160-1,252 games) with hand-made art, 20-70
+  themes each, a Customisation App. No auto-update: fixes come as new 100 GB builds.
+
+| Feature | Big Box | Batocera / RetroBat | CoinOPS | ArcadeMaster today | Plan |
+|---|---|---|---|---|---|
+| Controllers set up for each emulator automatically | Premium "controller automation" | **yes**, at each launch | pads + encoders "out of the box", fixed maps | boot and plug / unplug: TeknoParrot, Dolphin, MAME, cabinet mode | **A1** |
+| New controller set up on screen | no | yes ("map a controller") | no (edit controls.conf) | no | **A2** |
+| In-game menu | Premium pause screens | Control Center on hotkey + button; hotkey combos | MAME's TAB menu | exit combo only | **A3** |
+| Wheels, pedals, force feedback | no | yes, growing (Logitech TrueForce, MOZA, FFB on several emulators) | no | **yes**: per-game wheel bindings, FFB device repair, clutch / handbrake, flight on a wheel | keep ahead: per-game force strength |
+| Bass shakers / tactile | no | no | no | **yes** (VoiceMeeter routing, strength in the menu) | SimHub telemetry |
+| Panel lights | LEDBlinky (free) | LEDSpicer | none | own LED engine (BACKLOG 2a) | keep ahead |
+| 4-way / 8-way stick switching | no | no | **yes** (ServoStik, GRS by game) | pedestal ServoStik through RetroFE | match |
+| Smoothness with video and big lists | weak (WPF; slows with videos) | good | good ("DX11, hardware video", "70% less RAM") | good, same engine + patches 0012-0016 | items 1-7, **A4** |
+| Auto update | in-app updater | from the menu | **none** (re-download builds) | **every 15 min** from main, GitHub builds next | keep ahead |
+| Repairs itself | no | partly (configs at launch) | "Restore Defaults.bat" | **yes**: health check, exe hash, FFB, wheel bindings, update task | keep ahead |
+| Game art and info | **Games DB, automatic** | scraper | hand-made, no scraper | catalog, stories, clips, low-res finder | **A5** |
+| Attract mode (idle showcase) | not on their site | screensaver | **yes**, themed | RetroFE's own attract mode | **A8** tune |
+| Hi-scores | MAME leaderboards | no | local + online (iScored, QR, Discord) | engine has it (iScored, QR) | **A9** turn on |
+| Achievements | RetroAchievements (free) | RetroAchievements | no | no | **A6** |
+| Save backups | Vault for RetroArch, Dolphin, PCSX2 | saves folder | no | no | **A10** |
+| Play time, most played | yes, synced between installs | yes | no | RetroFE last-played list | **A10** |
+| Filter by controls / orientation | no | no | **yes** (8-way, 4-way, trackball, gun, twin stick, TATE) | menus by control type (All Trackball, All Twin Stick...) | match + filter in menu |
+| Settings without editing files | Big Box options | menus + web server | Customisation App (desktop) | **Tools menu on the cabinet** | **A7** phone page |
+| Music in the menu | yes | yes | yes (mixtapes) | layout sounds only | **A11** |
+| Emulator set up for you | **yes** ("downloads it and sets it up") | built in | built in | built in (our layout) | n/a |
+| Second screen / marquee | Premium marquee | no | thin / 9:16 marquee themes | pedestal touch screen, marquees | keep ahead |
+
+Where we already win: real cabinet hardware (wheel, FFB, shakers, panel, lights), self-repair and updates, and
+knowing each cabinet (cabinet.json) so menus show only what this cabinet can play. Where we lose today: controllers on
+games other than TeknoParrot / Dolphin / MAME, an in-game menu, automatic art, achievements, save backups.
+
+### A1. Controllers set up at every launch (the RetroBat / Batocera "configgen" idea, done our way)
+At each game start (RetroFE's launcher hook, the same one AmPanel already answers with `choose <game>`), a fast
+step (budget 150 ms) reads what is plugged in now and writes that game's emulator input settings: player order,
+wheel vs pad vs stick, force feedback device. TeknoParrot, Dolphin and MAME reuse today's tools; then RetroArch,
+PCSX2, Supermodel, Flycast, Model 2. Anything a person set by hand wins (same rule as Set-FlightOnWheel).
+**Ahead of them:** we know the cabinet (cabinet.json: wheel, clutch, handbrake, shakers, panel) and the game's real
+controls (catalog), so we map a wheel to a driving game and a stick to a fighter, not just "pad 1".
+
+### A2. On-screen controller setup
+New device with no known layout: RetroFE shows "New controller: press A", walks the buttons, saves an SDL mapping line
+to `gamecontrollerdb.txt` and to `cabinet.json`, then A1 uses it everywhere. Needs a RetroFE patch (a setup page) and
+our hot-plug listener to open it.
+
+### A3. In-game menu
+A light overlay process (not WPF) on a hotkey combo (e.g. Start + Select held 1 s, or a wheel button pair): pause,
+save / load state where the emulator allows, show the controls card we already draw, exit to the menu. Must open in
+under 200 ms and never steal focus from games that crash when they lose it (tested per emulator).
+
+### A4. Speed promises, checked every build
+Written as tests, not hopes, in Test-ArcadeMaster: boot to the first menu frame, 60 fps held while scrolling with
+video (no hitch over 33 ms on a warm cache), video starts within 150 ms of landing on a game, game launch within 1 s
+of pressing start (before the emulator's own load). The perf log already gives these numbers; the test reads them.
+
+### A5. Art and info filled in by itself
+For games without art or a story: look up an open database (ScreenScraper / TheGamesDB / IGDB, with James's own
+account keys, nothing personal sent), download to the catalog's art folders, and mark it auto so owner text wins.
+
+### A6. RetroAchievements
+RetroArch has it built in; a Tools setting for the account and an achievements card on the game screen.
+
+### A7. Settings from a phone
+A small local web page (cabinet network only) showing health, cabinet settings and the board, using the same
+Set-CabinetSettings / Invoke-CabinetTool steps the Tools menu runs.
+
+### A8. Attract mode that sells the cabinet
+After a few idle minutes: cycle racing / flight games' clips (ours, 720p) with the story text, never retro filters.
+Any wheel turn or pedal press ends it.
+
+### A9. Hi-scores on
+The engine already has iScored and QR code tables (the reloadableGlobalHiscores tag). Turn them on in our layout for
+games that have scores, and show the table on the launch screen.
+
+### A10. Play time and save backups
+Count play time per game from the launcher hook (start / exit), feed "Most played" and "Recently played" playlists,
+and copy save folders (RetroArch, Dolphin, PCSX2, TeknoParrot) to the NAS after each game, keeping 5 versions.
+
+### A11. Music in the menu
+Optional menu music per collection (the cabinet's own tracks), quieter during video, off by a Tools switch.
+
+### Order
+Items 1 (vsync) and 3 (cache) first, because speed is the promise. Then A1 (the biggest gap), A4 (lock the speed in),
+A3, A2, A10, then A5-A11. Each is its own PR with before/after numbers.
+
 ## Order of work
 
 1. Item 1 (vsync), measure: a settings change and a check of the pacer, one PR.

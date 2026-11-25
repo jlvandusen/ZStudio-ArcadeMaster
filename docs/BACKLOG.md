@@ -173,6 +173,14 @@ The loop works like this (James, 2026-11-25):
   - [ ] 4b. Load the next / previous 3 items' art when the list moves (cold-cache hitches of 116-359 ms).
   - [ ] 2. Video frames stay on the graphics card (D3D11 memory into SDL), dropping two copies per frame.
   - [ ] 9. Crash dumps to the NAS from the health check; meta.db in WAL mode.
+- [ ] Ahead of Big Box / Batocera / RetroBat / CoinOPS (docs/14, James 2026-11-25), after vsync and the cache:
+  - [ ] A1. Controllers set up at every game start for each emulator from what is plugged in (150 ms budget).
+  - [ ] A4. Speed promises as self-test checks: boot, 60 fps with video, video start 150 ms, launch 1 s.
+  - [ ] A3. In-game menu on a hotkey combo: pause, save / load state, controls card, exit.
+  - [ ] A2. On-screen controller setup for an unknown controller (RetroFE page + hot-plug listener).
+  - [ ] A10. Play time per game (Most played / Recently played) and save backups to the NAS, 5 versions.
+  - [ ] A9. Hi-score tables on (engine already has iScored / QR). A8. Attract mode with our clips.
+  - [ ] A5. Missing art and info from an open game database. A6. RetroAchievements. A7. Settings from a phone. A11. Menu music.
 
 ## 3. Performance
 - [x] Boot time: prep 6.9 s → 4.3 s (`-PrepOnly`, warm). The intro card is redrawn only when its key changes; it was
