@@ -550,3 +550,26 @@ In the menus: **Options** (button 10, key F) marks or unmarks the selected game 
 key V) jumps to the Favourites list; P / O (Triangle / Circle) cycle the lists, Favourites second (skipped while
 nothing is marked). RetroFE keeps the list in `collections\<menu>\playlists\favorites.txt`; New-SeriesPlaylists only
 replaces the playlists it made, so favourites survive every rebuild. In a game, Options is still the game's Start.
+
+## One menu layout on every cabinet (2026-11-25)
+James: "the same experience with settings and menu controls regardless of Arcade Standup, Sitdown, Racing Rig,
+Flight Rig". The menu buttons are now defined once, in `catalog\menu-controls.json`, by **position**: the order the
+Xbox pad, the CoinOPS wiring table and the G29 already share. `tools\Set-MenuControls.ps1` writes it into each
+cabinet's controls.conf at every boot (silent once it matches).
+
+| Menu action | Pad | Arcade panel (joystick mode) | Arcade panel (keyboard, I-PAC default) | Wheel (G29) | Keyboard |
+|---|---|---|---|---|---|
+| Move | D-pad / left stick | stick | stick (arrow keys) | D-pad, steer left / right | arrows |
+| Play / open | A, Start | button 1, Start | button 1 (Left Ctrl), Start 1 | button 0, button 7 | Enter |
+| Back | B | button 2 | button 2 (Left Alt) | button 1 | Esc |
+| Previous / next list | X / Y | buttons 3 / 4 | buttons 3 / 4 (Space / Left Shift) | buttons 2 / 3 | O / P |
+| Letter jump | LB / RB | buttons 5 / 6 | buttons 5 / 6 (Z / X) | paddles (4 / 5) | N / M |
+| Random game | Back | button 7 (Select) | Coin 1 (5) | button 6 | R |
+| Mark favourite | right stick click (9) | button 10 | - | Options (10) or 9 | F |
+| Favourites list | left stick click (8) | button 9 | - | Share (11) or 8 | V |
+| Close the frontend | - | - | - | - | Q (keyboard only, so players can't leave) |
+
+Each cabinet keeps what it has on top: RACE1's pedal axes, the pedestal's touch gestures, a panel's own keys. A button
+the layout gives to one action is taken off any other action line, so one press never does two things. The settings
+are already shared: Tools and Cabinet Settings are made by the same tools on every cabinet; only hardware entries
+change (Wheel Setup with a wheel, Panel Test with a panel, Flight Stick Setup with a stick).

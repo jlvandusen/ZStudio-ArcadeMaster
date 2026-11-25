@@ -114,6 +114,8 @@ try {
     }
   }
 } catch { Write-Log "series playlists failed: $($_.Exception.Message)" }
+# one menu control layout on every cabinet type (catalog\menu-controls.json); quick and silent once it matches
+try { $mc = Invoke-Tool 'Set-MenuControls.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Apply'); if ($mc -match 'change\(s\) written') { Write-Log ('menu controls: ' + (($mc -split "`r?`n" | Where-Object { $_ -match '^\s+\S' } | ForEach-Object { $_.Trim() }) -join '; ')) } } catch { Write-Log "menu controls failed: $($_.Exception.Message)" }
 
 # the main menu's wheel shows the wheel this cabinet really has (G HUB's picture of it); redrawn only when it changed
 try { $rw = Invoke-Tool 'New-RealWheelArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout); if ($rw -match '->|removed') { Write-Log (($rw -split "`r?`n" | Where-Object { $_ -match 'real wheel' }) -join ' ') } } catch { Write-Log "real wheel art failed: $($_.Exception.Message)" }

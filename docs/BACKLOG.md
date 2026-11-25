@@ -177,6 +177,9 @@ The loop works like this (James, 2026-11-25):
   - [ ] 4b. Load the next / previous 3 items' art when the list moves (cold-cache hitches of 116-359 ms).
   - [ ] 2. Video frames stay on the graphics card (D3D11 memory into SDL), dropping two copies per frame.
   - [ ] 9. Crash dumps to the NAS from the health check; meta.db in WAL mode.
+- [x] [RACE1] One menu layout on every cabinet type (James 2026-11-25): catalog/menu-controls.json + Set-MenuControls at
+      boot. RACE1 applied (9 additions, nothing removed). Pedestal / RACE2: check the boot log line "menu controls: ...".
+- [ ] One on-screen "menu buttons" card drawn from menu-controls.json with this cabinet's own button names.
 - [ ] Ahead of Big Box / Batocera / RetroBat / CoinOPS (docs/14, James 2026-11-25), after vsync and the cache:
   - [ ] A1. Controllers set up at every game start for each emulator from what is plugged in (150 ms budget).
     - [x] [RACE1] Step 1, survive reboots / USB renumbering: Repair-EmulatorDevices keeps MAME, Cemu, Supermodel and
