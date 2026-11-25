@@ -75,6 +75,63 @@ def link(src, dst):
     return True
 
 
+def write_meta(retrofe, collection, romdir, games):
+    """meta\\hyperlist\\<collection>.xml from RetroBat's gamelist.xml: real titles, year, maker, genre, players."""
+    gl = os.path.join(romdir, "gamelist.xml")
+    info = {}
+    if os.path.exists(gl):
+        try:
+            for g in ET.parse(gl).getroot().iter("game"):
+                p = (g.findtext("path") or "").replace("\\", "/").split("/")[-1]
+                if p:
+                    info[os.path.splitext(p)[0]] = g
+        except ET.ParseError:
+            pass
+    root = ET.Element("menu")
+    ET.SubElement(ET.SubElement(root, "header"), "listname").text = collection
+    titled = 0
+    for f in games:
+        base = os.path.splitext(f)[0]
+        g = info.get(base)
+        e = ET.SubElement(root, "game", name=base)
+        title = (g.findtext("name") or "").strip() if g is not None else ""
+        ET.SubElement(e, "description").text = title or base
+        titled += bool(title)
+        if g is not None:
+            year = (g.findtext("releasedate") or "")[:4]
+            if year.isdigit():
+                ET.SubElement(e, "year").text = year
+            maker = (g.findtext("developer") or g.findtext("publisher") or "").strip()
+            if maker:
+                ET.SubElement(e, "manufacturer").text = maker
+            genre = (g.findtext("genre") or "").strip()
+            if genre:
+                ET.SubElement(e, "genre").text = genre
+            players = (g.findtext("players") or "").strip()
+            if players:
+                ET.SubElement(e, "players").text = players.split("-")[-1]
+    out = os.path.join(retrofe, "meta", "hyperlist", collection + ".xml")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    ET.ElementTree(root).write(out, encoding="utf-8", xml_declaration=True)
+    return titled
+
+
+def rebuild_db(retrofe):
+    """RetroFE reads meta\\hyperlist into meta.db only on -rebuilddatabase; not while the frontend is running."""
+    import subprocess
+    exe = os.path.join(retrofe, "core", "retrofe.exe")
+    if not os.path.exists(exe):
+        return "no core\\retrofe.exe"
+    running = subprocess.run(["tasklist", "/FI", "IMAGENAME eq retrofe.exe"], capture_output=True, text=True).stdout
+    if "retrofe.exe" in running.lower():
+        return "the frontend is running - meta.db is rebuilt at the next Rebuild Menus"
+    try:
+        subprocess.run([exe, "-rebuilddatabase"], cwd=os.path.dirname(exe), timeout=600, capture_output=True)
+        return "meta.db rebuilt"
+    except subprocess.TimeoutExpired:
+        return "meta.db rebuild timed out"
+
+
 def safe(s):
     return re.sub(r'[<>:"/\\|?*]', "", s).strip()
 
@@ -87,6 +144,7 @@ def main():
     ap.add_argument("--systems", default=",".join(DEFAULT))
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-db", action="store_true", help="write the meta files but leave meta.db (Rebuild Menus rebuilds it)")
     a = ap.parse_args()
     rb = a.retrobat
     es = os.path.join(rb, "emulationstation", ".emulationstation", "es_systems.cfg")
@@ -153,8 +211,8 @@ def main():
                     continue
                 for t in types:
                     n += link(src, os.path.join(cdir, "medium_artwork", t, base + ext))
-        if n:
-            print("      %d art links" % n)
+        t = write_meta(a.retrofe, name, romdir, games)
+        print("      %d art links, %d of %d real titles" % (n, t, len(games)))
     if not a.dry_run:
         if made:
             menu = os.path.join(cols, "Classic Systems")
@@ -172,6 +230,8 @@ def main():
                 os.makedirs(os.path.dirname(extra), exist_ok=True)
                 open(extra, "w", newline="\r\n").write("\n".join([l for l in lines if l] + ["Classic Systems"]) + "\n")
             print("Classic Systems menu: %d systems (Main\\am-extra-menu.txt -> main menu at the next Rebuild Menus)" % len(set(keep + made)))
+        if made and not a.no_db:
+            print(rebuild_db(a.retrofe))
         with open(os.path.join(a.manifest, "systems.json"), "w", encoding="utf-8") as f:
             json.dump({"retrobat": rb, "systems": report}, f, indent=1)
     with_games = [r for r in report if r["games"]]

@@ -91,7 +91,7 @@ Adding a system later is then only a matter of putting its ROMs in a RetroBat fo
    - The build's own GameCube / N64 / Dreamcast / C64 collections are untouched; ours are named "... (RetroBat)".
    - `--all` imports all 47 systems that have games.
    - `New-RetroFECollections.ps1` keeps `Main\am-extra-menu.txt` entries in the main menu.
-   - Still open: real titles from `gamelist.xml` into meta.db (lists show file names for now).
+   - Real titles, year, maker, genre and players come from RetroBat's `gamelist.xml` (`meta\hyperlist\<collection>.xml`), and meta.db is rebuilt. All 865 games in the 16 systems are titled.
 2. Controller config pass-through to emulatorLauncher, and a panel-to-XInput bridge (ViGEm) for Xbox / PS2 / Wii U / GameCube.
 3. Exit and the hot-plug / AmPanel game events for emulatorLauncher games (game start / stop, lights, stick maps).
 4. xemu per-game compatibility and performance list on the pedestal and RACE1.
