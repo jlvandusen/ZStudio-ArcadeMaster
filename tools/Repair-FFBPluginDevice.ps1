@@ -59,7 +59,7 @@ class P {
            elseif ($raw.Length -ge 3 -and $raw[0] -eq 0xEF -and $raw[1] -eq 0xBB -and $raw[2] -eq 0xBF) { New-Object Text.UTF8Encoding($true) }
            else { [Text.Encoding]::Default }
     $text = [IO.File]::ReadAllText($ini, $enc)
-    $m = [regex]::Match($text, '(?m)^\s*DeviceGUID\s*=\s*(\S*)\s*$')
+    $m = [regex]::Match($text, '(?m)^[ \t]*DeviceGUID[ \t]*=[ \t]*([^\s]*)[ \t]*\r?$')   # [ \t], not \s: an empty DeviceGUID= must not swallow the next line
     if (-not $m.Success) { $unknown.Add("$dir (no DeviceGUID line)"); continue }
     if (-not (Test-Path -LiteralPath $dll)) { $unknown.Add("$dir (no SDL2.dll beside the plugin)"); continue }
     $h = (Get-FileHash -LiteralPath $dll -Algorithm SHA1).Hash
