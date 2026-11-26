@@ -154,6 +154,8 @@ try { $mode = Invoke-Tool 'Set-CabinetMode.ps1' @('-RetroFE', $Root, '-ManifestD
 # play time, Most played and save backups: start / end hooks in every game launcher (idempotent; menus rebuilt above
 # rewrote some launchers)
 try { $h = & (Join-Path $PSScriptRoot 'Set-GameHooks.ps1') -RetroFE $Root -ManifestDir $ManifestDir -Quiet 6>&1 | Out-String; if ($h.Trim()) { Write-Log $h.Trim() } } catch { Write-Log "game hooks failed: $($_.Exception.Message)" }
+# a game that crashed with the pointer hidden (Set-GameCursor) must not leave it hidden: show it at every boot
+try { & (Join-Path $PSScriptRoot 'Set-GameCursor.ps1') -Show | Out-Null } catch { }
 # Game of the Month (A18): a featured playlist per menu, picked once a month (silent when the month has not changed)
 try { $gm = & (Join-Path $PSScriptRoot 'New-FeaturedPlaylist.ps1') -RetroFE $Root -ManifestDir $ManifestDir 6>&1 | Out-String; if ($gm.Trim()) { Write-Log $gm.Trim() } } catch { Write-Log "game of the month failed: $($_.Exception.Message)" }
 # fleet view: what this cabinet runs, written to the NAS for Compare-Cabinets.ps1 (never blocks the boot)

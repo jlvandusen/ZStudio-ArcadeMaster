@@ -43,11 +43,15 @@ $jtkFile = Join-Path $playDir 'joytokey-paused.txt'
 if ($Phase -eq 'start') {
   $jtk = @(Get-Process JoyToKey -ErrorAction SilentlyContinue)
   if ($jtk) { try { Set-Content $jtkFile $jtk[0].Path; $jtk | Stop-Process -Force; Write-PlayLog "JoyToKey closed for the game ($($jtk[0].Path))" } catch { } }
+  # the mouse pointer is hidden while the game runs (Set-GameCursor -Hide; the end hook and the boot show it again)
+  try { & (Join-Path $PSScriptRoot 'Set-GameCursor.ps1') -Hide | Out-Null } catch { }
   Save-Json ([ordered]@{ key = $key; item = $Item; collection = $Collection; start = (Get-Date).ToString('o') }) $cur
   Write-PlayLog "start $key"
   return
 }
 
+# ------------------------------------------------------------------ end: the mouse pointer back
+try { & (Join-Path $PSScriptRoot 'Set-GameCursor.ps1') -Show | Out-Null } catch { }
 # ------------------------------------------------------------------ end: JoyToKey back for the menus
 if (Test-Path $jtkFile) {
   $jp = "$(Get-Content $jtkFile -Raw)".Trim(); Remove-Item $jtkFile -ErrorAction SilentlyContinue
