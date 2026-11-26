@@ -18,6 +18,26 @@
   - RetroFE / CoinOPS root, with **Find frontends** to search the drives
   - **Work on a COPY of this frontend**: robocopy to `<root>-am`, recommended on a cabinet already in use
   - manifest folder
+  - **Install the programs ArcadeMaster needs** (on by default): see "Prerequisites" below
+
+## Prerequisites: every cabinet builds its own RetroFE
+James's decision (2026-11-26): no ready-made RetroFE packages from the NAS. A package goes stale: the 2P stand-up got a 16-patch build while main had 20, and the layout needed the newer patches. Every cabinet installs the build tools instead, and `Update-Cabinet.ps1` (every 15 minutes) compiles main's patches itself.
+
+`tools\Install-Prerequisites.ps1` installs only what is missing, and leaves alone what is there:
+
+| Program | How | What for |
+|---|---|---|
+| Git | winget `Git.Git` (Setup installs it first, before cloning) | the repository, updates |
+| GitHub CLI | winget `GitHub.cli` | pull requests from the cabinet's own session |
+| PowerShell 7 | winget `Microsoft.PowerShell` | the RetroFE build and several tools |
+| Python 3.12 + Pillow | winget `Python.Python.3.12` (machine-wide), then `pip install pillow` | controls cards, art, preview clips |
+| VS 2022 Build Tools (C++) | winget `Microsoft.VisualStudio.2022.BuildTools` with the C++ workload. Windows asks once for permission: answer **Yes** (10-20 minutes) | compiles RetroFE |
+| GStreamer 1.24.13 | the MSVC runtime + devel MSIs from gstreamer.freedesktop.org, **unpacked** (`msiexec /a`, nothing installed into Windows) into `<ArcadeMaster>\_tools\gstreamer`; the downloads are deleted after | compiles and runs RetroFE's video |
+| ffmpeg | winget `Gyan.FFmpeg` | the menu preview clips |
+
+- `-Check` only reports, and so does `AM_SYSTEM_DRYRUN=1`.
+- Each line starts with `ok`, `installed`, `would install` or `FAILED`.
+- A refused Windows permission prompt (exit 1602) says so, and setup can simply be run again.
 - **Frontend**: install / refresh the ArcadeMaster layout, make it the active theme, add the Tools menu, detect controllers and rebuild the game menus.
 - **Cabinet**: type (auto / racing / flight / simulation / standup / lightgun / multicade / pedestal / hybrids), follow the hardware, show all modes, second screen, custom intro title and tagline.
 - **System**: start at logon (a Startup shortcut to this exe), quiet startup, no Windows pop-ups, MAME bezels, screen always on. Auto login opens the Windows dialog. **Only the switches you change are applied**: the current state is read first, and Windows is left alone otherwise.
@@ -30,15 +50,17 @@
 The question has three answers: **Yes** works on a copy (recommended), **No** changes the frontend anyway, **Cancel** does nothing. This was added after Install changed the pedestal's live E: frontend.
 
 **Install / Apply** runs the selected steps with a live log:
-1. repository
-2. copy of the frontend (if ticked)
-3. settings.conf, backed up to `settings.conf.setup-bak`
-4. layout
-5. controllers and menus
-6. Tools menu
-7. cabinet mode and intro
-8. system switches
-9. health check, which also saves a last-known-good snapshot
+1. Git, only if it is missing and "Install the programs" is ticked
+2. repository
+3. prerequisites (`Install-Prerequisites.ps1`), if ticked
+4. copy of the frontend (if ticked)
+5. settings.conf, backed up to `settings.conf.setup-bak`
+6. layout
+7. controllers and menus
+8. Tools menu
+9. cabinet mode and intro
+10. system switches
+11. health check, which also saves a last-known-good snapshot
 
 ## Tested on DESKTOP-RACE1 (2026-11-22)
 - `--dry-run` checked GitHub (up to date).

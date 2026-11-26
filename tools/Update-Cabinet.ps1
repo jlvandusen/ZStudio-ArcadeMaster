@@ -172,14 +172,16 @@ try {
     $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
 # Build-RetroFE.ps1 also runs under Windows PowerShell 5.1 (PR 109), so a cabinet without pwsh 7 still builds
 if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue).Source }
-    if (-not $GstRoot) { $GstRoot = @('D:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'R:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'C:\gstreamer\1.0\msvc_x86_64') | Where-Object { Test-Path ([IO.Path]::Combine($_, 'include')) } | Select-Object -First 1 }   # not Join-Path: 5.1 throws on a missing drive (no D: on the pedestal)
+    # Install-Prerequisites.ps1 unpacks GStreamer into <ArcadeMaster>\_tools, next to the build folder
+    if (-not $GstRoot) { $GstRoot = @([IO.Path]::Combine((Split-Path $BuildRoot), '_tools\gstreamer\gstreamer\1.0\msvc_x86_64'), 'D:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64','R:\ArcadeMaster\_tools\gstreamer\gstreamer\1.0\msvc_x86_64', 'C:\gstreamer\1.0\msvc_x86_64') | Where-Object { Test-Path ([IO.Path]::Combine($_, 'include')) } | Select-Object -First 1 }   # not Join-Path: 5.1 throws on a missing drive (no D: on the pedestal)
     # Visual Studio (any drive - RACE1 has it on D:\VS) through vswhere, and its own cmake
     $vswhere = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
     $vs = if (Test-Path $vswhere) { & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1 } else { $null }
     $cmake = if ($vs) { Join-Path $vs 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe' } else { $null }
     if ($cmake -and -not (Test-Path $cmake)) { $cmake = (Get-Command cmake -ErrorAction SilentlyContinue).Source }
     $missing = @($(if (-not $pwsh) { 'PowerShell 7 (pwsh)' }), $(if (-not $GstRoot) { 'GStreamer 1.24 kit' }), $(if (-not $vs) { 'Visual Studio Build Tools (C++)' }), $(if ($vs -and -not $cmake) { 'CMake' }) | Where-Object { $_ })
-    if ($missing) { Say "RetroFE build $key needed but this cabinet can't compile (missing: $($missing -join ', ')) - copy a package from Z:\ArcadeMaster\builds"; return }
+    # every cabinet builds its own RetroFE (James, 2026-11-26: no ready-made packages from the NAS)
+    if ($missing) { Say "RetroFE build $key needed but this cabinet can't compile yet (missing: $($missing -join ', ')) - run tools\Install-Prerequisites.ps1, or ArcadeMaster.exe --setup with 'Install the programs ArcadeMaster needs' ticked"; return }
     $out = Join-Path $BuildRoot "retrofe-$key"; $blog = Join-Path $BuildRoot "retrofe-$key.build.log"
     # Build from a FROZEN copy of the patch set, checked against the key. On 2026-11-26 the key was read while a new
     # patch was in the folder and the patches were listed a moment later, when a developer's git stash had taken it out:

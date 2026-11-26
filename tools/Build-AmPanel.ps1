@@ -10,7 +10,11 @@
 param([string]$InstallTo)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot
-$csc = @(Get-ChildItem 'D:\VS', 'C:\Program Files\Microsoft Visual Studio', 'C:\Program Files (x86)\Microsoft Visual Studio' -Recurse -Filter csc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\Roslyn\\csc\.exe$' } | Select-Object -First 1)
+# Roslyn through vswhere (see Build-Launcher.ps1: the tree search took minutes once the C++ build tools were in)
+$csc = @()
+$vswhere = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
+if (Test-Path $vswhere) { foreach ($vsp in @(& $vswhere -products * -property installationPath 2>$null)) { $r = [IO.Path]::Combine($vsp, 'MSBuild\Current\Bin\Roslyn\csc.exe'); if ($vsp -and (Test-Path $r)) { $csc = @(Get-Item $r); break } } }
+if (-not $csc) { $csc = @(Get-ChildItem 'D:\VS', 'C:\Program Files\Microsoft Visual Studio', 'C:\Program Files (x86)\Microsoft Visual Studio' -Recurse -Filter csc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\Roslyn\\csc\.exe$' } | Select-Object -First 1) }
 $fw = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319'      # 32-bit framework folder: same reference assemblies
 if (-not $csc) { $csc = @(Get-Item (Join-Path $fw 'csc.exe') -ErrorAction SilentlyContinue) }
 if (-not $csc) { throw 'no C# compiler found (Visual Studio Build Tools Roslyn or the .NET Framework csc.exe)' }
