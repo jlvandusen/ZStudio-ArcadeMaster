@@ -630,3 +630,10 @@ for 5 secs".
   `New-GameControlsArt.ps1` now keeps a copy in `C:\ProgramData\ArcadeMaster\wheels\g29` and on
   `Z:\ArcadeMaster\media\ghub-g29` whenever G HUB is present, and uses that copy on a PC without G HUB. Until a cabinet
   with G HUB has run it once, a redraw on RACE1 gives the plain drawing; the cards made earlier keep their photo.
+- **No force feedback after uninstalling G HUB.** The G29's force feedback driver belongs to Logitech's software. The
+  uninstall removes it but leaves the registry entry that says the wheel has force feedback (`OEMForceFeedback` CLSID
+  `{1ED6DDBB-0401-4498-A093-7D249203200C}`, no longer registered), so Windows still lists it and every program fails
+  to open it: RetroFE logs "SDL_HapticOpen failed: Resetting device", and no game has force either. System Health has
+  a line for it (**Wheel force feedback driver**). Fix: install G HUB again, or the older Logitech Gaming Software.
+  With Logitech Gaming Software the wheel's name changes (no "G HUB" in it): Repair-EmulatorDevices,
+  Repair-FFBPluginDevice and Set-DolphinControllers follow that at the next boot.

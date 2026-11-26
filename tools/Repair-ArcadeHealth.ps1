@@ -17,6 +17,7 @@
     updates    the "ArcadeMaster Update" task exists (put back when missing) and the last pull / build did not fail
     previews   how many games in each menu have a preview video (am_video); WARN when a menu has none at all
     crashes    games, emulators or the frontend that crashed in the last 24 h (Windows' Application Error log), in plain words
+    ffbdriver  a wheel's force feedback driver is really installed (G HUB uninstalled = no force anywhere)
     emulators  each emulator the menus use against its newest release (looked up once a day in the background)
     tactile    bass shakers switched on (manifest\tactile.json): VoiceMeeter running (started when not), shaker card present
   -Snapshot   when everything is OK: save a last-known-good copy of the configs (manifest\lkg\<stamp>, keeps 3)
@@ -57,7 +58,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; gpu = 'Graphics driver'; emulators = 'Emulator versions'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; ffbdriver = 'Wheel force feedback driver'; gpu = 'Graphics driver'; emulators = 'Emulator versions'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -475,6 +476,26 @@ else {
   $lines = foreach ($grp in $crash | Group-Object who) { $last = $grp.Group | Sort-Object when | Select-Object -Last 1; "{0} crashed {1}x, last {2:HH:mm} {3}" -f $grp.Name, $grp.Count, $last.when, $last.why }
   Add-Result 'crashes' $checks.crashes 'WARN' ($lines -join '; ')
 }
+# wheel force feedback driver: Windows lists force feedback for a wheel through a maker's driver (registry OEMForceFeedback
+# CLSID). Uninstalling Logitech G HUB removes that driver but leaves the entry (DESKTOP-RACE1, 2026-11-26): the wheel
+# still shows up with "force feedback", yet every program fails to open it - no force in the menus or in any game.
+Emit @{ type = 'step'; id = 'ffbdriver'; label = $checks.ffbdriver; status = 'run' }
+try {
+  $ffbBad = @(); $ffbOk = 0
+  foreach ($ok in Get-ChildItem 'HKCU:\System\CurrentControlSet\Control\MediaProperties\PrivateProperties\Joystick\OEM' -ErrorAction SilentlyContinue) {
+    $fk = Join-Path $ok.PSPath 'OEMForceFeedback'; if (-not (Test-Path $fk)) { continue }
+    if ($ok.PSChildName -notmatch 'VID_([0-9A-F]{4})&PID_([0-9A-F]{4})') { continue }
+    $present = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match [regex]::Escape($ok.PSChildName) }).Count
+    if (-not $present) { continue }                                          # only controllers plugged in now
+    $clsid = [string](Get-ItemProperty $fk -ErrorAction SilentlyContinue).CLSID; if (-not $clsid) { continue }
+    $reg = @('HKLM:\SOFTWARE\Classes\CLSID', 'HKLM:\SOFTWARE\WOW6432Node\Classes\CLSID', 'HKCU:\SOFTWARE\Classes\CLSID') | Where-Object { $dll = (Get-ItemProperty (Join-Path $_ "$clsid\InprocServer32") -ErrorAction SilentlyContinue).'(default)'; $dll -and (Test-Path ([Environment]::ExpandEnvironmentVariables($dll))) }
+    $nm = [string](Get-ItemProperty $ok.PSPath).OEMName
+    if ($reg) { $ffbOk++ } else { $ffbBad += $nm }
+  }
+  if ($ffbBad) { Add-Result 'ffbdriver' $checks.ffbdriver 'WARN' ("no force feedback in games or menus: the driver for '" + ($ffbBad -join "', '") + "' is missing - the wheel maker's software (Logitech G HUB, or Logitech Gaming Software) was uninstalled; install it again") }
+  elseif ($ffbOk) { Add-Result 'ffbdriver' $checks.ffbdriver 'OK' "$ffbOk wheel(s) with their force feedback driver in place" }
+  else { Add-Result 'ffbdriver' $checks.ffbdriver 'OK' 'no force feedback wheel plugged in' }
+} catch { Add-Result 'ffbdriver' $checks.ffbdriver 'OK' "not checked: $($_.Exception.Message)" }
 # graphics driver: the newest driver from NVIDIA / AMD for this card (legacy cards included), looked up by
 # Update-GpuDriver.ps1 in the background at most once a day - this check only reads its last answer, never waits
 Emit @{ type = 'step'; id = 'gpu'; label = $checks.gpu; status = 'run' }
