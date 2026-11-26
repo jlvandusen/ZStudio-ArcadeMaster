@@ -637,3 +637,16 @@ for 5 secs".
   a line for it (**Wheel force feedback driver**). Fix: install G HUB again, or the older Logitech Gaming Software.
   With Logitech Gaming Software the wheel's name changes (no "G HUB" in it): Repair-EmulatorDevices,
   Repair-FFBPluginDevice and Set-DolphinControllers follow that at the next boot.
+- **Three buttons died with G HUB: Options, the dial's Enter press and PS** (scan at the cabinet, 2026-11-26). A guided
+  scan of all 18 wheel controls: 15 send exactly the numbers everything is bound to (0-8, 10, 11, 19-22); Options (9),
+  dial press (23) and PS (24) send nothing. A capture of the wheel's raw HID reports shows why it is not our reading:
+  Share flips its bit in the report (byte 2, bit 4), the three flip nothing - only pedal / steering jitter arrives while
+  they are pressed, and the two vendor channels are silent. PS worked that morning with G HUB installed. The uninstall
+  left Logitech's low-level filter driver on the wheel (`logi_joy_hid_filter`, oem11.inf) without the program it
+  works with; in that state the three buttons and the force feedback are gone. Fix: Logitech's software back on the PC.
+- **Until then on RACE1:** Start is on R3 again (`Set-CoinStartButtons.ps1 -Start 10 -OldStart 9 -OldCoin 8`), coin stays
+  on Share, leaving a game is L2 + R2 together (hold-PS and the dial's Enter cannot work), Test / Service stay on
+  Plus / Minus. When the buttons are back: `Set-CoinStartButtons.ps1 -Start 9 -OldStart 10 -OldCoin 8 -Apply`.
+- Tool fix found on the way: the Model 2 step swapped Start straight back when it met the same files a second time
+  (the frontend's copy and the E: copy are the same files) and coin did not change. Each button pair is now handled by
+  itself and only in a file that still has the old button.

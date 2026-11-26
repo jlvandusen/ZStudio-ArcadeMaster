@@ -136,12 +136,19 @@ foreach ($r in $Roots) {
   }
   # ---------------- Model 2
   $code = { param([int]$b) $n = $b + 1; [uint32](($joy -shl 8) -bor (($n -band 0xF) -shl 4) -bor (($n -shr 4) -shl 12)) }
-  $map = @{}; $map[(& $code $OldCoin)] = (& $code $Coin); $map[(& $code $OldStart)] = (& $code $Start); $map[(& $code $Coin)] = (& $code $OldCoin); $map[(& $code $Start)] = (& $code $OldStart)
+  # Each pair (old button -> new button) is handled by itself, and only in a file that still HAS the old one. A pair that
+  # does not change (coin stays on Share) is skipped. The first version built one two-way table and looked for "any old
+  # code": on a second visit (the frontend's copy and the E: copy are the same files) it swapped start straight back.
+  $pairs = @(@{ old = $OldCoin; new = $Coin }, @{ old = $OldStart; new = $Start }) | Where-Object { $_.old -ne $_.new -and $_.old -ge 0 -and $_.new -ge 0 }
   foreach ($f in Get-ChildItem -LiteralPath (Join-Path $r 'CFG') -Filter *.input -File -ErrorAction SilentlyContinue) {
     $b = [IO.File]::ReadAllBytes($f.FullName); $out = [byte[]]$b.Clone(); $n = 0; $words = [int]($b.Length / 4) - 2
-    $has = $false; for ($i = 0; $i -lt $words; $i++) { $v = [BitConverter]::ToUInt32($b, $i * 4); if ($v -eq (& $code $OldCoin) -or $v -eq (& $code $OldStart)) { $has = $true } }
-    if (-not $has) { continue }                                                 # already done (or never on those buttons)
-    for ($i = 0; $i -lt $words; $i++) { $v = [BitConverter]::ToUInt32($b, $i * 4); if ($map.ContainsKey($v)) { [BitConverter]::GetBytes([uint32]$map[$v]).CopyTo($out, $i * 4); $n++ } }
+    foreach ($pr in $pairs) {
+      $co = (& $code $pr.old); $cn = (& $code $pr.new)
+      $at = @(0..($words - 1) | Where-Object { [BitConverter]::ToUInt32($out, $_ * 4) -eq $co }); if (-not $at) { continue }
+      $clash = @(0..($words - 1) | Where-Object { [BitConverter]::ToUInt32($out, $_ * 4) -eq $cn })      # another control on the new button: it takes the old one
+      foreach ($i in $at) { [BitConverter]::GetBytes([uint32]$cn).CopyTo($out, $i * 4); $n++ }
+      foreach ($i in $clash) { [BitConverter]::GetBytes([uint32]$co).CopyTo($out, $i * 4); $n++ }
+    }
     if ($n) { Save-Bytes $f.FullName $out "Model 2: $n control code(s)" }
   }
 }
