@@ -10,7 +10,9 @@
                  keeps working and gets the wheel button as well.
     Supermodel   Config\Supermodel.ini: InputCoin1 / InputStart1.
     Model 2      CFG\*.input: the coin / start control codes.
-  Buttons are the wheel's own numbers (G29: Share = 8, Options = 9). Dry run by default; -Apply backs each changed
+  Test / service (operator menus, calibration) the same way: the wheel's Plus = Test, Minus = Service (2026-11-26; they
+  were on F1 / F2, Plus / Minus or the D-pad depending on the game). A keyboard key in MAME / Supermodel keeps working.
+  Buttons are the wheel's own numbers (G29: Share = 8, Options = 9, Plus = 19, Minus = 20). Dry run by default; -Apply backs each changed
   file up as <file>.coinstart-<time>.bak.
 .EXAMPLE
   tools\Set-CoinStartButtons.ps1 -RetroFE D:\ArcadeMaster\frontend\DRIVE-coinops
@@ -20,6 +22,7 @@ param(
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
   [int]$Coin = 8, [int]$Start = 9,          # G29: Share, Options
+  [int]$Test = 19, [int]$Service = 20,      # G29: Plus, Minus (operator menus / calibration); -1 = leave alone
   [int]$OldCoin = 11, [int]$OldStart = 10,  # what Model 2's files were written with (L3, R3)
   [string[]]$Roots,
   [switch]$Apply
@@ -33,7 +36,7 @@ if (-not (Test-Path -LiteralPath $st)) { throw "no $st - run tools\Repair-Emulat
 $wheel = @((Get-Content -LiteralPath $st -Raw | ConvertFrom-Json).devices | Where-Object { $_.id -eq 'wheel' -or $_.vid -eq '046D' }) | Select-Object -First 1
 if (-not $wheel) { throw 'no wheel in emulator-devices.json' }
 $guid = ([string]$wheel.instanceGuid).ToLower(); $joy = [int]$wheel.enumIndex
-Write-Host "wheel: $($wheel.productName) (JOY$joy, $guid) - coin = button $Coin, start = button $Start"
+Write-Host "wheel: $($wheel.productName) (JOY$joy, $guid) - coin = button $Coin, start = $Start, test = $Test, service = $Service"
 
 if (-not $Roots) {
   $Roots = @()
@@ -67,16 +70,24 @@ foreach ($r in $Roots) {
     $prefix = 'Driving'; foreach ($n in $nodes) { if ((& $onWheel $n) -and [string]$n.BindNameDi -match '^(.*?) ?Buttons ?\d+$') { $prefix = $Matches[1]; break } }
     $tmpl = $nodes | Where-Object { & $onWheel $_ } | Select-Object -First 1
     $done = @()
-    foreach ($want in @(@{ rx = '^(Coin|Coin ?1|P1 Coin|Player 1 Coin)$'; btn = $Coin; what = 'coin' }, @{ rx = '^(Start|Start ?1|P1 Start|Player 1 Start|Start Button)$'; btn = $Start; what = 'start' })) {
+    $wants = @(@{ rx = '^(Coin|Coin ?1|P1 Coin|Player 1 Coin)$'; btn = $Coin; what = 'coin' }, @{ rx = '^(Start|Start ?1|P1 Start|Player 1 Start|Start Button)$'; btn = $Start; what = 'start' })
+    if ($Test -ge 0) { $wants += @{ rx = '^(Test|Test Button|Test Switch|Test SW)$'; btn = $Test; what = 'test' } }
+    if ($Service -ge 0) { $wants += @{ rx = '^(Service|Service ?1|Service Button|Service SW)$'; btn = $Service; what = 'service' } }
+    foreach ($want in $wants) {
       foreach ($n in @($nodes | Where-Object { [string]$_.ButtonName -match $want.rx })) {
         $name = "$prefix Buttons$($want.btn)"
         if ((& $onWheel $n) -and [string]$n.BindNameDi -eq $name) { continue }                # already right
         $oldBtn = if ((& $onWheel $n) -and [string]$n.BindNameDi -match 'Buttons ?(\d+)$') { [int]$Matches[1] } else { -1 }
         # something else on the wanted button: it moves to the button this control leaves
-        foreach ($o in @($nodes | Where-Object { $_ -ne $n -and (& $onWheel $_) -and [string]$_.BindNameDi -eq $name })) {
-          if ($oldBtn -ge 0) { $o.DirectInputButton.Button = "$(48 + $oldBtn)"; $o.BindNameDi = "$prefix Buttons$oldBtn"; if ($o.SelectSingleNode('BindName')) { $o.BindName = "$prefix Buttons$oldBtn" }; $done += "$($o.ButtonName) -> button $oldBtn" }
-          else { $notes.Add("$($f.Name): '$($o.ButtonName)' is on button $($want.btn) as well as $($want.what)") }
+        # A control of the same kind waiting to move off it (Service on Plus, about to go to Minus) does not count.
+        $taken = @($nodes | Where-Object { $_ -ne $n -and (& $onWheel $_) -and [string]$_.BindNameDi -eq $name })
+        $taken = @($taken | Where-Object { $tn = [string]$_.ButtonName; -not @($wants | Where-Object { $tn -match $_.rx }).Count })
+        if ($taken.Count -and $oldBtn -lt 0) {
+          # the button belongs to another control (Raw Thrills games: Volume Up / Down on Plus / Minus, which their test
+          # menu uses) and this one has no wheel button to give in exchange: leave it as it is rather than double up
+          $notes.Add("$($f.Name): $($want.what) left as it is ('$($taken[0].ButtonName)' uses button $($want.btn))"); continue
         }
+        foreach ($o in $taken) { $o.DirectInputButton.Button = "$(48 + $oldBtn)"; $o.BindNameDi = "$prefix Buttons$oldBtn"; if ($o.SelectSingleNode('BindName')) { $o.BindName = "$prefix Buttons$oldBtn" }; $done += "$($o.ButtonName) -> button $oldBtn" }
         if (-not $n.DirectInputButton) { if (-not $tmpl) { continue }; [void]$n.AppendChild($tmpl.DirectInputButton.CloneNode($true)) }
         $d = $n.DirectInputButton
         $set = @{ Button = "$(48 + $want.btn)"; IsAxis = 'false'; IsAxisMinus = 'false'; IsFullAxis = 'false'; PovDirection = '0'; IsReverseAxis = 'false'; JoystickGuid = $guid }
@@ -93,10 +104,12 @@ foreach ($r in $Roots) {
   # ---------------- MAME
   foreach ($sub in 'ctrlr', 'cfg') {
     foreach ($f in Get-ChildItem -LiteralPath (Join-Path $r $sub) -Filter *.cfg -File -ErrorAction SilentlyContinue) {
-      $t = Read-Text $f.FullName; if ($t.text -notmatch 'type="(COIN1|START1)"') { continue }
-      $new = [regex]::Replace($t.text, '(?s)(<port\b[^>]*\btype="(COIN1|START1)"[^>]*>\s*<newseq\b[^>]*type="standard"[^>]*>)(.*?)(</newseq>)', {
+      $mameBtn = @{ COIN1 = $Coin; START1 = $Start }; if ($Test -ge 0) { $mameBtn['SERVICE'] = $Test }; if ($Service -ge 0) { $mameBtn['SERVICE1'] = $Service }   # MAME: SERVICE = the test switch
+      $t = Read-Text $f.FullName; if ($t.text -notmatch 'type="(COIN1|START1|SERVICE1?)"') { continue }
+      $new = [regex]::Replace($t.text, '(?s)(<port\b[^>]*\btype="(COIN1|START1|SERVICE1|SERVICE)"[^>]*>\s*<newseq\b[^>]*type="standard"[^>]*>)(.*?)(</newseq>)', {
         param($m)
-        $target = "JOYCODE_${joy}_BUTTON$((($(if ($m.Groups[2].Value -eq 'COIN1') { $Coin } else { $Start })) + 1))"
+        if (-not $mameBtn.ContainsKey($m.Groups[2].Value)) { return $m.Value }
+        $target = "JOYCODE_${joy}_BUTTON$($mameBtn[$m.Groups[2].Value] + 1)"
         $seq = $m.Groups[3].Value.Trim(); $lead = [regex]::Match($m.Groups[3].Value, '^\s*').Value; $tail = [regex]::Match($m.Groups[3].Value, '\s*$').Value
         if ($seq -match "\b$target\b") { return $m.Value }
         $nseq = if (-not $seq -or $seq -eq 'NONE') { $target }
@@ -104,20 +117,22 @@ foreach ($r in $Roots) {
                 else { "$seq OR $target" }
         $m.Groups[1].Value + $lead + $nseq + $tail + $m.Groups[4].Value
       })
-      Save-Text $f.FullName $t $new 'MAME coin / start'
+      Save-Text $f.FullName $t $new 'MAME coin / start / test / service'
     }
   }
   # ---------------- Supermodel
   $ini = Join-Path $r 'Config\Supermodel.ini'
   if (Test-Path -LiteralPath $ini) {
     $t = Read-Text $ini
-    $new = [regex]::Replace($t.text, '(?m)^(\s*Input(Coin1|Start1)\s*=\s*)"([^"]*)"', {
+    $smBtn = @{ Coin1 = $Coin; Start1 = $Start }; if ($Test -ge 0) { $smBtn['TestA'] = $Test }; if ($Service -ge 0) { $smBtn['ServiceA'] = $Service }
+    $new = [regex]::Replace($t.text, '(?m)^(\s*Input(Coin1|Start1|TestA|ServiceA)\s*=\s*)"([^"]*)"', {
       param($m)
-      $target = "JOY${joy}_BUTTON$((($(if ($m.Groups[2].Value -eq 'Coin1') { $Coin } else { $Start })) + 1))"
+      if (-not $smBtn.ContainsKey($m.Groups[2].Value)) { return $m.Value }
+      $target = "JOY${joy}_BUTTON$($smBtn[$m.Groups[2].Value] + 1)"
       $keep = @($m.Groups[3].Value -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch "^JOY${joy}_BUTTON\d+$" })
       $m.Groups[1].Value + '"' + ((@($keep) + $target) -join ',') + '"'
     })
-    Save-Text $ini $t $new 'Supermodel coin / start'
+    Save-Text $ini $t $new 'Supermodel coin / start / test / service'
   }
   # ---------------- Model 2
   $code = { param([int]$b) $n = $b + 1; [uint32](($joy -shl 8) -bor (($n -band 0xF) -shl 4) -bor (($n -shr 4) -shl 12)) }
