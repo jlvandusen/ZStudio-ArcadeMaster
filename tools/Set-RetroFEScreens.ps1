@@ -26,7 +26,10 @@ function Set-Key([string]$k, [string]$v) {
 }
 $caps = (Get-Content $Cabinet -Raw | ConvertFrom-Json).capabilities
 $displays = @($caps.displays)
-$fs = if ($Windowed) { 'no' } else { 'yes' }
+# Each screen gets 'stretch' (the display's own size) in a borderless window (fullscreen = no), as CoinOPS builds
+# ship. Fixed pixel sizes broke the pedestal: its 4K panels run at 200% scaling, Windows reports them to a DPI-unaware
+# scan as 1920x1080, and a 1920x1080 fullscreen RetroFE on them came out shifted / black (2026-11-26).
+$fs = 'no'
 if ($TouchOnly) { $Single = ([int]("0" + (($lines | Where-Object { $_ -match '^\s*numScreens\s*=' } | Select-Object -First 1) -replace '^[^=]*=\s*', '')) -lt 2) }
 elseif ($Single -or $displays.Count -lt 2) {
   Set-Key 'numScreens' '1'; Set-Key 'screenNum0' '0'
@@ -38,8 +41,8 @@ elseif ($Single -or $displays.Count -lt 2) {
   $usbIdx = @(0..($displays.Count - 1) | Where-Object { $_ -ne $primary -and $displays[$_].usb })
   $second = if ($usbIdx) { $usbIdx[0] } else { (0..($displays.Count - 1) | Where-Object { $_ -ne $primary } | Select-Object -First 1) }
   Set-Key 'numScreens' '2'
-  Set-Key 'screenNum0' "$primary"; Set-Key 'fullscreen0' $fs; Set-Key 'horizontal0' "$($displays[$primary].width)"; Set-Key 'vertical0' "$($displays[$primary].height)"
-  Set-Key 'screenNum1' "$second";  Set-Key 'fullscreen1' $fs; Set-Key 'horizontal1' "$($displays[$second].width)"; Set-Key 'vertical1' "$($displays[$second].height)"
+  Set-Key 'screenNum0' "$primary"; Set-Key 'fullscreen0' $fs; Set-Key 'horizontal0' 'stretch'; Set-Key 'vertical0' 'stretch'
+  Set-Key 'screenNum1' "$second";  Set-Key 'fullscreen1' $fs; Set-Key 'horizontal1' 'stretch'; Set-Key 'vertical1' 'stretch'
   Write-Host ("RetroFE: 2 screens - screen 0 = display {0} ({1}x{2}), screen 1 = display {3} ({4}x{5})" -f $primary, $displays[$primary].width, $displays[$primary].height, $second, $displays[$second].width, $displays[$second].height)
 }
 if (-not $TouchOnly) { Set-Content $sc $lines -Encoding ascii }
