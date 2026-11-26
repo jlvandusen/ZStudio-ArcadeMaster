@@ -165,7 +165,8 @@ try {
     # only what is merged: a clone on a branch or with edited files (someone developing a patch) is never built and
     # installed by the timer - that is the developer's job, by hand
     if ($git) {
-      $br = (& $git -C $repo rev-parse --abbrev-ref HEAD 2>$null); $dirty = @(& $git -C $repo status --porcelain --untracked-files=no -- retrofe 2>$null)
+      # new (untracked) patch files count too: a patch being written is not a build to install
+      $br = (& $git -C $repo rev-parse --abbrev-ref HEAD 2>$null); $dirty = @(& $git -C $repo status --porcelain -- retrofe 2>$null)
       if ($br -ne 'main' -or $dirty.Count) { Write-Host "RetroFE build $key not made: the clone is on '$br'$(if ($dirty.Count) { " with edited RetroFE files" }) - only main is built automatically"; return }
     }
     $pwsh = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
@@ -180,14 +181,31 @@ if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue)
     $missing = @($(if (-not $pwsh) { 'PowerShell 7 (pwsh)' }), $(if (-not $GstRoot) { 'GStreamer 1.24 kit' }), $(if (-not $vs) { 'Visual Studio Build Tools (C++)' }), $(if ($vs -and -not $cmake) { 'CMake' }) | Where-Object { $_ })
     if ($missing) { Say "RetroFE build $key needed but this cabinet can't compile (missing: $($missing -join ', ')) - copy a package from Z:\ArcadeMaster\builds"; return }
     $out = Join-Path $BuildRoot "retrofe-$key"; $blog = Join-Path $BuildRoot "retrofe-$key.build.log"
+    # Build from a FROZEN copy of the patch set, checked against the key. On 2026-11-26 the key was read while a new
+    # patch was in the folder and the patches were listed a moment later, when a developer's git stash had taken it out:
+    # 16 patches were built and installed under the 17-patch key. The copy is what gets built, and it must hash to $key.
+    $snap = Join-Path $BuildRoot "patchset-$key"
+    if (Test-Path $snap) { Remove-Item $snap -Recurse -Force }
+    New-Item -ItemType Directory -Force (Join-Path $snap 'patches') | Out-Null
+    Copy-Item (Join-Path $repo 'retrofe\patches\*.patch') (Join-Path $snap 'patches')
+    Copy-Item (Join-Path $repo 'retrofe\Build-RetroFE.ps1') $snap
+    $sparts = @(Get-ChildItem (Join-Path $snap 'patches') -Filter *.patch -File | Sort-Object Name) + @(Get-Item (Join-Path $snap 'Build-RetroFE.ps1'))
+    $sall = New-Object IO.MemoryStream
+    foreach ($sp in $sparts) { $b = [Text.Encoding]::UTF8.GetBytes($sp.Name + "`n"); $sall.Write($b, 0, $b.Length); $c = [IO.File]::ReadAllBytes($sp.FullName); $sall.Write($c, 0, $c.Length) }
+    $skey = (-join ([Security.Cryptography.SHA1]::Create().ComputeHash($sall.ToArray()) | ForEach-Object { $_.ToString('x2') })).Substring(0, 10)
+    if ($skey -ne $key) { Remove-Item $snap -Recurse -Force; Say "RetroFE build $key not made: the patches changed while they were being read (copy is $skey) - next run"; return }
     Say "building RetroFE $key (installed: $(if ($have) { $have } else { 'unknown' })) - log $blog"
     $sw = [Diagnostics.Stopwatch]::StartNew()
-    $p = Start-Process $pwsh -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $repo 'retrofe\Build-RetroFE.ps1')`"", '-GstRoot', "`"$GstRoot`"", '-Work', "`"$(Join-Path $BuildRoot 'src')`"", '-Out', "`"$out`"", '-Git', "`"$git`"", '-CMake', "`"$cmake`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput $blog -RedirectStandardError "$blog.err"
+    $p = Start-Process $pwsh -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $snap 'Build-RetroFE.ps1')`"", '-GstRoot', "`"$GstRoot`"", '-Work', "`"$(Join-Path $BuildRoot 'src')`"", '-Out', "`"$out`"", '-Git', "`"$git`"", '-CMake', "`"$cmake`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput $blog -RedirectStandardError "$blog.err"
     try { $p.PriorityClass = 'BelowNormal' } catch { }
     $p.WaitForExit()
     if ($p.ExitCode -or -not (Test-Path (Join-Path $built 'retrofe.exe'))) { Say "RetroFE build $key FAILED (exit $($p.ExitCode)) after $([int]$sw.Elapsed.TotalMinutes) min - see $blog"; return }
     Set-Content (Join-Path $built 'am-build.txt') "key=$key`r`nbuilt=$(Get-Date -Format s)`r`ncommit=$(& $git -C $repo rev-parse --short HEAD)`r`nmachine=$env:COMPUTERNAME" -Encoding ascii
-    Say "built RetroFE $key in $([int]$sw.Elapsed.TotalSeconds) s"
+    Remove-Item $snap -Recurse -Force -ErrorAction SilentlyContinue
+    # the log must show every patch of this key going in (applied now, or already there)
+    $logged = @(Select-String -LiteralPath $blog -Pattern '^==> (apply|patch already applied:) (\S+\.patch)' | ForEach-Object { $_.Matches[0].Groups[2].Value } | Sort-Object -Unique)
+    if ($logged.Count -ne ($sparts.Count - 1)) { Remove-Item (Join-Path $built 'retrofe.exe') -Force; Say "RetroFE build $key THROWN AWAY: the build log shows $($logged.Count) patch(es), the key has $($sparts.Count - 1) - see $blog"; return }
+    Say "built RetroFE $key in $([int]$sw.Elapsed.TotalSeconds) s ($($logged.Count) patches)"
   }
 
   # 4. deploy (only with RetroFE closed)

@@ -193,6 +193,9 @@ The loop works like this (James, 2026-11-25):
         only, off by default (linkEvents). Tested with a stand-in helper.
   - [x] [RACE1] Fix found on the way (patch 0017): menus skipped their first games on a racing rig (up + down both held
         for 250 ms after entering; "down wins"). Opposite directions cancel; Racing opens on 1 / 91.
+  - [x] [RACE1] Fix: the updater built 16 patches under the 17-patch key (it read the key, then listed the patches a moment
+        later while a git stash had taken the new patch out). It now builds from a frozen copy checked against the key,
+        counts new patch files as work in progress, and throws a build away when its log shows fewer patches than the key.
   - [ ] Part 2-3: tools\AmLink helper - LAN discovery (same cabinet type), follow only while idle, countdown card.
   - [ ] Part 4: the idle rig's wheel turns with the leader's steering (spring centre in Control/Haptics), gentle.
   - [ ] Part 5: linked games start their two-cabinet version on both rigs.
