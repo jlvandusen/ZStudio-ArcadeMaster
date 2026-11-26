@@ -119,6 +119,26 @@ static class AmPanel
         using (var mutex = new Mutex(true, MutexName, out created))
         {
             if (!created) return Forward(args) ? 0 : 1;   // the running AmPanel handles it
+            // The LEDBlinky.exe shim (ampanel-shim\) must never become the long-running AmPanel: RetroFE WAITS for every
+            // LEDBlinky call, so a shim that stays up freezes the frontend on a black screen (DESKTOP-RACE2 2026-11-26,
+            // after a Tools page had taken the real AmPanel down with it). No AmPanel running: start the real one (one
+            // folder up) outside RetroFE's job through WMI, hand it this command, and exit.
+            string self = Path.GetFileName(Application.ExecutablePath);
+            string real = Path.Combine(Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\')) ?? "", "AmPanel.exe");
+            if (self.Equals("LEDBlinky.exe", StringComparison.OrdinalIgnoreCase) && File.Exists(real))
+            {
+                mutex.ReleaseMutex(); mutex.Close();   // closed, not just released: an open handle keeps the named mutex alive and
+                                                       // the real AmPanel would think it is already running and quit
+                try
+                {
+                    using (var wmi = new System.Management.ManagementClass("Win32_Process"))
+                        wmi.InvokeMethod("Create", new object[] { "\"" + real + "\" 1", Path.GetDirectoryName(real), null, null });
+                }
+                catch { try { Process.Start(new ProcessStartInfo(real, "1") { WorkingDirectory = Path.GetDirectoryName(real), UseShellExecute = false }); } catch { } }
+                var wait = Stopwatch.StartNew();   // at most ~4 s in all: RetroFE is waiting on this call
+                while (wait.ElapsedMilliseconds < 4000) { System.Threading.Thread.Sleep(250); if (Forward(args)) return 0; }
+                return 0;
+            }
             LoadConfig();
             Log("AmPanel started (" + string.Join(" ", args) + ")");
             lock (Gate)
