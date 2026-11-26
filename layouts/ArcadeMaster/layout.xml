@@ -71,6 +71,51 @@
     <item yOffset="520"  width="300" maxHeight="80"  alpha="0"/>
   </menu>
 
+  <!-- floating button hints at the selected game (tools/New-LayoutHints.py): only at rest, gone on any move.
+       1 = PLAY; the stick: up/down games, left/right filters; buttons 5 / 8 = back / forward a letter (controls.conf
+       letterUp = Z, letterDown = T: P1 buttons 5 and 8 on the pedestal's lower row) -->
+  <!--am-ui:menuHints-->
+  <image src="images/hints/hint_play.png" x="628" y="396" xOrigin="center" yOrigin="center" width="149" height="60" alpha="0" layer="18">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".8"><animate type="nop"/></set>
+      <set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="390" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onIdle>
+      <set duration="1.1"><animate type="y" to="384" algorithm="easeInOutSine"/></set>
+      <set duration="1.1"><animate type="y" to="390" algorithm="easeInOutSine"/></set>
+    </onIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
+  <image src="images/hints/hint_move.png" x="400" y="572" xOrigin="center" yOrigin="center" width="366" height="60" alpha="0" layer="18">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="1.2"><animate type="nop"/></set>
+      <set duration=".25"><animate type="alpha" to=".95" algorithm="easeOutCubic"/><animate type="y" to="566" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onIdle>
+      <set duration="1.3"><animate type="y" to="561" algorithm="easeInOutSine"/></set>
+      <set duration="1.3"><animate type="y" to="566" algorithm="easeInOutSine"/></set>
+    </onIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
+  <image src="images/hints/hint_letters.png" x="400" y="1032" xOrigin="center" yOrigin="center" width="253" height="60" alpha="0" layer="18">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="1.6"><animate type="nop"/></set>
+      <set duration=".25"><animate type="alpha" to=".9" algorithm="easeOutCubic"/><animate type="y" to="1026" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onIdle>
+      <set duration="1.5"><animate type="y" to="1021" algorithm="easeInOutSine"/></set>
+      <set duration="1.5"><animate type="y" to="1026" algorithm="easeInOutSine"/></set>
+    </onIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
+  <!--/am-ui:menuHints-->
+
   <!-- ================= PREVIEW VIDEO in a neon frame ================= -->
   <image src="images/ui_video_frame.png" x="1340" y="372" xOrigin="center" yOrigin="center" width="1120" height="650" alpha="1" layer="7"/>
   <!-- type="am_video" = light 720p copies with a keyframe every second (tools/New-PreviewMedia.py): starts at once, half
@@ -243,7 +288,7 @@
   </reloadableScrollingText>
   <!-- floating button hints over the video (tools/New-LayoutHints.py): only at rest, gone on any move. PAGE DOWN = the
        game's info, PAGE UP = back to the video (controls.conf showGameInfo / hideGameInfo, RetroFE patch 0019) -->
-  <image src="images/hints/hint_info.png" x="1648" y="622" xOrigin="center" yOrigin="center" width="300" height="54" alpha="0" layer="18">
+  <image src="images/hints/hint_info.png" x="1648" y="622" xOrigin="center" yOrigin="center" width="252" height="60" alpha="0" layer="18">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration="1.6"><animate type="nop"/></set>
@@ -260,7 +305,7 @@
     <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
   </image>
-  <image src="images/hints/hint_video.png" x="1648" y="622" xOrigin="center" yOrigin="center" width="300" height="54" alpha="0" layer="18">
+  <image src="images/hints/hint_video.png" x="1648" y="622" xOrigin="center" yOrigin="center" width="236" height="60" alpha="0" layer="18">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration="8.3"><animate type="nop"/></set>
