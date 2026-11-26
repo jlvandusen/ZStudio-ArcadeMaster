@@ -38,6 +38,13 @@ function Stop-ByPath([string]$name, [string]$path) {
   Get-Process $name -ErrorAction SilentlyContinue | Where-Object { $_.Path -and ($_.Path -ieq $path) } | ForEach-Object { Stop-Process -Id $_.Id -Force }
 }
 
+# AmPanel must outlive this script: from Tools > Cabinet Settings this runs inside RetroFE's job object, and Windows ends
+# every process of that job when the Tools page closes - an AmPanel started with Start-Process went with it (DESKTOP-RACE2
+# 2026-11-26: Esc stopped ending games). WMI's Win32_Process.Create starts it outside the job.
+function Start-AmPanelDetached {
+  try { $r = ([wmiclass]'Win32_Process').Create("`"$amExe`" 1", $amRoot, $null); if ($r.ReturnValue -eq 0) { return } } catch { }
+  Start-Process $amExe -ArgumentList '1' -WorkingDirectory $amRoot   # no WMI: as before
+}
 $cur = Get-Conf 'LEDBlinkyDirectory'
 $state = Read-Json $stateFile
 $now = if ($cur -and ($cur.TrimEnd('\') -ieq $shim)) { 'ArcadeMaster' } else { 'LEDBlinky' }
@@ -56,7 +63,7 @@ if ($Engine -eq 'ArcadeMaster') {
     New-Item -ItemType Directory -Force $shim | Out-Null
     Copy-Item $amExe (Join-Path $shim 'LEDBlinky.exe') -Force
     Set-Conf 'LEDBlinkyDirectory' $shim
-    Stop-ByPath 'AmPanel' $amExe; Start-Sleep -Milliseconds 500; Start-Process $amExe -ArgumentList '1' -WorkingDirectory $amRoot
+    Stop-ByPath 'AmPanel' $amExe; Start-Sleep -Milliseconds 500; Start-AmPanelDetached
     Write-Host "button lights: none on this cabinet - AmPanel gets the frontend's game events through $shim (Esc ends any game)"
     return
   }
@@ -70,7 +77,7 @@ if ($Engine -eq 'ArcadeMaster') {
   Stop-ByPath 'LEDBlinky' (Join-Path $real 'LEDBlinky.exe')
   Stop-ByPath 'AmPanel' $amExe
   Start-Sleep -Milliseconds 500
-  Start-Process $amExe -ArgumentList '1' -WorkingDirectory $amRoot
+  Start-AmPanelDetached
   Write-Host "button lights: ArcadeMaster (AmPanel owns the boards; LEDBlinky closed; RetroFE calls reach AmPanel through $shim)"
 }
 else {
@@ -81,7 +88,7 @@ else {
   [ordered]@{ engine = 'LEDBlinky'; ledBlinkyDir = $real; at = (Get-Date).ToString('s') } | ConvertTo-Json | Set-Content $stateFile -Encoding UTF8
   Stop-ByPath 'AmPanel' $amExe
   Start-Sleep -Milliseconds 500
-  if (Test-Path $amExe) { Start-Process $amExe -ArgumentList '1' -WorkingDirectory $amRoot }   # back in shadow mode
+  if (Test-Path $amExe) { Start-AmPanelDetached }   # back in shadow mode
   $lb = Join-Path $real 'LEDBlinky.exe'; if (Test-Path $lb) { Start-Process $lb -ArgumentList '1' -WorkingDirectory $real }
   Write-Host "button lights: LEDBlinky (LEDBlinkyDirectory = $real; AmPanel back in shadow mode)"
 }
