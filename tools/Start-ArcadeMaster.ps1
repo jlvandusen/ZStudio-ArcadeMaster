@@ -227,6 +227,24 @@ if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
 # shadow mode it passes everything on to LEDBlinky, so having it running never changes the lights by itself.
 $amPanel = Join-Path (Split-Path $ManifestDir) 'AmPanel.exe'
 if (Test-Path $amPanel) { try { Start-Process $amPanel -ArgumentList '1' -WorkingDirectory (Split-Path $amPanel); Write-Log 'AmPanel started (tray)' } catch { Write-Log "AmPanel failed to start: $($_.Exception.Message)" } }
+# cabinet link (docs/16): similar cabinets browse in unison and start the same game. catalog\cabinet-link.json names
+# the cabinets that have it on; a cabinet whose settings.conf already says linkEvents = ... keeps its own choice
+# (Cabinet Settings > CABINET LINK). The helper ends with this launcher.
+try {
+  $lkCat = Join-Path (Split-Path $PSScriptRoot) 'catalog\cabinet-link.json'; $lkConf = Join-Path $Root 'settings.conf'
+  if (-not $PrepOnly -and (Test-Path $lkCat) -and (Test-Path $lkConf) -and -not $Root.StartsWith($env:TEMP, [StringComparison]::OrdinalIgnoreCase)) {
+    $lk = Get-Content $lkCat -Raw | ConvertFrom-Json
+    $lkLine = Select-String -LiteralPath $lkConf -Pattern '^\s*linkEvents\s*=\s*(\S+)' | Select-Object -Last 1
+    if (-not $lkLine -and @($lk.enabled) -contains $env:COMPUTERNAME) {
+      $t0 = [IO.File]::ReadAllText($lkConf); [IO.File]::WriteAllText($lkConf, ($t0.TrimEnd() + "`r`nlinkEvents = yes`r`n")); Write-Log 'cabinet link: switched on for this cabinet (catalog\cabinet-link.json)'
+      $lkLine = Select-String -LiteralPath $lkConf -Pattern '^\s*linkEvents\s*=\s*(\S+)' | Select-Object -Last 1
+    }
+    if ($lkLine -and $lkLine.Matches[0].Groups[1].Value -match '^(yes|true|1)$') {
+      $lkArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'AmLink.ps1')`"", '-RetroFE', "`"$Root`"", '-ManifestDir', "`"$ManifestDir`"", '-IdleSec', "$([int]$lk.idleSec)", '-CountdownSec', "$([int]$lk.countdownSec)", '-ParentPid', "$PID")
+      Start-Process powershell -ArgumentList $lkArgs -WindowStyle Hidden; Write-Log 'cabinet link helper started'
+    }
+  }
+} catch { Write-Log "cabinet link failed to start: $($_.Exception.Message)" }
 $deckOn = [bool](Read-AmUi $ManifestDir).streamDeck   # Tools > Cabinet Settings > Stream Deck
 if (-not $deckOn -and (Test-Path $deck)) { Write-Log 'Stream Deck controller off (Cabinet Settings)' }
 if ($deckOn -and $pyw -and (Test-Path $deck)) {

@@ -196,7 +196,12 @@ The loop works like this (James, 2026-11-25):
   - [x] [RACE1] Fix: the updater built 16 patches under the 17-patch key (it read the key, then listed the patches a moment
         later while a git stash had taken the new patch out). It now builds from a frozen copy checked against the key,
         counts new patch files as work in progress, and throws a build away when its log shows fewer patches than the key.
-  - [ ] Part 2-3: tools\AmLink helper - LAN discovery (same cabinet type), follow only while idle, countdown card.
+  - [x] [RACE1] Part 2-3: tools\AmLink.ps1 - cabinets hear each other through files on the NAS share, follow only while
+        idle (30 s) and only the same cabinet type, "joining in 5" card, any menu button cancels. On for RACE1 + RACE2
+        (catalog/cabinet-link.json), switch in Cabinet Settings. Tested on RACE1 against a stand-in second rig.
+  - [ ] RACE2: restart the frontend after pulling, then try it with RACE1 for real (two cabinets, never tested together).
+  - [ ] RetroFE patch 0018: `back` command, so a follower can leave the menu it is in.
+  - [ ] End a joined game when the leader's game ends and nobody touched this cabinet (needs the in-game exit, A3).
   - [ ] Part 4: the idle rig's wheel turns with the leader's steering (spring centre in Control/Haptics), gentle.
   - [ ] Part 5: linked games start their two-cabinet version on both rigs.
 - [ ] Ahead of Big Box / Batocera / RetroBat / CoinOPS (docs/14, James 2026-11-25), after vsync and the cache:
