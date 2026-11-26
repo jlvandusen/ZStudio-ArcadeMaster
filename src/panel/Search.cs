@@ -64,6 +64,13 @@ class GameLink
 
     public bool Alive { get { return Running && (DateTime.Now - LastHello).TotalSeconds < 5; } }
 
+    // open a list (patch 0028 "show <collection>"); the search then sends goto until the game is selected
+    public void Show(string collection)
+    {
+        try { using (var tx = new UdpClient()) { var b = Encoding.UTF8.GetBytes("show\t" + collection); tx.Send(b, b.Length, new IPEndPoint(IPAddress.Loopback, CommandsPort)); } }
+        catch (Exception e) { log("search: show failed: " + e.Message); }
+    }
+
     public void Goto(string item)
     {
         LastMiss = null;
@@ -152,7 +159,30 @@ class SearchIndex
         return " " + sb.ToString() + " ";
     }
 
-    // every word typed must be in the title (or item name); titles that start with it come first, then word starts
+    // collections the search may open: real lists in collections\ (settings.conf), not the subsets that repeat another
+    // list's games (ArcadesMini, Fight ...) - null = every collection in the index
+    public HashSet<string> Openable;
+    static readonly HashSet<string> Subsets = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ArcadesMini", "Fight", "Arcade", "Main", "Classic Systems" };
+    public void LoadOpenable(string retroFERoot)
+    {
+        try
+        {
+            string cols = Path.Combine(retroFERoot ?? "", "collections");
+            if (!Directory.Exists(cols)) return;
+            var s = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var d in Directory.GetDirectories(cols))
+            {
+                string n = Path.GetFileName(d);
+                if (!Subsets.Contains(n) && File.Exists(Path.Combine(d, "settings.conf"))) s.Add(n);
+            }
+            Openable = s;
+        }
+        catch { }
+    }
+
+    // every word typed must be in the title (or item name); titles that start with it come first, then word starts.
+    // Search across all systems (James 2026-11-26): the open menu's games first, then every other system's, each game
+    // once per system.
     public List<Game> Find(string query, string menu, int max)
     {
         var words = Fold(query).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -161,15 +191,16 @@ class SearchIndex
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var g in Games)
         {
-            if (!string.IsNullOrEmpty(menu) && !string.Equals(g.Collection, menu, StringComparison.OrdinalIgnoreCase)) continue;
-            bool all = true; int score = 0;
+            bool here = !string.IsNullOrEmpty(menu) && string.Equals(g.Collection, menu, StringComparison.OrdinalIgnoreCase);
+            if (!here && Openable != null && !Openable.Contains(g.Collection)) continue;
+            bool all = true; int score = here ? 0 : 5;
             foreach (var w in words)
             {
                 int at = g.Key.IndexOf(w, StringComparison.Ordinal);
                 if (at < 0) { all = false; break; }
                 score += at == 1 ? 0 : g.Key.IndexOf(" " + w, StringComparison.Ordinal) >= 0 ? 10 : 30;
             }
-            if (!all || !seen.Add(g.Item)) continue;
+            if (!all || !seen.Add(g.Collection + "|" + g.Title)) continue;
             hits.Add(new KeyValuePair<int, Game>(score * 1000 + Math.Min(999, g.Title.Length), g));
         }
         hits.Sort((a, b) => a.Key.CompareTo(b.Key));
@@ -340,9 +371,7 @@ class SearchScreen : NoFocusForm
     {
         note = null;
         string menu = link != null ? link.Menu : null;
-        bool scoped = index.HasMenu(menu);
-        results = index.Find(query, scoped ? menu : null, 8); sel = 0;
-        if (!scoped && query.Trim().Length > 0) note = "Open a game list first - these are from every list";
+        results = index.Find(query, menu, 8); sel = 0;   // the open list first, then every other system
         Invalidate();
     }
 
@@ -351,14 +380,17 @@ class SearchScreen : NoFocusForm
         if (link == null || !link.Alive) { note = "The frontend isn't answering (settings.conf linkEvents = yes?)"; Invalidate(); return; }
         // RetroFE only takes a goto while its menu stands still (attract, a scroll ... drop it): send again every 300 ms
         // until it reports the game selected, says "miss" (not in this menu), or 4 s pass
-        link.Goto(g.Item);
+        // in another system: open its list first (patch 0028), then the gotos land once it is open
+        bool elsewhere = !string.Equals(link.Menu, g.Collection, StringComparison.OrdinalIgnoreCase);
+        if (elsewhere) link.Show(g.Collection); else link.Goto(g.Item);
         int tries = 0;
         var t = new System.Windows.Forms.Timer { Interval = 300 };
         t.Tick += delegate {
             tries++;
             if (link.LastMiss == g.Item) { t.Stop(); t.Dispose(); note = g.Title + " isn't in this list"; Invalidate(); return; }
             if (string.Equals(link.Selected, g.Item, StringComparison.OrdinalIgnoreCase)) { t.Stop(); t.Dispose(); Close(); return; }
-            if (tries > 13) { t.Stop(); t.Dispose(); note = "The frontend is busy - tap it again"; Invalidate(); return; }
+            if (tries > (elsewhere ? 27 : 13)) { t.Stop(); t.Dispose(); note = "The frontend is busy - tap it again"; Invalidate(); return; }
+            if (elsewhere && !string.Equals(link.Menu, g.Collection, StringComparison.OrdinalIgnoreCase)) { if (tries % 5 == 0) link.Show(g.Collection); return; }
             link.Goto(g.Item);
         };
         t.Start();
@@ -423,7 +455,7 @@ class SearchScreen : NoFocusForm
             using (var f = new Font(th.Family, rh * 0.3f, FontStyle.Bold, GraphicsUnit.Pixel)) using (var fmt = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap })
                 g.DrawString(results[i].Title, f, Brushes.White, new RectangleF(tx, rr.Y + rh * 0.14f, rr.Right - tx - rh * 0.2f, rh * 0.42f), fmt);
             using (var f = new Font(th.Family, rh * 0.22f, FontStyle.Regular, GraphicsUnit.Pixel)) using (var b = new SolidBrush(th.Dim))
-                g.DrawString((results[i].Year + "   " + results[i].Maker).Trim(), f, b, tx, rr.Y + rh * 0.58f);
+                g.DrawString((results[i].Collection + "   " + results[i].Year + "   " + results[i].Maker).Trim(), f, b, tx, rr.Y + rh * 0.58f);
         }
         if (results.Count == 0 && query.Trim().Length > 0)
             using (var f = new Font(th.Family, H * 0.03f, FontStyle.Bold, GraphicsUnit.Pixel)) using (var b = new SolidBrush(th.Dim)) g.DrawString("NO GAME BY THAT NAME HERE", f, b, pad, ry);
