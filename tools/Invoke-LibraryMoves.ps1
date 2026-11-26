@@ -46,7 +46,9 @@ function Test-Launch([string]$sys, [string]$rom) {
   while ($grew) { $grew = $false; foreach ($p in $all) { if ($tree -contains $p.ParentProcessId -and $tree -notcontains $p.ProcessId) { $tree += $p.ProcessId; $grew = $true } } }
   $alive = -not $l.HasExited
   $names = (@($all | Where-Object { $tree -contains $_.ProcessId -and $_.ProcessId -ne $l.Id } | ForEach-Object Name) | Select-Object -Unique) -join ','
-  foreach ($id in ($tree | Sort-Object -Descending)) { try { Stop-Process -Id $id -Force -ErrorAction Stop } catch { } }
+  # never the cabinet's own services (RetroBat's launch chain can call AmPanel / LEDBlinky)
+  $keep = @($all | Where-Object { $_.Name -match '^(AmPanel|LEDBlinky|retrofe|explorer)\.exe$' } | ForEach-Object ProcessId)
+  foreach ($id in ($tree | Where-Object { $keep -notcontains $_ } | Sort-Object -Descending)) { try { Stop-Process -Id $id -Force -ErrorAction Stop } catch { } }
   Start-Sleep 2
   if ($alive) { "ran ($names)" } else { "FAILED (launcher exited within 15 s: $names)" }
 }
