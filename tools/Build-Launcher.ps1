@@ -10,7 +10,12 @@
 param([string]$InstallTo)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot
-$csc = @(Get-ChildItem 'D:\VS', 'C:\Program Files\Microsoft Visual Studio', 'C:\Program Files (x86)\Microsoft Visual Studio' -Recurse -Filter csc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\Roslyn\\csc\.exe$' } | Select-Object -First 1)
+# Roslyn: ask vswhere where Visual Studio is (any drive) and look in its one Roslyn folder. Searching the whole Visual
+# Studio tree took over 5 minutes once the C++ build tools were in (2P stand-up, 2026-11-26).
+$csc = @()
+$vswhere = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
+if (Test-Path $vswhere) { foreach ($vsp in @(& $vswhere -products * -property installationPath 2>$null)) { $r = [IO.Path]::Combine($vsp, 'MSBuild\Current\Bin\Roslyn\csc.exe'); if ($vsp -and (Test-Path $r)) { $csc = @(Get-Item $r); break } } }
+if (-not $csc) { $csc = @(Get-ChildItem 'D:\VS', 'C:\Program Files\Microsoft Visual Studio', 'C:\Program Files (x86)\Microsoft Visual Studio' -Recurse -Filter csc.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\Roslyn\\csc\.exe$' } | Select-Object -First 1) }
 $fw = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 # no Visual Studio (e.g. a cabinet): the C# 5 compiler that ships with .NET Framework 4.x builds the launcher as well
 if (-not $csc) { $csc = @(Get-Item (Join-Path $fw 'csc.exe') -ErrorAction SilentlyContinue) }

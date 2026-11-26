@@ -65,6 +65,9 @@ namespace ArcadeMaster
     static class Run
     {
         public static string Git = FindGit();
+        public static void RefreshGit() { Git = FindGit(); }   // after Setup installed it
+        public static bool HaveGit { get { return Git != "git.exe" && File.Exists(Git); } }
+        public static string Winget { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\WindowsApps\winget.exe"); } }
         static string FindGit()
         {
             // machine-wide, then per-user (winget / Git for Windows "only for me" installs to %LOCALAPPDATA%\Programs\Git)
@@ -406,7 +409,7 @@ namespace ArcadeMaster
     {
         readonly Config c;
         TextBox repo, url, retro, manifest, title, tagline, branch;
-        CheckBox useCopy, installLayout, activeLayout, toolsMenu, rebuild, follow, showAll, second, autoUpdate, checkOnly;
+        CheckBox useCopy, prereqs, installLayout, activeLayout, toolsMenu, rebuild, follow, showAll, second, autoUpdate, checkOnly;
         CheckBox sAutoStart, sQuiet, sNoPopups, sBezels, sAlwaysOn;
         ComboBox type; TextBox log; ProgressBar bar; Label status;
         Dictionary<string, bool> sysLoaded;   // Windows state as read - only switches the user CHANGES are applied
@@ -425,9 +428,12 @@ namespace ArcadeMaster
             repo = Ui.T(c.RepoPath); url = Ui.T(c.RepoUrl); retro = Ui.T(c.RetroFERoot); manifest = Ui.T(c.ManifestDir);
             useCopy = Ui.C("Work on a COPY of this frontend (leaves the original untouched - recommended on a cabinet you already use)", false);
             var detect = Ui.B("Find frontends", Ui.Cyan); detect.Click += (s, e) => FindFrontends();
+            // every cabinet builds its own RetroFE from main - no ready-made packages from the NAS (James, 2026-11-26)
+            prereqs = Ui.C("Install the programs ArcadeMaster needs (Git, PowerShell 7, Python, VS C++ build tools, GStreamer, ffmpeg) - only what is missing", true);
             p1.Controls.AddRange(new Control[] { Ui.L("ArcadeMaster repository (tools, layouts)", 15, Ui.Dim), Ui.Path(repo), Ui.L("GitHub URL (cloned when the folder is empty)", 15, Ui.Dim), url,
                 Ui.L("RetroFE / CoinOPS frontend root (folder with layouts\\ and collections\\)", 15, Ui.Dim), Ui.Row(Ui.Path(retro), detect), useCopy,
-                Ui.L("Manifest folder (catalog, cabinet, health, logs)", 15, Ui.Dim), Ui.Path(manifest) });
+                Ui.L("Manifest folder (catalog, cabinet, health, logs)", 15, Ui.Dim), Ui.Path(manifest), prereqs,
+                Ui.L("The build tools let this cabinet compile RetroFE itself. Windows asks once for permission: answer Yes.", 13, Ui.Dim) });
             tabs.TabPages.Add(Page("Locations", p1));
 
             // Frontend
@@ -597,7 +603,7 @@ namespace ArcadeMaster
                 }
             }
             Save(); var cfg = Snapshot(); bool copy = useCopy.Checked;
-            bool doLayout = installLayout.Checked, doActive = activeLayout.Checked, doTools = toolsMenu.Checked, doRebuild = rebuild.Checked;
+            bool doLayout = installLayout.Checked, doActive = activeLayout.Checked, doTools = toolsMenu.Checked, doRebuild = rebuild.Checked, doPrereqs = prereqs.Checked;
             var now = new Dictionary<string, bool> { { "autoStartArcade", sAutoStart.Checked }, { "quietStartup", sQuiet.Checked }, { "noOverlays", sNoPopups.Checked }, { "gameBezels", sBezels.Checked }, { "alwaysOn", sAlwaysOn.Checked } };
             var changed = sysLoaded == null ? null : now.Where(kv => sysLoaded.ContainsKey(kv.Key) && sysLoaded[kv.Key] != kv.Value).ToDictionary(kv => kv.Key, kv => kv.Value);
             Enabled = false; bar.Value = 0;
@@ -606,10 +612,27 @@ namespace ArcadeMaster
                 try
                 {
                     var steps = new List<Tuple<string, Func<bool>>>();
+                    // Git first: the repository step needs it to clone; everything else is installed from the repo's own tool
+                    if (doPrereqs && !Run.HaveGit) steps.Add(Tuple.Create("Git", (Func<bool>)(() =>
+                    {
+                        if (!File.Exists(Run.Winget)) { Say("winget is missing - install 'App Installer' from the Microsoft Store, then run setup again"); return false; }
+                        Say("installing Git (winget Git.Git)");
+                        int rc = Run.Exec(Run.Winget, "install --id Git.Git -e --silent --accept-package-agreements --accept-source-agreements", null, Say);
+                        Run.RefreshGit();
+                        if (!Run.HaveGit) { Say("Git was not installed (winget exit " + rc + ")"); return false; }
+                        Say("Git: " + Run.Git); return true;
+                    })));
                     steps.Add(Tuple.Create("repository", (Func<bool>)(() =>
                     {
                         if (Directory.Exists(Path.Combine(cfg.RepoPath, ".git"))) { var u = Updater.Check(cfg); Say(Updater.Apply(cfg, u, Say)); return true; }
                         Say("cloning " + cfg.RepoUrl + " -> " + cfg.RepoPath); return Run.Exec(Run.Git, "clone " + cfg.RepoUrl + " \"" + cfg.RepoPath + "\"", null, Say) == 0;
+                    })));
+                    // the build tools and the rest, into <ArcadeMaster>\_tools next to the manifest (GStreamer is unpacked there)
+                    if (doPrereqs) steps.Add(Tuple.Create("prerequisites", (Func<bool>)(() =>
+                    {
+                        var toolsRoot = Path.Combine(Path.GetDirectoryName(cfg.ManifestDir.TrimEnd('\\')) ?? cfg.ManifestDir, "_tools");
+                        Say("checking the programs ArcadeMaster needs (installs only what is missing; the C++ build tools take 10-20 minutes and Windows asks once - answer Yes)");
+                        return Run.Tool(cfg, "Install-Prerequisites.ps1", "-ToolsRoot \"" + toolsRoot + "\"", Say) == 0;
                     })));
                     if (copy) steps.Add(Tuple.Create("frontend copy", (Func<bool>)(() =>
                     {
