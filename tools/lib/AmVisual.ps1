@@ -131,7 +131,14 @@ public static class AmDraw {
         var ball = new RectangleF(x + s * .24f, y + s * .14f, s * .52f, s * .52f);
         using (var b = new LinearGradientBrush(ball, Color.White, c, 45f)) g.FillEllipse(b, ball);
         break; }
-      case "touch": {
+      case "power": case "restart": {
+        // power symbol: an open ring with a bar through the gap; "restart" adds an arrow head on the ring's end
+        using (var pen = P(c, w)) {
+          g.DrawArc(pen, x + s * .16f, y + s * .2f, s * .68f, s * .68f, -60f, 300f);
+          g.DrawLine(pen, x + s * .5f, y + s * .1f, x + s * .5f, y + s * .5f);
+          if (kind == "restart") { g.DrawLine(pen, x + s * .67f, y + s * .27f, x + s * .79f, y + s * .2f); g.DrawLine(pen, x + s * .67f, y + s * .27f, x + s * .73f, y + s * .39f); }
+        }
+        break; }      case "touch": {
         using (var p = Round(new RectangleF(x + s * .1f, y + s * .1f, s * .8f, s * .58f), s * .06f)) using (var pen = P(c, w)) g.DrawPath(pen, p);
         using (var b = new SolidBrush(AmPal.A(c, 90))) g.FillEllipse(b, x + s * .38f, y + s * .28f, s * .24f, s * .24f);
         using (var pen = P(c, s / 9)) g.DrawLine(pen, x + s * .5f, y + s * .42f, x + s * .5f, y + s * .9f);

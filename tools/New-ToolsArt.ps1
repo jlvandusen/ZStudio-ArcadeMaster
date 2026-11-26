@@ -37,6 +37,8 @@ $meta = @{
   WheelSetup         = @{ icon = 'setup'; color = 'ff2fa0'; what = 'Turn, press and release each control once. Every game gets a best-practice mapping for this wheel.' }
   EmulatorUpdates    = @{ icon = 'rebuild'; color = '3ddc84'; what = 'Check every emulator against its newest release and update the ones that can be: settings, saves and wheel bindings are kept, old files backed up.' }
   MenuButtons        = @{ icon = 'buttons'; color = '2ec8ff'; what = 'The same menu buttons on every cabinet: what each button does in the menus, named for the controllers this cabinet has.' }
+  RestartPC          = @{ icon = 'restart'; color = 'ffb000'; what = 'Restart the whole cabinet PC. 10 seconds to change your mind: BACK cancels.' }
+  ShutdownPC         = @{ icon = 'power'; color = 'ff4d4d'; what = 'Shut the cabinet PC down. 10 seconds to change your mind: BACK cancels.' }
   GpuDriver          = @{ icon = 'display'; color = '3ddc84'; what = 'Get the newest graphics driver for this card from NVIDIA or AMD, old cards included. Asks for admin; restart afterwards.' }
   FlightSetup        = @{ icon = 'joystick'; color = '2ec8ff'; what = 'Move the stick, twist it, slide the throttle and press each button once. The flight games get a mapping for this stick.' }
   PanelTest          = @{ icon = 'buttons'; color = 'ff2fa0'; what = 'Press every button, move every stick, spin the dial: each control lights up on screen with its name and the key it sends.' }

@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'EmulatorUpdates', 'MenuButtons', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'RestartPC', 'ShutdownPC', 'EmulatorUpdates', 'MenuButtons', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -141,6 +141,20 @@ switch ($Tool) {
       Run 'Update-Emulators.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir, '-Update', $chosen) | Out-Null
       Run 'Update-Emulators.ps1' @('-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) | Out-Null   # fresh answer for System Health
     } else { Write-Host 'Nothing changed.' }
+  }
+  { $_ -in 'RestartPC', 'ShutdownPC' } {
+    # restart / shut down the cabinet from the Tools menu (James 2026-11-26). 10 s to change your mind: BACK closes this
+    # page and ends this script before Windows is told anything. AM_SYSTEM_DRYRUN=1: says what it would do, does nothing.
+    $restart = $Tool -eq 'RestartPC'
+    $what = if ($restart) { 'RESTARTING' } else { 'SHUTTING DOWN' }
+    Banner "$what THE CABINET - press BACK to cancel"
+    for ($s = 10; $s -ge 1; $s--) {
+      Emit @{ type = 'tiles'; tiles = @(@{ label = $what; value = "$s"; suffix = ' s'; icon = $(if ($restart) { 'restart' } else { 'power' }) }) }
+      Write-Host ("  {0} in {1} s ... BACK cancels" -f $what.ToLower(), $s); Start-Sleep -Seconds 1
+    }
+    $cmd = if ($restart) { '/r' } else { '/s' }
+    if ($env:AM_SYSTEM_DRYRUN -eq '1') { Write-Host "DRY RUN (AM_SYSTEM_DRYRUN=1): would run shutdown.exe $cmd /t 0 /f" -ForegroundColor Yellow }
+    else { & (Join-Path $env:WINDIR 'System32\shutdown.exe') $cmd /t 0 /f /d p:0:0 /c 'ArcadeMaster Tools' }
   }
   'PanelTest' {
     # the control panel's counterpart of Wheel Setup: every control pressed shows up with its panel name and the key /
