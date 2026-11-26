@@ -712,6 +712,12 @@ static class AmPanel
                 else if (req.ContainsKey("kind") && Convert.ToString(req["kind"]) == "level") { rep["animation"] = leds.Animation; rep["level"] = leds.AudioLevelNow; rep["error"] = leds.LastError; rep["ok"] = true; }
                 else { string res; lock (Gate) { res = leds.Animate(req.ContainsKey("kind") ? Convert.ToString(req["kind"]) : "chase"); State["lights"] = res; } rep["result"] = res; rep["ok"] = true; }
             }
+            else if (cmd == "keylog")   // {"cmd":"keylog"} -> the last 200 key events the cabinet's controls sent (ReactiveKeys)
+            {
+                rep["keys"] = glow != null ? glow.KeyLog() : new string[0];
+                rep["link"] = gameLink != null ? (object)new Dictionary<string, object> { { "alive", gameLink.Alive }, { "menu", gameLink.Menu }, { "selected", gameLink.Selected } } : null;
+                rep["ok"] = glow != null;
+            }
             else if (cmd == "outputs")   // live emulator outputs: {"connected":true,"outputs":{"led0":1,...}}
             {
                 rep["connected"] = outputs != null && outputs.Connected;
