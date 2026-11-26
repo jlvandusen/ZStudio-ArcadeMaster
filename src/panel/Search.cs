@@ -25,6 +25,7 @@ class GameLink
     public const int EventsPort = 47801, CommandsPort = 47802;
     public string Menu { get; private set; }          // the menu (collection) RetroFE has open
     public string Selected { get; private set; }
+    public string SelectedCollection { get; private set; }   // the selected game's own collection (a merged list's items keep theirs)
     public string LastMiss { get; private set; }
     public DateTime LastHello { get; private set; }
     public bool Running { get; private set; }
@@ -55,7 +56,7 @@ class GameLink
                 string line = Encoding.UTF8.GetString(rx.Receive(ref from));
                 var p = line.Split('\t');
                 if (p.Length >= 2 && p[0] == "hello") { Menu = p[1]; LastHello = DateTime.Now; }
-                else if (p.Length >= 5 && p[0] == "select") { Menu = p[2]; Selected = p[4]; }
+                else if (p.Length >= 5 && p[0] == "select") { Menu = p[2]; Selected = p[4]; SelectedCollection = p.Length >= 6 && p[5] != "" ? p[5] : p[2]; }
                 else if (p.Length >= 2 && p[0] == "miss") LastMiss = p[1];
             }
             catch { if (!Running) return; Thread.Sleep(200); }
@@ -127,6 +128,51 @@ static class FrontendFocus
             }
         }
         return fixedWin != null ? fixedWin + " takes touches again (non-activating flag removed)" : null;
+    }
+}
+
+// "Recently Played" on the main menu: the last 30 games from any system (James 2026-11-26, navigating many systems).
+// RetroFE's merged-collection form: collections\Recently Played\<collection>.sub lists that collection's games, so each
+// keeps its own art and launcher. Written at every game start; the frontend reads it when it next loads its menus.
+static class RecentlyPlayed
+{
+    public const string Name = "Recently Played";
+    const int Keep = 30;
+
+    public static void Record(string retroFERoot, string manifestDir, string collection, string item, Action<string> log)
+    {
+        if (string.IsNullOrEmpty(collection) || string.IsNullOrEmpty(item) || collection == Name) return;
+        try
+        {
+            string file = Path.Combine(manifestDir, "recently-played.txt");
+            var list = new List<string>();
+            if (File.Exists(file)) foreach (var l in File.ReadAllLines(file)) if (l.Contains("\t")) list.Add(l);
+            string key = collection + "\t" + item;
+            list.RemoveAll(l => string.Equals(l, key, StringComparison.OrdinalIgnoreCase));
+            list.Insert(0, key);
+            if (list.Count > Keep) list.RemoveRange(Keep, list.Count - Keep);
+            File.WriteAllLines(file, list.ToArray());
+
+            string col = Path.Combine(retroFERoot, "collections", Name);
+            Directory.CreateDirectory(col);
+            foreach (var old in Directory.GetFiles(col, "*.sub")) File.Delete(old);
+            var bySub = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var l in list) { var p = l.Split('\t'); List<string> g; if (!bySub.TryGetValue(p[0], out g)) { g = new List<string>(); bySub[p[0]] = g; } g.Add(p[1]); }
+            foreach (var kv in bySub) File.WriteAllLines(Path.Combine(col, kv.Key + ".sub"), kv.Value.ToArray());
+            string sc = Path.Combine(col, "settings.conf");
+            if (!File.Exists(sc)) File.WriteAllText(sc, "# ArcadeMaster: the last 30 games from any system (AmPanel, Search.cs RecentlyPlayed)\r\nlist.includeMissingItems = false\r\nlist.menuSort = yes\r\n");
+            // on the main menu once (the menu tools keep am-extra-menu.txt entries across rebuilds)
+            foreach (var fn in new[] { "am-extra-menu.txt", "menu.txt" })
+            {
+                string m = Path.Combine(retroFERoot, "collections", "Main", fn);
+                var lines = File.Exists(m) ? new List<string>(File.ReadAllLines(m)) : new List<string>();
+                if (lines.Exists(x => x.Trim() == Name)) continue;
+                int at = lines.FindIndex(x => x.Trim() == "Arcades");
+                lines.Insert(at >= 0 ? at + 1 : Math.Min(1, lines.Count), Name);
+                File.WriteAllLines(m, lines.ToArray());
+            }
+        }
+        catch (Exception e) { log("recently played: " + e.Message); }
     }
 }
 
