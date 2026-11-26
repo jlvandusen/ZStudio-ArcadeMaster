@@ -28,6 +28,11 @@ if (-not $Map) { $Map = Join-Path (Split-Path $PSScriptRoot) 'catalog\menu-contr
 $cc = Join-Path $RetroFE 'controls.conf'
 if (-not (Test-Path -LiteralPath $cc)) { Write-Host "no controls.conf in $RetroFE"; return }
 $roles = (Get-Content -LiteralPath $Map -Raw | ConvertFrom-Json).roles
+# this cabinet's own changes on top of the shared layout: <manifest>\menu-controls-local.json, same shape
+# ({"roles": {"letterDown": {"keys": ["Left Shift"]}}}); a role's keys / joy / letters given there replace the shared ones.
+# The 2P stand-up (James, 2026-11-26): letter jump on its panel's buttons 4 and 6, not 5 and 6.
+. (Join-Path $PSScriptRoot 'lib\AmMenuButtons.ps1')
+$roles = Merge-AmMenuLocal $roles $ManifestDir
 $cab = Join-Path $ManifestDir 'cabinet.json'
 $pedals = $false; $panel = $false
 if (Test-Path -LiteralPath $cab) { $c = (Get-Content -LiteralPath $cab -Raw | ConvertFrom-Json).capabilities; $pedals = [bool]($c.pedals -or $c.wheel); $panel = [bool]$c.controlPanel }
@@ -60,6 +65,7 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
   foreach ($t in $old) {
     $o = $owner[$t.ToLower()]
     if ($o -and $o -notcontains $act) { $changes += "${act}: '$t' removed (the shared layout puts it on $($o -join ' / '))"; continue }
+    if ($script:AmMenuDropped -contains "$act|$($t.ToLower())") { $changes += "${act}: '$t' removed (this cabinet's menu-controls-local.json)"; continue }
     if ($dropOnPanel.Contains($act) -and $dropOnPanel[$act] -contains $t.ToLower()) { $changes += "${act}: '$t' removed (a keyboard-wired panel sends it for player 2)"; continue }
     if (-not $lower.ContainsKey($t.ToLower())) { $new.Add($t); $lower[$t.ToLower()] = 1 }
   }
