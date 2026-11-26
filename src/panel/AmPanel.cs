@@ -461,7 +461,19 @@ static class AmPanel
                     ui.Invoke((MethodInvoker)delegate {
                         string artColl = coll ?? (id.IndexOf(':') > 0 ? id.Substring(0, id.IndexOf(':')) : null);
                         var theme = ChooserTheme.Load(retroFERoot, artColl, game);
-                        using (var f = new ControllerChooser(choicesDb.Title(id), ch, choicesDb.LastPick(id), secs, theme)) { f.ShowDialog(); picked = f.Picked; }
+                        using (var f = new ControllerChooser(choicesDb.Title(id), ch, choicesDb.LastPick(id), secs, theme))
+                        {
+                            // a copy on the marquee / touch screen: touch a tile there to pick
+                            ControllerChooser m = null;
+                            foreach (var scr in Screen.AllScreens)
+                                if (!scr.Primary && m == null)
+                                {
+                                    m = new ControllerChooser(choicesDb.Title(id), ch, choicesDb.LastPick(id), secs, theme) { Passive = true };
+                                    m.Bounds = scr.Bounds; m.Peer = f; f.Peer = m; m.Show();
+                                }
+                            f.ShowDialog(); picked = f.Picked ?? (m != null ? m.Picked : null);
+                            if (m != null && !m.IsDisposed) { m.Close(); m.Dispose(); }
+                        }
                     });
                     if (picked != null)
                     {
