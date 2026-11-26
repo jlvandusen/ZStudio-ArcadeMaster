@@ -249,6 +249,9 @@ static class AmPanel
         {
             string c = a.Length > 0 ? a[0] : "1";
             string arg1 = a.Length > 1 ? a[1] : null, arg2 = a.Length > 2 ? a[2] : null;
+            // LEDBlinky command 3 = game start: "3 <rom> <emulator>" (RetroFE sends this form). Without this the game was
+            // taken to be "3": every button lit white and the exit guard saw the rom as the emulator (2026-11-26)
+            if (c == "3" && arg1 != null) { c = arg1; arg1 = arg2; arg2 = a.Length > 3 ? a[3] : null; }
             switch (c)
             {
                 case "1": State["frontend"] = "running"; what = "frontend start"; break;
