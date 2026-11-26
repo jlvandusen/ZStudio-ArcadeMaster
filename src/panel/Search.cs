@@ -98,8 +98,10 @@ static class FrontendFocus
         {
             IntPtr w = FindWindow(null, "RetroFE " + n);
             if (w == IntPtr.Zero) continue;
+            // NOT non-activating: a WS_EX_NOACTIVATE window got no touch at all (the touch bar died, 2026-11-26) - the
+            // window keeps its normal style (an earlier build's flag is taken off) and only the focus is handed back
             int ex = GetWindowLong(w, GWL_EXSTYLE);
-            if ((ex & WS_EX_NOACTIVATE) == 0) { SetWindowLong(w, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE); fixedWin = "RetroFE " + n; }
+            if ((ex & WS_EX_NOACTIVATE) != 0) { SetWindowLong(w, GWL_EXSTYLE, ex & ~WS_EX_NOACTIVATE); fixedWin = "RetroFE " + n; }
             if (GetForegroundWindow() == w)
             {
                 int fg = GetWindowThreadProcessId(w, IntPtr.Zero), me = GetCurrentThreadId();
@@ -107,7 +109,7 @@ static class FrontendFocus
                 return "focus handed back from RetroFE " + n + " to the main window";
             }
         }
-        return fixedWin != null ? fixedWin + " made non-activating" : null;
+        return fixedWin != null ? fixedWin + " takes touches again (non-activating flag removed)" : null;
     }
 }
 
