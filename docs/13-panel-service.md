@@ -163,6 +163,27 @@ One "BUTTON LIGHTS & OUTPUTS" screen (Tools, and the tray window on a desktop), 
 10. Trigger -> activity rules (global / system / game): lamps -> LEDs, recoil -> gun, motors -> rumble / FFB.
 11. The assignment screen (Buttons / Colours / Triggers tabs above).
 12. Cut-over: AmPanel is the default; LEDBlinky.exe and the Ultimarc utilities are no longer started.
+13. Pixelcade LED marquee. **Done (2026-11-26, the 2-player stand-up):** `src/panel/Marquee.cs`. AmPanel.json
+    `"Marquee": "pixelcade"` turns it on; without it nothing changes (LEDBlinky keeps the marquee). AmPanel then
+    sends the Pixelcade listener (pixelweb, port 8080) the same requests LEDBlinky sent on that cabinet:
+    - frontend start: the welcome text once;
+    - list change: the system's marquee;
+    - game selected: the game's marquee;
+    - game start: blank, "Now Playing <title>" once, then the game's marquee for the whole game;
+    - game stop: the selected game's marquee again;
+    - screensaver: a random animation from `<Pixelcade>\animations` (`"MarqueeScreensaver": "random" | "attract" | "none"`;
+      `attract` needs a newer listener than 4.4.7);
+    - frontend quit: "Thanks for Playing", then the marquee's own idle image.
+
+    The texts, colour and speed are read from LEDBlinky's `[Pixelcade]` settings (Settings.ini), so it looks as before.
+    `MarqueeStartText`, `MarqueeQuitText`, `MarqueeNowPlaying` (`~game~` = the title), `MarqueeColor` (a name, hex,
+    or `random`), `MarqueeSpeed`, `PixelcadeUrl` and `PixelcadeDir` win over them. LEDBlinky stops getting commands
+    when the marquee is on (unless `"PassThrough": true`, then set LEDBlinky's `UsePixelcade=0`).
+    If the listener isn't answering, AmPanel starts `<Pixelcade>\pixelweb.exe` (at most once a minute), waits for the
+    panel to connect and sends again, so the "Pixelcade Listener" startup shortcut isn't needed.
+    The pipe takes `{"cmd":"marquee","text":"INSERT COIN","color":"yellow"}`, `{"cmd":"marquee","game":"pacman",
+    "system":"mame"}` and `{"cmd":"marquee","path":"/v2/info"}`. The status shows sent / failed counts.
+    Not yet: LEDBlinky's `~hiscoretop3~` (high scores on the marquee) is left out of the "Now Playing" text.
 
 ## Safety
 

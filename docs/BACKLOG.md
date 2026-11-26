@@ -65,7 +65,8 @@ The loop works like this (James, 2026-11-25):
         - [ ] Draw your own map in that window (click cells), saved as a new .um.
         - [x] Speech: "Now playing <real title>" at game start (Speech.cs; game-titles.json from history.dat).
               Cabinet Settings > ANNOUNCE THE GAME, off by default. Verified: speaker peak 0.00 -> 0.97 while it spoke.
-        - [ ] Pixelcade / LED marquee output (the 2-player cabinet uses LEDBlinky only for that).
+        - [x] Pixelcade / LED marquee output (the 2-player cabinet used LEDBlinky only for that): AmPanel.json
+              `"Marquee": "pixelcade"`, docs/13 step 13. Left: high scores on the marquee (`~hiscoretop3~`).
         - [ ] Other LED boards: LED-Wiz (ledwiz.dll), Howler (HowlerDLL.dll), GPWiz.
         - [x] Buttons window (tray, or pipe `buttons`): it lights each RGB group in turn, you press the lit button, and
               it saves `<manifest>\LEDBlinkyInputMap-learned.xml` (LEDBlinky's format). AmPanel prefers that file, so
