@@ -298,6 +298,16 @@ if ($own -and $fc -eq $own) {
   if (-not (Test-Path "$settingsConf.am-firstcollection")) { Copy-Item $settingsConf "$settingsConf.am-firstcollection" }
   $raw = [IO.File]::ReadAllText($settingsConf)
   [IO.File]::WriteAllText($settingsConf, ($raw -replace '(?m)^(\s*firstCollection\s*=\s*).+?(\r?)$', '${1}Main$2'))
+  # CoinOPS builds set it again in settings5.conf (read after settings.conf) and autochanger\settings.conf: those won, the
+  # frontend opened inside the library with no main menu behind it and Back did nothing (pedestal, 2026-11-26)
+  foreach ($extra in @(Get-ChildItem $RetroFE -File -Filter 'settings*.conf') + @(Get-Item (Join-Path $RetroFE 'autochanger\settings.conf') -ErrorAction SilentlyContinue)) {
+    if (-not $extra -or $extra.FullName -eq $settingsConf) { continue }
+    $x = [IO.File]::ReadAllText($extra.FullName)
+    if ($x -match '(?m)^\s*firstCollection\s*=\s*(?!Main\s*$)') {
+      if (-not (Test-Path "$($extra.FullName).am-firstcollection")) { Copy-Item $extra.FullName "$($extra.FullName).am-firstcollection" }
+      [IO.File]::WriteAllText($extra.FullName, ($x -replace '(?m)^(\s*firstCollection\s*=\s*).+?(\r?)$', '${1}Main$2'))
+    }
+  }
   Write-Host "frontend now starts at Main (was $own), so Back returns to the menu"
 }
 if ($skipped.Count) { Write-Host "not listed ($($skipped.Count)):"; $skipped | ForEach-Object { Write-Host "  $_" } }
