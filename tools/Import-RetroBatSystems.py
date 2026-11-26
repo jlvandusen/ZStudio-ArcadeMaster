@@ -77,8 +77,45 @@ def link(src, dst):
     return True
 
 
-def write_meta(retrofe, collection, romdir, games):
-    """meta\\hyperlist\\<collection>.xml from RetroBat's gamelist.xml: real titles, year, maker, genre, players."""
+def pack_sources(plan, system):
+    """The RetroFE packs that held this system (library-plan.json source roots, keeper order): their
+    collections\\<C>\\medium_artwork folder and meta\\hyperlist\\<C>.xml - art and titles for games the library took
+    from a pack rather than from RetroBat."""
+    out = []
+    s = next((x for x in plan.get("systems", []) if x["system"] == system), None)
+    if not s:
+        return out
+    for b in s.get("keeper_order", []):
+        for r in s.get("source_roots", {}).get(b, []):
+            roms = r["from"].rstrip("\\")
+            coll = os.path.dirname(roms)                       # ...\collections\<C>
+            if os.path.basename(os.path.dirname(coll)).lower() != "collections":
+                continue
+            build = os.path.dirname(os.path.dirname(coll))
+            out.append((os.path.join(coll, "medium_artwork"),
+                        os.path.join(build, "meta", "hyperlist", os.path.basename(coll) + ".xml")))
+    return out
+
+
+def hyperlist_titles(files):
+    t = {}
+    for f in files:
+        if not os.path.exists(f):
+            continue
+        try:
+            for g in ET.parse(f).getroot().iter("game"):
+                n, d = g.get("name"), (g.findtext("description") or "").strip()
+                if n and d and n.lower() not in t:
+                    t[n.lower()] = (d, (g.findtext("year") or "").strip(), (g.findtext("manufacturer") or "").strip(), (g.findtext("genre") or "").strip())
+        except ET.ParseError:
+            pass
+    return t
+
+
+def write_meta(retrofe, collection, romdir, games, extra_titles=None):
+    """meta\\hyperlist\\<collection>.xml from RetroBat's gamelist.xml (then the packs' hyperlists): real titles,
+    year, maker, genre, players."""
+    extra_titles = extra_titles or {}
     gl = os.path.join(romdir, "gamelist.xml")
     info = {}
     if os.path.exists(gl):
@@ -97,6 +134,12 @@ def write_meta(retrofe, collection, romdir, games):
         g = info.get(base)
         e = ET.SubElement(root, "game", name=base)
         title = (g.findtext("name") or "").strip() if g is not None else ""
+        x = extra_titles.get(base.lower())
+        if not title and x:
+            title = x[0]
+            for tag, v in (("year", x[1]), ("manufacturer", x[2]), ("genre", x[3])):
+                if v:
+                    ET.SubElement(e, tag).text = v
         ET.SubElement(e, "description").text = title or base
         titled += bool(title)
         if g is not None:
@@ -143,6 +186,7 @@ def main():
     ap.add_argument("--retrofe", required=True)
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--retrobat", default=r"R:\CP78\RetroBat")
+    ap.add_argument("--library", default=r"R:\ArcadeMaster\library", help="ArcadeMaster's library: roms\\<system> here wins")
     ap.add_argument("--systems", default=",".join(DEFAULT))
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
@@ -159,10 +203,19 @@ def main():
     if os.path.exists(pf):
         picks = json.load(open(pf, encoding="utf-8-sig"))
     wanted = None if a.all else {s.strip() for s in a.systems.split(",") if s.strip()}
+    plan = {}
+    pp = os.path.join(a.manifest, "library-plan.json")
+    if os.path.exists(pp):
+        plan = json.load(open(pp, encoding="utf-8-sig"))
+        plan = {"systems": plan.get("systems", [])}   # only the systems part is used (the file is large)
     cols = os.path.join(a.retrofe, "collections")
     report, made = [], []
     for s in parse_systems(es):
-        romdir = os.path.join(rb, "roms", s["name"])
+        # the games: ArcadeMaster's library when the system was moved there (Move-ToLibrary, docs/18 end state),
+        # else RetroBat's folder. Art and gamelist.xml stay in RetroBat's folder (media is never moved).
+        artdir = os.path.join(rb, "roms", s["name"])
+        libdir = os.path.join(a.library, "roms", s["name"])
+        romdir = libdir if games_in(libdir, s["extensions"]) else artdir
         games = games_in(romdir, s["extensions"])
         choice = None
         p = picks.get(s["name"])
@@ -210,12 +263,35 @@ def main():
             base = os.path.splitext(g)[0]
             for kind, types in MEDIA:
                 sub, ext = ("videos", ".mp4") if kind == "video" else ("images", ".png")
-                src = os.path.join(romdir, sub, base + "-" + kind + ext)
+                src = os.path.join(artdir, sub, base + "-" + kind + ext)
                 if not os.path.exists(src):
                     continue
                 for t in types:
                     n += link(src, os.path.join(cdir, "medium_artwork", t, base + ext))
-        t = write_meta(a.retrofe, name, romdir, games)
+        # games the library took from a RetroFE pack: that pack's own art (every type it has) and titles
+        packs = pack_sources(plan, s["name"]) if romdir == libdir else []
+        if packs:
+            pack_art = []   # (type, folder) in keeper order
+            for ma, _ in packs:
+                if os.path.isdir(ma):
+                    for t in os.listdir(ma):
+                        if os.path.isdir(os.path.join(ma, t)):
+                            pack_art.append((t, os.path.join(ma, t)))
+            index = {}
+            for t, d in pack_art:
+                try:
+                    for f in os.listdir(d):
+                        index.setdefault((t.lower(), os.path.splitext(f)[0].lower()), os.path.join(d, f))
+                except OSError:
+                    pass
+            types = sorted({t for t, _ in pack_art}, key=str.lower)
+            for g in games:
+                base = os.path.splitext(g)[0]
+                for t in types:
+                    src = index.get((t.lower(), base.lower()))
+                    if src:
+                        n += link(src, os.path.join(cdir, "medium_artwork", t, base + os.path.splitext(src)[1]))
+        t = write_meta(a.retrofe, name, artdir, games, hyperlist_titles([h for _, h in packs]))
         print("      %d art links, %d of %d real titles" % (n, t, len(games)))
     if not a.dry_run:
         if made:
