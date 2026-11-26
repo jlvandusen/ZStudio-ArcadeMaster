@@ -509,7 +509,16 @@ static class AmPanel
                 else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") exitGuard.GameRunning = false;
             }
             // the LOADING screen for slow starts (TeknoParrot ...): only when the game has no window of its own yet
-            if (what == "game start") ShowLoadingLater(c);
+            if (what == "game start")
+            {
+                ShowLoadingLater(c);
+                // Recently Played (any system): the game's own collection, as the frontend's link last reported it
+                if (gameLink != null && !string.Equals(Convert.ToString(State.ContainsKey("emulator") ? State["emulator"] : ""), "am_tools", StringComparison.OrdinalIgnoreCase))
+                {
+                    string rc = gameLink.SelectedCollection ?? gameLink.Menu, ri = c;
+                    System.Threading.ThreadPool.QueueUserWorkItem(delegate { RecentlyPlayed.Record(retroFERoot, manifestDir, rc, ri, Log); });
+                }
+            }
             else if (what == "game stop" || what == "frontend start" || what == "frontend quit") CloseLoading();
             State["lastEvent"] = what;
             State["lastArgs"] = string.Join(" ", a);
