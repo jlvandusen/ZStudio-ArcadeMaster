@@ -85,6 +85,10 @@
       <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="1040" algorithm="easeOutCubic"/></set>
     </onMenuIdle>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <!-- a standalone video keeps playing (with sound) while visible - RetroFE's launch pause only covers list videos -
+         so it is hidden while a game runs (TeknoParrot's music fought the preview, 2026-11-26) -->
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onGameExit><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onGameExit>
   </reloadableVideo>
 
   <!-- title / year / manufacturer under the video -->

@@ -261,6 +261,45 @@ static class AmPanel
         f.Show(); f.Activate();
     }
 
+    // ---------------------------------------------------------------- the LOADING screen (LoadingScreen.cs)
+    static LoadingScreen loading;
+    static int loadingSeq;
+    static void ShowLoadingLater(string game)
+    {
+        if (ui == null || string.IsNullOrEmpty(game) || game.StartsWith("__")) return;
+        if (State.ContainsKey("emulator") && Convert.ToString(State["emulator"]) == "am_tools") return;   // Tools pages draw their own
+        int seq = System.Threading.Interlocked.Increment(ref loadingSeq);
+        HashSet<IntPtr> baseline;
+        try { baseline = LoadingScreen.Snapshot(); } catch { return; }
+        System.Threading.ThreadPool.QueueUserWorkItem(delegate {
+            System.Threading.Thread.Sleep(LoadingScreen.ShowAfterMs);
+            if (seq != loadingSeq) return;
+            lock (Gate) { if (!(State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"])) return; }
+            try { if (LoadingScreen.NewWindowSince(baseline)) return; } catch { return; }   // the game is up already (MAME ...)
+            try
+            {
+                ui.BeginInvoke((MethodInvoker)delegate {
+                    if (seq != loadingSeq || loading != null) return;
+                    try
+                    {
+                        var f = new LoadingScreen(Speech.Title(game), LoadingScreen.ThemeFor(retroFERoot, game), baseline);
+                        f.FormClosed += delegate { if (loading == f) loading = null; };
+                        loading = f; f.Show();
+                        Log("loading screen up for " + game);
+                    }
+                    catch (Exception e) { Log("loading screen: " + e.Message); }
+                });
+            }
+            catch { }
+        });
+    }
+    static void CloseLoading()
+    {
+        System.Threading.Interlocked.Increment(ref loadingSeq);
+        if (ui == null) return;
+        try { ui.BeginInvoke((MethodInvoker)delegate { if (loading != null && !loading.IsDisposed) loading.Close(); loading = null; }); } catch { }
+    }
+
     // ---------------------------------------------------------------- LEDBlinky's documented command line
     static void Handle(string[] a, bool forwarded)
     {
@@ -380,6 +419,9 @@ static class AmPanel
                 if (what == "game start") { exitGuard.Emulator = Convert.ToString(State.ContainsKey("emulator") ? State["emulator"] : null); exitGuard.GameRunning = true; }
                 else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") exitGuard.GameRunning = false;
             }
+            // the LOADING screen for slow starts (TeknoParrot ...): only when the game has no window of its own yet
+            if (what == "game start") ShowLoadingLater(c);
+            else if (what == "game stop" || what == "frontend start" || what == "frontend quit") CloseLoading();
             State["lastEvent"] = what;
             State["lastArgs"] = string.Join(" ", a);
             State["lastEventAt"] = DateTime.Now.ToString("s");

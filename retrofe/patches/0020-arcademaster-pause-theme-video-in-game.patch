@@ -1,0 +1,33 @@
+Subject: [PATCH] Theme videos on the main screen pause while a game runs
+
+The launch pause only covered videos in a scrolling list; a theme's standalone preview video
+(reloadableVideo) on the main screen kept playing, with sound, behind the game - TeknoParrot
+games' music fought it. The launch check now comes first; marquee-screen videos keep playing.
+---
+diff --git a/RetroFE/Source/Graphics/Component/VideoComponent.cpp b/RetroFE/Source/Graphics/Component/VideoComponent.cpp
+index 2da70b5..16be1a2 100644
+--- a/RetroFE/Source/Graphics/Component/VideoComponent.cpp
++++ b/RetroFE/Source/Graphics/Component/VideoComponent.cpp
+@@ -118,15 +118,16 @@ void VideoComponent::computeDesiredIntent(bool visibleNow, const VideoSnapshot&
+     }
+     wasVisible_ = visibleNow;
+ 
+-    // 2. Standalone Logic
+-    if (listId_ == -1) {
+-        desiredState_ = visibleNow ? PlaybackTarget::Playing : PlaybackTarget::Paused;
++    // 3. Launch Lock - ArcadeMaster: checked before the standalone case, so a theme's preview video on the main screen
++    // pauses while a game runs too (it played on with sound behind TeknoParrot games). Marquee screens keep playing.
++    if (currentPage_->getIsLaunched() && baseViewInfo.Monitor == 0) {
++        desiredState_ = PlaybackTarget::Paused;
+         return;
+     }
+ 
+-    // 3. Launch Lock
+-    if (currentPage_->getIsLaunched() && baseViewInfo.Monitor == 0) {
+-        desiredState_ = PlaybackTarget::Paused;
++    // 2. Standalone Logic
++    if (listId_ == -1) {
++        desiredState_ = visibleNow ? PlaybackTarget::Playing : PlaybackTarget::Paused;
+         return;
+     }
+ 
