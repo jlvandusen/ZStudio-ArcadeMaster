@@ -69,6 +69,27 @@ def main():
                     re.search(r"=%s_(UP|DOWN|LEFT|RIGHT|FIRE_BUTTON|2ND_BUTTON|3RD_BUTTON)$" % amiga, x)))]
             line = "%s=%s" % (line_key, " ".join(keep + ents))
             new = new[:m.start()] + line + new[m.end():]
+        # Mouse games (James: Bill's Tomato Game, Lucasfilm adventures, Simon the Sorcerer, Lemmings ...): the Pipmick
+        # configs drive the Amiga mouse port with a GAMEPAD stick (joyport0=customN mapping MOUSE1_HORIZ) and park the
+        # real mouse in port 1, where those games don't read it - so on a cabinet without a gamepad they had no mouse.
+        # The trackball ("Windows mouse", m.0) moves the Amiga mouse in that same mapping, its two buttons and P1 B1 / B2
+        # click left / right, and P1's stick nudges the pointer. Configs with joyport0=mouse already use the trackball.
+        m0 = re.search(r"^joyport0=(custom\d)$", new, re.M)
+        if m0:
+            ck = "joyport" + m0.group(1)
+            mc = re.search(r"^%s=(.*)$" % ck, new, re.M)
+            if mc and "MOUSE1_HORIZ" in mc.group(1):
+                mouse = ["m.0.a.0.0=MOUSE1_HORIZ", "m.0.a.1.0=MOUSE1_VERT", "m.0.b.0.0=JOY1_FIRE_BUTTON", "m.0.b.1.0=JOY1_2ND_BUTTON"]
+                for d, k in STICK["P1"].items():
+                    mouse.append("k.0.b.%d.0=MOUSE1_%s" % (DIK[k], d))
+                for btn, func in (("B1", "JOY1_FIRE_BUTTON"), ("B2", "JOY1_2ND_BUTTON")):
+                    k = keys.get("P1" + btn)
+                    if k and k.upper() in DIK:
+                        mouse.append("k.0.b.%d.0=%s" % (DIK[k.upper()], func))
+                mine = {e.split("=")[0] for e in mouse}
+                parts = [x for x in mc.group(1).split() if x.split("=")[0] not in mine]
+                line = "%s=%s" % (ck, " ".join(parts + mouse))
+                new = new[:mc.start()] + line + new[mc.end():]
         if new != text:
             changed += 1
             if not a.dry_run:
