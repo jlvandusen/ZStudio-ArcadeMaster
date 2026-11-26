@@ -18,6 +18,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 S = 3                                   # drawn at 3x, scaled down: smooth edges
 CYAN, AMBER, MAGENTA, GREEN = (46, 200, 255), (255, 176, 0), (255, 47, 160), (61, 220, 132)
+# the controls card's button colours (New-PanelControlsArt.py BTN_COLORS): button 1 magenta, 5 violet, 8 red
+B1, B5, B8 = (255, 47, 160), (123, 92, 255), (255, 90, 90)
 TEXT, DIM, INK = (235, 240, 248), (154, 163, 178), (8, 10, 16)
 
 
@@ -107,10 +109,10 @@ def main():
     made = {
         "hint_info.png": chip([("button", None, "down", AMBER), ("text", "PAGE DOWN", 15, DIM), ("text", "INFO", 22, TEXT)], AMBER, o("hint_info.png")),
         "hint_video.png": chip([("button", None, "up", CYAN), ("text", "PAGE UP", 15, DIM), ("text", "VIDEO", 22, TEXT)], CYAN, o("hint_video.png")),
-        "hint_play.png": chip([("button", "1", None, AMBER), ("text", "PLAY", 22, TEXT)], AMBER, o("hint_play.png")),
+        "hint_play.png": chip([("button", "1", None, B1), ("text", "PLAY", 22, TEXT)], B1, o("hint_play.png")),
         "hint_move.png": chip([("stick", MAGENTA), ("arrow", "up", CYAN), ("arrow", "down", CYAN), ("text", "GAMES", 17, TEXT), ("gap", 6),
                                ("arrow", "left", AMBER), ("arrow", "right", AMBER), ("text", "FILTERS", 17, TEXT)], CYAN, o("hint_move.png")),
-        "hint_letters.png": chip([("button", "5", None, GREEN), ("arrow", "left", DIM), ("text", "A - Z", 19, TEXT), ("arrow", "right", DIM), ("button", "8", None, GREEN)], GREEN, o("hint_letters.png")),
+        "hint_letters.png": chip([("button", "5", None, B5), ("arrow", "left", DIM), ("text", "A - Z", 19, TEXT), ("arrow", "right", DIM), ("button", "8", None, B8)], B5, o("hint_letters.png")),
     }
     for n, (w, h) in made.items():
         print("  %-18s %dx%d" % (n, w, h))
