@@ -160,6 +160,12 @@ if (Test-Path $cc) {
       }
     }
   }
+  # no quit line at all: the patched RetroFE will not start ("Missing required property: controls.quit" - it closed
+  # itself 3 s after every start on the 2P stand-up, whose CORE-TYPE R controls.conf had none; 2026-11-26)
+  if (-not @($lines | Where-Object { $_ -match '^\s*quit\s*=' }).Count) {
+    $nq = if ($panelKeys -contains $profQuit.ToUpper()) { 'F8' } else { $profQuit }
+    $lines = @($lines) + "quit = $nq"; $escFix += "quit '$nq' added (RetroFE does not start without one)"
+  }
   if ($profCombo -and -not @($lines | Where-Object { $_ -match '^\s*quitCombo\s*=' }).Count) {
     $lines = @($lines) + "quitCombo = $profCombo"; $escFix += "quitCombo '$profCombo' added (exit any game: press these together)"
   }

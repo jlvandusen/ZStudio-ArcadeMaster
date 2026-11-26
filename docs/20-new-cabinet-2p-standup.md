@@ -84,4 +84,29 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
   - It booted into the CORE-TYPE R frontend (`E:\CORE-TYPE R\CORE.exe`) from the all-users Startup folder. That shortcut was moved to `C:\ProgramData\ArcadeMaster\disabled-startup` (James: no more auto-starting it). Nothing else was changed.
   - The Pixelcade listener is `pixelweb.exe`, a launcher that starts `E:\Pixelcade\jre\bin\java.exe`, which serves port 8080. pixelweb.log shows every request it gets, which is the easiest way to check the marquee.
   - On listener 4.4.7, `/attract` and `/info` don't exist (pixelweb answers with its web page). `/v2/info`, `/animations/stream/random?r` and `/localplayback` all work.
-- **Drives C: to F:.** It has a D:, so the tools' defaults (`D:\ArcadeMaster\...`) can be used if D: is the data drive; still pass `-ManifestDir` / `-Root` / `-BuildRoot` explicitly. Pick the drive with room for the library, then fill in the PC name and GPU on the board when the session joins.
+- **Install (2026-11-26):**
+  - James added a 120 GB SSD as **D:**, so the tools' `D:\ArcadeMaster` defaults work here. The ROMs (1.5 TB) and the emulators stay on E:.
+  - **Frontend:** a copy of CORE-TYPE R at `D:\ArcadeMaster\frontend\CORE-am`, 64 GB: frontend files plus every collection's artwork and videos.
+    - Junctions back to E: for every `collections\*\roms` and every emulator except MAME.
+    - MAME is a real folder; its `roms`, `hash`, `samples` and `artwork` are junctions.
+  - **RetroFE build:** compiled here (VS 2022 Build Tools + GStreamer 1.24.13 unpacked in `D:\ArcadeMaster\_tools\gstreamer`). CORE has a file called `RetroFE` in its root, so `<root>\retrofe\` can't exist. The build goes over `core\`, and CORE's own files are kept in `retrofe.am-prev`.
+    - Mirror the build into `core`. Laying it over CORE's old files made RetroFE quit at once.
+  - **Quit key:** CORE's controls.conf has no `quit` line, and the patched RetroFE won't start without one ("Missing required property: controls.quit"; it closed 3 s after every start). The health check now adds the profile's quit key: F8 here, since Q is P2 button 3 on the Mini-PAC.
+  - **Panel:** LEDBlinky's input map is empty here (there are no button LEDs). `panel.json` was written from the Mini-PAC's default keys:
+    - P1: L-Ctrl, L-Alt, Space, L-Shift, Z, X, Start 1, Coin 5;
+    - P2: A, S, Q, W, I, K, Start 2, Coin 6;
+    - 6 buttons per player in 2 rows of 3, assumed; the input capture checks it.
+  - **Lights and marquee:** `Set-ButtonLights -Engine ArcadeMaster` with `"Marquee": "pixelcade"`. LEDBlinky is no longer started.
+  - **Boot:** `D:\ArcadeMaster\ArcadeMaster.exe` from the user's Startup folder, plus the "ArcadeMaster Update" task.
+- **Devices found (Detect Controllers):**
+  - 2 AimTrak guns (D209:1601 / 1602).
+  - A **Mayflash DolphinBar** (057E:0306, 4 Wii Remote slots: James wants Wii Remotes connected as needed, a board job).
+  - A **Xinmotek** encoder (16C0:05E1, most likely the Tron stick).
+  - A "2 axis 8 button gamepad" (1A86:E026, possibly the foot switches).
+  - A CH Flight Sim Yoke, plugged in only to test games (not part of the cabinet).
+  - Players: 4. James: that's right, with Wii Remotes and other USB controllers.
+- **Frontends on this PC (Survey-Frontends):** 11 installs, see `reports/frontends/DESKTOP-ARCADE.md`:
+  - RetroFE: `E:\CORE-TYPE R`, `G:\CO LightGuns`, `G:\CORE Type R LightGuns`;
+  - LaunchBox / BigBox: `F:\LaunchBox`, `F:\support\LaunchBox`, `G:\LaunchBox`;
+  - RocketLauncher: `F:\RocketLauncher`, `G:\RocketLauncher`.
+- **Drives:** C:, D: (added for ArcadeMaster), E:, F:, G:, H:. It has a D:, so the tools' defaults (`D:\ArcadeMaster\...`) can be used if D: is the data drive; still pass `-ManifestDir` / `-Root` / `-BuildRoot` explicitly. Pick the drive with room for the library, then fill in the PC name and GPU on the board when the session joins.
