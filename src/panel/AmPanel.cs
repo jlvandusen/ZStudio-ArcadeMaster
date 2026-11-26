@@ -200,6 +200,8 @@ static class AmPanel
             LedEngine.LearnedMap = Path.Combine(manifestDir, "LEDBlinkyInputMap-learned.xml");   // the Buttons window's map wins
             leds = new LedEngine(ledBlinkyDir);
             leds.LoadOverrides(Path.Combine(manifestDir, "led-colors.json"));   // this cabinet's own colours (step 11)
+            leds.LoadAuto(Path.Combine(manifestDir, "led-colors-auto.json"));    // games Colors.ini doesn't know (New-LedColorsAuto.py)
+            Log("lights: generated colours for " + leds.AutoGames + " games" + (leds.LastError != null ? " - " + leds.LastError : ""));
             leds.LwaDir = Path.Combine(ledBlinkyDir, "lwa");                     // LEDBlinky's .lwax animations
             passThrough = false;       // two programs must never drive the same boards
         }

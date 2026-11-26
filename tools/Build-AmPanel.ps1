@@ -29,5 +29,12 @@ if ($InstallTo) {
   New-Item -ItemType Directory -Force $InstallTo | Out-Null
   $dst = Join-Path $InstallTo 'AmPanel.exe'
   if (Get-Process AmPanel -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $dst }) { Write-Warning "AmPanel is running from $dst - quit it from the tray first"; return }
+  # the LEDBlinky.exe shim (Set-ButtonLights) is a copy of AmPanel that RetroFE calls - and it becomes the tray when
+  # none runs: an old copy there served old code (2026-11-26). Refresh it with every install.
+  $shimExe = Join-Path $InstallTo 'ampanel-shim\LEDBlinky.exe'
+  if (Test-Path $shimExe) {
+    if (Get-Process LEDBlinky -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $shimExe }) { Write-Warning "the shim $shimExe is running as the tray - close it first"; return }
+    Copy-Item $out $shimExe -Force; Write-Host "shim refreshed -> $shimExe"
+  }
   Copy-Item $out $dst -Force; Copy-Item (Join-Path $dist 'panel-rules.json') (Join-Path $InstallTo 'panel-rules.json') -Force; Copy-Item (Join-Path $dist 'exit-rules.json') (Join-Path $InstallTo 'exit-rules.json') -Force; Write-Host "installed -> $dst"
 }

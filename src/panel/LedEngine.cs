@@ -347,6 +347,17 @@ class LedEngine
         Dictionary<string, string> g;
         if (rom == null || !games.TryGetValue(rom, out g))
         {
+            // not in Colors.ini: the generated colours (tools\New-LedColorsAuto.py: the game's own buttons, its players'
+            // start + coin), else soft white everywhere
+            Dictionary<string, int[]> au;
+            if (rom != null && autoColors.TryGetValue(rom, out au))
+            {
+                int n = 0;
+                foreach (var kv in au) if (SetLabel(kv.Key, kv.Value)) { baseColor[kv.Key] = kv.Value; n++; }
+                n += ApplyOverrides(rom);
+                Flush();
+                return n + " controls lit for " + rom + " (from its controls)";
+            }
             foreach (var label in pins.Keys) { SetLabel(label, new[] { 16, 16, 16 }); baseColor[label] = new[] { 16, 16, 16 }; }   // no colours known: soft white
             ApplyOverrides(rom);
             Flush();
@@ -370,6 +381,31 @@ class LedEngine
     // beats "*", both beat Colors.ini. Colors.ini itself is never edited, so "reset" always works.
     public string OverridesFile;
     Dictionary<string, Dictionary<string, int[]>> overrides = new Dictionary<string, Dictionary<string, int[]>>(StringComparer.OrdinalIgnoreCase);
+
+    // <manifest>\led-colors-auto.json: colours for games Colors.ini doesn't know (tools\New-LedColorsAuto.py)
+    Dictionary<string, Dictionary<string, int[]>> autoColors = new Dictionary<string, Dictionary<string, int[]>>(StringComparer.OrdinalIgnoreCase);
+    public int AutoGames { get { return autoColors.Count; } }
+    public void LoadAuto(string file)
+    {
+        autoColors = new Dictionary<string, Dictionary<string, int[]>>(StringComparer.OrdinalIgnoreCase);
+        if (file == null || !File.Exists(file)) return;
+        try
+        {
+            var ser = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 64 * 1024 * 1024 };
+            foreach (var g in ser.Deserialize<Dictionary<string, object>>(File.ReadAllText(file)))
+            {
+                var d = g.Value as Dictionary<string, object>; if (d == null) continue;
+                var m = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase);
+                foreach (var kv in d)
+                {
+                    var a = kv.Value as System.Collections.ArrayList;
+                    if (a != null && a.Count == 3) m[kv.Key] = new[] { Convert.ToInt32(a[0]), Convert.ToInt32(a[1]), Convert.ToInt32(a[2]) };
+                }
+                autoColors[g.Key] = m;
+            }
+        }
+        catch (Exception e) { LastError = "led-colors-auto.json: " + e.Message; }
+    }
 
     public void LoadOverrides(string file)
     {
