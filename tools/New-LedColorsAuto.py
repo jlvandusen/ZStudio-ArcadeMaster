@@ -171,6 +171,17 @@ def main():
                     out.pop(t.lower(), None)
                 out[t] = src; taken.add(t.lower()); n_alias += 1
     print("aliases: %d titles / item names" % n_alias)
+    # screens that aren't games light what they take (James 2026-11-26: "need to show correct lights for accepting"):
+    # the Tools / Settings pages - button 1 accepts (green), button 2 goes back (red), start accepts too - and the
+    # controller question ("__chooser": button 1 = PLAY in the card's amber)
+    ui = {"P1B1": [0, 48, 0], "P1B2": [48, 0, 0], "P1START": WHITE}
+    for coll in ("Tools", "zzzShutdown"):
+        rd = os.path.join(a.retrofe, "collections", coll, "roms")
+        if os.path.isdir(rd):
+            for f in os.listdir(rd):
+                if f.lower().endswith(".bat"):
+                    out[os.path.splitext(f)[0]] = ui
+    out["__chooser"] = {"P1B1": PALETTE[2], "P1START": WHITE}
     path = os.path.join(a.manifest, "led-colors-auto.json")
     with open(path + ".tmp", "w", encoding="utf-8") as f:
         json.dump(out, f, separators=(",", ":"))

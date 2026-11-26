@@ -603,11 +603,16 @@ $timer.Add_Tick({
 })
 $form.Add_KeyDown({ param($s, $e)
   if ($M.done) { Close-Screen "key $($e.KeyCode)"; return }
+  # the panel's buttons work like Enter / Esc (James 2026-11-26: "should be b1 and b2 back etc as well as enter"):
+  # P1 button 1 (LCtrl) and P1 Start (1) accept, P1 button 2 (LAlt) goes back. In the wizard button 2 is its BACK step.
+  $k = "$($e.KeyCode)"
+  if ($k -in 'ControlKey', 'LControlKey', 'D1') { $k = 'Return' }
+  elseif ($k -in 'Menu', 'LMenu') { $k = if ($M.wiz -and -not $M.wizEnd) { 'B' } else { 'Escape' }; $e.Handled = $true; $e.SuppressKeyPress = $true }
   if ($M.settings -and -not $M.settings.done) { $st = $M.settings; $n = @($st.items).Count + 1
-    switch ($e.KeyCode) { 'Down' { $st.idx = [Math]::Min($n - 1, $st.idx + 1) } 'Up' { $st.idx = [Math]::Max(0, $st.idx - 1) } 'Return' { Activate-Setting } 'Space' { Activate-Setting } 'Escape' { $st.idx = $n - 1; Activate-Setting } }; return }
+    switch ($k) { 'Down' { $st.idx = [Math]::Min($n - 1, $st.idx + 1) } 'Up' { $st.idx = [Math]::Max(0, $st.idx - 1) } 'Return' { Activate-Setting } 'Space' { Activate-Setting } 'Escape' { $st.idx = $n - 1; Activate-Setting } }; return }
   if ($M.choice -and -not $M.choice.confirmed) { $c = $M.choice; $n = $c.opts.Count
-    switch ($e.KeyCode) { 'Right' { $c.idx = ($c.idx + 1) % $n } 'Left' { $c.idx = ($c.idx - 1 + $n) % $n } 'Down' { $c.idx = [Math]::Min($n - 1, $c.idx + 4) } 'Up' { $c.idx = [Math]::Max(0, $c.idx - 4) } 'Return' { Confirm-Choice } 'Escape' { Close-Screen 'cancelled (Esc)' } }; return }
-  if ($M.wiz -and -not $M.wizEnd) { switch ($e.KeyCode) { 'S' { Send-WizKey 'S' } 'R' { Send-WizKey 'R' } 'B' { Send-WizKey 'B' } 'Q' { Send-WizKey 'Q' } 'Return' { Send-WizKey 'Enter' } 'Escape' { $M.cancelled = $true; Close-Screen 'cancelled (Esc)' } } }
+    switch ($k) { 'Right' { $c.idx = ($c.idx + 1) % $n } 'Left' { $c.idx = ($c.idx - 1 + $n) % $n } 'Down' { $c.idx = [Math]::Min($n - 1, $c.idx + 4) } 'Up' { $c.idx = [Math]::Max(0, $c.idx - 4) } 'Return' { Confirm-Choice } 'Escape' { Close-Screen 'cancelled (Esc)' } }; return }
+  if ($M.wiz -and -not $M.wizEnd) { switch ($k) { 'S' { Send-WizKey 'S' } 'R' { Send-WizKey 'R' } 'B' { Send-WizKey 'B' } 'Q' { Send-WizKey 'Q' } 'Return' { Send-WizKey 'Enter' } 'Escape' { $M.cancelled = $true; Close-Screen 'cancelled (Esc)' } } }
 })
 $form.Add_MouseDown({ param($s, $e)
   if ($M.done) { Close-Screen 'tap/click'; return }
