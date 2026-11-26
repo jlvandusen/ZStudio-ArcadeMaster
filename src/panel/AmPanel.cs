@@ -1,4 +1,4 @@
-// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
+﻿// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
 //
 //   AmPanel.exe [LEDBlinky-style arguments]       e.g.  AmPanel.exe 9 "bzone" "mame"
 //
@@ -282,6 +282,7 @@ static class AmPanel
                     if (seq != loadingSeq || loading != null) return;
                     try
                     {
+                        LoadingScreen.Log = Log;
                         var f = new LoadingScreen(Speech.Title(game), LoadingScreen.ThemeFor(retroFERoot, game), baseline);
                         f.FormClosed += delegate { if (loading == f) loading = null; };
                         loading = f; f.Show();
