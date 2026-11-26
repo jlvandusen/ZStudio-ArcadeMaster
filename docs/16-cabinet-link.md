@@ -15,8 +15,8 @@ drive a cabinet directly: the helper decides.
 | Part | Where | State |
 |---|---|---|
 | 1. RetroFE says what it is doing and takes two commands | fork patch 0017 (`Control/AmLink`) | **done**, off by default |
-| 2. Link helper: finds similar cabinets on the LAN, passes selections on, decides who follows | `tools\AmLink` (next) | to do |
-| 3. "Join? 5 4 3 2 1" countdown on the following cabinet, any button cancels | helper + tool screen | to do |
+| 2. Link helper: finds similar cabinets, passes selections on, decides who follows | `tools\AmLink.ps1` | **done**, on for RACE1 and RACE2 |
+| 3. "Joining in 5 4 3 2 1" card on the following cabinet, any menu button cancels | `tools\AmLink.ps1` | **done** |
 | 4. The idle rig's wheel turns with the other rig's steering (force-feedback spring centre) | fork patch, `Control/Haptics` | to do, after 2-3 |
 | 5. Linked games: start the two-cabinet version on both, with the network settings each needs | catalog + launcher | to do |
 
@@ -54,14 +54,45 @@ Racing opened on its third game. Patch 0017 makes opposite directions cancel. Ra
 - Real keys: Enter opens Racing on American Truck Simulator (1 / 91); Down x3 and Up move one game each, all `user`.
 - Test keys must be sent as extended keys (arrow keys): without that flag Windows reads them as number-pad keys.
 
-## Part 2-3: the helper (plan)
-- Announce on the LAN (UDP broadcast, cabinet network only): name, cabinet type (racing / flight / standup ...),
-  what is selected, whether somebody is here.
-- Follow only a cabinet of the same type, only while this one is idle (no `user` for 30 s, not in a game).
-- Leader's `select user` -> follower `goto` (and `open` first when the follower is still on the main menu).
-- Leader's `launch user` -> follower shows "RACE1 is starting <game> - join? 5 4 3 2 1"; no button -> `open`.
-  A game the follower does not have (`miss`) is skipped, with a line on the countdown card.
-- Tools switch: Cabinet Link on / off; off by default until tried at the cabinets.
+## Part 2-3: the helper (`tools\AmLink.ps1`)
+**Where it is on:** `catalog\cabinet-link.json` lists the cabinets (`DESKTOP-RACE1`, `DESKTOP-RACE2`), the idle time
+(30 s) and the countdown (5 s). At the next start of the frontend Start-ArcadeMaster adds `linkEvents = yes` to that
+cabinet's settings.conf once and starts the helper (hidden; it ends with the launcher). **Cabinet Settings > CABINET
+LINK** switches it off or on for one cabinet; a cabinet that has its own `linkEvents` line keeps its choice.
+
+**How cabinets hear each other:** each helper writes `<share>\<HOST>.json` on `\\ds-mce\downloads\ArcadeMaster\link`
+(what is selected, how long since somebody used it, the last game started) on every change and once a second, and
+reads the others 4 times a second. No firewall rule and no admin prompt; AmPanel is not involved (it only talks on its
+own PC, through a named pipe). "Is that cabinet there?" is judged by its counter changing, not by clocks.
+
+**What it does**
+- Follows only a cabinet of the same type (`cabinet-mode.json`: racing with racing), only while this one has had no menu
+  action for 30 s, and only a cabinet where somebody pressed something in the last 15 s.
+- Same menu: `goto` the leader's game (name + collection, so Daytona single and linked stay apart). On the main menu:
+  goes to the leader's menu and opens it. In another menu: sends `back` (RetroFE answers that from patch 0018 on;
+  until then the cabinet stays where it is).
+- The leader starts a game (`launch user`): a card on top of RetroFE, "RACE2 is starting / <title> / JOINING IN 5 - any
+  button to stay". A menu action here cancels ("STAYING HERE"). No action: the same game is selected and opened here.
+  A game this cabinet does not have: "not on this cabinet".
+- Everything this cabinet does because of the link is published as `remote`; only `user` actions are followed, so two
+  cabinets cannot chase each other.
+- Log: `manifestmlink.log`.
+
+**Tested on RACE1 (2026-11-26) against a script acting as a second racing rig (a `DESKTOP-FAKE.json` peer file)**
+- From the main menu it followed into Tools and Racing and onto each selected game (Daytona 3 single / linked by
+  collection, Daytona USA, Sega Rally 2).
+- Leader "starts" Menu Buttons: countdown card, then RACE1 started it itself (`launch remote`).
+- Leader "starts" Daytona USA, a real key pressed on RACE1 during the countdown: "countdown cancelled here", no game,
+  no emulator process.
+- Through the real start-up path (the Startup shortcut): link switched on from the list, helper started, followed with
+  the 30 s rule.
+**Not tested yet:** two real cabinets. RACE2 gets it at its next frontend start after pulling main.
+
+**Known gaps**
+- The follower cannot leave a menu (`back`) until RetroFE patch 0018.
+- After a joined game starts, it runs until somebody exits it at that cabinet (the in-game menu, A3, is the place to
+  end it when the leader's game ends).
+- Starting "the same entry" is not yet linked play: the two-cabinet versions still need their network settings (part 5).
 
 ## Part 4: the wheel turning by itself
 The G29's motor can turn the rim: RetroFE's frontend force feedback (`Control/Haptics`) already runs a centring
