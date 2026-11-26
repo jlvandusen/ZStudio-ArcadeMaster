@@ -199,6 +199,9 @@ The loop works like this (James, 2026-11-25):
 - [ ] Show "Share = coin, Options = start, hold PS = exit" on the game launch screen / controls card.
 - [ ] Menu force feedback on RACE1 did not open at start-up ("Resetting device"): RetroFE patch 0022 (retry in the menu, plus the cabinet link back command)
       is built and applies, waiting for an idle frontend to test; then compare menu force strength with RACE2.
+- [ ] **RACE1 has no force feedback and no Options / dial Enter / PS button** since Logitech G HUB was uninstalled
+      (2026-11-26; docs/06). Needs Logitech software installed again (James to choose G HUB or Logitech Gaming Software).
+      Then: Start back on Options (Set-CoinStartButtons -Start 9 -OldStart 10 -OldCoin 8 -Apply), check hold-PS exit.
 - [ ] Cabinet link (James 2026-11-26, docs/16): similar cabinets browse in unison; "join? 5 s" then the same game starts.
   - [x] [RACE1] Part 1, RetroFE patch 0017: events out (hello / select / launch), commands in (goto / open), 127.0.0.1
         only, off by default (linkEvents). Tested with a stand-in helper.
