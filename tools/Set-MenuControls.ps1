@@ -75,6 +75,19 @@ foreach ($a in $want.Keys) {
   $lines.Add("$a = " + ($want[$a] -join ',')); $changes += "${a}: new line ($($want[$a] -join ', '))"
 }
 
+# A wheel's red dial through JoyToKey (the frontend's own copy): press = Enter, turn right / left = Down / Up, so it
+# selects and scrolls in the menus and answers "press Enter" in games and Windows (James, 2026-11-26: "what the enter
+# button is on the wheel"). JoyToKey counts buttons from 1: dial right 22, dial left 23, dial press 24.
+$jtk = Join-Path $RetroFE 'JoyToKey\Profile 1.cfg'
+if ($pedals -and (Test-Path -LiteralPath $jtk) -and -not (Select-String -LiteralPath $jtk -Pattern '^Button24=' -Quiet)) {
+  Write-Host "  wheel dial: press = Enter, turn = Down / Up (JoyToKey)$(if (-not $Apply) { ' - dry run' })"
+  if ($Apply) {
+    Copy-Item -LiteralPath $jtk "$jtk.am-dial-$(Get-Date -Format 'yyyyMMdd-HHmmss').bak"
+    [IO.File]::WriteAllText($jtk, ([IO.File]::ReadAllText($jtk).TrimEnd() + "`r`nButton22=1, 28:00:00:00, 0.000, 0, 0`r`nButton23=1, 26:00:00:00, 0.000, 0, 0`r`nButton24=1, 0D:00:00:00, 0.000, 0, 0`r`n"), [Text.Encoding]::ASCII)
+    Get-Process JoyToKey -ErrorAction SilentlyContinue | ForEach-Object { $exe = $_.Path; Stop-Process -Id $_.Id -Force; if ($exe) { Start-Process $exe -WorkingDirectory (Split-Path $exe) -WindowStyle Minimized } }   # it reads the profile at start
+  }
+}
+
 if (-not $changes) { Write-Host "menu controls: already the shared layout ($cc)"; return }
 $changes | ForEach-Object { Write-Host "  $_" }
 if ($Apply) {
