@@ -1,0 +1,21 @@
+Subject: [PATCH] A touch on a window that isn't RetroFE's goes to the extra screen too
+
+The pedestal's touches carry a window ID that matches none of RetroFE's windows, so 0025's
+fallback (for windowID 0) never ran and the touch bar stayed dead ("screen -1"). An unknown
+window ID now takes the same path: pointer check, then the cabinet's extra screen.
+---
+diff --git a/RetroFE/Source/Control/PointerInput.cpp b/RetroFE/Source/Control/PointerInput.cpp
+index f40d2bc..c82e93e 100644
+--- a/RetroFE/Source/Control/PointerInput.cpp
++++ b/RetroFE/Source/Control/PointerInput.cpp
+@@ -89,7 +89,9 @@ int PointerInput::screenOfWindow(Uint32 windowID) {
+         SDL_Window* w = SDL::getWindow(s);
+         if (w && SDL_GetWindowID(w) == windowID) return s;
+     }
+-    return -1;
++    // ArcadeMaster: a window ID that is none of ours (the pedestal's touch screen reports one) - treat it like no window
++    LOG_DEBUG("Pointer", "touch on window " << windowID << ", not one of ours");
++    return screenOfWindow(0);
+ }
+ 
+ void PointerInput::pulse(Gesture g, Uint32 now, int slot) {
