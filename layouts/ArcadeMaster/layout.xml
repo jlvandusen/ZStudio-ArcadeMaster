@@ -221,6 +221,8 @@
     </onMenuIdle>
     <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onGameInfoEnter><set duration=".25"><animate type="alpha" to=".84" algorithm="easeOutCubic"/></set></onGameInfoEnter>
+    <onGameInfoExit><set duration=".2"><animate type="alpha" to="0"/></set></onGameInfoExit>
   </image>
   <reloadableScrollingText type="am_story" menuScrollReload="true" x="850" y="170" width="980" height="500" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="16" startPosition="0" startTime="10" endTime="5" alpha="0" layer="9">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
@@ -230,7 +232,43 @@
     </onMenuIdle>
     <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
     <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onGameInfoEnter><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onGameInfoEnter>
+    <onGameInfoExit><set duration=".2"><animate type="alpha" to="0"/></set></onGameInfoExit>
   </reloadableScrollingText>
+  <!-- floating button hints over the video (tools/New-LayoutHints.py): only at rest, gone on any move. PAGE DOWN = the
+       game's info, PAGE UP = back to the video (controls.conf showGameInfo / hideGameInfo, RetroFE patch 0019) -->
+  <image src="images/hints/hint_info.png" x="1648" y="622" xOrigin="center" yOrigin="center" width="300" height="54" alpha="0" layer="18">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="1.6"><animate type="nop"/></set>
+      <set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="616" algorithm="easeOutCubic"/></set>
+      <set duration="6.2"><animate type="nop"/></set>
+      <set duration=".2"><animate type="alpha" to="0"/></set>
+    </onMenuIdle>
+    <onIdle>
+      <set duration="1.2"><animate type="y" to="610" algorithm="easeInOutSine"/></set>
+      <set duration="1.2"><animate type="y" to="616" algorithm="easeInOutSine"/></set>
+    </onIdle>
+    <onGameInfoEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameInfoEnter>
+    <onGameInfoExit><set duration=".25"><animate type="alpha" to="1"/></set></onGameInfoExit>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
+  <image src="images/hints/hint_video.png" x="1648" y="622" xOrigin="center" yOrigin="center" width="300" height="54" alpha="0" layer="18">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="8.3"><animate type="nop"/></set>
+      <set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="616" algorithm="easeOutCubic"/></set>
+    </onMenuIdle>
+    <onIdle>
+      <set duration="1.2"><animate type="y" to="610" algorithm="easeInOutSine"/></set>
+      <set duration="1.2"><animate type="y" to="616" algorithm="easeInOutSine"/></set>
+    </onIdle>
+    <onGameInfoEnter><set duration=".25"><animate type="alpha" to="1"/></set></onGameInfoEnter>
+    <onGameInfoExit><set duration=".15"><animate type="alpha" to="0"/></set></onGameInfoExit>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
   <!--/am-ui:story-->
 
   <!-- ================= SPECIAL-CONTROL REMINDER: trackball / spinner / gun / wheel / 4-way (am_hint, only those games) ================= -->

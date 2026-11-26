@@ -70,6 +70,29 @@ foreach ($name in $items.Keys) {
 }
 # logos (with live ON/OFF switches), preview cards with the cabinet's current state, backdrops
 & (Join-Path $ToolsDir 'New-ToolsArt.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir
+# the CoinOPS "Settings" stop at the end of the Left/Right filters (playlist zSettings = _zzzShutdown:*) ran CoinOPS's
+# view-mode scripts (zzARCADE, zzWHEEL, zNightDay ...) that don't fit the ArcadeMaster layout (James 2026-11-26: "should
+# be a theme settings and then you select choices with preview - it's currently all scripts"). It shows these Tools
+# instead - Cabinet Settings, Themes with previews, ... - with their art; Shutdown stays. CoinOPS's scripts are kept in
+# roms.am-coinops.
+$zs = Join-Path $RetroFE 'collections\zzzShutdown'
+if (Test-Path (Join-Path $zs 'roms')) {
+  $keep = Join-Path $zs 'roms.am-coinops'; New-Item -ItemType Directory -Force $keep | Out-Null
+  Get-ChildItem (Join-Path $zs 'roms') -File | Where-Object { $_.Name -match '^z.*\.bat$' } | ForEach-Object { Move-Item $_.FullName (Join-Path $keep $_.Name) -Force }
+  Get-ChildItem (Join-Path $zs 'roms') -File -Filter '*.bat' | Where-Object { $_.Name -ne 'Shutdown.bat' -and -not $items.Contains($_.BaseName) } | Remove-Item -Force   # tools no longer offered
+  $ld = Join-Path $zs 'Launchers'; New-Item -ItemType Directory -Force $ld | Out-Null
+  foreach ($name in $items.Keys) {
+    Copy-Item (Join-Path $col "roms\$name.bat") (Join-Path $zs "roms\$name.bat") -Force
+    Set-Content (Join-Path $ld "$name.conf") 'AM_TOOLS' -Encoding ascii
+  }
+  foreach ($kind in Get-ChildItem (Join-Path $col 'medium_artwork') -Directory -ErrorAction SilentlyContinue) {
+    $dst = Join-Path $zs "medium_artwork\$($kind.Name)"; New-Item -ItemType Directory -Force $dst | Out-Null
+    Get-ChildItem $kind.FullName -File | ForEach-Object { Copy-Item $_.FullName (Join-Path $dst $_.Name) -Force }
+  }
+  $sub = Join-Path $RetroFE 'collections\Arcade\zzzShutdown.sub'
+  if (Test-Path $sub) { Set-Content $sub (@($items.Keys) + 'Shutdown') -Encoding ascii }
+  Write-Host ("Settings stop (zzzShutdown): {0} tools + Shutdown" -f $items.Count)
+}
 # main menu entry (after the game categories / Settings)
 if (Test-Path $menuTxt) { $menu = @(Get-Content $menuTxt | Where-Object { $_.Trim() }); if ($menu -notcontains 'Tools') { Set-Content $menuTxt ($menu + 'Tools') -Encoding ascii } }
 Write-Host ("Tools collection: {0} items -> {1}" -f $items.Count, $col)
