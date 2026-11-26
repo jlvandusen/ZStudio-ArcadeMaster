@@ -26,7 +26,15 @@ $rec = Join-Path $PSScriptRoot 'Record-GamePlay.ps1'
 function HookArgs([string]$ev) { "--headless powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$rec`" -Event $ev -Item `"%ITEM_NAME%`" -Collection `"%ITEM_COLLECTION_NAME%`" -RetroFE `"$RetroFE`" -ManifestDir `"$ManifestDir`"" }
 $want = [ordered]@{ preexecutable = $conhost; prearguments = (HookArgs 'start'); postexecutable = $conhost; postarguments = (HookArgs 'end') }
 $changed = 0; $ok = 0; $foreign = @()
+# the main menu's own entries (EXIT, CORE's cmd) are not games: no hooks on the launcher the Main collection uses.
+# The start hook hid the mouse pointer (Set-GameCursor) and EXIT closes RetroFE before any end hook, so the pointer
+# stayed hidden in Windows after every menu Exit (2P stand-up, 2026-11-26). Hooks already there are taken off.
+$menuLaunchers = @('AM_TOOLS')
+$mainConf = [IO.Path]::Combine($RetroFE, 'collections', 'Main', 'settings.conf')
+$ml = if (Test-Path -LiteralPath $mainConf) { Select-String -LiteralPath $mainConf -Pattern '^\s*launcher\s*=\s*(\S.*?)\s*$' | Select-Object -Last 1 } else { $null }
+$menuLaunchers += $(if ($ml) { $ml.Matches[0].Groups[1].Value } else { 'Main' })
 foreach ($f in Get-ChildItem $dir -Filter *.conf -File) {
+  $isMenu = $menuLaunchers -contains $f.BaseName
   if ($f.BaseName -eq 'AM_TOOLS') { continue }
   $lines = @(Get-Content -LiteralPath $f.FullName)
   $ours = @($lines | Where-Object { $_ -eq $tag }).Count -gt 0
@@ -39,13 +47,14 @@ foreach ($f in Get-ChildItem $dir -Filter *.conf -File) {
   }
   $other = @($kept | Where-Object { $_ -match '^\s*(pre|post)executable\s*=' })
   if ($other) { $foreign += $f.Name; continue }                      # somebody else's hook: not ours to replace
-  if (-not $Remove) { $kept.Add($tag); foreach ($k in $want.Keys) { $kept.Add("$k = $($want[$k])") } }
+  $drop = $Remove -or $isMenu
+  if (-not $drop) { $kept.Add($tag); foreach ($k in $want.Keys) { $kept.Add("$k = $($want[$k])") } }
   $newText = ($kept -join "`r`n") + "`r`n"
   $oldText = [IO.File]::ReadAllText($f.FullName)
-  if ($newText -eq $oldText -or (-not $ours -and $Remove)) { $ok++; continue }
+  if ($newText -eq $oldText -or (-not $ours -and $drop)) { $ok++; continue }
   $bak = "$($f.FullName).am-hooks-bak"
   # removing: the backup is the exact original when nothing else changed since (keeps its line endings to the byte)
-  if ($Remove -and (Test-Path $bak) -and (([IO.File]::ReadAllText($bak) -replace "`r", '').TrimEnd() -eq ($newText -replace "`r", '').TrimEnd())) { Copy-Item -LiteralPath $bak $f.FullName -Force; $changed++; continue }
+  if ($drop -and (Test-Path $bak) -and (([IO.File]::ReadAllText($bak) -replace "`r", '').TrimEnd() -eq ($newText -replace "`r", '').TrimEnd())) { Copy-Item -LiteralPath $bak $f.FullName -Force; $changed++; continue }
   if (-not (Test-Path $bak)) { Copy-Item -LiteralPath $f.FullName $bak }
   [IO.File]::WriteAllText($f.FullName, $newText, (New-Object Text.UTF8Encoding $false))   # no BOM: same bytes as ASCII for ASCII files
   $changed++

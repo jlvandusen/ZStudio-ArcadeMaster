@@ -376,6 +376,9 @@ static class AmPanel
                 case "17": State["paused"] = false; what = "game unpause"; break;
                 default:
                     if (c.EndsWith(".lwax", StringComparison.OrdinalIgnoreCase)) { State["animation"] = c; what = "animation start"; }
+                    // a main-menu entry (EXIT, CORE's cmd) is not a game: RetroFE "starts" it from the Main collection. As a
+                    // game it armed the Esc exit guard, which then closed Edge on the desktop after a menu Exit (2026-11-26)
+                    else if (string.Equals(arg1, "main", StringComparison.OrdinalIgnoreCase)) what = "main menu entry " + c;
                     else { State["playing"] = true; State["game"] = c; if (arg1 != null) State["emulator"] = arg1; State["paused"] = false; what = "game start"; }
                     break;
             }
