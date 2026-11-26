@@ -292,6 +292,7 @@ static class AmPanel
                 bool want = frontend && !playing && searchScreen == null;
                 if (want && !searchButton.Visible) searchButton.Show(); else if (!want && searchButton.Visible) searchButton.Hide();
                 if (playing && searchScreen != null) searchScreen.Close();
+                searchButton.KeepOnTop(); if (searchScreen != null) searchScreen.KeepOnTop();
             };
             t.Start();
             Log("search: " + searchIndex.Games.Count + " games indexed, SEARCH button on the touch screen");
