@@ -106,15 +106,18 @@ $me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idle
 $lastHello = [datetime]::MinValue; $lastUser = [datetime]::MinValue; $missItem = ''; $dirty = $true; $lastWrite = [datetime]::MinValue
 $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
+$noFollow = 'Tools', 'SETTINGS', 'Controller'      # menus that are not game lists: never followed into, nothing in them is joined
 $count = $null      # the countdown / join in progress: @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
 Say "cabinet link started: $HostName ($type), share $Share, idle $IdleSec s, countdown $CountdownSec s"
-$startedAt = Get-Date; $lastParentCheck = Get-Date
+$startedAt = Get-Date; $lastParentCheck = Get-Date; $lastSelfCheck = Get-Date; $selfStamp = (Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc; $restartSelf = $false; $selfArgs = @($PSBoundParameters.GetEnumerator() | ForEach-Object { "-$($_.Key)"; if ($_.Value -isnot [switch]) { '"' + [string]$_.Value + '"' } })
 
 try {
   while ($true) {
     $now = Get-Date
     if ($RunSeconds -and ($now - $startedAt).TotalSeconds -ge $RunSeconds) { break }
     if ($ParentPid -and ($now - $lastParentCheck).TotalSeconds -ge 5) { $lastParentCheck = $now; if (-not (Get-Process -Id $ParentPid -ErrorAction SilentlyContinue)) { break } }
+    # a newer AmLink.ps1 arrived (the 15-minute pull): start it and step aside, so a fix needs no reboot
+    if (-not $count -and ($now - $lastSelfCheck).TotalSeconds -ge 30) { $lastSelfCheck = $now; try { if ((Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc -ne $selfStamp) { $restartSelf = $true; break } } catch { } }
 
     # 1. what RetroFE says
     while ($rx.Available -gt 0) {
@@ -148,7 +151,11 @@ try {
         $old = $peers[$j.host]
         $launched = $old -and ([int]$j.launchSeq -ne [int]$old.data.launchSeq)             # never on the first look at a file
         $peers[$j.host] = @{ data = $j; seen = $(if (-not $old -or [int]$j.beat -ne [int]$old.data.beat) { $now } else { $old.seen }); launched = $launched }
-        if ($launched -and $j.launchBy -eq 'user' -and $j.type -eq $type -and -not $count -and $alive -and -not $userHere) {
+        # Only GAMES are joined: never an entry of the first menu (EXIT) or of Tools / settings menus - on 2026-11-26
+        # RACE1's EXIT presses started "joining EXIT" on RACE2. A newer start replaces one that is still counting or
+        # joining (RACE1's Batman was ignored while RACE2 was still busy with an earlier one).
+        $joinable = $j.launchMenu -and ($noFollow -notcontains [string]$j.launchMenu) -and ([string]$j.launchMenu -ne $top)
+        if ($launched -and $joinable -and $j.launchBy -eq 'user' -and $j.type -eq $type -and $alive -and -not $userHere -and (-not $count -or $count.phase -eq 'note' -or $count.item -ne [string]$j.launchItem)) {
           $count = @{ from = $j.host; menu = [string]$j.launchMenu; item = [string]$j.launchItem; col = [string]$j.launchCol; title = (Get-Title ([string]$j.launchCol) ([string]$j.launchItem)); until = $now.AddSeconds($CountdownSec); phase = 'count'; started = $now }
           $missItem = ''; Say "$($j.host) started $($j.launchItem): countdown"
         }
@@ -168,7 +175,11 @@ try {
         elseif (-not $alive -or $now -ge $count.until) { Hide-Card; $count = $null }                    # the game is up (no hello), or it took too long
         elseif ($me.menu -ne $count.menu) { if ($me.menu -eq $top) { if ($me.item -ne $count.menu) { Send-Cmd "goto`t$($count.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
         elseif ($me.item -ne $count.item -or ($count.col -and $me.col -ne $count.col)) { Send-Cmd "goto`t$($count.item)`t$($count.col)" }
-        else { Send-Cmd 'open' 1.2 }
+        else {
+          # the same game is selected here: open it ONCE and finish (a game that quits at once must not be started again)
+          $b = [Text.Encoding]::UTF8.GetBytes('open'); [void]$tx.Send($b, $b.Length, '127.0.0.1', $CommandPort); $lastCmd = 'open'; $lastCmdAt = $now
+          Say "joined: opened $($count.item) here"; $count.phase = 'note'; $count.until = $now.AddSeconds(2)
+        }
       }
       elseif ($now -ge $count.until) { Hide-Card; $count = $null }
     }
@@ -180,7 +191,7 @@ try {
         if ($d.type -ne $type -or -not $d.alive -or ($now - $pe.seen).TotalSeconds -gt 5 -or [double]$d.idleMs -gt 15000) { continue }
         if (-not $lead -or [double]$d.idleMs -lt [double]$lead.idleMs) { $lead = $d }
       }
-      if ($lead -and $lead.item) {
+      if ($lead -and $lead.item -and ($noFollow -notcontains [string]$lead.menu)) {       # somebody in Tools is doing maintenance: stay put
         if ($me.menu -ne $lead.menu) { if ($me.menu -eq $top) { if ($me.item -ne $lead.menu) { Send-Cmd "goto`t$($lead.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
         elseif ($me.item -ne $lead.item -or ($lead.col -and $me.col -ne $lead.col)) { Send-Cmd "goto`t$($lead.item)`t$($lead.col)" 0.25 }
       }
@@ -192,4 +203,5 @@ try {
 finally {
   try { $me.alive = $false; $me.beat++; [IO.File]::WriteAllText($myFile, ($me | ConvertTo-Json -Compress)) } catch { }
   if ($card) { $card.Close() }; $rx.Close(); $tx.Close(); $mutex.ReleaseMutex(); Say 'cabinet link stopped'
+  if ($restartSelf) { Say 'a newer AmLink.ps1 is here - restarting the helper'; Start-Process powershell -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"") + $selfArgs) -WindowStyle Hidden }
 }
