@@ -25,7 +25,8 @@ if (-not $DolphinUser) {
   $tj = Get-Content $Targets -Raw | ConvertFrom-Json
   $DolphinUser = @($tj.dolphin | ForEach-Object { $_.user }) | Where-Object { $_ -and (Test-Path $_) }
 }
-$real = if ($wii) { [Math]::Min(4, [int]$wii.wiimotes) } else { 0 }
+# a DolphinBar's slots count as real remotes: a remote synced to any slot then just works (continuous scanning)
+$real = if ($wii) { [Math]::Min(4, [int]$wii.wiimotes + [int]$wii.dolphinBarSlots) } else { 0 }
 $board = $wii -and [int]$wii.balanceBoard -gt 0
 $gcad = $wii -and [bool]$wii.gcAdapter
 $present = @($cab.devices | Where-Object { $_.type -ne 'Nintendo' } | ForEach-Object { $_.name })

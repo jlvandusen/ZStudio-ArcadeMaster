@@ -119,14 +119,21 @@ $btNames = @($allPnp | Where-Object { $_.FriendlyName -match '(?i)RVL-|Nintendo|
 $hidPid = @($pnp | Where-Object { $_.Class -eq 'HIDClass' } | ForEach-Object { ([regex]::Match($_.InstanceId, 'PID[&_]([0-9A-F]{4})')).Groups[1].Value })
 $wiiUPro = @($btNames | Where-Object { $_ -match '(?i)RVL-CNT-01-UC' }).Count
 $board = @($btNames | Where-Object { $_ -match '(?i)RVL-WBC' }).Count
+# Mayflash DolphinBar (USB 057E:0306, a composite device with one interface per Wii Remote slot): Windows lists all
+# 4 slots - each twice, as "USB Input Device" and "HID-compliant game controller" - whether or not a remote is synced.
+# Those are slots, not remotes (the 2P stand-up counted 8 remotes with none connected, 2026-11-26).
+$dbar = @($allPnp | Where-Object { $_.InstanceId -match '^USB\\VID_057E&PID_0306\\' -and $_.Status -eq 'OK' })
+$dbarSlots = @($pnp | Where-Object { $_.InstanceId -match '^USB\\VID_057E&PID_0306&MI_0\d' } | ForEach-Object { ([regex]::Match($_.InstanceId, 'MI_0\d')).Value } | Sort-Object -Unique).Count
+$btPid = @($pnp | Where-Object { $_.Class -eq 'HIDClass' -and $_.InstanceId -notmatch '^(HID|USB)\\VID_057E&PID_0306&MI_' } | ForEach-Object { ([regex]::Match($_.InstanceId, 'PID[&_]([0-9A-F]{4})')).Groups[1].Value })
 $nintendo = [ordered]@{
-  wiimotes     = [Math]::Max(0, @($hidPid | Where-Object { $_ -in '0306', '0330' }).Count - $wiiUPro - $board)
+  wiimotes     = [Math]::Max(0, @($btPid | Where-Object { $_ -in '0306', '0330' }).Count - $wiiUPro - $board)   # paired remotes (Bluetooth / Wii U Pro on USB)
+  dolphinBarSlots = $(if ($dbar.Count) { [Math]::Max(4, $dbarSlots) * $dbar.Count } else { 0 })
   wiiUPro      = $wiiUPro
   balanceBoard = $board
   gcAdapter    = @($pnp | Where-Object { $_.InstanceId -match 'PID[&_]0337' }).Count -gt 0
   joycons      = @($hidPid | Where-Object { $_ -in '2006', '2007' }).Count
   switchPro    = @($hidPid | Where-Object { $_ -eq '2009' }).Count
-  dolphinBar   = @($allPnp | Where-Object { $_.FriendlyName -match '(?i)DolphinBar|Mayflash' }).Count -gt 0
+  dolphinBar   = $dbar.Count -gt 0 -or @($allPnp | Where-Object { $_.FriendlyName -match '(?i)DolphinBar|Mayflash' }).Count -gt 0
 }
 $cap['wii'] = $nintendo
 foreach ($k in 'wiimotes', 'wiiUPro', 'joycons', 'switchPro') { for ($n = 0; $n -lt [int]$nintendo[$k]; $n++) {
@@ -134,7 +141,10 @@ foreach ($k in 'wiimotes', 'wiiUPro', 'joycons', 'switchPro') { for ($n = 0; $n 
     id = 'VID_057E'; type = 'Nintendo'; role = @{ wiimotes = 'wiimote'; wiiUPro = 'gamepad'; joycons = 'gamepad'; switchPro = 'gamepad' }[$k]; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) } }
 if ($nintendo.gcAdapter) { $devices.Add([ordered]@{ joy = 0; name = 'GameCube controller adapter'; id = 'VID_057E&PID_0337'; type = 'Nintendo'; role = 'gcadapter'; ffb = $false; axes = @(); buttons = 0; hats = 0; guid = '' }) }
 $cap['gamepads'] = [int]$cap.gamepads + [int]$nintendo.wiiUPro + [int]$nintendo.switchPro + [Math]::Floor([int]$nintendo.joycons / 2)
-$sticks = @($devices | Where-Object { $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' -and $flightDevs -notcontains $_ }).Count   # incl. UltraStiks (panel sticks), not flight sticks
+# incl. UltraStiks (panel sticks), not flight sticks, and not light guns: an AimTrak / Sinden / Gun4IR also shows up
+# as a joystick ("ATRAK Device #1"), which made the 2P stand-up's two guns count as two more players
+$gunVidPid = @($gunIds.Keys | ForEach-Object { 'VID_' + $_.Replace(':', '&PID_') })
+$sticks = @($devices | Where-Object { $d = $_; $_.type -match 'Joystick|Gamepad' -and $_.role -notmatch 'wheel|handbrake' -and $flightDevs -notcontains $_ -and -not ($gunVidPid | Where-Object { $d.id -like "$_*" }) }).Count
 # each I-PAC board serves 2 players (an I-PAC 4 / two I-PAC 2s = 4-player pedestal)
 $cap['players'] = if ($Players -gt 0) { $Players } elseif ($cap.encoders -ge 2) { [Math]::Max(4, 2 * $cap.encoders) } else { [Math]::Max(1, [Math]::Max($sticks + $cap.gamepads, [Math]::Max($cap.lightguns, $(if ($cap.controlPanel) { 2 } else { 1 })))) }
 # flight only with real flight controls (a stick): a wheel does not fly
