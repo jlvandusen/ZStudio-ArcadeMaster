@@ -5,6 +5,8 @@
     "down":              { "does": "Next game",               "keys": ["Down"],                            "joy": ["joyHat0Down"], "joyNoPedals": ["joyAxis1+"] },
     "left":              { "does": "Left / previous menu",    "keys": ["Left"],                            "joy": ["joyHat0Left", "joyAxis0-"] },
     "right":             { "does": "Right / next menu",       "keys": ["Right"],                           "joy": ["joyHat0Right", "joyAxis0+"] },
+    "nextPlaylist":      { "does": "Next filter in a game list (the <- -> bar); shares Right with right, NOT the steering axis", "keys": ["Right"], "joy": ["joyHat0Right"] },
+    "prevPlaylist":      { "does": "Previous filter in a game list; shares Left with left, NOT the steering axis", "keys": ["Left"], "joy": ["joyHat0Left"] },
     "select":            { "does": "Play / open",             "keys": ["Return", "1", "Left Ctrl"],        "joy": ["joyButton0", "joyButton7"] },
     "back":              { "does": "Back",                    "keys": ["Escape", "Backspace", "Left Alt"], "joy": ["joyButton1"] },
     "prevCyclePlaylist": { "does": "Previous list (series)",  "keys": ["Space"],      "letters": ["O"],    "joy": ["joyButton2"] },
