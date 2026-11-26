@@ -191,6 +191,10 @@ The loop works like this (James, 2026-11-25):
 - [x] [RACE1] Correction: favourites are Options (9) / Share (8) on the G29; 10 / 11 are R3 / L3 (both work).
 - [x] [RACE1] Hold PS 5 s to leave any game (tools/Watch-GameExit.ps1; a pad: Back + Start). James was stuck in OutRunners.
 - [x] [RACE1] Share = credit, Options = start on the wheel in every emulator (tools/Set-CoinStartButtons.ps1; 105 files).
+- [x] [RACE1] Test = Plus, Service = Minus on the wheel in every emulator (same tool; 54 files; 3 Raw Thrills games keep
+      theirs because Plus / Minus are their volume / test-menu buttons).
+- [x] [RACE1] EXIT on the main menu only gave an error: the frontend had been started from a remote session whose
+      environment stops cmd running a batch file by bare name. Start-ArcadeMaster now clears that setting (PR 190).
 - [ ] RACE2: run tools\Set-CoinStartButtons.ps1 -Apply there too (same wheel), then New-GameControlsArt.
 - [ ] Show "Share = coin, Options = start, hold PS = exit" on the game launch screen / controls card.
 - [ ] Menu force feedback on RACE1 did not open at start-up ("Resetting device"): RetroFE patch 0022 (retry in the menu, plus the cabinet link back command)
