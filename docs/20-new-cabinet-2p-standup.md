@@ -13,8 +13,8 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
 | **USB foot switches** (Time Crisis "cover" pedal and others) | Not yet | Find what they send (keys or a HID gamepad: `tools\Watch-Inputs.ps1`), then map them as the cover / reload pedal in TeknoParrot (Time Crisis 4/5, Razing Storm...), MAME (`timecris`, `crisis2`) and Model 2/3 guns. Add a "pedal" control to the controls cards. |
 | **Trackball** + **spinner dial** | Trackball and spinner games are tagged, cards are drawn, and MAME maps them | Several mice at once: MAME `-multimouse` so the trackball, spinner and two guns don't all move the same cursor (backlog: "rollerball / dial multimouse split"). The "which controller?" screen offers trackball or joystick for 222 games. |
 | **Leap Motion hand sensor** (Ultraleap) | **Not supported, new** | A gesture module in AmPanel: swipe = menu left/right/up/down, pinch = select, open palm held = back / pause screen, and later the hand as a pointer for gun games without guns. Needs the Ultraleap Gemini runtime and its C API (LeapC), loaded the way AmPanel loads PacDrive. |
-| **LEDBlinky drives the marquee** | AmPanel shadow mode passes LEDBlinky's commands through | **The cabinet to take it over on.** Find the marquee hardware (LED-Wiz, PacLED, Pixelcade, a DMD, a second display?). AmPanel then lights it per game, removing LEDBlinky's last job (backlog: "Pixelcade / LED marquee output"; "Other LED boards: LED-Wiz, Howler, GPWiz"). |
-| Buttons with LEDs (if any) | AmPanel, LEDBlinky-compatible | Run the Buttons window once (lights each RGB group, you press it) to make the input map. |
+| **LEDBlinky drives the Pixelcade LED marquee** | AmPanel shadow mode passes LEDBlinky's commands through | **The cabinet to take it over on:** an AmPanel `Marquee` module on Pixelcade's local HTTP API (see the answers below), removing LEDBlinky's last job (backlog: "Pixelcade / LED marquee output"). |
+| Button LEDs | Mini-PAC has no LED outputs | None on this cabinet. |
 
 ## Before the first command (lessons from the pedestal)
 
@@ -62,11 +62,21 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
    - MAME multimouse (trackball, spinner, two guns);
    - the physical-restrictor reminder on the controller screen.
 
-## Questions for James before the session starts
+## James's answers (2026-11-26), and what they change
 
-- **Encoder:** which board (I-PAC 2, Ultimate I/O, other) and are the LEDs on it? Is LEDBlinky's `LEDBlinkyInputMap.xml` up to date?
-- **Marquee:** what LEDBlinky drives (LED-Wiz, PacLED64, Pixelcade, DMD, an LCD marquee).
-- **Foot switches:** what they appear as (keyboard keys or a USB gamepad) and the model.
-- **Leap Motion:** the model (the original Leap or Ultraleap 3Di / Stereo IR 170) and whether it faces up from the panel.
-- **GRS Tron stick:** how it's wired (its own USB board or the encoder) and whether its trigger and top button are separate inputs.
-- **Drive letters, PC name, GPU,** and whether RetroBat or other packs come with it, so its board entry and lane can be set up.
+- **Encoder: Ultimarc Mini-PAC.**
+  - A keyboard encoder with no LED outputs, so there are no button lights to drive, and AmPanel's button-light features stay off on this cabinet.
+  - Its keys come from the I-PAC tool (WinIPAC). Capture them with Watch-Inputs and write them into panel.json; LEDBlinky's input map has nothing to add for buttons here.
+- **Marquee: a Pixelcade LED ("PixelLED Art Maker's Kit - Arcade", creativeartsandtechnology.com), driven by LEDBlinky today.**
+  - Pixelcade is run by its own service (Pixelcade "pixelweb") with a local HTTP API on the cabinet (port 8080): show a game's marquee by system + game name, scrolling text, an idle / attract image.
+  - **Takeover plan:** an AmPanel `Marquee` module calls that API from the events AmPanel already gets (game selected = that game's marquee; game start; frontend idle = attract; "Now playing" text). LEDBlinky is then no longer needed on this cabinet.
+  - Verify the exact API paths on the cabinet first; Pixelcade's own docs and the running service are the source.
+- **Foot switches: they can send keyboard keys or gamepad buttons.** Use **keyboard keys** on keys no other control sends, so they behave like the Mini-PAC (one place to map: panel.json "pedals"). Then map them as the cover / reload pedal per gun game.
+- **Leap Motion: the original Leap Motion Controller, software 3.2.1 (Orion).**
+  - The v3 service has a local WebSocket (JSON hand frames) and the LeapC C API.
+  - The gesture module reads the WebSocket (the simplest route, no native DLL), turning swipe / pinch / palm-hold into menu keys and the pause screen.
+  - Pin the 3.2.1 runtime: newer Ultraleap (Gemini) builds drop the original controller on some versions.
+- **GRS Tron stick: wired as P1, with the trigger on P1 B1 and the top button on P1 B2.**
+  - It shares P1's inputs with the regular P1 stick: no extra device, and the Tron / Discs of Tron cards use P1 B1 / B2.
+  - Watch-Inputs confirms which of the two sticks is plugged into the Mini-PAC's P1 joystick inputs, or whether they are paralleled.
+- **Drives C: to F:.** It has a D:, so the tools' defaults (`D:\ArcadeMaster\...`) can be used if D: is the data drive; still pass `-ManifestDir` / `-Root` / `-BuildRoot` explicitly. Pick the drive with room for the library, then fill in the PC name and GPU on the board when the session joins.
