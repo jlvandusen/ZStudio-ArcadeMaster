@@ -411,6 +411,128 @@ def plan_games(a, plan):
 
 
 # --------------------------------------------------------------------------------------------------
+def system_roots(sysd):
+    roots = []
+    for b in sysd["keeper_order"]:
+        for r in sysd["source_roots"].get(b, []):
+            fr = r["from"]
+            if len(norm(fr).rstrip("\\").split("\\")) <= 2:
+                continue   # a whole build folder: never used for lookup
+            roots.append((b, fr))
+    return roots
+
+
+def all_game_folders(sysd):
+    """Every top-level game folder of a system across its source roots (media folders excluded)."""
+    names = {}
+    for b, r in system_roots(sysd):
+        try:
+            for e in os.scandir(lp(r)):
+                if e.is_dir(follow_symlinks=False) and e.name.lower() not in MEDIA_DIRS and not e.name.startswith("_"):
+                    names.setdefault(e.name.lower(), e.name)
+        except OSError:
+            pass
+    return sorted(names.values(), key=str.lower)
+
+
+def plan_files(a, plan):
+    """Single-file games (roms\\<system>\\<game>.zip|.iso|.chd ...): per file name the copy in the first build of the
+    system's keeper_order is moved to <library>\\roms\\<system>\\<name>; identical copies (same size + blake2b) in
+    the other builds go to the archive; different ones stay where they are (listed). Same log and rollback as the
+    game-folder mode."""
+    sysd = next((s for s in plan["systems"] if s["system"] == a.system), None)
+    if not sysd:
+        sys.exit(f"system {a.system} not in plan")
+    library = a.library_root
+    sys_lib = os.path.join(library, "roms", a.system)
+    guard = Guard(plan.get("pinned_for_E", {}).get("paths", []), [library, a.archive_root])
+    skip_ext = {".txt", ".xml", ".cfg", ".ini", ".png", ".jpg", ".jpeg", ".mp4", ".pdf", ".db", ".dat", ".url", ".lnk"}
+    copies = {}   # name.lower -> [(build, path, size)] in keeper order
+    for b, r in system_roots(sysd):
+        try:
+            entries = list(os.scandir(lp(r)))
+        except OSError as e:
+            print(f"cannot list {r}: {e}"); continue
+        for e in entries:
+            if not e.is_file(follow_symlinks=False):
+                continue
+            st = e.stat(follow_symlinks=False)
+            if st.st_file_attributes & REPARSE or os.path.splitext(e.name)[1].lower() in skip_ext:
+                continue
+            copies.setdefault(e.name.lower(), []).append((b, os.path.join(r, e.name), st.st_size))
+    print(f"{a.system}: {len(copies)} game files across {len(system_roots(sysd))} source roots")
+    stamp_ = stamp()
+    log = None
+    totals = dict(lib_files=0, lib_bytes=0, arc_files=0, arc_bytes=0)
+    left, made = [], set()
+    for key in sorted(copies):
+        lst = copies[key]
+        kb, kp, ks = lst[0]
+        dst = os.path.join(sys_lib, os.path.basename(kp))
+        why = guard.refuse(kp, "src") or guard.refuse(dst, "dst")
+        if why:
+            left.append((kp, why)); continue
+        if os.path.exists(lp(dst)):
+            left.append((kp, f"already in the library: {dst}")); continue
+        if locked(kp):
+            left.append((kp, "locked: stays")); continue
+        moves = [[kp, dst, ks, None, "library"]]
+        if len(lst) > 1:
+            kh = blake(kp); moves[0][3] = kh
+            for b, p, s in lst[1:]:
+                if s != ks:
+                    left.append((p, "differs from keeper (size): stays")); continue
+                if guard.refuse(p, "src"):
+                    left.append((p, guard.refuse(p, "src"))); continue
+                if blake(p) != kh:
+                    left.append((p, "differs from keeper (hash): stays")); continue
+                ad = os.path.join(a.archive_root, os.path.splitdrive(os.path.abspath(p))[1].lstrip("\\"))
+                if os.path.exists(lp(ad)) or guard.refuse(ad, "dst") or locked(p):
+                    left.append((p, "archive target exists / refused / locked: stays")); continue
+                moves.append([p, ad, s, kh, "archive"])
+        totals["lib_files"] += 1; totals["lib_bytes"] += ks
+        totals["arc_files"] += len(moves) - 1; totals["arc_bytes"] += sum(m[2] for m in moves[1:])
+        if not a.apply:
+            continue
+        if log is None:
+            log = Log(os.path.join(a.log_dir, f"{stamp_}-{a.system}-files.tsv"))
+            print(f"log: {log.path}")
+        for src, d, size, h, what in moves:
+            dd = os.path.dirname(d)
+            if dd not in made:
+                chain, x = [], dd
+                while not os.path.isdir(lp(x)):
+                    chain.append(x); x = os.path.dirname(x)
+                for c in reversed(chain):
+                    log.row("", c, "", "", "mkdir"); os.mkdir(lp(c))
+                made.add(dd)
+            if os.path.exists(lp(d)):
+                log.row(src, d, size, h, "skipped-target-exists"); left.append((src, "target appeared")); continue
+            if os.stat(lp(src)).st_size != size:
+                log.row(src, d, size, h, "skipped-size-changed"); left.append((src, "size changed")); continue
+            log.row(src, d, size, h, "pending")
+            try:
+                os.rename(lp(src), lp(d))
+            except OSError as e:
+                log.row(src, d, size, h, f"failed:{e.winerror}"); print(f"STOP: rename failed {src}: {e}"); log.close(); return 2
+            log.row(src, d, size, h, "done")
+    print("\n===== summary" + ("" if a.apply else " (DRY RUN - nothing moved)"))
+    print(f"into library: {totals['lib_files']} files ({gb(totals['lib_bytes'])}) -> {sys_lib}")
+    print(f"into archive: {totals['arc_files']} files ({gb(totals['arc_bytes'])})")
+    print(f"left where they are: {len(left)}")
+    for p, why in left[: a.show_left]:
+        print(f"  LEFT {p}  [{why}]")
+    if log:
+        log.close()
+        with open(log.path + ".left.tsv", "w", encoding="utf-8") as f:
+            f.write("path\treason\n")
+            for p, why in left:
+                f.write(f"{p}\t{why}\n")
+        print(f'\nmove log: {log.path}\nrollback: "{sys.executable}" "{os.path.abspath(__file__)}" --rollback "{log.path}" --apply')
+    return 0
+
+
+# --------------------------------------------------------------------------------------------------
 def rollback(a):
     rows = []
     with open(a.rollback, encoding="utf-8") as f:
@@ -535,6 +657,8 @@ def main():
     ap.add_argument("--games", help="comma-separated top-level game folder names")
     ap.add_argument("--kinds", default="rom,emu,bios")
     ap.add_argument("--keeper", help="only move games whose keeper is this build (e.g. CP78)")
+    ap.add_argument("--files", action="store_true", help="single-file games of --system (roms\\<system>\\*.zip ...)")
+    ap.add_argument("--all", action="store_true", help="every game folder of --system")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--rollback", metavar="LOG")
     ap.add_argument("--backup-configs", action="store_true")
@@ -551,8 +675,20 @@ def main():
         plan = json.load(f)
     if a.backup_configs:
         return backup_configs(a, plan)
+    if a.files:
+        if not a.system:
+            ap.error("--files needs --system")
+        return plan_files(a, plan)
+    if a.all and a.system:
+        sysd = next((s for s in plan["systems"] if s["system"] == a.system), None)
+        if not sysd:
+            sys.exit(f"system {a.system} not in plan")
+        a.games = ",".join(all_game_folders(sysd))
+        print(f"{a.system}: {len(a.games.split(',')) if a.games else 0} game folders")
+        if not a.games:
+            return 0
     if not a.system or not a.games:
-        ap.error("--system and --games are required (game-folder mode)")
+        ap.error("--system and --games (or --all, or --files) are required")
     return plan_games(a, plan)
 
 
