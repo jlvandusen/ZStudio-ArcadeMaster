@@ -162,7 +162,9 @@ function Wait-WMDigital($open, $base, [switch]$Keyboard, [switch]$AllowAxis) {
                     }
                 } elseif ($pending.ContainsKey("b$k/$b")) { $pending.Remove("b$k/$b") }
             }
-            for ($p = 0; $p -lt 4; $p++) {
+            # only the hats the device says it has: a handbrake with no hat (DESKTOP-RACE2's "handbrake", 0 POVs) reported a
+            # changing POV value while its lever moved, and Wheel Setup recorded the handbrake as "hat 0 Up"
+            for ($p = 0; $p -lt [Math]::Min(4, [int]$open[$k].Info.PovCount); $p++) {
                 $v = $st[$k].Povs[$p]
                 if ($v -ne $base.Povs[$k][$p] -and @(0, 9000, 18000, 27000) -contains $v) {
                     $id = "p$k/$p/$v"
