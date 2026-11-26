@@ -1,0 +1,21 @@
+Subject: [PATCH] Attract mode keeps rolling through the games
+
+Attract mode only moves the list while the list stands still, and the "attract" event it sends every
+frame cleared the list's idle flag (upstream "Cache idle state" change). So attract moved one game
+and then sat on it until somebody pressed a button. The per-frame attract event no longer clears it.
+---
+diff --git a/RetroFE/Source/Graphics/Page.cpp b/RetroFE/Source/Graphics/Page.cpp
+index 7c87b283..c72acefe 100644
+--- a/RetroFE/Source/Graphics/Page.cpp
++++ b/RetroFE/Source/Graphics/Page.cpp
+@@ -618,7 +618,9 @@ void Page::triggerEventOnAllMenus(const std::string& event) {
+ 				component->triggerEvent(event, index);
+ 		}
+ 	}
+-	invalidateIdleCache();
++	// ArcadeMaster: "attract" is sent every frame while attract mode runs. Clearing the idle cache for it meant attract
++	// never saw the list standing still: it moved one game and then sat there for good (RACE2, 2026-11-26)
++	if (event != "attract") invalidateIdleCache();
+ }
+ 
+ 
