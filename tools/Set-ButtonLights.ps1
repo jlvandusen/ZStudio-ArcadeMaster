@@ -47,7 +47,19 @@ if ($Engine -eq $now) { Write-Host "button lights already: $now"; return }
 if ($Engine -eq 'ArcadeMaster') {
   if (-not (Test-Path $amExe)) { throw "AmPanel is not installed ($amExe) - tools\Build-AmPanel.ps1 -InstallTo $amRoot" }
   $real = if ($cur) { $cur } else { Join-Path $RetroFE 'LEDBlinky' }
-  if (-not (Test-Path (Join-Path $real 'PacDrive32.dll'))) { throw "no PacDrive32.dll in $real - AmPanel needs LEDBlinky's folder for the Ultimarc SDK and colour files" }
+  # a cabinet with no button lights (a racing rig: no LEDBlinky, no Ultimarc board) still wants AmPanel for the game
+  # start / stop events - Esc ends any game (ExitGuard), the loading screen, the controller question. AmPanel then runs in
+  # shadow mode with nothing to drive: only the shim goes in, AmPanel.json gets no Lights / LEDBlinkyDir.
+  $eventsOnly = -not (Test-Path (Join-Path $real 'PacDrive32.dll'))
+  if ($eventsOnly) {
+    [ordered]@{ engine = 'ArcadeMaster'; ledBlinkyDir = ''; eventsOnly = $true; at = (Get-Date).ToString('s') } | ConvertTo-Json | Set-Content $stateFile -Encoding UTF8
+    New-Item -ItemType Directory -Force $shim | Out-Null
+    Copy-Item $amExe (Join-Path $shim 'LEDBlinky.exe') -Force
+    Set-Conf 'LEDBlinkyDirectory' $shim
+    Stop-ByPath 'AmPanel' $amExe; Start-Sleep -Milliseconds 500; Start-Process $amExe -ArgumentList '1' -WorkingDirectory $amRoot
+    Write-Host "button lights: none on this cabinet - AmPanel gets the frontend's game events through $shim (Esc ends any game)"
+    return
+  }
   [ordered]@{ engine = 'ArcadeMaster'; ledBlinkyDir = $real; at = (Get-Date).ToString('s') } | ConvertTo-Json | Set-Content $stateFile -Encoding UTF8
   New-Item -ItemType Directory -Force $shim | Out-Null
   Copy-Item $amExe (Join-Path $shim 'LEDBlinky.exe') -Force
