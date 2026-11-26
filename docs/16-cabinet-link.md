@@ -88,6 +88,11 @@ own PC, through a named pipe). "Is that cabinet there?" is judged by its counter
   the 30 s rule.
 **Not tested yet:** two real cabinets. RACE2 gets it at its next frontend start after pulling main.
 
+**First real try, RACE1 + RACE2 (2026-11-26 08:40) and what it showed**
+- RACE2 followed RACE1 onto Batman, but did not start it. RACE1's presses on the main menu's EXIT entry had started "joining EXIT" on RACE2; RACE2 could not go back to the main menu (no `back` yet), stayed busy for 15 s, and the Batman start fell into that time.
+- Fixed: only games are joined - never an entry of the first menu (EXIT) or of Tools / SETTINGS / Controller, and a cabinet is not followed into those; a newer start replaces one still counting or joining; `open` is sent once.
+- The helper restarts itself when a newer AmLink.ps1 arrives (checked every 30 s), and `tools\Restart-CabinetHelpers.ps1` restarts the helpers under a running launcher.
+
 **Known gaps**
 - The follower cannot leave a menu (`back`) until RetroFE patch 0018.
 - After a joined game starts, it runs until somebody exits it at that cabinet (the in-game menu, A3, is the place to
