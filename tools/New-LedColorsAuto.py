@@ -90,14 +90,18 @@ def main():
     mi = os.path.join(a.manifest, "mame-inputs.json")
     if os.path.exists(mi):
         machines = json.load(open(mi, encoding="utf-8")).get("machines", {})
-    catalog = {}
+    catalog, names_of = {}, {}
     gj = os.path.join(a.manifest, "games.json")
     if os.path.exists(gj):
         g = json.load(open(gj, encoding="utf-8-sig")); g = g.get("games", g) if isinstance(g, dict) else g
         for x in (g if isinstance(g, list) else g.values()):
             ctl = x.get("controls") or {}
             players = max(int(ctl.get("players") or 0), int(ctl.get("gunPlayers") or 0))
-            catalog[x["id"].split(":")[-1].lower()] = (players, int(ctl.get("buttons") or 0), bool(ctl.get("flightStick")))
+            gid = x["id"].split(":")[-1].lower()
+            catalog[gid] = (players, int(ctl.get("buttons") or 0), bool(ctl.get("flightStick")))
+            # RetroFE collections built from titles send the title, not the id ("After Burner Climax", not "abc")
+            names_of.setdefault(gid, set()).update(
+                [x.get("title") or ""] + [s.get("item") or "" for s in (x.get("sources") or []) if isinstance(s, dict)])
     names = set(machines) | set(catalog) | set(parents)
     out, n_clone, n_ctl = {}, 0, 0
     for n in sorted(names):
@@ -133,6 +137,24 @@ def main():
                     for b in range(1, 4):
                         m["P%dB%dJOY" % (p, b)] = PALETTE[b - 1]
             out[n] = m; n_ctl += 1
+    # aliases: a game's title and collection item names light the same as its id (never over a Colors.ini name)
+    n_alias = 0
+    taken = {k.lower() for k in out} | set(ini)
+    for gid, alts in names_of.items():
+        src = out.get(gid)
+        if src is None and gid in ini:
+            src = {}
+            for k, v in ini[gid].items():
+                lab, rgb = to_label(k), pal.get(v.lower())
+                if lab and rgb is not None:
+                    src[lab] = rgb
+        if not src:
+            continue
+        for t in alts:
+            t = t.strip()
+            if t and t.lower() not in taken:
+                out[t] = src; taken.add(t.lower()); n_alias += 1
+    print("aliases: %d titles / item names" % n_alias)
     path = os.path.join(a.manifest, "led-colors-auto.json")
     with open(path + ".tmp", "w", encoding="utf-8") as f:
         json.dump(out, f, separators=(",", ":"))

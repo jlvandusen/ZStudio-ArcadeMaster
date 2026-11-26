@@ -1,0 +1,83 @@
+Subject: [PATCH] Videos in CoinOPS-layout builds, and Left / Right reach the filters
+
+Videos: Main.cpp points GStreamer at <frontend>\retrofe\ for its plugins, scanner and registry. A
+CoinOPS build keeps the exe and the plugins in core\, so GStreamer found none ("no such element
+factory playbin / appsink") and no video played. Without a retrofe\ folder the exe's own folder
+is used.
+
+Left / Right: in a vertical layout the cross axis scrolls the layout's playlist menu. A layout
+without one (ArcadeMaster, CoinOPS) got nothing from it, and the press never reached
+nextPlaylist / prevPlaylist bound to the same keys, so the filters and Settings were out of
+reach. Without a playlist menu the cross axis is left to those keys (same for Up / Down in a
+horizontal layout).
+---
+diff --git a/RetroFE/Source/Graphics/Page.h b/RetroFE/Source/Graphics/Page.h
+index c2feec7..6471654 100644
+--- a/RetroFE/Source/Graphics/Page.h
++++ b/RetroFE/Source/Graphics/Page.h
+@@ -162,6 +162,7 @@ public:
+     void  setUserScrollInputActive(bool active);
+     bool isPlaylistScrolling() const;
+     bool isGamesScrolling() const;
++    bool hasPlaylistMenu() const { return playlistMenu_ != nullptr; }   // ArcadeMaster: the layout has a playlist menu
+     bool  isPlaying() const;
+     void  resetScrollPeriod() const;
+     void decelerateScrollPeriod(float dt);
+diff --git a/RetroFE/Source/Main.cpp b/RetroFE/Source/Main.cpp
+index 66b2484..2643ca2 100644
+--- a/RetroFE/Source/Main.cpp
++++ b/RetroFE/Source/Main.cpp
+@@ -329,10 +329,20 @@ int main(int argc, char** argv)
+ 
+ #ifdef WIN32
+     std::string gstPluginPath = Utils::combinePath(Configuration::absolutePath, "retrofe");
++    // ArcadeMaster: CoinOPS builds keep the exe and GStreamer's plugins in "core", not "retrofe". With no "retrofe"
++    // folder GStreamer found no plugins ("no such element factory playbin") and no video played. Use the exe's folder.
++    if (!std::filesystem::is_directory(gstPluginPath)) {
++        if (char* base = SDL_GetBasePath()) {
++            std::string b(base);
++            SDL_free(base);
++            while (!b.empty() && (b.back() == '\\' || b.back() == '/')) b.pop_back();
++            if (!b.empty()) gstPluginPath = b;
++        }
++    }
+     Utils::setEnvVar("GST_PLUGIN_PATH", gstPluginPath);
+     Utils::setEnvVar("FREI0R_PATH", gstPluginPath);
+-	Utils::setEnvVar("GST_PLUGIN_SCANNER", Utils::combinePath(Configuration::absolutePath, "retrofe", "gst-plugin-scanner.exe"));
+-	Utils::setEnvVar("GST_REGISTRY", Utils::combinePath(Configuration::absolutePath, "retrofe", "registry.bin"));
++	Utils::setEnvVar("GST_PLUGIN_SCANNER", Utils::combinePath(gstPluginPath, "gst-plugin-scanner.exe"));
++	Utils::setEnvVar("GST_REGISTRY", Utils::combinePath(gstPluginPath, "registry.bin"));
+ #endif
+ 
+     gst_debug_set_default_threshold(GST_LEVEL_ERROR);
+diff --git a/RetroFE/Source/RetroFE.cpp b/RetroFE/Source/RetroFE.cpp
+index 4904f8f..93a68e5 100644
+--- a/RetroFE/Source/RetroFE.cpp
++++ b/RetroFE/Source/RetroFE.cpp
+@@ -3503,16 +3503,24 @@ RetroFE::RETROFE_STATE RetroFE::processUserInput(Page* page) {
+ 	const bool amLeft = input_.keystate(UserInput::KeyCodeLeft) && !input_.keystate(UserInput::KeyCodeRight);
+ 	const bool amRight = input_.keystate(UserInput::KeyCodeRight) && !input_.keystate(UserInput::KeyCodeLeft);
+ 
++	// ArcadeMaster: a cross-axis direction scrolls the layout's playlist menu. A layout without one (ArcadeMaster,
++	// CoinOPS) gets nothing from that, and the press never reached nextPlaylist / prevPlaylist bound to the same keys:
++	// Left / Right could not change the filters or reach Settings. Without a playlist menu the cross axis is left alone.
++	const bool amCross = page->hasPlaylistMenu();
+ 	if (page->isHorizontalScroll()) {
+ 		// --- Horizontal Theme Mappings ---
+-		if (amDown) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
++		if (amDown && !amCross) {}
++		else if (amUp && !amCross) {}
++		else if (amDown) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
+ 		else if (amUp) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistBack; }
+ 		else if (amRight) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionForward; }
+ 		else if (amLeft) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionBack; }
+ 	}
+ 	else {
+ 		// --- Vertical Theme Mappings ---
+-		if (amRight) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
++		if (amRight && !amCross) {}
++		else if (amLeft && !amCross) {}
++		else if (amRight) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
+ 		else if (amLeft) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistBack; }
+ 		else if (amDown) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionForward; }
+ 		else if (amUp) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionBack; }
