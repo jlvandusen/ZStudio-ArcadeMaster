@@ -26,6 +26,7 @@ class StickStudio : Form
     readonly GridView grid = new GridView { Width = 380, Height = 380, Margin = new Padding(12) };
     readonly FlowLayoutPanel maps = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, AutoSize = true, WrapContents = false, Margin = new Padding(6, 12, 6, 6) };
     string shown;
+    public static Func<bool, string> ServoHook;   // set by AmPanel when its lights own PacDrive
 
     public StickStudio(Sticks running, string manifestDir, string ledBlinkyDir, object gate, string startGame, Action<string> log)
     {
@@ -100,6 +101,8 @@ class StickStudio : Form
 
     void Servo(bool four)
     {
+        // with AmPanel's lights open, PacDrive is theirs: switch through them (a PacShutdown here dropped the LED boards)
+        if (ServoHook != null) { lock (gate) status.Text = ServoHook(four); return; }
         try { PacInitialize(); bool ok = four ? PacSetServoStik4Way() : PacSetServoStik8Way(); PacShutdown(); status.Text = "ServoStik: " + (four ? "4-way" : "8-way") + (ok ? "" : " - not answered (is a ServoStik plugged in?)"); }
         catch (Exception e) { status.Text = "ServoStik: " + e.Message; }
     }

@@ -14,8 +14,14 @@ import json
 import os
 import sqlite3
 
-PALETTE = [[48, 0, 0], [0, 0, 48], [0, 48, 0], [48, 48, 0], [36, 0, 48], [0, 48, 48], [48, 20, 0], [48, 8, 30]]
+# the on-screen controls card's button colours (New-PanelControlsArt.py BTN_COLORS: magenta, cyan, amber, green,
+# violet, orange, ice, red) on LEDBlinky's 0-48 scale, so the panel lights the colour the screen shows (James: "the 3rd
+# button should be yellow ... or the screen indicator is wrong")
+CARD_RGB = [(255, 47, 160), (46, 200, 255), (255, 176, 0), (61, 220, 132), (123, 92, 255), (255, 138, 61),
+            (155, 231, 255), (255, 90, 90)]
+PALETTE = [[round(v * 48 / 255) for v in c] for c in CARD_RGB]
 WHITE = [36, 36, 36]
+COIN = [48, 48, 0]                    # James: start white, coin yellow, for every player
 NAMES = {"red": [48, 0, 0], "blue": [0, 0, 48], "green": [0, 48, 0], "yellow": [48, 48, 0], "white": [48, 48, 48],
          "black": [0, 0, 0], "orange": [48, 20, 0], "purple": [36, 0, 48], "cyan": [0, 48, 48], "pink": [48, 8, 30]}
 
@@ -66,7 +72,7 @@ def from_controls(players, buttons):
     out = {}
     for p in range(1, max(1, min(players, 4)) + 1):
         out["P%dSTART" % p] = WHITE
-        out["P%dCOIN" % p] = WHITE
+        out["P%dCOIN" % p] = COIN
         for b in range(1, max(0, min(buttons, 8)) + 1):
             out["P%dB%d" % (p, b)] = PALETTE[b - 1]
     return out
@@ -97,13 +103,17 @@ def main():
         for x in (g if isinstance(g, list) else g.values()):
             ctl = x.get("controls") or {}
             players = max(int(ctl.get("players") or 0), int(ctl.get("gunPlayers") or 0))
+            if ctl.get("lightgun"):
+                players = max(players, 2)     # James: gun games light coin + start for P1 and P2 (2Spicy)
             gid = x["id"].split(":")[-1].lower()
-            catalog[gid] = (players, int(ctl.get("buttons") or 0), bool(ctl.get("flightStick")))
+            # "default (console/PC)" = the catalog guessed (Border Down: 1 player, 0 buttons) - MAME's controls win then
+            guess = str(ctl.get("source") or "").startswith("default")
+            catalog[gid] = (players, int(ctl.get("buttons") or 0), bool(ctl.get("flightStick")), guess)
             # RetroFE collections built from titles send the title, not the id ("After Burner Climax", not "abc")
             names_of.setdefault(gid, set()).update(
                 [x.get("title") or ""] + [s.get("item") or "" for s in (x.get("sources") or []) if isinstance(s, dict)])
     names = set(machines) | set(catalog) | set(parents)
-    out, n_clone, n_ctl = {}, 0, 0
+    out, n_clone, n_ctl, weak = {}, 0, 0, set()
     for n in sorted(names):
         key = n.lower()
         if key in ini:
@@ -120,26 +130,30 @@ def main():
         players = buttons = 0
         flight = False
         mm = machines.get(n) or machines.get(key)
-        if key in catalog:
+        if key in catalog and not (catalog[key][3] and mm):
             # the frontend's own catalog first: a TeknoParrot id can be a MAME machine name too ("abc" is After Burner
             # Climax here, an ABC computer in MAME)
-            players, buttons, flight = catalog[key]
+            players, buttons, flight, _ = catalog[key]
         elif mm:
             players = int(mm[0] or 0)
             buttons = max([int(c[1] or 0) for c in mm[1]] + [0])
+            if key in catalog:
+                players = max(players, catalog[key][0])     # 2Spicy: the catalog's gun players still count
         # James: every known game lights at least its players' coin + start (2Spicy: gun game, no buttons, 2 players)
         if mm is not None or key in catalog:
             m = from_controls(players or 1, buttons)
             if flight:
                 # flight-stick games: the stick's own buttons too, and coin + start for both players
                 for p in (1, 2):
-                    m["P%dSTART" % p] = WHITE; m["P%dCOIN" % p] = WHITE
+                    m["P%dSTART" % p] = WHITE; m["P%dCOIN" % p] = COIN
                     for b in range(1, 4):
                         m["P%dB%dJOY" % (p, b)] = PALETTE[b - 1]
             out[n] = m; n_ctl += 1
+            if key in catalog and catalog[key][3] and not mm:
+                weak.add(key)                 # only the catalog's guess: a real game's title may replace it
     # aliases: a game's title and collection item names light the same as its id (never over a Colors.ini name)
     n_alias = 0
-    taken = {k.lower() for k in out} | set(ini)
+    taken = {k.lower() for k in out if k.lower() not in weak} | set(ini)
     for gid, alts in names_of.items():
         src = out.get(gid)
         if src is None and gid in ini:
@@ -153,6 +167,8 @@ def main():
         for t in alts:
             t = t.strip()
             if t and t.lower() not in taken:
+                if t.lower() in weak:
+                    out.pop(t.lower(), None)
                 out[t] = src; taken.add(t.lower()); n_alias += 1
     print("aliases: %d titles / item names" % n_alias)
     path = os.path.join(a.manifest, "led-colors-auto.json")

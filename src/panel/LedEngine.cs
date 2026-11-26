@@ -153,6 +153,19 @@ class LedEngine
 
     public void Close() { if (open) { try { StopAnim(); AllOff(); PacShutdown(); } catch { } open = false; } }
 
+    // ServoStik (the motorised 4 / 8-way restrictor) goes through the same PacDrive32 session as the lights, so it is
+    // switched here and never with its own PacInitialize / PacShutdown (that would drop the LED boards)
+    [DllImport("PacDrive32.dll", CallingConvention = CallingConvention.StdCall)] static extern bool PacSetServoStik4Way();
+    [DllImport("PacDrive32.dll", CallingConvention = CallingConvention.StdCall)] static extern bool PacSetServoStik8Way();
+    bool? servoFour;
+    public string Servo(bool four)
+    {
+        if (!open) return "ServoStik: lights are not open";
+        if (servoFour == four) return "ServoStik: " + (four ? "4-way" : "8-way") + " (already)";
+        try { bool ok = four ? PacSetServoStik4Way() : PacSetServoStik8Way(); servoFour = ok ? (bool?)four : null; return "ServoStik: " + (four ? "4-way" : "8-way") + (ok ? "" : " - not answered"); }
+        catch (Exception e) { return "ServoStik: " + e.Message; }
+    }
+
     // ---------------------------------------------------------------- step 6: attract animations
     // One animation thread at a time; every other write first stops it (StopAnim) so there is a single writer.
     System.Threading.Thread anim;
@@ -437,7 +450,14 @@ class LedEngine
         foreach (var key in new[] { "*", rom })
         {
             Dictionary<string, int[]> m; if (key == null || !overrides.TryGetValue(key, out m)) continue;
-            foreach (var kv in m) if (SetLabel(kv.Key, kv.Value)) { baseColor[kv.Key] = kv.Value; n++; }
+            foreach (var kv in m)
+            {
+                // "*" (the whole cabinet: start white, coin yellow) recolours only what the game lights - a 1-player
+                // game must not light players 3 and 4's start / coin
+                int[] cur;
+                if (key == "*" && (!baseColor.TryGetValue(kv.Key, out cur) || cur == null || (cur[0] | cur[1] | cur[2]) == 0)) continue;
+                if (SetLabel(kv.Key, kv.Value)) { baseColor[kv.Key] = kv.Value; n++; }
+            }
         }
         return n;
     }

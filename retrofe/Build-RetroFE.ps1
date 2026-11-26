@@ -34,6 +34,12 @@ param(
 $ErrorActionPreference = 'Stop'
 function Step($m) { Write-Host "==> $m" -ForegroundColor Cyan }
 $here = $PSScriptRoot
+# git must be found BEFORE steps 1-2: they run with 'Continue', and a missing git there failed every checkout / apply
+# silently ("apply 0018" was printed, nothing applied) and the old code was rebuilt under the new key (2026-11-26)
+if (-not (Get-Command $Git -ErrorAction SilentlyContinue)) {
+  $cand = @("$env:LOCALAPPDATA\Programs\Git\cmd\git.exe", 'C:\Program Files\Git\cmd\git.exe') | Where-Object { Test-Path $_ } | Select-Object -First 1
+  if ($cand) { $Git = $cand } elseif (-not $Source) { throw "git not found ($Git) - the patches could not be applied" }
+}
 $src = if ($Source) { (Resolve-Path $Source).Path } else { Join-Path $Work 'RetroFE' }
 # cmake from Visual Studio Build Tools when it is not on PATH
 if ($CMake -eq 'cmake' -and -not (Get-Command cmake -ErrorAction SilentlyContinue)) {
