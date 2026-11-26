@@ -39,6 +39,8 @@ $items = [ordered]@{
   '9a Themes'                = @('Themes', '7b5cff')
   '9b Reset Theme'           = @('ResetTheme', '7b5cff')
   '9c Graphics Driver'       = @('GpuDriver', '3ddc84')
+  '9y Restart PC'            = @('RestartPC', 'ffb000')
+  '9z Shut Down PC'          = @('ShutdownPC', 'ff4d4d')
   '9d Emulator Updates'      = @('EmulatorUpdates', '3ddc84')
 }
 
