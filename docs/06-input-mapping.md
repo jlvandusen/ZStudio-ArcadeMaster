@@ -618,3 +618,15 @@ for 5 secs".
   EXIT"; at 5 s every program RetroFE started for the game is asked to close, and ended 3 s later if still there. A pad
   uses Back + Start. In the menus it does nothing. Log: `manifest\game-exit.log`. The old exit (L2 + R2 together, through
   JoyToKey's Alt+F4 and MAME's own cancel) still works.
+
+## The wheel's red dial, and life without G HUB (2026-11-26)
+- **Dial press = Enter, dial right / left = Down / Up** (JoyToKey, the frontend's own `JoyToKey\Profile 1.cfg`: buttons 24 /
+  22 / 23, counted from 1). James: "need to find what the enter button is on the wheel". It selects and scrolls in the
+  menus and answers "press Enter" in games and in Windows. `Set-MenuControls.ps1` adds it on any cabinet with a wheel.
+  In the menus Cross (and L2) select as before.
+- **G HUB uninstalled on DESKTOP-RACE1.** The wheel is unchanged for everything we bind: same name ("Logitech G HUB G29
+  ..."), same instance GUID, 25 buttons, 4 axes, force feedback reported. What went with G HUB: its pictures of the
+  wheel, pedals and shifter (`C:\ProgramData\LGHUB\depots\<n>\g29`), which the controls cards are drawn on.
+  `New-GameControlsArt.ps1` now keeps a copy in `C:\ProgramData\ArcadeMaster\wheels\g29` and on
+  `Z:\ArcadeMaster\media\ghub-g29` whenever G HUB is present, and uses that copy on a PC without G HUB. Until a cabinet
+  with G HUB has run it once, a redraw on RACE1 gives the plain drawing; the cards made earlier keep their photo.
