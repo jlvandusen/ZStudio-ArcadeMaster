@@ -54,7 +54,12 @@ public class AmExitCard : Form {
 }
 '@
 $card = $null
+# AmPanel.json "ExitCard": "off" (next to the manifest folder) - hold-to-exit still works, but no card on top of the game
+# (James 2026-11-26 on DESKTOP-RACE2: "kill the loading and exit screen" - Batman went windowed)
+$noCard = $false
+try { $apj = Join-Path (Split-Path $ManifestDir) 'AmPanel.json'; if (Test-Path $apj) { $noCard = "$((Get-Content $apj -Raw | ConvertFrom-Json).ExitCard)" -ieq 'off' } } catch { }
 function Show-Card([string]$a, [string]$b) {
+  if ($script:noCard) { return }
   if (-not $script:card) { $script:card = New-Object AmExitCard; $s = [Windows.Forms.Screen]::PrimaryScreen.Bounds; $script:card.Size = New-Object Drawing.Size(900, 150); $script:card.Location = New-Object Drawing.Point(($s.X + ($s.Width - 900) / 2), ($s.Y + 60)) }
   $script:card.Line1 = $a; $script:card.Line2 = $b; if (-not $script:card.Visible) { $script:card.Show() }; $script:card.Invalidate()
 }
