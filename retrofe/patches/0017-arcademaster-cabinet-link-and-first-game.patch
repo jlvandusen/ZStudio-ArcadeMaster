@@ -1,0 +1,434 @@
+Subject: [PATCH] Cabinet link (local events and commands), and menus open on their first game
+
+Cabinet link: with settings.conf "linkEvents = yes" RetroFE tells a helper on the same PC what
+is selected and what is started, and takes two commands from it - go to a named game, and open
+(what the Select button does). It only ever uses 127.0.0.1 (events to port 47801, commands on
+47802), so nothing on the network can drive it; the helper (tools\AmLink) talks to the other
+cabinets. Each event says who caused it: user (a menu action was pressed on this cabinet in the
+last 3 s), remote (a link command) or auto. Off by default.
+
+Menus open on their first game: on a racing rig, where pedal axes are bound to up / down, up and
+down both read as held for about 250 ms after a menu is entered. "Down wins" then moved the list:
+Racing opened on its third game. Opposite directions held together now cancel.
+
+"Somebody is here" is a pressed menu action or a real direction, not a raw button event: an
+H-shifter left in gear is a held button and reports itself as a press.
+
+Tested on DESKTOP-RACE1 with a stand-in helper: goto and open move and enter menus and start an
+entry; Racing opens on 1/91; Down / Up move one game each and are reported as user.
+---
+diff --git a/RetroFE/Source/CMakeLists.txt b/RetroFE/Source/CMakeLists.txt
+index e6330801..5f2dd07e 100644
+--- a/RetroFE/Source/CMakeLists.txt
++++ b/RetroFE/Source/CMakeLists.txt
+@@ -303,6 +303,7 @@ set(RETROFE_SOURCES
+ 	"${RETROFE_DIR}/Source/Control/TouchDragHandler.cpp"
+ 	"${RETROFE_DIR}/Source/Control/PointerInput.cpp"
+ 	"${RETROFE_DIR}/Source/Control/Haptics.cpp"
++	"${RETROFE_DIR}/Source/Control/AmLink.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/Restrictor.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/RestrictorManager.cpp"
+     "${RETROFE_DIR}/Source/Control/Restrictor/ServoStikRestrictor.cpp"
+diff --git a/RetroFE/Source/Control/AmLink.cpp b/RetroFE/Source/Control/AmLink.cpp
+new file mode 100644
+index 00000000..4bfa188c
+--- /dev/null
++++ b/RetroFE/Source/Control/AmLink.cpp
+@@ -0,0 +1,89 @@
++// ArcadeMaster: cabinet link (see AmLink.h). Plain UDP on 127.0.0.1, non-blocking.
++#ifdef _WIN32
++#include <winsock2.h>
++#include <ws2tcpip.h>
++#pragma comment(lib, "ws2_32.lib")
++#else
++#include <sys/socket.h>
++#include <netinet/in.h>
++#include <arpa/inet.h>
++#include <fcntl.h>
++#include <unistd.h>
++#endif
++
++#include "AmLink.h"
++#include "../Utility/Log.h"
++#include <SDL.h>
++
++AmLink& AmLink::instance() {
++    static AmLink link;
++    return link;
++}
++
++void AmLink::configure(bool enabled, int sendPort, int recvPort) {
++    if (!enabled || enabled_) return;
++#ifdef _WIN32
++    WSADATA wsa;
++    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) { LOG_WARNING("AmLink", "no sockets - link off"); return; }
++#endif
++    intptr_t s = static_cast<intptr_t>(socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP));
++    if (s < 0) { LOG_WARNING("AmLink", "could not open a socket - link off"); return; }
++    sockaddr_in me{};
++    me.sin_family = AF_INET;
++    me.sin_port = htons(static_cast<unsigned short>(recvPort));
++    me.sin_addr.s_addr = htonl(INADDR_LOOPBACK);          // this PC only
++    if (bind(static_cast<int>(s), reinterpret_cast<sockaddr*>(&me), sizeof(me)) != 0) {
++        LOG_WARNING("AmLink", "port " + std::to_string(recvPort) + " is in use - link off");
++#ifdef _WIN32
++        closesocket(static_cast<SOCKET>(s));
++#else
++        close(static_cast<int>(s));
++#endif
++        return;
++    }
++#ifdef _WIN32
++    u_long nb = 1; ioctlsocket(static_cast<SOCKET>(s), FIONBIO, &nb);
++#else
++    fcntl(static_cast<int>(s), F_SETFL, fcntl(static_cast<int>(s), F_GETFL, 0) | O_NONBLOCK);
++#endif
++    sock_ = s; sendPort_ = sendPort; enabled_ = true;
++    LOG_INFO("AmLink", "cabinet link on: events to 127.0.0.1:" + std::to_string(sendPort) + ", commands on 127.0.0.1:" + std::to_string(recvPort));
++}
++
++void AmLink::send(const std::string& line) {
++    if (!enabled_) return;
++    sockaddr_in to{};
++    to.sin_family = AF_INET;
++    to.sin_port = htons(static_cast<unsigned short>(sendPort_));
++    to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++    sendto(static_cast<int>(sock_), line.c_str(), static_cast<int>(line.size()), 0, reinterpret_cast<sockaddr*>(&to), sizeof(to));
++}
++
++bool AmLink::receive(std::string& line) {
++    if (!enabled_) return false;
++    char buf[1024];
++    sockaddr_in from{}; socklen_t fl = sizeof(from);
++    int n = static_cast<int>(recvfrom(static_cast<int>(sock_), buf, sizeof(buf) - 1, 0, reinterpret_cast<sockaddr*>(&from), &fl));
++    if (n <= 0) return false;
++    if (from.sin_addr.s_addr != htonl(INADDR_LOOPBACK)) return false;   // belt and braces: only this PC
++    line.assign(buf, static_cast<size_t>(n));
++    while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) line.pop_back();
++    return !line.empty();
++}
++
++void AmLink::noteUserInput() { lastInputTicks_ = SDL_GetPerformanceCounter(); }
++
++double AmLink::msSinceUserInput() const {
++    if (lastInputTicks_ == 0) return 1e12;
++    return static_cast<double>(SDL_GetPerformanceCounter() - lastInputTicks_) * 1000.0 / static_cast<double>(SDL_GetPerformanceFrequency());
++}
++
++AmLink::~AmLink() {
++    if (sock_ >= 0) {
++#ifdef _WIN32
++        closesocket(static_cast<SOCKET>(sock_));
++#else
++        close(static_cast<int>(sock_));
++#endif
++    }
++}
+diff --git a/RetroFE/Source/Control/AmLink.h b/RetroFE/Source/Control/AmLink.h
+new file mode 100644
+index 00000000..464b20a2
+--- /dev/null
++++ b/RetroFE/Source/Control/AmLink.h
+@@ -0,0 +1,28 @@
++// ArcadeMaster: cabinet link. RetroFE tells a helper on THIS PC what is selected / started and takes simple commands
++// from it (go to a game, open it). The helper (tools\AmLink) talks to the other cabinets; RetroFE itself only ever
++// uses 127.0.0.1, so nothing on the network can drive it directly.
++//   settings.conf  linkEvents = yes        (default no)
++//                  linkSendPort = 47801    events out:  select / launch / hello, tab separated
++//                  linkRecvPort = 47802    commands in: goto <item> <collection> | open
++#pragma once
++#include <string>
++#include <cstdint>
++
++class AmLink {
++public:
++    static AmLink& instance();
++    void configure(bool enabled, int sendPort, int recvPort);
++    bool enabled() const { return enabled_; }
++    void send(const std::string& line);          // one datagram, never blocks
++    bool receive(std::string& line);             // one pending command, never blocks
++    void noteUserInput();                        // a real button / key / hat press on this cabinet
++    double msSinceUserInput() const;             // large when nobody has touched it since start
++    ~AmLink();
++
++private:
++    AmLink() = default;
++    bool enabled_ = false;
++    intptr_t sock_ = -1;
++    int sendPort_ = 47801;
++    uint64_t lastInputTicks_ = 0;
++};
+diff --git a/RetroFE/Source/Graphics/Component/ScrollingList.cpp b/RetroFE/Source/Graphics/Component/ScrollingList.cpp
+index a0c3ec69..4d0c5587 100644
+--- a/RetroFE/Source/Graphics/Component/ScrollingList.cpp
++++ b/RetroFE/Source/Graphics/Component/ScrollingList.cpp
+@@ -272,6 +272,25 @@ void ScrollingList::selectItemByName(std::string_view name)
+     }
+ }
+ 
++// ArcadeMaster (cabinet link): a merged menu can hold the same game name from two collections (Daytona single /
++// linked), so the collection is part of the match; an empty collection matches any. False = not in this list.
++bool ScrollingList::selectItem(std::string_view name, std::string_view collection)
++{
++    if (!items_ || items_->empty())
++        return false;
++
++    size_t size = items_->size();
++    for (size_t i = 0; i < size; ++i) {
++        size_t index = loopDecrement(itemIndex_, i, size);
++        const Item* it = (*items_)[(index + selectedOffsetIndex_) % size];
++        if (it && it->name == name && (collection.empty() || !it->collectionInfo || it->collectionInfo->name == collection)) {
++            itemIndex_ = index;
++            return true;
++        }
++    }
++    return false;
++}
++
+ void ScrollingList::restartByMonitor(int monitor) const {
+     for (Component* c : getComponents()) {
+         if (c && c->baseViewInfo.Monitor == monitor)
+diff --git a/RetroFE/Source/Graphics/Component/ScrollingList.h b/RetroFE/Source/Graphics/Component/ScrollingList.h
+index 61bc4c4d..dee94133 100644
+--- a/RetroFE/Source/Graphics/Component/ScrollingList.h
++++ b/RetroFE/Source/Graphics/Component/ScrollingList.h
+@@ -144,6 +144,7 @@ public:
+     void deallocateTexture(size_t index);
+     void setItems(std::vector<Item*>* items);
+     void selectItemByName(std::string_view name);
++    bool selectItem(std::string_view name, std::string_view collection);   // ArcadeMaster: cabinet link
+     void restartByMonitor(int monitor) const;
+     const std::string& getSelectedItemName();
+     void destroyItems();
+diff --git a/RetroFE/Source/Graphics/Page.cpp b/RetroFE/Source/Graphics/Page.cpp
+index 17754b6c..7c87b283 100644
+--- a/RetroFE/Source/Graphics/Page.cpp
++++ b/RetroFE/Source/Graphics/Page.cpp
+@@ -741,6 +741,26 @@ void Page::selectRandom() {
+ 	invalidateIdleCache();
+ }
+ 
++// ArcadeMaster (cabinet link): the same steps as selectRandom(), to a named game. False = not in this list.
++bool Page::selectItemByName(const std::string& name, const std::string& collection) {
++	ScrollingList* amenu = getAnActiveMenu();
++	if (!amenu) return false;
++	if (!amenu->selectItem(name, collection)) return false;
++
++	size_t index = amenu->getScrollOffsetIndex();
++	for (auto it = activeMenu_.begin(); it != activeMenu_.end(); it++) {
++		ScrollingList* menu = *it;
++		if (menu && menu != amenu && !menu->isPlaylist()) {
++			menu->syncToSelectedIndex(index);
++		}
++	}
++
++	setSelectedItem();
++	onNewScrollItemSelected();
++	invalidateIdleCache();
++	return true;
++}
++
+ void Page::selectRandomPlaylist(CollectionInfo* collection, std::vector<std::string> cycleVector) {
+ 	size_t size = collection->playlists.size();
+ 	if (size == 0) return;
+diff --git a/RetroFE/Source/Graphics/Page.h b/RetroFE/Source/Graphics/Page.h
+index 85429349..c2feec7f 100644
+--- a/RetroFE/Source/Graphics/Page.h
++++ b/RetroFE/Source/Graphics/Page.h
+@@ -85,6 +85,7 @@ public:
+     size_t getCollectionSize();
+     size_t getSelectedIndex();
+     void selectRandom();
++    bool selectItemByName(const std::string& name, const std::string& collection);   // ArcadeMaster: cabinet link
+     void selectRandomPlaylist(CollectionInfo* collection, std::vector<std::string> cycleVector);
+     void start();
+     void stop();
+diff --git a/RetroFE/Source/RetroFE.cpp b/RetroFE/Source/RetroFE.cpp
+index a5d7c5f6..4904f8f5 100644
+--- a/RetroFE/Source/RetroFE.cpp
++++ b/RetroFE/Source/RetroFE.cpp
+@@ -21,6 +21,7 @@
+ #include "Collection/MenuParser.h"
+ #include "Control/Restrictor/RestrictorManager.h"
+ #include "Control/Haptics.h"   // ArcadeMaster: frontend force feedback
++#include "Control/AmLink.h"    // ArcadeMaster: cabinet link
+ #include "Control/UserInput.h"
+ #include "Database/Configuration.h"
+ #include "Database/GlobalOpts.h"
+@@ -715,6 +716,67 @@ void RetroFE::waitForAsyncAssets() {
+ 	lastFrameTimePointMs_ = SDL_GetPerformanceCounter() * 1000.0 / freq_;
+ }
+ 
++// ---------------------------------------------------------------------------
++// ArcadeMaster: cabinet link. Once a frame: say what is selected (when it changed), a heartbeat every second, and act
++// on a command from the helper on this PC - only while standing still in a menu:
++//   out  hello  <menu> <ms since a real press>                          every second
++//        select <user|remote|auto> <menu> <playlist> <item> <item's collection> <game|menu>
++//        launch <user|remote> <menu> <item> <item's collection>
++//        miss   <item>                                                  a goto for a game this menu does not have
++//   in   goto <item> [<collection>]     jump to that game (the "random game" path, to a named game)
++//        open                           what the Select button does: start the game / enter the menu
++// ---------------------------------------------------------------------------
++void RetroFE::linkPoll() {
++	AmLink& link = AmLink::instance();
++	static std::string lastSent;
++	static uint64_t lastHello = 0;
++	const uint64_t now = SDL_GetPerformanceCounter();
++	const std::string menu = currentPage_->getCollectionName();
++
++	if (static_cast<double>(now - lastHello) * 1000.0 / static_cast<double>(freq_) >= 1000.0) {
++		lastHello = now;
++		link.send("hello\t" + menu + "\t" + std::to_string(static_cast<long long>(std::min(link.msSinceUserInput(), 9.0e11))));
++	}
++
++	const bool still = (state_ == RETROFE_IDLE) && !menuMode_ && !currentPage_->isMenuScrolling();
++	Item* sel = currentPage_->getSelectedItem();
++	if (state_ == RETROFE_IDLE && sel) {
++		const std::string key = menu + "\t" + currentPage_->getPlaylistName() + "\t" + sel->name + "\t" +
++			(sel->collectionInfo ? sel->collectionInfo->name : "") + "\t" + (sel->leaf ? "game" : "menu");
++		if (key != lastSent) {
++			lastSent = key;
++			link.send(std::string("select\t") + (linkRemote_ ? "remote" : (link.msSinceUserInput() < 3000.0 ? "user" : "auto")) + "\t" + key);
++			linkRemote_ = false;
++		}
++	}
++
++	std::string cmd;
++	while (link.receive(cmd)) {
++		if (!still || kioskLock_) continue;                    // busy: the command is dropped, the helper sends again
++		std::vector<std::string> p;
++		std::stringstream ss(cmd); std::string part;
++		while (std::getline(ss, part, '\t')) p.push_back(part);
++		if (p.empty()) continue;
++		if (p[0] == "goto" && p.size() >= 2) {
++			if (sel && sel->name == p[1] && (p.size() < 3 || p[2].empty() || !sel->collectionInfo || sel->collectionInfo->name == p[2])) break;   // already there
++			if (currentPage_->selectItemByName(p[1], p.size() >= 3 ? p[2] : "")) {
++				linkRemote_ = true;
++				attract_.reset();
++				setState(RETROFE_MENUJUMP_REQUEST);
++			}
++			else link.send("miss\t" + p[1]);
++			break;
++		}
++		if (p[0] == "open" && sel) {
++			nextPageItem_ = sel;
++			linkRemote_ = true;
++			attract_.reset();
++			setState(sel->leaf ? RETROFE_LAUNCH_ENTER : RETROFE_NEXT_PAGE_REQUEST);
++			break;
++		}
++	}
++}
++
+ void RetroFE::preparePageForFirstRender(Page* page, int maxPasses) {
+ 	if (!page) {
+ 		return;
+@@ -907,6 +969,13 @@ bool RetroFE::run() {
+ 	std::string firstCollection = "Main";
+ 	config_.getProperty(OPTION_FIRSTCOLLECTION, firstCollection);
+ 	config_.getProperty(OPTION_ATTRACTMODEFAST, attractModeFast);
++	{	// ArcadeMaster: cabinet link (off unless settings.conf says linkEvents = yes)
++		bool linkOn = false; int linkSend = 47801, linkRecv = 47802;
++		config_.getProperty("linkEvents", linkOn);
++		config_.getProperty("linkSendPort", linkSend);
++		config_.getProperty("linkRecvPort", linkRecv);
++		AmLink::instance().configure(linkOn, linkSend, linkRecv);
++	}
+ 	config_.getProperty(OPTION_ATTRACTMODELAUNCH, attractModeLaunch);
+ 	config_.getProperty(OPTION_ATTRACTMODELAUNCHMINMAXSCROLLS, attractModeLaunchMinMaxScrolls);
+ 
+@@ -1145,6 +1214,7 @@ bool RetroFE::run() {
+ 				setState(inputState);
+ 			}
+ 		}
++		if (!splashMode && currentPage_ && AmLink::instance().enabled()) linkPoll();   // ArcadeMaster: cabinet link
+ 
+ 		if (nextFrameTime < frameNowMs) {
+ 			nextFrameTime = frameNowMs;
+@@ -2491,6 +2561,12 @@ bool RetroFE::run() {
+ 			}
+ 			else
+ 			{
++				if (nextPageItem_ && AmLink::instance().enabled())   // ArcadeMaster: tell the helper a game is starting, and who asked
++				{
++					AmLink::instance().send(std::string("launch\t") + (linkRemote_ ? "remote" : "user") + "\t" + currentPage_->getCollectionName() + "\t" +
++						nextPageItem_->name + "\t" + (nextPageItem_->collectionInfo ? nextPageItem_->collectionInfo->name : ""));
++					linkRemote_ = false;
++				}
+ 				currentPage_->enterGame();  // Start onGameEnter animation
+ 				currentPage_->update(0.0f);
+ 				currentPage_->playSelect(); // Play launch sound
+@@ -3385,6 +3461,16 @@ RetroFE::RETROFE_STATE RetroFE::processUserInput(Page* page) {
+ 	bool infoExitOnScroll = false;
+ 	config_.getProperty(OPTION_INFOEXITONSCROLL, infoExitOnScroll);
+ 
++	// ArcadeMaster (cabinet link): "somebody is here" = a menu action was pressed (or a real direction, below). Raw
++	// button events are not used: an H-shifter left in gear is a held button and reports itself as a press.
++	if (AmLink::instance().enabled()) {
++		static const UserInput::KeyCode_E amActions[] = { UserInput::KeyCodeSelect, UserInput::KeyCodeBack, UserInput::KeyCodeRandom,
++			UserInput::KeyCodeLetterUp, UserInput::KeyCodeLetterDown, UserInput::KeyCodePageUp, UserInput::KeyCodePageDown,
++			UserInput::KeyCodeCyclePlaylist, UserInput::KeyCodeNextCyclePlaylist, UserInput::KeyCodePrevCyclePlaylist,
++			UserInput::KeyCodeNextPlaylist, UserInput::KeyCodePrevPlaylist, UserInput::KeyCodeTogglePlaylist, UserInput::KeyCodeFavPlaylist };
++		for (UserInput::KeyCode_E k : amActions) { if (input_.newKeyPressed(k)) { AmLink::instance().noteUserInput(); break; } }
++	}
++
+ 	// 1. Unified Activity Tracking Matrix
+ 	const bool userScrolling =
+ 		input_.keystate(UserInput::KeyCodePageUp) || input_.keystate(UserInput::KeyCodePageDown) ||
+@@ -3409,19 +3495,27 @@ RetroFE::RETROFE_STATE RetroFE::processUserInput(Page* page) {
+ 	bool crossAxisScrolling = false;
+ 	Page::ScrollDirection dir = Page::ScrollDirectionIdle;
+ 
++	// ArcadeMaster: opposite directions held together cancel. Nobody can hold up and down on one stick; it happens on a
++	// racing rig, where pedal axes are bound to up / down, for a moment after the input states are reset - and "down
++	// wins" then moved the list one game on entering every menu (the first game was skipped).
++	const bool amUp = input_.keystate(UserInput::KeyCodeUp) && !input_.keystate(UserInput::KeyCodeDown);
++	const bool amDown = input_.keystate(UserInput::KeyCodeDown) && !input_.keystate(UserInput::KeyCodeUp);
++	const bool amLeft = input_.keystate(UserInput::KeyCodeLeft) && !input_.keystate(UserInput::KeyCodeRight);
++	const bool amRight = input_.keystate(UserInput::KeyCodeRight) && !input_.keystate(UserInput::KeyCodeLeft);
++
+ 	if (page->isHorizontalScroll()) {
+ 		// --- Horizontal Theme Mappings ---
+-		if (input_.keystate(UserInput::KeyCodeDown)) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
+-		else if (input_.keystate(UserInput::KeyCodeUp)) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistBack; }
+-		else if (input_.keystate(UserInput::KeyCodeRight)) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionForward; }
+-		else if (input_.keystate(UserInput::KeyCodeLeft)) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionBack; }
++		if (amDown) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
++		else if (amUp) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistBack; }
++		else if (amRight) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionForward; }
++		else if (amLeft) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionBack; }
+ 	}
+ 	else {
+ 		// --- Vertical Theme Mappings ---
+-		if (input_.keystate(UserInput::KeyCodeRight)) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
+-		else if (input_.keystate(UserInput::KeyCodeLeft)) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistBack; }
+-		else if (input_.keystate(UserInput::KeyCodeDown)) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionForward; }
+-		else if (input_.keystate(UserInput::KeyCodeUp)) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionBack; }
++		if (amRight) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistForward; }
++		else if (amLeft) { crossAxisScrolling = page->isGamesScrolling();    dir = Page::ScrollDirectionPlaylistBack; }
++		else if (amDown) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionForward; }
++		else if (amUp) { crossAxisScrolling = page->isPlaylistScrolling(); dir = Page::ScrollDirectionBack; }
+ 	}
+ 
+ 	// Honor Kiosk Mode: Intercept cross-axis switches, but leave regular list wheel scrolling wide open!
+@@ -3431,6 +3525,7 @@ RetroFE::RETROFE_STATE RetroFE::processUserInput(Page* page) {
+ 	}
+ 
+ 	if (dir != Page::ScrollDirectionIdle) {
++		AmLink::instance().noteUserInput();   // ArcadeMaster (cabinet link): a real direction - somebody is here
+ 		if (crossAxisScrolling) {
+ 			return RETROFE_HIGHLIGHT_REQUEST;
+ 		}
+diff --git a/RetroFE/Source/RetroFE.h b/RetroFE/Source/RetroFE.h
+index d7fefe2e..4909f1fa 100644
+--- a/RetroFE/Source/RetroFE.h
++++ b/RetroFE/Source/RetroFE.h
+@@ -61,6 +61,8 @@ public:
+     bool     deInitialize( );
+     void waitForAsyncAssets();
+     void preparePageForFirstRender(Page* page, int maxPasses = 5);
++    void linkPoll();                 // ArcadeMaster: cabinet link (Control/AmLink.h)
++    bool linkRemote_ = false;        // the next select / launch was asked for by the link helper, not a player
+     bool     run( );
+     void     freeGraphicsMemory( );
+     void     allocateGraphicsMemory( );
