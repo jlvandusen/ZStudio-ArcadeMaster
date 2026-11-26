@@ -261,6 +261,44 @@ static class AmPanel
         f.Show(); f.Activate();
     }
 
+    // ---------------------------------------------------------------- touch-screen search (Search.cs)
+    // a SEARCH pill on the touch screen while the menus are up; it opens the search page. Needs RetroFE's cabinet link
+    // (settings.conf linkEvents = yes) to jump, and <manifest>\search-index.json (tools/New-SearchIndex.py).
+    static GameLink gameLink;
+    static SearchIndex searchIndex;
+    static SearchButton searchButton;
+    static SearchScreen searchScreen;
+    static void StartSearch()
+    {
+        try
+        {
+            if (Screen.AllScreens.Length < 2) { Log("search: one screen - no touch search"); return; }
+            searchIndex = new SearchIndex(Path.Combine(manifestDir, "search-index.json"));
+            if (searchIndex.Games.Count == 0) { Log("search: no search-index.json (tools/New-SearchIndex.py)"); return; }
+            gameLink = new GameLink(Log); gameLink.Start();
+            var th = ChooserTheme.Load(retroFERoot, null, null);
+            searchButton = new SearchButton(th);
+            searchButton.Tapped += delegate {
+                if (searchScreen != null && !searchScreen.IsDisposed) return;
+                searchScreen = new SearchScreen(searchIndex, gameLink, th, retroFERoot);
+                searchScreen.FormClosed += delegate { searchScreen = null; };
+                searchScreen.Show();
+            };
+            // shown while the menus are up, hidden while a game runs or the frontend is closed
+            var t = new System.Windows.Forms.Timer { Interval = 500 };
+            t.Tick += delegate {
+                bool playing, frontend;
+                lock (Gate) { playing = State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"]; frontend = Process.GetProcessesByName("retrofe").Length > 0; }
+                bool want = frontend && !playing && searchScreen == null;
+                if (want && !searchButton.Visible) searchButton.Show(); else if (!want && searchButton.Visible) searchButton.Hide();
+                if (playing && searchScreen != null) searchScreen.Close();
+            };
+            t.Start();
+            Log("search: " + searchIndex.Games.Count + " games indexed, SEARCH button on the touch screen");
+        }
+        catch (Exception e) { Log("search: not started - " + e.Message); }
+    }
+
     // ---------------------------------------------------------------- the LOADING screen (LoadingScreen.cs)
     static LoadingScreen loading;
     static int loadingSeq;
@@ -720,6 +758,7 @@ static class AmPanel
             catch (Exception e) { Log("reactive: not started - " + e.Message); }
         }
         ui = new Control(); ui.CreateControl(); var unused = ui.Handle;   // the tray thread's window: Invoke target
+        StartSearch();
         if (!exitKey.Equals("none", StringComparison.OrdinalIgnoreCase))
         {
             int vk = ReactiveKeys.VkOf(exitKey);

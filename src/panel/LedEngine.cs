@@ -44,10 +44,17 @@ class LedEngine
         if (!open) return;
         if (StopAnim()) RestoreBase();
         int[] use = rgb;
-        if (use == null && !baseColor.TryGetValue(label, out use)) use = new[] { 0, 0, 0 };
+        if (use == null) { if (baseColor.TryGetValue(label, out use)) use = Rest(use); else use = new[] { 0, 0, 0 }; }
         if (SetLabel(label, use)) Flush();
     }
     public int[] Color(string name) { int[] c; return name != null && palette.TryGetValue(name, out c) ? c : null; }
+
+    // lit buttons rest below full strength so a press can visibly brighten them in their own colour (James 2026-11-26:
+    // "coin and start get brighter when pressing them like the others ... B1 and 2 that are lit, their colours get
+    // brighter"). 1.0 = the old behaviour. AmPanel.json LightsRestLevel.
+    public double RestLevel = 0.6;
+    int[] Rest(int[] c) { return c == null ? null : new[] { (int)(c[0] * RestLevel), (int)(c[1] * RestLevel), (int)(c[2] * RestLevel) }; }
+    void RestDim() { foreach (var kv in baseColor) SetLabel(kv.Key, Rest(kv.Value)); }
 
     // step 5: a held button glows - its game colour at full strength, or white when the game leaves it dark
     public void Glow(string label, bool held)
@@ -287,7 +294,7 @@ class LedEngine
     void RestoreBase()
     {
         foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
-        foreach (var kv in baseColor) SetLabel(kv.Key, kv.Value);
+        foreach (var kv in baseColor) SetLabel(kv.Key, Rest(kv.Value));
         Flush();
     }
 
@@ -368,12 +375,12 @@ class LedEngine
                 int n = 0;
                 foreach (var kv in au) if (SetLabel(kv.Key, kv.Value)) { baseColor[kv.Key] = kv.Value; n++; }
                 n += ApplyOverrides(rom);
-                Flush();
+                RestDim(); Flush();
                 return n + " controls lit for " + rom + " (from its controls)";
             }
             foreach (var label in pins.Keys) { SetLabel(label, new[] { 16, 16, 16 }); baseColor[label] = new[] { 16, 16, 16 }; }   // no colours known: soft white
             ApplyOverrides(rom);
-            Flush();
+            RestDim(); Flush();
             return "no colours for '" + rom + "' - all buttons soft white";
         }
         int lit = 0;
@@ -385,7 +392,7 @@ class LedEngine
             if (SetLabel(label, rgb)) { lit++; baseColor[label] = rgb; }
         }
         lit += ApplyOverrides(rom);
-        Flush();
+        RestDim(); Flush();
         return lit + " controls lit for " + rom;
     }
 
