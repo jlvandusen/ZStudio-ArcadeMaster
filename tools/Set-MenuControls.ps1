@@ -43,7 +43,8 @@ foreach ($p in $roles.PSObject.Properties) {
   $t = @($t | Where-Object { $_ })
   $want[$p.Name] = $t
   if ($panel) { $dropOnPanel[$p.Name] = @($p.Value.letters | Where-Object { $_ } | ForEach-Object { $_.ToLower() }) }
-  foreach ($x in $t) { $owner[$x.ToLower()] = $p.Name }
+  # a token can belong to several actions (Left = left AND prevPlaylist: in a vertical list the cross axis needs both, patch 0018)
+  foreach ($x in $t) { $k = $x.ToLower(); if (-not $owner.ContainsKey($k)) { $owner[$k] = @() }; $owner[$k] += $p.Name }
 }
 
 $lines = [System.Collections.Generic.List[string]]([IO.File]::ReadAllLines($cc))
@@ -58,7 +59,7 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
   if ($want.Contains($act)) { foreach ($t in $want[$act]) { if (-not $lower.ContainsKey($t.ToLower())) { $new.Add($t); $lower[$t.ToLower()] = 1 } }; $seen[$act] = $true }
   foreach ($t in $old) {
     $o = $owner[$t.ToLower()]
-    if ($o -and $o -ne $act) { $changes += "${act}: '$t' removed (the shared layout puts it on $o)"; continue }
+    if ($o -and $o -notcontains $act) { $changes += "${act}: '$t' removed (the shared layout puts it on $($o -join ' / '))"; continue }
     if ($dropOnPanel.Contains($act) -and $dropOnPanel[$act] -contains $t.ToLower()) { $changes += "${act}: '$t' removed (a keyboard-wired panel sends it for player 2)"; continue }
     if (-not $lower.ContainsKey($t.ToLower())) { $new.Add($t); $lower[$t.ToLower()] = 1 }
   }

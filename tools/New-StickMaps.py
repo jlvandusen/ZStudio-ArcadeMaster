@@ -31,14 +31,16 @@ def grid(fn):
 
 
 def sector8(x, y):
-    """a square 8-way gate: each axis in thirds (outer third = that direction), like a real 8-way stick"""
-    v = "N" if y >= 2 else "S" if y <= -2 else ""
-    h = "E" if x >= 2 else "W" if x <= -2 else ""
+    """a square 8-way gate: a direction only in the outer two ninths of each axis. The centre is wide (58-198 of 0-255)
+    because the pedestal's UltraStiks jitter about +-30 at rest: with the old 86-170 centre that noise read as full
+    left / up blips that moved the menu by itself (2026-11-26)"""
+    v = "N" if y >= 3 else "S" if y <= -3 else ""
+    h = "E" if x >= 3 else "W" if x <= -3 else ""
     return (v + h) or "C"
 
 
 def sector4(x, y):
-    if abs(x) <= 1 and abs(y) <= 1:
+    if abs(x) <= 2 and abs(y) <= 2:
         return "C"
     if abs(x) == abs(y):
         return "*"                      # exact diagonal: keep the last direction (no flicker between two)
@@ -46,7 +48,7 @@ def sector4(x, y):
 
 
 def diag(x, y):
-    if abs(x) <= 1 and abs(y) <= 1:
+    if abs(x) <= 2 and abs(y) <= 2:
         return "C"
     if x == 0 or y == 0:
         return "*"
@@ -56,8 +58,8 @@ def diag(x, y):
 MAPS = {
     "Joy8Way": grid(sector8),
     "Joy4Way": grid(sector4),
-    "Joy2Way": grid(lambda x, y: "C" if abs(x) <= 1 else ("E" if x > 0 else "W")),
-    "vJoy2Way": grid(lambda x, y: "C" if abs(y) <= 1 else ("N" if y > 0 else "S")),
+    "Joy2Way": grid(lambda x, y: "C" if abs(x) <= 2 else ("E" if x > 0 else "W")),
+    "vJoy2Way": grid(lambda x, y: "C" if abs(y) <= 2 else ("N" if y > 0 else "S")),
     "JoyDiag": grid(diag),
     "Analog": grid(lambda x, y: "-"),
 }
