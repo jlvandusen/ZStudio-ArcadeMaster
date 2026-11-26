@@ -73,6 +73,7 @@ class ReactiveKeys
     // every key event the panel / keyboard sends (not only mapped buttons), newest last: the pipe's "keylog" command
     // shows it, so a remote session can see what the cabinet's controls really send (2026-11-26)
     readonly Queue<string> keyLog = new Queue<string>();
+    public Action<int> KeyPressed;   // a real (not injected) key going down: AmPanel's hotkeys
     public string[] KeyLog() { lock (keyLog) return keyLog.ToArray(); }
 
     IntPtr Hook(int code, IntPtr wParam, IntPtr lParam)
@@ -81,6 +82,8 @@ class ReactiveKeys
         {
             int msg = wParam.ToInt32(), vk = Marshal.ReadInt32(lParam), flags = Marshal.ReadInt32(lParam, 8);
             bool isDown = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN, isUp = msg == WM_KEYUP || msg == WM_SYSKEYUP;
+            if (isDown && vk > 0 && vk < 256 && !down[vk] && (flags & 0x10) == 0 && KeyPressed != null)
+                try { KeyPressed(vk); } catch { }   // hotkeys (F3 = search); must return at once - the hook has a time limit
             if ((isDown || isUp) && vk > 0 && vk < 256 && (isUp || !down[vk]))
                 lock (keyLog)
                 {
