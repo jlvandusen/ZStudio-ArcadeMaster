@@ -91,7 +91,8 @@ class ControllerChooser : Form
     Bitmap bg;                 // backdrop already scaled, softened and darkened for this screen size
     int sel, totalMs, leftMs;
     float glide;               // the highlight's position, easing towards sel
-    long lastMs;
+    long lastMs, restSince;
+    float hintA = 1;           // floating button hints: fade in once the highlight is at rest, out while it moves
     public string Picked { get; private set; }
     // the marquee / touch screen shows a copy (James: "allow marquee buttons on screen to work there"): both copies share
     // the highlight, a touch or press on either one picks for both. The copy never takes the keyboard focus.
@@ -119,6 +120,9 @@ class ControllerChooser : Form
             long now = clock.ElapsedMilliseconds; int dt = (int)(now - lastMs); lastMs = now;
             if (Opacity < 1) Opacity = Math.Min(1.0, now / 220.0);           // fade in
             glide += (sel - glide) * Math.Min(1f, dt / 70f);                  // ease the highlight
+            if (Math.Abs(sel - glide) > 0.01f) restSince = now;
+            float want = now - restSince > 280 ? 1f : 0f;
+            hintA += (want - hintA) * Math.Min(1f, dt / (want > hintA ? 160f : 50f));
             leftMs -= dt; if (leftMs <= 0) Done();
             Invalidate();
         };
@@ -186,7 +190,7 @@ class ControllerChooser : Form
 
         // the question, letter-spaced, in the theme's warm accent
         using (var f = new Font(th.Family, Height * 0.032f, FontStyle.Bold, GraphicsUnit.Pixel))
-            Centered(g, Spaced("WHICH CONTROLLER WILL YOU USE?"), f, th.Warm, Height * 0.37f, true);
+            Centered(g, Spaced("WHICH CONTROLLER WILL YOU USE?"), f, th.Warm, Height * 0.33f, true);   // room for the floating PLAY button
 
         // tiles
         for (int i = 0; i < choices.Count; i++) DrawTile(g, i, t);
@@ -200,6 +204,7 @@ class ControllerChooser : Form
         for (int k = 5; k >= 1; k--)
             using (var p = new Pen(Color.FromArgb((int)(18 + 10 * pulse) * (6 - k) / 2, th.Accent), k * 5f)) using (var path = Round(hr, 26)) g.DrawPath(p, path);
         using (var p = new Pen(Color.FromArgb(240, th.Accent), 3.5f)) using (var path = Round(hr, 26)) g.DrawPath(p, path);
+        if (hintA > 0.02f) DrawFloatingHints(g, TileRect(sel), t);
 
         // countdown bar + hint
         float bw = Width * 0.36f, bx = (Width - bw) / 2, by = Height * 0.88f, frac = Math.Max(0, Math.Min(1, leftMs / (float)totalMs));
@@ -382,6 +387,41 @@ class ControllerChooser : Form
                     g.DrawRectangle(pen, cx - s * 0.3f, cy - s * 0.3f, s * 0.6f, s * 0.6f);
                     break;
             }
+    }
+
+    // James: "show the button icons to press hovering floating above the choice ... and left and right stick ... when
+    // moving don't show them till it comes to rest": a "1 PLAY" button bobbing above the chosen tile, stick arrows at
+    // its sides (only where there is somewhere to go)
+    void DrawFloatingHints(Graphics g, Rectangle r, float t)
+    {
+        int a = (int)(255 * Math.Min(1f, hintA));
+        float bob = (float)Math.Sin(t * 3.2) * Height * 0.004f, rise = (1 - hintA) * Height * 0.012f;
+        using (var f = new Font(th.Family, Height * 0.024f, FontStyle.Bold, GraphicsUnit.Pixel))
+        {
+            float btn = f.Height * 1.3f, tw = g.MeasureString("PLAY", f).Width;
+            float pw = btn + 14 + tw + 26, ph = btn + 12, px = r.X + (r.Width - pw) / 2, py = r.Y - ph - Height * 0.022f + bob + rise;
+            var pill = new RectangleF(px, py, pw, ph);
+            using (var glow = new SolidBrush(Color.FromArgb(a / 5, th.Warm))) using (var gp = Round(new RectangleF(px - 5, py - 5, pw + 10, ph + 10), (int)(ph / 2) + 5)) g.FillPath(glow, gp);
+            using (var bg = new SolidBrush(Color.FromArgb(a * 220 / 255, 10, 12, 20))) using (var pp = Round(pill, (int)(ph / 2))) g.FillPath(bg, pp);
+            using (var pen = new Pen(Color.FromArgb(a, th.Warm), 2f)) using (var pp = Round(pill, (int)(ph / 2))) g.DrawPath(pen, pp);
+            float bx = px + 7, by = py + 6;
+            using (var path = new GraphicsPath())
+            {
+                path.AddEllipse(bx, by, btn, btn);
+                using (var pg = new PathGradientBrush(path) { CenterPoint = new PointF(bx + btn * 0.38f, by + btn * 0.3f), CenterColor = Color.FromArgb(a, 255, 255, 255), SurroundColors = new[] { Color.FromArgb(a, th.Warm) } }) g.FillPath(pg, path);
+            }
+            using (var bf = new Font(th.Family, btn * 0.5f, FontStyle.Bold, GraphicsUnit.Pixel)) using (var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+            using (var ink = new SolidBrush(Color.FromArgb(a, 0, 0, 0))) g.DrawString("1", bf, ink, new RectangleF(bx, by, btn, btn), fmt);
+            using (var tb = new SolidBrush(Color.FromArgb(a, 255, 255, 255))) using (var fmt = new StringFormat { LineAlignment = StringAlignment.Center })
+                g.DrawString("PLAY", f, tb, new RectangleF(bx + btn + 12, py, tw + 10, ph), fmt);
+        }
+        // stick arrows either side, nudging outwards
+        float s = Height * 0.022f, nudge = (float)(0.5 + 0.5 * Math.Sin(t * 4.0)) * s * 0.4f, cy = r.Y + r.Height / 2f;
+        using (var br = new SolidBrush(Color.FromArgb(a * 220 / 255, th.Accent)))
+        {
+            if (sel > 0) { float x = r.X - Height * 0.03f - nudge; g.FillPolygon(br, new[] { new PointF(x - s, cy), new PointF(x, cy - s), new PointF(x, cy + s) }); }
+            if (sel < choices.Count - 1) { float x = r.Right + Height * 0.03f + nudge; g.FillPolygon(br, new[] { new PointF(x + s, cy), new PointF(x, cy - s), new PointF(x, cy + s) }); }
+        }
     }
 
     void DrawHint(Graphics g, float y)

@@ -507,6 +507,8 @@ static class AmPanel
                     ui.Invoke((MethodInvoker)delegate {
                         string artColl = coll ?? (id.IndexOf(':') > 0 ? id.Substring(0, id.IndexOf(':')) : null);
                         var theme = ChooserTheme.Load(retroFERoot, artColl, game);
+                        // the panel shows what the question takes: button 1 = PLAY (New-LedColorsAuto.py "__chooser")
+                        if (leds != null) lock (Gate) leds.LightGame("__chooser");
                         using (var f = new ControllerChooser(choicesDb.Title(id), ch, choicesDb.LastPick(id), secs, theme))
                         {
                             // a copy on the marquee / touch screen: touch a tile there to pick

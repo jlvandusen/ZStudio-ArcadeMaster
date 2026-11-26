@@ -1,0 +1,60 @@
+Subject: [PATCH] Page Down shows the game's info, Page Up goes back to the video
+
+Two keys next to toggleGameInfo: showGameInfo and hideGameInfo (controls.conf). A toggle could
+look like it did nothing when the layout had already faded the info in by itself; these always do
+what they say. hideGameInfo also fires the layout's gameInfoExit when the info on screen was only
+the layout's own timed panel.
+---
+diff --git a/RetroFE/Source/Control/UserInput.cpp b/RetroFE/Source/Control/UserInput.cpp
+index 326a800..726ed47 100644
+--- a/RetroFE/Source/Control/UserInput.cpp
++++ b/RetroFE/Source/Control/UserInput.cpp
+@@ -112,6 +112,8 @@ bool UserInput::initialize()
+     MapKey("cycleCollection", KeyCodeCycleCollection, false);
+     MapKey("prevCycleCollection", KeyCodePrevCycleCollection, false);
+     MapKey("toggleGameInfo", KeyCodeToggleGameInfo, false);
++    MapKey("showGameInfo", KeyCodeShowGameInfo, false);
++    MapKey("hideGameInfo", KeyCodeHideGameInfo, false);
+     MapKey("toggleCollectionInfo", KeyCodeToggleCollectionInfo, false);
+     MapKey("toggleBuildInfo", KeyCodeToggleBuildInfo, false);
+     MapKey("settings", KeyCodeSettings, false);
+diff --git a/RetroFE/Source/Control/UserInput.h b/RetroFE/Source/Control/UserInput.h
+index ccbd504..73e95cc 100644
+--- a/RetroFE/Source/Control/UserInput.h
++++ b/RetroFE/Source/Control/UserInput.h
+@@ -89,6 +89,8 @@ public:
+         KeyCodeCycleCollection,
+         KeyCodePrevCycleCollection,
+         KeyCodeToggleGameInfo,
++        KeyCodeShowGameInfo,     // ArcadeMaster: info on (Page Down)
++        KeyCodeHideGameInfo,     // ArcadeMaster: back to the video (Page Up)
+         KeyCodeToggleCollectionInfo,
+         KeyCodeToggleBuildInfo,
+         KeyCodeSettings,
+diff --git a/RetroFE/Source/RetroFE.cpp b/RetroFE/Source/RetroFE.cpp
+index 93a68e5..11b6040 100644
+--- a/RetroFE/Source/RetroFE.cpp
++++ b/RetroFE/Source/RetroFE.cpp
+@@ -3612,6 +3612,22 @@ RetroFE::RETROFE_STATE RetroFE::processUserInput(Page* page) {
+ 		RETROFE_STATE fallbackBackState = (page->getMenuDepth() == 1 || !backOnCollection) ? RETROFE_COLLECTION_UP_REQUEST : RETROFE_BACK_REQUEST;
+ 
+ 		// --- A. Kiosk Mode Unrestricted Inputs ---
++		// ArcadeMaster: one key shows the game's info, one goes back to the video (a toggle could look like it did
++		// nothing when the layout had already faded the info in by itself). Hide also fires gameInfoExit when the info
++		// was only the layout's own timed panel.
++		if (input_.newKeyPressed(UserInput::KeyCodeShowGameInfo)) {
++			attract_.reset();
++			input_.resetStates();
++			if (!gameInfo_) return RETROFE_GAMEINFO_ENTER;
++			return RETROFE_IDLE;
++		}
++		if (input_.newKeyPressed(UserInput::KeyCodeHideGameInfo)) {
++			attract_.reset();
++			input_.resetStates();
++			if (gameInfo_) return RETROFE_GAMEINFO_EXIT;
++			currentPage_->gameInfoExit();
++			return RETROFE_IDLE;
++		}
+ 		if (input_.newKeyPressed(UserInput::KeyCodeToggleGameInfo) || (input_.keystate(UserInput::KeyCodeGameInfoCombo1) && input_.newKeyPressed(UserInput::KeyCodeGameInfoCombo2))) {
+ 			attract_.reset();
+ 			input_.resetStates();
