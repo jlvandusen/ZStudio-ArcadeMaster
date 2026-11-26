@@ -108,6 +108,42 @@ class LoadingScreen : Form
         return list;
     }
 
+    // ---- a game must open on the main screen (James 2026-11-26: Pac-Man Battle Royale opened on the touch screen -
+    // Windows opens a new program on the screen of the last touch / click). At game start the pointer goes to the main
+    // screen, and for a minute any big game window that lands on another screen is moved there at the same size.
+    [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    public static void KeepGameOnMainScreen(HashSet<IntPtr> baseline, Func<bool> stillPlaying, Action<string> log)
+    {
+        var main = Screen.PrimaryScreen.Bounds;
+        try { SetCursorPos(main.X + main.Width / 2, main.Y + main.Height / 2); } catch { }
+        var moved = new HashSet<IntPtr>();
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 60000 && stillPlaying())
+        {
+            try
+            {
+                foreach (var h in BigWindows(0.4))
+                {
+                    if (baseline.Contains(h) || moved.Contains(h)) continue;
+                    RECT r; if (!GetWindowRect(h, out r)) continue;
+                    var rect = new Rectangle(r.L, r.T, Math.Max(1, r.R - r.L), Math.Max(1, r.B - r.T));
+                    var scr = Screen.FromRectangle(rect);
+                    if (scr.Primary) continue;
+                    // same place on the main screen, same size (a borderless full-screen game stays full screen)
+                    int x = main.X + (rect.X - scr.Bounds.X), y = main.Y + (rect.Y - scr.Bounds.Y);
+                    SetWindowPos(h, IntPtr.Zero, x, y, 0, 0, 0x0001 | 0x0004 | 0x0010 /* NOSIZE NOZORDER NOACTIVATE */);
+                    moved.Add(h);
+                    int pid; GetWindowThreadProcessId(h, out pid);
+                    string name = "?"; try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { }
+                    log("game window " + name + " opened on " + scr.DeviceName + " - moved to the main screen");
+                }
+            }
+            catch { }
+            System.Threading.Thread.Sleep(400);
+        }
+    }
+
     // the game's art: the first collection that has it (the frontend tells only the item name at game start)
     public static ChooserTheme ThemeFor(string retroFERoot, string item)
     {

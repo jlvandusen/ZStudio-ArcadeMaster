@@ -244,11 +244,15 @@ class SearchScreen : NoFocusForm
     string pressed; DateTime pressedAt;
     readonly System.Windows.Forms.Timer frame = new System.Windows.Forms.Timer { Interval = 40 };
     DateTime lastTouch = DateTime.Now;
+    // SHIFT swaps the number row for the symbols game names use (James 2026-11-26: "need to shift to get - + etc")
+    static readonly string[] Symbols = { "-", "+", "&", "'", ":", ".", "!", "?", "/", "#" };
+    bool shift;
     static readonly string[][] Layout = {
         new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" },
         new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" },
         new[] { "A", "S", "D", "F", "G", "H", "J", "K", "L", "DEL" },
-        new[] { "Z", "X", "C", "V", "B", "N", "M", "SPACE", "CLEAR", "CLOSE" } };
+        new[] { "SHIFT", "Z", "X", "C", "V", "B", "N", "M", "SPACE", "CLEAR", "CLOSE" } };
+    string KeyAt(int row, int i) { return shift && row == 0 ? Symbols[i] : Layout[row][i]; }
 
     public SearchScreen(SearchIndex index, GameLink link, ChooserTheme theme, string retroFERoot)
     {
@@ -273,6 +277,7 @@ class SearchScreen : NoFocusForm
     {
         pressed = k; pressedAt = DateTime.Now;
         if (k == "CLOSE") { Close(); return; }
+        if (k == "SHIFT") { shift = !shift; Invalidate(); return; }
         if (k == "DEL") { if (query.Length > 0) query = query.Substring(0, query.Length - 1); }
         else if (k == "CLEAR") query = "";
         else if (k == "SPACE") { if (query.Length > 0 && !query.EndsWith(" ")) query += " "; }
@@ -376,13 +381,14 @@ class SearchScreen : NoFocusForm
         float ky = H * 0.58f, kh = (H * 0.4f - pad) / Layout.Length;
         for (int row = 0; row < Layout.Length; row++)
         {
-            var line = Layout[row]; float kw = (W - pad * 2 - (line.Length - 1) * pad * 0.4f) / line.Length;
+            var line = new string[Layout[row].Length]; for (int q = 0; q < line.Length; q++) line[q] = KeyAt(row, q);   // SHIFT: symbols in the number row
+            float kw = (W - pad * 2 - (line.Length - 1) * pad * 0.4f) / line.Length;
             for (int i = 0; i < line.Length; i++)
             {
                 var kr = new RectangleF(pad + i * (kw + pad * 0.4f), ky + row * kh, kw, kh - pad * 0.4f);
                 keys.Add(new KeyValuePair<RectangleF, string>(kr, line[i]));
                 bool hot = pressed == line[i] && (DateTime.Now - pressedAt).TotalMilliseconds < 160;
-                Color fill = line[i] == "CLOSE" ? Color.FromArgb(70, 20, 30) : line[i].Length > 1 ? Color.FromArgb(30, 36, 56) : Color.FromArgb(22, 25, 36);
+                Color fill = line[i] == "CLOSE" ? Color.FromArgb(70, 20, 30) : line[i] == "SHIFT" && shift ? Color.FromArgb(Math.Min(255, th.Accent.R / 2), Math.Min(255, th.Accent.G / 2), Math.Min(255, th.Accent.B / 2)) : line[i].Length > 1 ? Color.FromArgb(30, 36, 56) : Color.FromArgb(22, 25, 36);
                 using (var p = Round(kr, kr.Height * 0.2f)) using (var b = new SolidBrush(hot ? th.Accent : fill)) g.FillPath(b, p);
                 using (var p = Round(kr, kr.Height * 0.2f)) using (var pen = new Pen(Color.FromArgb(70, 255, 255, 255), 1.5f)) g.DrawPath(pen, p);
                 using (var f = new Font(th.Family, kr.Height * (line[i].Length > 1 ? 0.28f : 0.42f), FontStyle.Bold, GraphicsUnit.Pixel))

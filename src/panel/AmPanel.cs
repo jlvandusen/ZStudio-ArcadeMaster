@@ -335,6 +335,11 @@ static class AmPanel
         int seq = System.Threading.Interlocked.Increment(ref loadingSeq);
         HashSet<IntPtr> baseline;
         try { baseline = LoadingScreen.Snapshot(); } catch { return; }
+        // the game opens on the main screen, and is moved there if it lands on the touch screen
+        var keep = baseline;
+        System.Threading.ThreadPool.QueueUserWorkItem(delegate {
+            LoadingScreen.KeepGameOnMainScreen(keep, delegate { lock (Gate) return State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"]; }, Log);
+        });
         System.Threading.ThreadPool.QueueUserWorkItem(delegate {
             System.Threading.Thread.Sleep(LoadingScreen.ShowAfterMs);
             if (seq != loadingSeq) return;
