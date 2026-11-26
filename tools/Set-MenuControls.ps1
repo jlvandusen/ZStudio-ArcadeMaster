@@ -7,6 +7,8 @@
     - anything a cabinet has on top (pedal axes, touch gestures, mouse, a panel's own keys) is kept;
     - a button the shared layout gives to another action is taken off the line that had it (so one press never
       does two things), on any action line, also ones outside the shared list;
+    - letter shortcuts (O P N M R F Q) only on cabinets without a control panel, and taken off their action on a
+      panel cabinet: a keyboard-wired panel (I-PAC) sends letters for player 2, so R / Q would jump or quit;
     - stick-down (joyAxis1+) is added only on cabinets without pedals (a pedal axis can rest at one end); a racing
       rig keeps whatever its own file has there.
   Lines that are not actions (deadZone, touch settings) are left alone. Dry run by default: shows each change;
@@ -27,17 +29,20 @@ $cc = Join-Path $RetroFE 'controls.conf'
 if (-not (Test-Path -LiteralPath $cc)) { Write-Host "no controls.conf in $RetroFE"; return }
 $roles = (Get-Content -LiteralPath $Map -Raw | ConvertFrom-Json).roles
 $cab = Join-Path $ManifestDir 'cabinet.json'
-$pedals = $false; if (Test-Path -LiteralPath $cab) { $c = (Get-Content -LiteralPath $cab -Raw | ConvertFrom-Json).capabilities; $pedals = [bool]($c.pedals -or $c.wheel) }
+$pedals = $false; $panel = $false
+if (Test-Path -LiteralPath $cab) { $c = (Get-Content -LiteralPath $cab -Raw | ConvertFrom-Json).capabilities; $pedals = [bool]($c.pedals -or $c.wheel); $panel = [bool]$c.controlPanel }
 
 # RetroFE's input actions (UserInput.cpp MapKey): only these lines hold buttons
 $actions = 'playlistUp playlistDown playlistLeft playlistRight collectionUp collectionDown collectionLeft collectionRight pageDown pageUp letterDown letterUp favPlaylist nextPlaylist prevPlaylist cyclePlaylist nextCyclePlaylist prevCyclePlaylist addPlaylist removePlaylist togglePlaylist random menu reboot saveFirstPlaylist kiosk showFps cycleCollection prevCycleCollection toggleGameInfo toggleCollectionInfo toggleBuildInfo settings quickPlaylist jbFastForward1m jbFastRewind1m jbFastForward5p jbFastRewind5p jbPause jbRestart up down left right select back quit' -split ' '
 
 # the shared tokens, and which action owns each
-$want = [ordered]@{}; $owner = @{}
+$want = [ordered]@{}; $owner = @{}; $dropOnPanel = @{}
 foreach ($p in $roles.PSObject.Properties) {
   $t = @($p.Value.keys) + @($p.Value.joy); if (-not $pedals) { $t += @($p.Value.joyNoPedals) }
+  if (-not $panel) { $t += @($p.Value.letters) }   # letter shortcuts only where no keyboard-wired panel sends letters for player 2
   $t = @($t | Where-Object { $_ })
   $want[$p.Name] = $t
+  if ($panel) { $dropOnPanel[$p.Name] = @($p.Value.letters | Where-Object { $_ } | ForEach-Object { $_.ToLower() }) }
   foreach ($x in $t) { $owner[$x.ToLower()] = $p.Name }
 }
 
@@ -54,9 +59,10 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
   foreach ($t in $old) {
     $o = $owner[$t.ToLower()]
     if ($o -and $o -ne $act) { $changes += "${act}: '$t' removed (the shared layout puts it on $o)"; continue }
+    if ($dropOnPanel.Contains($act) -and $dropOnPanel[$act] -contains $t.ToLower()) { $changes += "${act}: '$t' removed (a keyboard-wired panel sends it for player 2)"; continue }
     if (-not $lower.ContainsKey($t.ToLower())) { $new.Add($t); $lower[$t.ToLower()] = 1 }
   }
-  $line = "$act = " + ($new -join ',')
+  $line = if ($new.Count) { "$act = " + ($new -join ',') } else { "# $act = (no button for this on this cabinet)" }
   if (($old -join ',') -ne ($new -join ',')) {
     $added = @($new | Where-Object { $old -notcontains $_ }); if ($added) { $changes += "${act}: + $($added -join ', ')" }
     $lines[$i] = $line
@@ -73,5 +79,5 @@ $changes | ForEach-Object { Write-Host "  $_" }
 if ($Apply) {
   Copy-Item -LiteralPath $cc "$cc.am-menu-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
   [IO.File]::WriteAllText($cc, (($lines -join "`r`n") + "`r`n"), (New-Object Text.UTF8Encoding($false)))
-  Write-Host "menu controls: $($changes.Count) change(s) written to $cc (pedals: $pedals)"
-} else { Write-Host "menu controls: $($changes.Count) change(s) - dry run, -Apply to write (pedals: $pedals)" }
+  Write-Host "menu controls: $($changes.Count) change(s) written to $cc (pedals: $pedals, panel: $panel)"
+} else { Write-Host "menu controls: $($changes.Count) change(s) - dry run, -Apply to write (pedals: $pedals, panel: $panel)" }

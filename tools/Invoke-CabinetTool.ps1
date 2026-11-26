@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'EmulatorUpdates', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'EmulatorUpdates', 'MenuButtons', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -98,6 +98,15 @@ switch ($Tool) {
     Emit @{ type = 'tiles'; tiles = @(@($gd.cards) | ForEach-Object { @{ label = ($_.card -replace '^(NVIDIA|AMD)\s+', '').ToUpper(); value = "$($_.installed)"; suffix = $(if ($_.newer) { " -> $($_.latest)" } else { ' NEWEST' }); icon = 'display' } }) }
     if (@($gd.cards | Where-Object { $_.newer }).Count) { Run 'Update-GpuDriver.ps1' @('-Install') | Out-Null; Write-Host 'Restart the PC to finish the driver update.' -ForegroundColor Yellow }
     else { Write-Host 'The newest driver is already installed.' -ForegroundColor Green }
+  }
+  'MenuButtons' {
+    # the one menu layout (catalog\menu-controls.json), named for this cabinet's controllers
+    Banner 'MENU BUTTONS - the same on every cabinet'
+    . (Join-Path $t 'lib\AmMenuButtons.ps1')
+    $mb = @(Get-AmMenuButtons (Split-Path $t) $ManifestDir)
+    foreach ($m in $mb) { Write-Host ("  {0,-26} {1}" -f $m.does, $m.text) }
+    Write-Host ''; Write-Host '  Move: stick / D-pad / turn the wheel.  Close the frontend: Q on a keyboard only.'
+    Emit @{ type = 'tiles'; tiles = @($mb | ForEach-Object { @{ label = $_.does.ToUpper(); value = $(if ($_.parts) { $_.parts[0].names } else { '-' }); suffix = ''; icon = 'buttons' } }) }
   }
   'EmulatorUpdates' {
     # every emulator the menus use against its newest release; the ones that can be updated safely are offered one by

@@ -36,6 +36,7 @@ $state = @{
 $meta = @{
   WheelSetup         = @{ icon = 'setup'; color = 'ff2fa0'; what = 'Turn, press and release each control once. Every game gets a best-practice mapping for this wheel.' }
   EmulatorUpdates    = @{ icon = 'rebuild'; color = '3ddc84'; what = 'Check every emulator against its newest release and update the ones that can be: settings, saves and wheel bindings are kept, old files backed up.' }
+  MenuButtons        = @{ icon = 'buttons'; color = '2ec8ff'; what = 'The same menu buttons on every cabinet: what each button does in the menus, named for the controllers this cabinet has.' }
   GpuDriver          = @{ icon = 'display'; color = '3ddc84'; what = 'Get the newest graphics driver for this card from NVIDIA or AMD, old cards included. Asks for admin; restart afterwards.' }
   FlightSetup        = @{ icon = 'joystick'; color = '2ec8ff'; what = 'Move the stick, twist it, slide the throttle and press each button once. The flight games get a mapping for this stick.' }
   PanelTest          = @{ icon = 'buttons'; color = 'ff2fa0'; what = 'Press every button, move every stick, spin the dial: each control lights up on screen with its name and the key it sends.' }
@@ -60,6 +61,18 @@ $ffBlack = New-Object Drawing.FontFamily 'Segoe UI Black'
 
 # ---- what is true right now, per tool (drawn into the preview card's lower area) ----
 function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
+  if ($tool -eq 'MenuButtons') {   # 3 x 3: what each menu button does, named for this cabinet's main controller
+    . (Join-Path $PSScriptRoot 'lib\AmMenuButtons.ps1')
+    $mb = @(Get-AmMenuButtons (Split-Path $PSScriptRoot) $ManifestDir)
+    $f1 = PxFont 'Segoe UI Semibold' 17; $f2 = PxFont 'Segoe UI Black' 22
+    for ($i = 0; $i -lt [Math]::Min(9, $mb.Count); $i++) {
+      $cx = $r.X + ($i % 3) * 316; $cy = $r.Y - 20 + [Math]::Floor($i / 3) * 54
+      $nm = if ($mb[$i].parts) { $mb[$i].parts[0].names } else { '-' }
+      [AmDraw]::Text($g, $mb[$i].does, $f1, [AmPal]::Dim, (RectF $cx $cy 310 24), 'Near', 'Center')
+      [AmDraw]::Text($g, $nm, $f2, [AmPal]::Text, (RectF $cx ($cy + 22) 310 30), 'Near', 'Center')
+    }
+    return
+  }
   $lbl = PxFont 'Segoe UI Semibold' 22; $val = PxFont 'Segoe UI Black' 40; $small = PxFont 'Segoe UI' 20
   [AmDraw]::Text($g, 'NOW', $lbl, [AmPal]::Amber, (RectF $r.X ($r.Y - 34) 200 30), 'Near', 'Center')
   $m = $meta[$tool]

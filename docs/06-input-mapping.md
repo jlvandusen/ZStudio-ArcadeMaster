@@ -549,11 +549,13 @@ Every config file on RACE1 was searched for the wheel's and handbrake's GUIDs (2
 them; RetroArch, PCSX2 and Flycast are not installed here. Tested on copies with the wheel and handbrake swapped and new ids: 9 files fixed (MAME, Cemu, Supermodel, six Model 2
 games), and a second run changed nothing.
 
-## Favourites on the wheel (2026-11-25)
-In the menus: **Options** (button 10, key F) marks or unmarks the selected game as a favourite; **Share** (button 11,
-key V) jumps to the Favourites list; P / O (Triangle / Circle) cycle the lists, Favourites second (skipped while
-nothing is marked). RetroFE keeps the list in `collections\<menu>\playlists\favorites.txt`; New-SeriesPlaylists only
-replaces the playlists it made, so favourites survive every rebuild. In a game, Options is still the game's Start.
+## Favourites on the wheel (2026-11-25, numbers corrected 2026-11-26)
+In the menus: **Options** (G29 button 9; also R3, 10) marks or unmarks the selected game as a favourite; **Share**
+(button 8; also L3, 11) jumps to the Favourites list; Circle / Triangle cycle the lists, Favourites second (skipped
+while nothing is marked). The first note said Options 10 / Share 11: on the G29, 10 and 11 are R3 and L3
+(New-GameControlsArt's measured table), so those still work but the named buttons are 9 and 8. RetroFE keeps the list
+in `collections\<menu>\playlists\favorites.txt`; New-SeriesPlaylists only replaces the playlists it made, and the menu
+rebuild keeps every menu's playlists, so favourites survive. In a game, Options is still the game's Start.
 
 ## One menu layout on every cabinet (2026-11-25)
 James: "the same experience with settings and menu controls regardless of Arcade Standup, Sitdown, Racing Rig,
@@ -561,17 +563,24 @@ Flight Rig". The menu buttons are now defined once, in `catalog\menu-controls.js
 Xbox pad, the CoinOPS wiring table and the G29 already share. `tools\Set-MenuControls.ps1` writes it into each
 cabinet's controls.conf at every boot (silent once it matches).
 
-| Menu action | Pad | Arcade panel (joystick mode) | Arcade panel (keyboard, I-PAC default) | Wheel (G29) | Keyboard |
+| Menu action | Pad (Xbox order) | Arcade panel, joystick mode | Arcade panel, keyboard mode (I-PAC P1 keys) | Wheel (G29) | Keyboard (no panel) |
 |---|---|---|---|---|---|
 | Move | D-pad / left stick | stick | stick (arrow keys) | D-pad, steer left / right | arrows |
-| Play / open | A, Start | button 1, Start | button 1 (Left Ctrl), Start 1 | button 0, button 7 | Enter |
-| Back | B | button 2 | button 2 (Left Alt) | button 1 | Esc |
-| Previous / next list | X / Y | buttons 3 / 4 | buttons 3 / 4 (Space / Left Shift) | buttons 2 / 3 | O / P |
-| Letter jump | LB / RB | buttons 5 / 6 | buttons 5 / 6 (Z / X) | paddles (4 / 5) | N / M |
-| Random game | Back | button 7 (Select) | Coin 1 (5) | button 6 | R |
-| Mark favourite | right stick click (9) | button 10 | - | Options (10) or 9 | F |
-| Favourites list | left stick click (8) | button 9 | - | Share (11) or 8 | V |
-| Close the frontend | - | - | - | - | Q (keyboard only, so players can't leave) |
+| Play / open | A, Start | button 1, Start | button 1 (Left Ctrl), Start 1 | Cross, L2 | Enter |
+| Back | B | button 2 | button 2 (Left Alt) | Square | Esc |
+| Previous / next list | X / Y | buttons 3 / 4 | buttons 3 / 4 (Space / Left Shift) | Circle / Triangle | O / P |
+| Letter jump | LB / RB | buttons 5 / 6 | buttons 5 / 6 (Z / X) | right / left paddle | N / M |
+| Random game | Back | button 7 (Select) | Coin 1 (5) | R2 | R |
+| Mark favourite | right stick click | button 10 | button 7 (C) | Options (or R3) | F |
+| Favourites list | left stick click | button 9 | button 8 (V) | Share (or L3) | V |
+| Close the frontend | - | - | - | - | Q |
+
+The numbers are shared (button n is button n on every joystick); the Xbox pad and the CoinOPS wiring put the same
+*places* on those numbers, the G29 names them its own way (0 Cross, 1 Square, 2 Circle, 3 Triangle ...), so the wheel
+keeps its original build's layout. **Letter shortcuts (O P N M R F Q) are only added on cabinets without a control
+panel**, and taken off random / quit on a panel cabinet: a keyboard-wired panel sends letters for player 2 (stick R F D
+G, buttons A S Q W ...), so R or Q there would make player 2 jump to a random game or close the frontend.
+**Tools > Menu Buttons** shows this table for the cabinet you stand at, with its own button names.
 
 Each cabinet keeps what it has on top: RACE1's pedal axes, the pedestal's touch gestures, a panel's own keys. A button
 the layout gives to one action is taken off any other action line, so one press never does two things. The settings

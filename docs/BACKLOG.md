@@ -184,7 +184,10 @@ The loop works like this (James, 2026-11-25):
 - [x] [RACE1] Emulator versions (James 2026-11-25): System Health line + Tools > Emulator Updates (docs/08). RACE1 today:
       Supermodel 0.3a -> 0.4, Dolphin 5.0-12188 -> 2609, Cemu 1.x -> 2.6 ready; MAME 0.244 (0.289 exists, shown only).
 - [ ] James: choose the emulator updates in Tools > Emulator Updates (try Mario Kart 8 after Cemu; the backup folder undoes it).
-- [ ] One on-screen "menu buttons" card drawn from menu-controls.json with this cabinet's own button names.
+- [x] [RACE1] Tools > Menu Buttons: the one layout with this cabinet's own button names (lib/AmMenuButtons.ps1).
+- [x] [RACE1] Fix: letter shortcuts (R random, Q quit ...) only without a control panel; a keyboard-wired panel sends
+      letters for player 2, so R / Q there jumped to a random game / closed the frontend. Taken off on panel cabinets.
+- [x] [RACE1] Correction: favourites are Options (9) / Share (8) on the G29; 10 / 11 are R3 / L3 (both work).
 - [ ] Ahead of Big Box / Batocera / RetroBat / CoinOPS (docs/14, James 2026-11-25), after vsync and the cache:
   - [ ] A1. Controllers set up at every game start for each emulator from what is plugged in (150 ms budget).
     - [x] [RACE1] Step 1, survive reboots / USB renumbering: Repair-EmulatorDevices keeps MAME, Cemu, Supermodel and

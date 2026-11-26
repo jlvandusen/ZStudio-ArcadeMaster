@@ -1,19 +1,19 @@
 {
-  "_comment": "ONE menu control layout for every cabinet (standup, sit-down, racing rig, flight rig, pedestal). tools/Set-MenuControls.ps1 writes it into each frontend's controls.conf. Buttons are by POSITION, the order the Xbox pad, the CoinOPS wiring table and the G29 share: 0 = A / panel button 1 / wheel Cross, 1 = B / button 2, 2 = X / button 3, 3 = Y / button 4, 4 = LB / button 5 / right paddle, 5 = RB / button 6 / left paddle, 6 = Back / Select, 7 = Start. 'keys' are SDL key names: a keyboard, plus the I-PAC default panel keys (P1 buttons Left Ctrl, Left Alt, Space, Left Shift, Z, X; Start 1; Coin 5). Tokens a cabinet has on top of these (pedal axes, touch gestures, mouse) are kept. joyNoPedals: added only on cabinets without pedals - pedals are joystick axes and one can rest at the end of its travel, so on a racing rig stick-down is left as that cabinet has it (RACE1's original build has it and works).",
+  "_comment": "ONE menu control layout for every cabinet (standup, sit-down, racing rig, flight rig, pedestal). tools/Set-MenuControls.ps1 writes it into each frontend's controls.conf; tools/lib/AmMenuButtons.ps1 names the buttons per controller (Tools > Menu Buttons). joy: by NUMBER, the order the Xbox pad and the CoinOPS wiring table share (0 = A / panel button 1, 1 = B / button 2, 2 = X / button 3, 3 = Y / button 4, 4 = LB / button 5, 5 = RB / button 6, 6 = Back / Select, 7 = Start, 8 / 9 = stick clicks). The G29 numbers its buttons its own way (0 Cross, 1 Square, 2 Circle, 3 Triangle, 4 / 5 right / left paddle, 6 R2, 7 L2, 8 Share, 9 Options, 10 R3, 11 L3), so a wheel keeps the layout its original build had. keys: safe on every cabinet - arrows, Enter / Esc, and the I-PAC default PLAYER 1 keys (buttons Left Ctrl, Left Alt, Space, Left Shift, Z, X, C, V; Start 1; Coin 5). letters: keyboard shortcuts added ONLY on cabinets without a control panel, because a keyboard-wired panel (I-PAC) sends letters for player 2 (stick R F D G, buttons A S Q W ...): R or Q on a panel cabinet would make player 2 jump to a random game or close the frontend. joyNoPedals: added only without pedals (a pedal axis can rest at the end of its travel). Tokens a cabinet has on top (pedal axes, touch gestures, mouse, its own keys) are kept.",
   "roles": {
-    "up":                { "does": "Previous game",          "keys": ["Up"],                        "joy": ["joyHat0Up", "joyAxis1-"] },
-    "down":              { "does": "Next game",              "keys": ["Down"],                      "joy": ["joyHat0Down"], "joyNoPedals": ["joyAxis1+"] },
-    "left":              { "does": "Left / previous menu",   "keys": ["Left"],                      "joy": ["joyHat0Left", "joyAxis0-"] },
-    "right":             { "does": "Right / next menu",      "keys": ["Right"],                     "joy": ["joyHat0Right", "joyAxis0+"] },
-    "select":            { "does": "Play / open",            "keys": ["Return", "1", "Left Ctrl"],  "joy": ["joyButton0", "joyButton7"] },
-    "back":              { "does": "Back",                   "keys": ["Escape", "Backspace", "Left Alt"], "joy": ["joyButton1"] },
-    "prevCyclePlaylist": { "does": "Previous list (series)", "keys": ["O", "Space"],                "joy": ["joyButton2"] },
-    "nextCyclePlaylist": { "does": "Next list (series)",     "keys": ["P", "Left Shift"],           "joy": ["joyButton3"] },
-    "letterDown":        { "does": "Jump to next letter",    "keys": ["N", "Z"],                    "joy": ["joyButton4"] },
-    "letterUp":          { "does": "Jump to previous letter","keys": ["M", "X"],                    "joy": ["joyButton5"] },
-    "random":            { "does": "Random game",            "keys": ["R", "5"],                    "joy": ["joyButton6"] },
-    "togglePlaylist":    { "does": "Mark / unmark favourite","keys": ["F"],                         "joy": ["joyButton9", "joyButton10"] },
-    "favPlaylist":       { "does": "Favourites list",        "keys": ["V"],                         "joy": ["joyButton8", "joyButton11"] },
-    "quit":              { "does": "Close the frontend (keyboard only, so players can't leave the cabinet)", "keys": ["Q"], "joy": [] }
+    "up":                { "does": "Previous game",           "keys": ["Up"],                              "joy": ["joyHat0Up", "joyAxis1-"] },
+    "down":              { "does": "Next game",               "keys": ["Down"],                            "joy": ["joyHat0Down"], "joyNoPedals": ["joyAxis1+"] },
+    "left":              { "does": "Left / previous menu",    "keys": ["Left"],                            "joy": ["joyHat0Left", "joyAxis0-"] },
+    "right":             { "does": "Right / next menu",       "keys": ["Right"],                           "joy": ["joyHat0Right", "joyAxis0+"] },
+    "select":            { "does": "Play / open",             "keys": ["Return", "1", "Left Ctrl"],        "joy": ["joyButton0", "joyButton7"] },
+    "back":              { "does": "Back",                    "keys": ["Escape", "Backspace", "Left Alt"], "joy": ["joyButton1"] },
+    "prevCyclePlaylist": { "does": "Previous list (series)",  "keys": ["Space"],      "letters": ["O"],    "joy": ["joyButton2"] },
+    "nextCyclePlaylist": { "does": "Next list (series)",      "keys": ["Left Shift"], "letters": ["P"],    "joy": ["joyButton3"] },
+    "letterDown":        { "does": "Jump to next letter",     "keys": ["Z"],          "letters": ["N"],    "joy": ["joyButton4"] },
+    "letterUp":          { "does": "Jump to previous letter", "keys": ["X"],          "letters": ["M"],    "joy": ["joyButton5"] },
+    "random":            { "does": "Random game",             "keys": ["5"],          "letters": ["R"],    "joy": ["joyButton6"] },
+    "togglePlaylist":    { "does": "Mark / unmark favourite", "keys": ["C"],          "letters": ["F"],    "joy": ["joyButton9", "joyButton10"] },
+    "favPlaylist":       { "does": "Favourites list",         "keys": ["V"],                               "joy": ["joyButton8", "joyButton11"] },
+    "quit":              { "does": "Close the frontend (keyboard only, so players can't leave the cabinet)", "keys": [], "letters": ["Q"], "joy": [] }
   }
 }
