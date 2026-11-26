@@ -35,6 +35,11 @@ if (-not $exe) { throw "RetroFE not found under $Root (looked in retrofe\, core\
 # use paths relative to it (emulators\MAME\mame64.exe). Started inside core\, every game failed to start.
 $exeDir = if ((Split-Path (Split-Path $exe) -Leaf) -eq 'core') { $Root } else { Split-Path $exe }
 $log = Join-Path $Root 'arcademaster-launcher.log'
+# A launcher started from a hardened shell (a remote / agent session sets NoDefaultCurrentDirectoryInExePath=1) hands that
+# to RetroFE and every game: cmd then refuses to run a batch file by bare name from its own folder, which is how the
+# menu's EXIT entry and the PC-game launchers start (cmd.exe /C "EXIT.bat"). On 2026-11-26 EXIT only gave an error on
+# DESKTOP-RACE1 for that reason. Whatever started us, the frontend gets the normal behaviour.
+Remove-Item Env:NoDefaultCurrentDirectoryInExePath -ErrorAction SilentlyContinue
 function Write-Log($m) { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) }
 
 $bootClock = [Diagnostics.Stopwatch]::StartNew(); $script:timings = New-Object System.Collections.Generic.List[string]
