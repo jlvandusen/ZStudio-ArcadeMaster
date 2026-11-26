@@ -188,6 +188,14 @@ The loop works like this (James, 2026-11-25):
 - [x] [RACE1] Fix: letter shortcuts (R random, Q quit ...) only without a control panel; a keyboard-wired panel sends
       letters for player 2, so R / Q there jumped to a random game / closed the frontend. Taken off on panel cabinets.
 - [x] [RACE1] Correction: favourites are Options (9) / Share (8) on the G29; 10 / 11 are R3 / L3 (both work).
+- [ ] Cabinet link (James 2026-11-26, docs/16): similar cabinets browse in unison; "join? 5 s" then the same game starts.
+  - [x] [RACE1] Part 1, RetroFE patch 0017: events out (hello / select / launch), commands in (goto / open), 127.0.0.1
+        only, off by default (linkEvents). Tested with a stand-in helper.
+  - [x] [RACE1] Fix found on the way (patch 0017): menus skipped their first games on a racing rig (up + down both held
+        for 250 ms after entering; "down wins"). Opposite directions cancel; Racing opens on 1 / 91.
+  - [ ] Part 2-3: tools\AmLink helper - LAN discovery (same cabinet type), follow only while idle, countdown card.
+  - [ ] Part 4: the idle rig's wheel turns with the leader's steering (spring centre in Control/Haptics), gentle.
+  - [ ] Part 5: linked games start their two-cabinet version on both rigs.
 - [ ] Ahead of Big Box / Batocera / RetroBat / CoinOPS (docs/14, James 2026-11-25), after vsync and the cache:
   - [ ] A1. Controllers set up at every game start for each emulator from what is plugged in (150 ms budget).
     - [x] [RACE1] Step 1, survive reboots / USB renumbering: Repair-EmulatorDevices keeps MAME, Cemu, Supermodel and
