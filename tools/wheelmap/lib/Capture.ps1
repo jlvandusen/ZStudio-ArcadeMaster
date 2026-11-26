@@ -257,6 +257,16 @@ function Invoke-WMCapture {
             $s = $steps[$i]
             $kind = $catalog.controls[($s.control -replace '^P\d+\.', '')].kind
             if ($skipGroup -and $s.Contains('group') -and $s.group -eq $skipGroup) { $i++; continue }
+            # a step with "auto" in controls.json is not asked: it is set by itself (racing: Select = Enter, Exit = Esc, which
+            # G HUB sends for the red Enter / PS button - James 2026-11-26: "Ps should be set auto for exit, Select ... for enter")
+            if ($s.Contains('auto') -and $s.auto) {
+                $a = $s.auto
+                if (-not ($prof.devices | Where-Object { $_.id -eq 'keyboard' })) { [void]$prof.devices.Add([ordered]@{ id = 'keyboard'; productName = 'Keyboard'; instanceGuid = $script:SysKeyboardGuid; diType = 'Keyboard' }) }
+                $prof.controls[$s.control] = [ordered]@{ device = 'keyboard'; type = 'key'; vk = [int]$a.vk; name = "$($a.name)"; source = 'auto' }
+                Write-Host ''; Write-Host ("[{0}/{1}] {2}  set by itself: KEY {3}" -f ($i + 1), $steps.Count, $s.control, $a.name) -ForegroundColor Green
+                Send-WMEvent @{ type = 'wiz-result'; control = $s.control; value = "KEY $($a.name) (auto)"; ok = $true }
+                $i++; continue
+            }
             Write-Host ''
             Write-Host ("[{0}/{1}] {2}" -f ($i + 1), $steps.Count, $s.control) -ForegroundColor Yellow -NoNewline
             Write-Host ("  {0}" -f $s.prompt)
