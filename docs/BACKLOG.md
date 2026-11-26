@@ -189,6 +189,12 @@ The loop works like this (James, 2026-11-25):
 - [x] [RACE1] Fix: letter shortcuts (R random, Q quit ...) only without a control panel; a keyboard-wired panel sends
       letters for player 2, so R / Q there jumped to a random game / closed the frontend. Taken off on panel cabinets.
 - [x] [RACE1] Correction: favourites are Options (9) / Share (8) on the G29; 10 / 11 are R3 / L3 (both work).
+- [x] [RACE1] Hold PS 5 s to leave any game (tools/Watch-GameExit.ps1; a pad: Back + Start). James was stuck in OutRunners.
+- [x] [RACE1] Share = credit, Options = start on the wheel in every emulator (tools/Set-CoinStartButtons.ps1; 105 files).
+- [ ] RACE2: run tools\Set-CoinStartButtons.ps1 -Apply there too (same wheel), then New-GameControlsArt.
+- [ ] Show "Share = coin, Options = start, hold PS = exit" on the game launch screen / controls card.
+- [ ] Menu force feedback on RACE1 did not open at start-up ("Resetting device"): RetroFE patch 0022 (retry in the menu, plus the cabinet link back command)
+      is built and applies, waiting for an idle frontend to test; then compare menu force strength with RACE2.
 - [ ] Cabinet link (James 2026-11-26, docs/16): similar cabinets browse in unison; "join? 5 s" then the same game starts.
   - [x] [RACE1] Part 1, RetroFE patch 0017: events out (hello / select / launch), commands in (goto / open), 127.0.0.1
         only, off by default (linkEvents). Tested with a stand-in helper.
@@ -201,7 +207,7 @@ The loop works like this (James, 2026-11-25):
         idle (30 s) and only the same cabinet type, "joining in 5" card, any menu button cancels. On for RACE1 + RACE2
         (catalog/cabinet-link.json), switch in Cabinet Settings. Tested on RACE1 against a stand-in second rig.
   - [ ] RACE2: restart the frontend after pulling, then try it with RACE1 for real (two cabinets, never tested together).
-  - [ ] RetroFE patch 0018: `back` command, so a follower can leave the menu it is in.
+  - [ ] RetroFE patch 0022: `back` command, so a follower can leave the menu it is in (built, waiting for a test).
   - [ ] End a joined game when the leader's game ends and nobody touched this cabinet (needs the in-game exit, A3).
   - [ ] Part 4: the idle rig's wheel turns with the leader's steering (spring centre in Control/Haptics), gentle.
   - [ ] Part 5: linked games start their two-cabinet version on both rigs.

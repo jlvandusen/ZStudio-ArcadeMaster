@@ -586,3 +586,26 @@ Each cabinet keeps what it has on top: RACE1's pedal axes, the pedestal's touch 
 the layout gives to one action is taken off any other action line, so one press never does two things. The settings
 are already shared: Tools and Cabinet Settings are made by the same tools on every cabinet; only hardware entries
 change (Wheel Setup with a wheel, Panel Test with a panel, Flight Stick Setup with a stick).
+
+## Coin, start and exit on the wheel (2026-11-26)
+James, stuck in OutRunners at the cabinet: "Share credit and Options start for this controller" and "I want to hold PS
+for 5 secs".
+
+| In any game | Press |
+|---|---|
+| Insert a coin (credit) | **Share** |
+| Start | **Options** |
+| Leave the game, back to the menu | **hold PS for 5 seconds** |
+
+- **Coin / start** (`tools\Set-CoinStartButtons.ps1`): before, MAME had coin on L3 and start on R3, Supermodel coin on
+  Options, Daytona 3 coin on Cross and start on the keyboard's Enter. The tool sets ONLY those two bindings in every
+  TeknoParrot profile that uses the wheel, MAME (ctrlr + cfg; a keyboard key keeps working and gets the wheel button
+  too), Supermodel.ini and the Model 2 `.input` files, in every copy of the emulators; a control that sat on Share /
+  Options moves to the freed button; every changed file is backed up as `<file>.coinstart-<time>.bak`. Applied on RACE1:
+  105 files; Test-WheelBindings still 313 of 313. `profiles\G29.json` now has Start = 9, Coin = 8. A full WheelMap
+  regenerate was NOT used: it would rewrite 129 files and undo later fixes (pedals, flight on the wheel, FFB ids).
+- **Hold PS to exit** (`tools\Watch-GameExit.ps1`, started by Start-ArcadeMaster): reads the controller itself (winmm),
+  so it is the same in MAME, TeknoParrot, Model 2 / 3, Dolphin and PC games. After 1 s a card says "KEEP HOLDING TO
+  EXIT"; at 5 s every program RetroFE started for the game is asked to close, and ended 3 s later if still there. A pad
+  uses Back + Start. In the menus it does nothing. Log: `manifest\game-exit.log`. The old exit (L2 + R2 together, through
+  JoyToKey's Alt+F4 and MAME's own cancel) still works.
