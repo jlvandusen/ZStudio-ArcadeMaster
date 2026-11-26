@@ -1,4 +1,4 @@
-﻿// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
+// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
 //
 //   AmPanel.exe [LEDBlinky-style arguments]       e.g.  AmPanel.exe 9 "bzone" "mame"
 //
@@ -172,6 +172,9 @@ static class AmPanel
         if (Str(cfg, "ExitKey") != null) exitKey = Str(cfg, "ExitKey");
         if (Str(cfg, "ExitGraceMs") != null) exitGraceMs = Convert.ToInt32(cfg["ExitGraceMs"]);
         gameStartAnimation = Str(cfg, "GameStartAnimation"); gamePauseAnimation = Str(cfg, "GamePauseAnimation");
+        // AmPanel.json "LoadingScreen": "off" - no LOADING screen over a starting game (James 2026-11-26 on DESKTOP-RACE2:
+        // Batman went windowed; anything on top of an exclusive-fullscreen game while it starts is a risk)
+        loadingOff = string.Equals(Str(cfg, "LoadingScreen"), "off", StringComparison.OrdinalIgnoreCase);
         if (manifestDir == null)
         {
             // the launcher's config (ArcadeMaster.config.json) next to this exe or one folder up
@@ -303,10 +306,11 @@ static class AmPanel
 
     // ---------------------------------------------------------------- the LOADING screen (LoadingScreen.cs)
     static LoadingScreen loading;
+    static bool loadingOff;             // AmPanel.json "LoadingScreen": "off"
     static int loadingSeq;
     static void ShowLoadingLater(string game)
     {
-        if (ui == null || string.IsNullOrEmpty(game) || game.StartsWith("__")) return;
+        if (loadingOff || ui == null || string.IsNullOrEmpty(game) || game.StartsWith("__")) return;
         if (State.ContainsKey("emulator") && Convert.ToString(State["emulator"]) == "am_tools") return;   // Tools pages draw their own
         int seq = System.Threading.Interlocked.Increment(ref loadingSeq);
         HashSet<IntPtr> baseline;
