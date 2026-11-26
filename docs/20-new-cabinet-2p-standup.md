@@ -13,7 +13,7 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
 | **USB foot switches** (Time Crisis "cover" pedal and others) | Not yet | Find what they send (keys or a HID gamepad: `tools\Watch-Inputs.ps1`), then map them as the cover / reload pedal in TeknoParrot (Time Crisis 4/5, Razing Storm...), MAME (`timecris`, `crisis2`) and Model 2/3 guns. Add a "pedal" control to the controls cards. |
 | **Trackball** + **spinner dial** | Trackball and spinner games are tagged, cards are drawn, and MAME maps them | Several mice at once: MAME `-multimouse` so the trackball, spinner and two guns don't all move the same cursor (backlog: "rollerball / dial multimouse split"). The "which controller?" screen offers trackball or joystick for 222 games. |
 | **Leap Motion hand sensor** (Ultraleap) | **Not supported, new** | A gesture module in AmPanel: swipe = menu left/right/up/down, pinch = select, open palm held = back / pause screen, and later the hand as a pointer for gun games without guns. Needs the Ultraleap Gemini runtime and its C API (LeapC), loaded the way AmPanel loads PacDrive. |
-| **LEDBlinky drives the Pixelcade LED marquee** | AmPanel shadow mode passes LEDBlinky's commands through | **The cabinet to take it over on:** an AmPanel `Marquee` module on Pixelcade's local HTTP API (see the answers below), removing LEDBlinky's last job (backlog: "Pixelcade / LED marquee output"). |
+| **LEDBlinky drives the Pixelcade LED marquee** | **AmPanel drives it (2026-11-26):** AmPanel.json `"Marquee": "pixelcade"`, docs/13 step 13. Tested on the marquee itself (Pixelcade LED 128x32, listener 4.4.7) | When AmPanel is installed here: set `"Marquee": "pixelcade"`, then LEDBlinky and the "Pixelcade Listener" startup shortcut are no longer needed. |
 | Button LEDs | Mini-PAC has no LED outputs | None on this cabinet. |
 
 ## Before the first command (lessons from the pedestal)
@@ -79,4 +79,9 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
 - **GRS Tron stick: wired as P1, with the trigger on P1 B1 and the top button on P1 B2.**
   - It shares P1's inputs with the regular P1 stick: no extra device, and the Tron / Discs of Tron cards use P1 B1 / B2.
   - Watch-Inputs confirms which of the two sticks is plugged into the Mini-PAC's P1 joystick inputs, or whether they are paralleled.
+- **What the session found (2026-11-26):**
+  - The PC is **DESKTOP-ARCADE**. Its drives are C:, E:, F:, G: and H:, with **no D:**. Pixelcade is in `E:\Pixelcade` and LEDBlinky in `E:\LEDBlinky`.
+  - It booted into the CORE-TYPE R frontend (`E:\CORE-TYPE R\CORE.exe`) from the all-users Startup folder. That shortcut was moved to `C:\ProgramData\ArcadeMaster\disabled-startup` (James: no more auto-starting it). Nothing else was changed.
+  - The Pixelcade listener is `pixelweb.exe`, a launcher that starts `E:\Pixelcade\jre\bin\java.exe`, which serves port 8080. pixelweb.log shows every request it gets, which is the easiest way to check the marquee.
+  - On listener 4.4.7, `/attract` and `/info` don't exist (pixelweb answers with its web page). `/v2/info`, `/animations/stream/random?r` and `/localplayback` all work.
 - **Drives C: to F:.** It has a D:, so the tools' defaults (`D:\ArcadeMaster\...`) can be used if D: is the data drive; still pass `-ManifestDir` / `-Root` / `-BuildRoot` explicitly. Pick the drive with room for the library, then fill in the PC name and GPU on the board when the session joins.

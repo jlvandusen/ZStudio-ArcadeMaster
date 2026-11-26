@@ -61,6 +61,7 @@ static class AmPanel
     static string toolsDir, retroFERoot;
     static bool reactive = true;
     static string attractAnimation = "chase";   // step 6: AmPanel.json "AttractAnimation": chase | breathe
+    static Marquee marquee;               // AmPanel.json "Marquee": "pixelcade" = AmPanel drives the Pixelcade LED marquee, not LEDBlinky
     static NotifyIcon tray;
     static volatile bool quitting;
 
@@ -206,6 +207,24 @@ static class AmPanel
             leds.LwaDir = Path.Combine(ledBlinkyDir, "lwa");                     // LEDBlinky's .lwax animations
             passThrough = false;       // two programs must never drive the same boards
         }
+        // the Pixelcade marquee: LEDBlinky's own [Pixelcade] settings first (same look as before), AmPanel.json wins
+        if (string.Equals(Str(cfg, "Marquee"), "pixelcade", StringComparison.OrdinalIgnoreCase))
+        {
+            marquee = new Marquee(Log);
+            marquee.LoadLEDBlinkySettings(ledBlinkyDir);
+            if (Str(cfg, "PixelcadeUrl") != null) marquee.BaseUrl = Str(cfg, "PixelcadeUrl");
+            if (Str(cfg, "PixelcadeDir") != null) marquee.PixelcadeDir = Str(cfg, "PixelcadeDir");
+            if (Str(cfg, "MarqueeStartText") != null) marquee.StartText = Str(cfg, "MarqueeStartText");
+            if (Str(cfg, "MarqueeQuitText") != null) marquee.QuitText = Str(cfg, "MarqueeQuitText");
+            if (Str(cfg, "MarqueeNowPlaying") != null) marquee.NowPlaying = Str(cfg, "MarqueeNowPlaying");
+            if (Str(cfg, "MarqueeColor") != null) marquee.Color = Str(cfg, "MarqueeColor");
+            if (Str(cfg, "MarqueeSpeed") != null) marquee.Speed = Str(cfg, "MarqueeSpeed");
+            if (Str(cfg, "MarqueeScreensaver") != null) marquee.Screensaver = Str(cfg, "MarqueeScreensaver").ToLowerInvariant();
+            // two programs must never drive the same marquee: LEDBlinky stops getting the commands, unless
+            // AmPanel.json asks for it with "PassThrough": true (then LEDBlinky's UsePixelcade must be 0)
+            if (Str(cfg, "PassThrough") == null) passThrough = false;
+            else if (passThrough) Log("marquee: PassThrough is on - set UsePixelcade=0 in LEDBlinky's Settings.ini, or both drive the marquee");
+        }
         // the sticks follow the lights unless AmPanel.json says otherwise ("Sticks": "own" | "ledblinky")
         string st = Str(cfg, "Sticks");
         sticksOwn = st != null ? st.Equals("own", StringComparison.OrdinalIgnoreCase) : leds != null;
@@ -335,6 +354,20 @@ static class AmPanel
                 }
             }
             if (what == "game start" && speech == "start") Speech.Say("Now playing " + Speech.Title(c));
+            if (marquee != null)
+            {
+                string emu = Convert.ToString(State.ContainsKey("emulator") ? State["emulator"] : null);
+                string sel = Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null);
+                if (c == "1") marquee.FrontendStart();
+                else if (c == "2") marquee.FrontendQuit();
+                else if (c == "8") marquee.ListChange(emu);
+                else if (c == "9" || c == "15") marquee.Selected(sel, emu);
+                else if (c == "5") marquee.ScreensaverStart();
+                else if (c == "6") marquee.ScreensaverStop(sel, emu);
+                else if (c == "4") marquee.GameStop(sel, emu);
+                else if (what == "game start") marquee.GameStart(c, emu, Speech.Title(c));
+                State["marquee"] = marquee.Status();
+            }
             // hot-plug refreshes wait while a game runs (James: no effect on game performance)
             if (devices != null)
             {
@@ -446,7 +479,20 @@ static class AmPanel
                 Handle(list.ToArray(), true);
                 rep["ok"] = true;
             }
-            else if (cmd == "status") { lock (Gate) rep["state"] = new Dictionary<string, object>(State); if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
+            else if (cmd == "status") { lock (Gate) { if (marquee != null) State["marquee"] = marquee.Status(); rep["state"] = new Dictionary<string, object>(State); } if (glow != null) rep["glowPresses"] = glow.Presses; rep["ok"] = true; }
+            else if (cmd == "marquee")
+            {
+                // {"cmd":"marquee","text":"INSERT COIN","color":"yellow"} | {"cmd":"marquee","game":"pacman","system":"mame"}
+                // | {"cmd":"marquee","path":"/info"} (one raw Pixelcade request, answered here) - tests, Tools
+                if (marquee == null) { rep["ok"] = false; rep["error"] = "the marquee is off (AmPanel.json \"Marquee\": \"pixelcade\")"; }
+                else
+                {
+                    if (req.ContainsKey("path")) { rep["sent"] = marquee.Get(Convert.ToString(req["path"])); rep["answer"] = marquee.LastAnswer; }
+                    else if (req.ContainsKey("text")) marquee.ShowText(Convert.ToString(req["text"]), req.ContainsKey("color") ? Convert.ToString(req["color"]) : null);
+                    else if (req.ContainsKey("game")) marquee.Selected(Convert.ToString(req["game"]), req.ContainsKey("system") ? Convert.ToString(req["system"]) : null);
+                    rep["marquee"] = marquee.Status(); rep["ok"] = true;
+                }
+            }
             else if (cmd == "choose")   // {"cmd":"choose","game":"centiped","collection":"Arcades","seconds":8} - blocks until answered
             {
                 string game = req.ContainsKey("game") ? Convert.ToString(req["game"]) : null, coll = req.ContainsKey("collection") ? Convert.ToString(req["collection"]) : null;
