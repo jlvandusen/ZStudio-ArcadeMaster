@@ -133,6 +133,7 @@ static class AmPanel
                     State["lights"] = ok ? string.Format("own: {0} LED board(s), {1} buttons mapped, colours for {2} games", leds.Boards, leds.Buttons, leds.Games)
                                          : "own, but LED boards not opened: " + leds.LastError;
                     if (!ok) leds = null;
+                    else { var le = leds; StickStudio.ServoHook = delegate(bool four) { return le.Servo(four); }; }
                 }
                 if (sticksOwn)
                 {
@@ -315,9 +316,23 @@ static class AmPanel
             // UltraStik: the game's map at start (written only when it changes), 8-way back in the menus, 13 = this map now
             if (sticks != null)
             {
-                if (what == "game start") State["stick"] = sticks.Load(null, c, false);
+                if (what == "game start")
+                {
+                    State["stick"] = sticks.Load(null, c, false);
+                    // the ServoStik restrictor follows the game's map: 4-way (and 2-way) games flip it to 4-way
+                    if (leds != null)
+                    {
+                        string mp = sticks.MapFor(c) ?? "";
+                        string r = leds.Servo(mp.IndexOf("4", StringComparison.Ordinal) >= 0 || mp.IndexOf("2", StringComparison.Ordinal) >= 0);
+                        State["servo"] = r; Log(r + " for " + c);
+                    }
+                }
                 else if (c == "13") State["stick"] = sticks.Load(arg1, null, true);
-                else if (what == "game stop" || what == "frontend start") State["stick"] = sticks.Load(null, null, false);
+                else if (what == "game stop" || what == "frontend start")
+                {
+                    State["stick"] = sticks.Load(null, null, false);
+                    if (leds != null) State["servo"] = leds.Servo(false);   // menus: 8-way
+                }
             }
             if (what == "game start" && speech == "start") Speech.Say("Now playing " + Speech.Title(c));
             // hot-plug refreshes wait while a game runs (James: no effect on game performance)
