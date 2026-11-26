@@ -89,6 +89,16 @@ static class FrontendFocus
     [System.Runtime.InteropServices.DllImport("kernel32.dll")] static extern int GetCurrentThreadId();
     const int GWL_EXSTYLE = -20, WS_EX_NOACTIVATE = 0x08000000;
 
+    // the frontend's main window gets the keyboard back (after the keyboard search closes)
+    public static void FocusMain()
+    {
+        IntPtr main = FindWindow(null, "RetroFE 0");
+        if (main == IntPtr.Zero) return;
+        IntPtr fg = GetForegroundWindow();
+        int ft = GetWindowThreadProcessId(fg, IntPtr.Zero), me = GetCurrentThreadId();
+        AttachThreadInput(me, ft, true); SetForegroundWindow(main); AttachThreadInput(me, ft, false);
+    }
+
     public static string Guard()
     {
         IntPtr main = FindWindow(null, "RetroFE 0");
@@ -179,16 +189,18 @@ class SearchIndex
 // windows that never take the keyboard focus from the frontend (taps still reach them)
 class NoFocusForm : Form
 {
-    protected override bool ShowWithoutActivation { get { return true; } }
+    // keyboard mode (search opened from a keyboard hotkey): the window takes the focus so typing reaches it
+    protected bool TakesFocus;
+    protected override bool ShowWithoutActivation { get { return !TakesFocus; } }
     protected override CreateParams CreateParams
     {
-        get { var cp = base.CreateParams; cp.ExStyle |= 0x08000000 /* WS_EX_NOACTIVATE */ | 0x80 /* WS_EX_TOOLWINDOW */ | 0x08 /* WS_EX_TOPMOST */; return cp; }
+        get { var cp = base.CreateParams; cp.ExStyle |= (TakesFocus ? 0 : 0x08000000 /* WS_EX_NOACTIVATE */) | 0x80 /* WS_EX_TOOLWINDOW */ | 0x08 /* WS_EX_TOPMOST */; return cp; }
     }
     protected const int WM_MOUSEACTIVATE = 0x21, MA_NOACTIVATE = 3;
     [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
     // RetroFE's own windows go on top when it (re)starts: put this one back above them, without taking the focus
     public void KeepOnTop() { if (IsHandleCreated && Visible) SetWindowPos(Handle, new IntPtr(-1) /* HWND_TOPMOST */, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 /* NOSIZE NOMOVE NOACTIVATE */); }
-    protected override void WndProc(ref Message m) { if (m.Msg == WM_MOUSEACTIVATE) { m.Result = (IntPtr)MA_NOACTIVATE; return; } base.WndProc(ref m); }
+    protected override void WndProc(ref Message m) { if (m.Msg == WM_MOUSEACTIVATE && !TakesFocus) { m.Result = (IntPtr)MA_NOACTIVATE; return; } base.WndProc(ref m); }
     public static Screen TouchScreen()
     {
         foreach (var s in Screen.AllScreens) if (!s.Primary) return s;
@@ -254,8 +266,22 @@ class SearchScreen : NoFocusForm
         new[] { "SHIFT", "Z", "X", "C", "V", "B", "N", "M", "SPACE", "CLEAR", "CLOSE" } };
     string KeyAt(int row, int i) { return shift && row == 0 ? Symbols[i] : Layout[row][i]; }
 
-    public SearchScreen(SearchIndex index, GameLink link, ChooserTheme theme, string retroFERoot)
+    // the highlighted result (keyboard: Up / Down move it, Enter jumps to it)
+    int sel;
+
+    public SearchScreen(SearchIndex index, GameLink link, ChooserTheme theme, string retroFERoot) : this(index, link, theme, retroFERoot, false) { }
+
+    // keyboard: opened from a keyboard hotkey (the 2-player cabinet has a keyboard and no touch screen) - the page takes
+    // the focus, typing goes into it, and the focus goes back to the frontend when it closes
+    public SearchScreen(SearchIndex index, GameLink link, ChooserTheme theme, string retroFERoot, bool keyboard)
     {
+        TakesFocus = keyboard; KeyPreview = true;
+        KeyDown += OnKey;
+        if (keyboard)
+        {
+            Shown += delegate { Activate(); Focus(); };
+            FormClosed += delegate { FrontendFocus.FocusMain(); };
+        }
         this.index = index; this.link = link; th = theme ?? new ChooserTheme(); this.retroFERoot = retroFERoot;
         FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual;
         Bounds = TouchScreen().Bounds; BackColor = Color.FromArgb(8, 9, 14); DoubleBuffered = true;
@@ -264,6 +290,31 @@ class SearchScreen : NoFocusForm
         frame.Tick += delegate { if ((DateTime.Now - lastTouch).TotalSeconds > 60) Close(); else Invalidate(); };   // nobody: it goes away
         Shown += delegate { frame.Start(); };
         FormClosed += delegate { frame.Stop(); foreach (var i in logos.Values) if (i != null) i.Dispose(); };
+    }
+
+    void OnKey(object s, KeyEventArgs e)
+    {
+        lastTouch = DateTime.Now;
+        var k = e.KeyCode;
+        if (k == Keys.Escape) { Close(); }
+        else if (k == Keys.Back) Press("DEL");
+        else if (k == Keys.Space) Press("SPACE");
+        else if (k == Keys.Down) { if (results.Count > 0) sel = Math.Min(results.Count - 1, sel + 1); Invalidate(); }
+        else if (k == Keys.Up) { sel = Math.Max(0, sel - 1); Invalidate(); }
+        else if (k == Keys.Right) { if (results.Count > 0) sel = Math.Min(results.Count - 1, sel + 2); Invalidate(); }
+        else if (k == Keys.Left) { sel = Math.Max(0, sel - 2); Invalidate(); }
+        else if (k == Keys.Enter) { if (sel < results.Count) Pick(results[sel]); }
+        else if (k >= Keys.A && k <= Keys.Z) Press(((char)('A' + (k - Keys.A))).ToString());
+        else if (k >= Keys.D0 && k <= Keys.D9 && !e.Shift) Press(((char)('0' + (k - Keys.D0))).ToString());
+        else if (k >= Keys.NumPad0 && k <= Keys.NumPad9) Press(((char)('0' + (k - Keys.NumPad0))).ToString());
+        else if (k == Keys.OemMinus || k == Keys.Subtract) Press("-");
+        else if (k == Keys.Oemplus || k == Keys.Add) Press(e.Shift || k == Keys.Add ? "+" : "=");
+        else if (k == Keys.OemPeriod) Press(".");
+        else if (k == Keys.OemQuotes) Press("'");
+        else if (k == Keys.D7 && e.Shift) Press("&");
+        else if (k == Keys.Oem1 && e.Shift) Press(":");
+        else return;
+        e.Handled = true; e.SuppressKeyPress = true;
     }
 
     void OnTap(object s, MouseEventArgs e)
@@ -290,7 +341,7 @@ class SearchScreen : NoFocusForm
         note = null;
         string menu = link != null ? link.Menu : null;
         bool scoped = index.HasMenu(menu);
-        results = index.Find(query, scoped ? menu : null, 8);
+        results = index.Find(query, scoped ? menu : null, 8); sel = 0;
         if (!scoped && query.Trim().Length > 0) note = "Open a game list first - these are from every list";
         Invalidate();
     }
@@ -361,6 +412,7 @@ class SearchScreen : NoFocusForm
             var rr = new RectangleF(pad + (i % 2) * (cw + pad), ry + (i / 2) * (rh + H * 0.012f), cw, rh);
             rows.Add(new KeyValuePair<RectangleF, SearchIndex.Game>(rr, results[i]));
             using (var p = Round(rr, rh * 0.25f)) using (var b = new SolidBrush(Color.FromArgb(28, 32, 46))) g.FillPath(b, p);
+            if (TakesFocus && i == sel) using (var p = Round(rr, rh * 0.25f)) using (var pen = new Pen(th.Accent, 3)) g.DrawPath(pen, p);   // keyboard: the row Enter jumps to
             var logo = Logo(results[i]); float tx = rr.X + rh * 0.3f;
             if (logo != null)
             {

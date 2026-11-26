@@ -295,11 +295,26 @@ static class AmPanel
     {
         try
         {
-            if (Screen.AllScreens.Length < 2) { Log("search: one screen - no touch search"); return; }
+            bool touchScreen = Screen.AllScreens.Length >= 2;
             searchIndex = new SearchIndex(Path.Combine(manifestDir, "search-index.json"));
             if (searchIndex.Games.Count == 0) { Log("search: no search-index.json (tools/New-SearchIndex.py)"); return; }
             gameLink = new GameLink(Log); gameLink.Start();
             var th = ChooserTheme.Load(retroFERoot, null, null);
+            // F3 on a keyboard opens the search in keyboard mode, on any cabinet (James 2026-11-26: the 2-player cabinet has
+            // a keyboard below the panel and no touch screen). Only in the menus, never during a game.
+            if (glow != null)
+                glow.KeyPressed = delegate (int vk) {
+                    if (vk != 0x72 /* F3 */) return;
+                    bool inGame; lock (Gate) inGame = State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"];
+                    if (inGame || Process.GetProcessesByName("retrofe").Length == 0) return;
+                    ui.BeginInvoke((MethodInvoker)delegate {
+                        if (searchScreen != null && !searchScreen.IsDisposed) { searchScreen.Close(); return; }
+                        searchScreen = new SearchScreen(searchIndex, gameLink, th, retroFERoot, true);
+                        searchScreen.FormClosed += delegate { searchScreen = null; };
+                        searchScreen.Show();
+                    });
+                };
+            if (!touchScreen) { Log("search: " + searchIndex.Games.Count + " games indexed, F3 opens it (one screen: no SEARCH button)"); return; }
             searchButton = new SearchButton(th);
             searchButton.Tapped += delegate {
                 if (searchScreen != null && !searchScreen.IsDisposed) return;

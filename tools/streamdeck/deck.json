@@ -30,7 +30,7 @@
       "11": { "label": ["REBUILD", "MENUS"], "color": "#2ec8ff", "image": "art/rebuild.png", "action": "tool:RebuildMenus", "restart": true },
       "12": { "label": ["SYSTEM", "HEALTH"], "color": "#3ddc84", "image": "art/health.png", "action": "tool:SystemHealth" },
       "13": { "label": ["PERF", ""], "color": "#9aa4b2", "state": { "setting": "perfLog", "on": "^[1-9]" }, "imageOn": "art/perf_on.png", "imageOff": "art/perf_off.png", "action": "tool:TogglePerfLog", "restart": true },
-      "14": { "label": [], "action": "" }
+      "14": { "label": ["QUIT", "FRONTEND"], "color": "#ff4d4d", "image": "art/exit.png", "action": "keys:F8" }
     },
     "ingame": {
       "//": "Player colours P1 red, P2 blue, P3 green, P4 yellow. MAME default keys (coin 5-8, start 1-4, pause P, exit Esc, service 9, save Shift+F7, load F7); most CoinOPS / TeknoParrot profiles follow them. Change here if the I-PAC panel is programmed differently.",
