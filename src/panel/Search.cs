@@ -251,10 +251,18 @@ class SearchScreen : NoFocusForm
     void Pick(SearchIndex.Game g)
     {
         if (link == null || !link.Alive) { note = "The frontend isn't answering (settings.conf linkEvents = yes?)"; Invalidate(); return; }
+        // RetroFE only takes a goto while its menu stands still (attract, a scroll ... drop it): send again every 300 ms
+        // until it reports the game selected, says "miss" (not in this menu), or 4 s pass
         link.Goto(g.Item);
-        // the frontend answers "miss" when the open menu doesn't have it
-        var t = new System.Windows.Forms.Timer { Interval = 400 };
-        t.Tick += delegate { t.Stop(); t.Dispose(); if (link.LastMiss == g.Item) { note = g.Title + " isn't in this list"; Invalidate(); } else Close(); };
+        int tries = 0;
+        var t = new System.Windows.Forms.Timer { Interval = 300 };
+        t.Tick += delegate {
+            tries++;
+            if (link.LastMiss == g.Item) { t.Stop(); t.Dispose(); note = g.Title + " isn't in this list"; Invalidate(); return; }
+            if (string.Equals(link.Selected, g.Item, StringComparison.OrdinalIgnoreCase)) { t.Stop(); t.Dispose(); Close(); return; }
+            if (tries > 13) { t.Stop(); t.Dispose(); note = "The frontend is busy - tap it again"; Invalidate(); return; }
+            link.Goto(g.Item);
+        };
         t.Start();
     }
 

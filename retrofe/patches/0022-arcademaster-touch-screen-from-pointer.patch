@@ -1,0 +1,35 @@
+Subject: [PATCH] Touches without a window go to the screen the pointer is on
+
+On Windows the pedestal's touch screen delivers SDL finger events with windowID 0, so every touch
+was "screen -1" and the touch1... regions (the touch bar: BACK | PREV | PLAY | NEXT | RANDOM) never
+answered. Windows still moves the pointer to the touch: the screen whose window holds the pointer
+is the one touched.
+---
+diff --git a/RetroFE/Source/Control/PointerInput.cpp b/RetroFE/Source/Control/PointerInput.cpp
+index bf5e042..e55bfc9 100644
+--- a/RetroFE/Source/Control/PointerInput.cpp
++++ b/RetroFE/Source/Control/PointerInput.cpp
+@@ -65,7 +65,22 @@ const char* PointerInput::name(Gesture g) {
+ 
+ // RetroFE monitor number of the window under the finger (-1 if unknown, e.g. a touch outside our windows)
+ int PointerInput::screenOfWindow(Uint32 windowID) {
+-    if (windowID == 0) return -1;
++    if (windowID == 0) {
++        // ArcadeMaster: on Windows a touch screen's finger events can come without a window (windowID 0) - the pedestal's
++        // touch bar never answered ("screen -1"). Windows still moves the pointer to the touch, so the screen whose
++        // window holds the pointer is the one touched.
++        int mx = 0, my = 0;
++        SDL_GetGlobalMouseState(&mx, &my);
++        for (int s = 0; s < SDL::getNumScreens() && s < MaxScreens; ++s) {
++            SDL_Window* w = SDL::getWindow(s);
++            if (!w) continue;
++            int wx = 0, wy = 0, ww = 0, wh = 0;
++            SDL_GetWindowPosition(w, &wx, &wy);
++            SDL_GetWindowSize(w, &ww, &wh);
++            if (mx >= wx && mx < wx + ww && my >= wy && my < wy + wh) return s;
++        }
++        return -1;
++    }
+     for (int s = 0; s < SDL::getNumScreens() && s < MaxScreens; ++s) {
+         SDL_Window* w = SDL::getWindow(s);
+         if (w && SDL_GetWindowID(w) == windowID) return s;

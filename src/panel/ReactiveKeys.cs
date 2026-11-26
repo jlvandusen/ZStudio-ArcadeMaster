@@ -70,12 +70,23 @@ class ReactiveKeys
     public int MappedKeys { get { return vkToLabels.Count; } }
     public bool Active { get { return hook != IntPtr.Zero; } }
 
+    // every key event the panel / keyboard sends (not only mapped buttons), newest last: the pipe's "keylog" command
+    // shows it, so a remote session can see what the cabinet's controls really send (2026-11-26)
+    readonly Queue<string> keyLog = new Queue<string>();
+    public string[] KeyLog() { lock (keyLog) return keyLog.ToArray(); }
+
     IntPtr Hook(int code, IntPtr wParam, IntPtr lParam)
     {
         if (code >= 0)
         {
-            int msg = wParam.ToInt32(), vk = Marshal.ReadInt32(lParam);
+            int msg = wParam.ToInt32(), vk = Marshal.ReadInt32(lParam), flags = Marshal.ReadInt32(lParam, 8);
             bool isDown = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN, isUp = msg == WM_KEYUP || msg == WM_SYSKEYUP;
+            if ((isDown || isUp) && vk > 0 && vk < 256 && (isUp || !down[vk]))
+                lock (keyLog)
+                {
+                    keyLog.Enqueue(DateTime.Now.ToString("HH:mm:ss.fff") + " " + (isDown ? "down " : "up   ") + (System.Windows.Forms.Keys)vk + ((flags & 0x10) != 0 ? " (injected)" : ""));
+                    while (keyLog.Count > 200) keyLog.Dequeue();
+                }
             List<string> labels;
             if ((isDown || isUp) && vk > 0 && vk < 256 && down[vk] != isDown && vkToLabels.TryGetValue(vk, out labels))
             {
