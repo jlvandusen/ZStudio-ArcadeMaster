@@ -23,6 +23,7 @@ param(
   [string]$HostName = $env:COMPUTERNAME,      # tests: another name
   [int]$IdleSec = 30,
   [int]$CountdownSec = 5,
+  [int]$AttractEnterSec = 60,                 # idle this long on the main menu: go into the cabinet's game list (0 = off)
   [int]$EventPort = 47801,
   [int]$CommandPort = 47802,
   [int]$ParentPid = 0,                        # the launcher (Start-ArcadeMaster): the helper ends with it
@@ -41,6 +42,9 @@ function Say([string]$m) { try { if ((Test-Path $logFile) -and (Get-Item $logFil
 $type = 'unknown'
 try { $mf = Join-Path $ManifestDir 'cabinet-mode.json'; if (Test-Path $mf) { $type = (((Get-Content $mf -Raw | ConvertFrom-Json).effective) -split '\+')[0] } } catch { }
 $top = 'Main'; try { $fc = Select-String -LiteralPath (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*firstCollection\s*=\s*(\S+)' | Select-Object -Last 1; if ($fc) { $top = $fc.Matches[0].Groups[1].Value } } catch { }
+# the game list attract mode belongs in: the cabinet's own mode collection, when the main menu has it
+$attractCol = @{ racing = 'Racing'; simulation = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup = 'Arcade'; pedestal = 'Arcade' }[$type]
+$menuTxt = Join-Path $RetroFE 'collections\Main\menu.txt'; if ($attractCol -and (Test-Path $menuTxt) -and -not (@(Get-Content $menuTxt) -contains $attractCol)) { $attractCol = $null }; $attractSaid = $false; $helperStart = Get-Date   # RetroFE's idle clock does not start at 0 at boot: the helper counts from its own start too
 
 # ---- the countdown card: on top of RetroFE, never takes the keyboard / wheel away from it
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -195,6 +199,13 @@ try {
         if ($me.menu -ne $lead.menu) { if ($me.menu -eq $top) { if ($me.item -ne $lead.menu) { Send-Cmd "goto`t$($lead.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
         elseif ($me.item -ne $lead.item -or ($lead.col -and $me.col -ne $lead.col)) { Send-Cmd "goto`t$($lead.item)`t$($lead.col)" 0.25 }
       }
+      # 6. attract on a game list, not on the main menu (James 2026-11-26: the race cab "always misses attract mode" - on
+      #    the main menu attract only rolls Racing / Tools / Exit). Nobody here and nobody to follow, sitting on the main
+      #    menu: go into this cabinet's own game list (racing -> Racing ...), where attract rolls the games and their videos.
+      elseif ($AttractEnterSec -gt 0 -and $me.menu -eq $top -and [double]$me.idleMs -ge $AttractEnterSec * 1000 -and ($now - $helperStart).TotalSeconds -ge $AttractEnterSec -and ($now - $lastUser).TotalSeconds -ge $AttractEnterSec -and $attractCol) {
+        if ($me.item -ne $attractCol) { Send-Cmd "goto`t$attractCol" 2 } else { Send-Cmd 'open' 2; if (-not $attractSaid) { Say "idle on the main menu: into $attractCol for attract mode"; $attractSaid = $true } }
+      }
+      else { $attractSaid = $false }
     }
     [Windows.Forms.Application]::DoEvents()
     Start-Sleep -Milliseconds 50

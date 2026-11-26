@@ -44,7 +44,7 @@ House rules that apply to every row:
 | R15 | **Clean bezels for 4:3 games**, per game then per system | A15, 15 §10, 17 #6 | Batocera decorations, CoinOPS, Big Box | medium-high (pedestal) | M | RACE1 (docs/18) |
 | R16 | **Per-game wheel profiles**: force strength, rotation (900° sim / 270° arcade), deadzones from the catalog | 15 §4, backlog 7 | **none of them** | high on the race cabs | M | RACE1 (posted) |
 | R17 | **Linked cabinets**: RACE1 + RACE2 head to head on the LAN, "Join RACE2?" in the menu | (A12-A20 "exceed") | **none of them** | very high for the race pair | L | RACE2 study |
-| R18 | **Attract mode that sells**: cycles series / Game of the Month, dims after 10 min, any pedal / wheel exits; later real MAME demos | A8, 15 §7, 17 #8 | CoinOPS themed attract | medium | S-M | open |
+| R18 | **Attract mode that sells**: cycles series / Game of the Month, dims after 10 min, any pedal / wheel exits; later real MAME demos | A8, 15 §7, 17 #8 | CoinOPS themed attract | medium | S-M | started (RACE2): attract now rolls through the games (patch 0029) and an idle race cabinet goes from the main menu into its game list (AmLink step 6); series / Game of the Month / dim still open |
 | R19 | **Run-ahead per game** (2D cores) + a lag figure in the speed checks | A16, A4 | Batocera (RetroArch) | medium (pedestal) | S-M | open |
 | R20 | **Music in the menu**, ducked under video, Tools switch | A11, 15 §13 | CoinOPS mixtapes, Big Box | medium | S | open |
 | R21 | **Branded start + clean shutdown** (no Windows at boot; VoiceMeeter / SimHub closed) | A20 | Big Box Premium | medium | S | RACE1 (posted) |

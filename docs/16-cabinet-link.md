@@ -60,6 +60,12 @@ Racing opened on its third game. Patch 0017 makes opposite directions cancel. Ra
 cabinet's settings.conf once and starts the helper (hidden; it ends with the launcher). **Cabinet Settings > CABINET
 LINK** switches it off or on for one cabinet; a cabinet that has its own `linkEvents` line keeps its choice.
 
+**Attract on the game list (2026-11-26):** when nobody is at the cabinet and nobody is browsing on a twin, a cabinet
+that has sat on the main menu for 60 s (`-AttractEnterSec`, 0 = off; never in the first 60 s after start) is taken
+into its own game list: racing / simulation -> Racing, flight -> Flight, lightgun -> Lightgun, stand-up / pedestal ->
+Arcade, when the main menu has that entry. Attract mode then rolls the games and their videos (patch 0029) instead of
+Racing / Tools / Exit.
+
 **How cabinets hear each other:** each helper writes `<share>\<HOST>.json` on `\\ds-mce\downloads\ArcadeMaster\link`
 (what is selected, how long since somebody used it, the last game started) on every change and once a second, and
 reads the others 4 times a second. No firewall rule and no admin prompt; AmPanel is not involved (it only talks on its
