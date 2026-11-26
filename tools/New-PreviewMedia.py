@@ -55,7 +55,9 @@ from am_guard import is_protected  # noqa: E402  (the live frontend: ProtectedPa
 MAX_W, MAX_H, MAX_FPS, MAX_SECONDS = 1280, 720, 30.0, 60
 COPY_MAX_BPS = 4_000_000
 BD_W, BD_H = 1920, 1080
-NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+# every ffmpeg runs at idle priority: it only gets the CPU the frontend leaves. At normal priority four x264 jobs took
+# all four cores of the 2P stand-up's i5 and the menu froze while it was being used (2026-11-26).
+NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0) | getattr(subprocess, 'IDLE_PRIORITY_CLASS', 0)
 
 
 # ----------------------------------------------------------------------------------------------------- safety
