@@ -8,8 +8,32 @@ $script:AmPanelKeys = @{ 'Left Ctrl' = 'button 1'; 'Left Alt' = 'button 2'; 'Spa
 # the actions worth showing, in this order (moving is the stick / D-pad / wheel everywhere)
 $script:AmMenuShown = 'select', 'back', 'prevCyclePlaylist', 'nextCyclePlaylist', 'letterUp', 'letterDown', 'random', 'togglePlaylist', 'favPlaylist'
 
+# <manifest>\menu-controls-local.json: this cabinet's own changes to the shared layout (same shape as the catalog file).
+# A role's keys / joy / letters given there replace the shared ones; roles not named there stay shared.
+$script:AmMenuDropped = @()   # "action|token" the local file took off an action
+function Merge-AmMenuLocal($roles, [string]$ManifestDir) {
+  $lf = if ($ManifestDir) { [IO.Path]::Combine($ManifestDir, 'menu-controls-local.json') } else { '' }   # not Join-Path: 5.1 throws on a missing drive
+  if (-not $lf -or -not (Test-Path -LiteralPath $lf)) { return $roles }
+  $local = (Get-Content -LiteralPath $lf -Raw | ConvertFrom-Json).roles
+  if (-not $local) { return $roles }
+  foreach ($p in $local.PSObject.Properties) {
+    $r = $roles.($p.Name)
+    if (-not $r) { $roles | Add-Member -NotePropertyName $p.Name -NotePropertyValue $p.Value; continue }
+    foreach ($f in 'keys', 'joy', 'letters', 'joyNoPedals') {
+      if ($null -ne $p.Value.$f) {
+        # the shared tokens this replaces are taken OFF that action (Set-MenuControls would otherwise keep them as the
+        # cabinet's own): B5 must stop jumping letters once B4 does it
+        if ($r.PSObject.Properties[$f]) { foreach ($t in @($r.$f)) { if ($t -and @($p.Value.$f) -notcontains $t) { $script:AmMenuDropped += "$($p.Name)|$("$t".ToLower())" } }; $r.$f = @($p.Value.$f) }
+        else { $r | Add-Member -NotePropertyName $f -NotePropertyValue @($p.Value.$f) }
+      }
+    }
+  }
+  return $roles
+}
+
 function Get-AmMenuButtons([string]$RepoRoot, [string]$ManifestDir) {
   $roles = (Get-Content -LiteralPath (Join-Path $RepoRoot 'catalog\menu-controls.json') -Raw | ConvertFrom-Json).roles
+  $roles = Merge-AmMenuLocal $roles $ManifestDir
   $cap = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path -LiteralPath $cf) { $cap = (Get-Content -LiteralPath $cf -Raw | ConvertFrom-Json).capabilities }
   $wheel = [bool]($cap -and $cap.wheel); $pads = [bool]($cap -and [int]$cap.gamepads -gt 0); $panel = [bool]($cap -and $cap.controlPanel)
   foreach ($a in $script:AmMenuShown) {
