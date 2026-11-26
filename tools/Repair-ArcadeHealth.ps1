@@ -223,6 +223,18 @@ $exitMsg = $null
 # the menu's EXIT item force-closes RetroFE (taskkill /f -> exit code 1, which looks like a crash). It must leave
 # exit.request in the frontend folder first, so Start-ArcadeMaster stops instead of restarting the frontend.
 $exitBat = Join-Path $RetroFE 'collections\Main\roms\EXIT.bat'
+# CORE-TYPE R names its exit item SHUTDOWN.bat (it only closes RetroFE). Under that name the menu showed no EXIT: no
+# EXIT art, no exit.request (so the launcher restarted the frontend), 2P stand-up 2026-11-26. It becomes the
+# standard EXIT.bat; the original is kept as SHUTDOWN.bat.am-off. A SHUTDOWN.bat that does anything else is left alone.
+$shutBat = Join-Path $RetroFE 'collections\Main\roms\SHUTDOWN.bat'
+if (-not (Test-Path $exitBat) -and (Test-Path $shutBat) -and $fix) {
+  $sb = @(Get-Content $shutBat | Where-Object { $_.Trim() -and $_ -notmatch '^\s*(@echo off|rem\b)' })
+  if ($sb.Count -eq 1 -and $sb[0] -match '^\s*taskkill\s+/f\s+/im\s+retrofe\.exe\s*$') {
+    Set-Content $exitBat @('@echo off', 'rem ArcadeMaster: tell the launcher this exit was chosen in the menu (not a crash), then close the frontend', 'echo menu exit> "%~dp0..\..\..\exit.request"', 'taskkill /f /im RetroFE.exe') -Encoding ascii
+    Move-Item $shutBat "$shutBat.am-off" -Force
+    $exitMsg = 'the menu has an EXIT entry (SHUTDOWN.bat, which only closed the frontend, kept as SHUTDOWN.bat.am-off)'
+  }
+}
 if ((Test-Path $exitBat) -and -not (Select-String $exitBat -Pattern 'exit\.request' -Quiet) -and $fix) {
   Copy-Item $exitBat "$exitBat.bak" -Force
   Set-Content $exitBat @('@echo off', 'rem ArcadeMaster: tell the launcher this exit was chosen in the menu (not a crash), then close the frontend', 'echo menu exit> "%~dp0..\..\..\exit.request"', 'taskkill /f /im RetroFE.exe') -Encoding ascii
