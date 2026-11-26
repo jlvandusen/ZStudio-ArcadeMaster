@@ -32,7 +32,11 @@ class LoadingScreen : Form
     // programs whose windows are never "the game": the frontend, this panel, the shell, the launchers' own small windows
     static readonly HashSet<string> NotTheGame = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         "retrofe", "AmPanel", "LEDBlinky", "explorer", "TeknoParrotUi", "emulatorLauncher", "cmd", "conhost", "powershell",
-        "wscript", "dwm", "ShellExperienceHost", "SearchHost", "StartMenuExperienceHost", "TextInputHost", "Code", "Claude" };
+        "wscript", "dwm", "ShellExperienceHost", "SearchHost", "StartMenuExperienceHost", "TextInputHost", "Code", "Claude",
+        // TeknoParrot's loaders put up their own windows before the game is ready (Blade Strangers closed it early)
+        "OpenParrotLoader", "OpenParrotLoader64", "OpenParrotKonamiLoader", "BudgieLoader", "ElfLdr2", "TeknoParrot", "ParrotLoader", "conhost" };
+    public static Action<string> Log = delegate { };
+    IntPtr candidate = IntPtr.Zero;
 
     readonly ChooserTheme th;
     readonly string title;
@@ -63,21 +67,29 @@ class LoadingScreen : Form
         frame.Tick += delegate {
             long now = clock.ElapsedMilliseconds;
             if (Opacity < 1) Opacity = Math.Min(1.0, now / 250.0);
-            if (now - lastCheck > 250) { lastCheck = now; if (GameIsUp() || now > GiveUpMs) { Close(); return; } }
+            if (now - lastCheck > 500) { lastCheck = now; if (GameIsUp() || now > GiveUpMs) { Close(); return; } }
             Invalidate();
         };
         Shown += delegate { frame.Start(); };
         FormClosed += delegate { frame.Stop(); if (bg != null) bg.Dispose(); };
     }
 
-    // a visible, not minimised window of another program covering most of a screen: the game is up
+    // a new, visible window of another program covering (nearly) a whole screen, still there on the next check: the
+    // game is up. A window that comes and goes (a loader's splash) does not count.
     bool GameIsUp()
     {
-        foreach (var h in BigWindows()) if (!before.Contains(h) && h != Handle) return true;
-        return false;
+        IntPtr found = IntPtr.Zero;
+        foreach (var h in BigWindows(0.9)) if (!before.Contains(h) && h != Handle) { found = h; break; }
+        if (found == IntPtr.Zero) { candidate = IntPtr.Zero; return false; }
+        if (found != candidate) { candidate = found; return false; }
+        int pid; GetWindowThreadProcessId(found, out pid);
+        string name = "?"; try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { }
+        Log("loading screen closed: " + name + " is up");
+        return true;
     }
 
-    static List<IntPtr> BigWindows()
+    static List<IntPtr> BigWindows() { return BigWindows(0.5); }
+    static List<IntPtr> BigWindows(double cover)
     {
         var list = new List<IntPtr>();
         int me = Process.GetCurrentProcess().Id;
@@ -86,7 +98,7 @@ class LoadingScreen : Form
             RECT r; if (!GetWindowRect(h, out r)) return true;
             int w = r.R - r.L, hh = r.B - r.T;
             var scr = Screen.FromRectangle(new Rectangle(r.L, r.T, Math.Max(1, w), Math.Max(1, hh))).Bounds;
-            if (w < scr.Width * 0.5 || hh < scr.Height * 0.5) return true;
+            if (w < scr.Width * cover || hh < scr.Height * cover) return true;
             int pid; GetWindowThreadProcessId(h, out pid);
             if (pid == me) return true;
             try { using (var p = Process.GetProcessById(pid)) if (NotTheGame.Contains(p.ProcessName)) return true; } catch { return true; }
