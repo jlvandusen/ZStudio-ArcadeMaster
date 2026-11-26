@@ -20,13 +20,25 @@ function Count([string]$glob) { @(Get-ChildItem $glob -File -ErrorAction Silentl
 
 $s = [ordered]@{ machine = $env:COMPUTERNAME; written = (Get-Date).ToString('s'); root = $Root }
 # code and builds
-$s.commit = "$(git -C $repo rev-parse --short HEAD 2>$null)".Trim()
-$s.branch = "$(git -C $repo rev-parse --abbrev-ref HEAD 2>$null)".Trim()
-$s.localEdits = @(git -C $repo status --porcelain --untracked-files=no 2>$null).Count
+# the scheduled task's PATH may not have git (ARCADE-PEDESTAL: commit came out blank) - same lookup as Update-Cabinet
+$git = (Get-Command git -ErrorAction SilentlyContinue).Source; if (-not $git -and (Test-Path 'C:\Program Files\Git\cmd\git.exe')) { $git = 'C:\Program Files\Git\cmd\git.exe' }
+$s.commit = if ($git) { "$(& $git -C $repo rev-parse --short HEAD 2>$null)".Trim() } else { 'git not found' }
+$s.branch = if ($git) { "$(& $git -C $repo rev-parse --abbrev-ref HEAD 2>$null)".Trim() } else { '' }
+$s.localEdits = if ($git) { @(& $git -C $repo status --porcelain --untracked-files=no 2>$null).Count } else { -1 }
 $bt = Join-Path $Root 'retrofe\am-build.txt'
 $s.retrofeBuild = if (Test-Path $bt) { ((Get-Content $bt | Where-Object { $_ -like 'key=*' }) -replace '^key=', '') } else { 'no am-build.txt' }
 $exe = @((Join-Path $Root 'retrofe\retrofe.exe'), (Join-Path $Root 'core\retrofe.exe') | Where-Object { Test-Path $_ })[0]
 $s.retrofeExe = $exe
+# which build the exe is, even without am-build.txt (a copied-in exe): its SHA-256 against the packages on the NAS
+$s.retrofeExeSha256 = if ($exe) { (Get-FileHash $exe -Algorithm SHA256).Hash } else { '' }
+$s.retrofeExeIsBuild = ''
+if ($exe -and (Test-Path 'Z:\ArcadeMaster\builds')) {
+  foreach ($bd in Get-ChildItem 'Z:\ArcadeMaster\builds' -Directory -Filter 'retrofe-*' -ErrorAction SilentlyContinue) {
+    $hf = Join-Path $bd.FullName 'retrofe.exe.sha256'; $be = Join-Path $bd.FullName 'retrofe\retrofe.exe'
+    if (-not (Test-Path $hf) -and (Test-Path $be)) { try { Set-Content $hf (Get-FileHash $be -Algorithm SHA256).Hash -NoNewline } catch { } }   # once per package
+    if ((Test-Path $hf) -and ("$(Get-Content $hf -Raw)".Trim() -split '\s+')[0] -ieq $s.retrofeExeSha256) { $s.retrofeExeIsBuild = $bd.Name; break }
+  }
+}
 $s.retrofePatched = if ($exe) { [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exe)).Contains('liveButton') } else { $false }
 $t = Get-ScheduledTask -TaskName 'ArcadeMaster Update' -ErrorAction SilentlyContinue
 $s.autoUpdate = if ($t) { $i = Get-ScheduledTaskInfo $t; "$($t.State), last $($i.LastRunTime.ToString('s')) result $($i.LastTaskResult)" } else { 'not scheduled' }
