@@ -146,6 +146,9 @@ class NoFocusForm : Form
         get { var cp = base.CreateParams; cp.ExStyle |= 0x08000000 /* WS_EX_NOACTIVATE */ | 0x80 /* WS_EX_TOOLWINDOW */ | 0x08 /* WS_EX_TOPMOST */; return cp; }
     }
     protected const int WM_MOUSEACTIVATE = 0x21, MA_NOACTIVATE = 3;
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    // RetroFE's own windows go on top when it (re)starts: put this one back above them, without taking the focus
+    public void KeepOnTop() { if (IsHandleCreated && Visible) SetWindowPos(Handle, new IntPtr(-1) /* HWND_TOPMOST */, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 /* NOSIZE NOMOVE NOACTIVATE */); }
     protected override void WndProc(ref Message m) { if (m.Msg == WM_MOUSEACTIVATE) { m.Result = (IntPtr)MA_NOACTIVATE; return; } base.WndProc(ref m); }
     public static Screen TouchScreen()
     {
