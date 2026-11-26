@@ -32,8 +32,10 @@ def wanted(keys, player, amiga):
     out = []
     for d, k in STICK[player].items():
         out.append("k.0.b.%d.0=%s_%s" % (DIK[k], amiga, d))
-    # P1's B2 (Left Alt) is already the Amiga's Alt key in these configs: P1 gets fire only, P2 fire + 2nd button
-    for btn, func in (("B1", "FIRE_BUTTON"),) + ((("B2", "2ND_BUTTON"),) if player == "P2" else ()):
+    # James 2026-11-26: "The Amiga did understand a Genesis joystick and sometimes used all 3 buttons" - so each player
+    # gets fire + 2nd + 3rd button (P1: LCtrl / LAlt / Space; P2: A / S / Q). P1's Left Alt and Space stop being
+    # the Amiga's Alt / space keys (Right Alt stays the Amiga Alt).
+    for btn, func in (("B1", "FIRE_BUTTON"), ("B2", "2ND_BUTTON"), ("B3", "3RD_BUTTON")):
         k = keys.get(player + btn)
         if k and k.upper() in DIK:
             out.append("k.0.b.%d.0=%s_%s" % (DIK[k.upper()], amiga, func))
@@ -62,7 +64,9 @@ def main():
             amiga = "JOY2" if line_key == "joyportcustom0" else "JOY1"
             parts = m.group(1).split()
             # drop earlier keyboard entries for this Amiga joystick's directions/fire (ours or stale), keep the rest
-            keep = [x for x in parts if not (x.startswith("k.0.") and re.search(r"=%s_(UP|DOWN|LEFT|RIGHT|FIRE_BUTTON|2ND_BUTTON)$" % amiga, x))]
+            mine = {e.split("=")[0] for e in ents}          # the keys we map: any older use of them goes (KEY_ALT_LEFT ...)
+            keep = [x for x in parts if not (x.startswith("k.0.") and (x.split("=")[0] in mine or
+                    re.search(r"=%s_(UP|DOWN|LEFT|RIGHT|FIRE_BUTTON|2ND_BUTTON|3RD_BUTTON)$" % amiga, x)))]
             line = "%s=%s" % (line_key, " ".join(keep + ents))
             new = new[:m.start()] + line + new[m.end():]
         if new != text:
