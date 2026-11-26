@@ -1,4 +1,4 @@
-// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
+﻿// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
 //
 //   AmPanel.exe [LEDBlinky-style arguments]       e.g.  AmPanel.exe 9 "bzone" "mame"
 //
@@ -298,6 +298,7 @@ static class AmPanel
             bool touchScreen = Screen.AllScreens.Length >= 2;
             searchIndex = new SearchIndex(Path.Combine(manifestDir, "search-index.json"));
             if (searchIndex.Games.Count == 0) { Log("search: no search-index.json (tools/New-SearchIndex.py)"); return; }
+            searchIndex.LoadOpenable(retroFERoot);   // search across all systems: only lists the frontend can open
             gameLink = new GameLink(Log); gameLink.Start();
             var th = ChooserTheme.Load(retroFERoot, null, null);
             // F3 on a keyboard opens the search in keyboard mode, on any cabinet (James 2026-11-26: the 2-player cabinet has

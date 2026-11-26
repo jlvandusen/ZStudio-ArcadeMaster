@@ -1,0 +1,42 @@
+Subject: [PATCH] Cabinet link: "show <collection>" opens a list
+
+The touch / keyboard search across all systems needs to open the list a game is in, then jump to
+it. "show <collection>" opens that collection the way Select opens a menu entry (the page under it
+stays, so Back returns); the helper then sends "goto <item>" until the game is selected.
+---
+diff --git a/RetroFE/Source/RetroFE.cpp b/RetroFE/Source/RetroFE.cpp
+index 19f686b..c6f0b0a 100644
+--- a/RetroFE/Source/RetroFE.cpp
++++ b/RetroFE/Source/RetroFE.cpp
+@@ -776,6 +776,19 @@ void RetroFE::linkPoll() {
+ 			setState(sel->leaf ? RETROFE_LAUNCH_ENTER : RETROFE_NEXT_PAGE_REQUEST);
+ 			break;
+ 		}
++		// ArcadeMaster: show <collection> - open that list the way Select opens a menu entry (the page under it stays, so
++		// Back returns). The search across all systems sends it, then "goto <item>" until the game is selected.
++		if (p[0] == "show" && p.size() >= 2 && !p[1].empty()) {
++			if (menu == p[1]) break;                               // already there
++			linkShowItem_ = Item();
++			linkShowItem_.name = p[1];
++			linkShowItem_.leaf = false;
++			nextPageItem_ = &linkShowItem_;
++			linkRemote_ = true;
++			attract_.reset();
++			setState(RETROFE_NEXT_PAGE_REQUEST);
++			break;
++		}
+ 	}
+ }
+ 
+diff --git a/RetroFE/Source/RetroFE.h b/RetroFE/Source/RetroFE.h
+index 8320452..975156d 100644
+--- a/RetroFE/Source/RetroFE.h
++++ b/RetroFE/Source/RetroFE.h
+@@ -63,6 +63,7 @@ public:
+     void preparePageForFirstRender(Page* page, int maxPasses = 5);
+     void linkPoll();                 // ArcadeMaster: cabinet link (Control/AmLink.h)
+     bool linkRemote_ = false;        // the next select / launch was asked for by the link helper, not a player
++    Item linkShowItem_;              // ArcadeMaster: "show <collection>" opens this (only its name is set)
+     bool     run( );
+     void     freeGraphicsMemory( );
+     void     allocateGraphicsMemory( );
