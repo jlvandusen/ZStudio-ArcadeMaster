@@ -1,0 +1,53 @@
+Subject: [PATCH] A joystick direction counts once held 90 ms
+
+The pedestal's UltraStik sends 30-70 ms full-deflection blips nobody made, and each one moved the
+menu by itself ("it's like a ghost"). An axis binding now presses only after the direction has
+been held 90 ms; a real push passes that easily. A reset binding still waits for the next movement.
+---
+diff --git a/RetroFE/Source/Control/JoyAxisHandler.cpp b/RetroFE/Source/Control/JoyAxisHandler.cpp
+index 0953751..220b5a9 100644
+--- a/RetroFE/Source/Control/JoyAxisHandler.cpp
++++ b/RetroFE/Source/Control/JoyAxisHandler.cpp
+@@ -44,6 +44,7 @@ void JoyAxisHandler::clearDevice(int slot)
+ void JoyAxisHandler::reset()
+ {
+     pressed_= false;
++    inRange_ = false;   // as before: a reset binding waits for the next movement
+ }
+ 
+ bool JoyAxisHandler::update(SDL_Event &e)
+@@ -52,7 +53,11 @@ bool JoyAxisHandler::update(SDL_Event &e)
+     lastWhich_ = e.jaxis.which;
+     AxisState& a = axes_[{ static_cast<int>(e.jaxis.which), static_cast<int>(axis_) }];
+     if (!a.seen || a.last != e.jaxis.value) { a.last = e.jaxis.value; a.lastChange = SDL_GetTicks(); a.seen = true; }
+-    pressed_ = (min_ <= e.jaxis.value && e.jaxis.value <= max_) && !restSideBlocked(a);
++    const bool inRange = (min_ <= e.jaxis.value && e.jaxis.value <= max_) && !restSideBlocked(a);
++    if (inRange && !inRange_) inSince_ = SDL_GetTicks();
++    inRange_ = inRange;
++    // held long enough (updateKeystate turns it on once HoldMs has passed with no further event)
++    pressed_ = inRange && SDL_GetTicks() - inSince_ >= HoldMs;
+ 
+     return true;
+ }
+@@ -60,6 +65,7 @@ bool JoyAxisHandler::update(SDL_Event &e)
+ // Per frame: pedals send no events while resting, so learn the rest position here and release the binding.
+ void JoyAxisHandler::updateKeystate()
+ {
++    if (inRange_ && !pressed_ && SDL_GetTicks() - inSince_ >= HoldMs) pressed_ = true;   // held past the blip window
+     if (lastWhich_ < 0) return;
+     auto it = axes_.find({ lastWhich_, static_cast<int>(axis_) });
+     if (it == axes_.end()) return;
+diff --git a/RetroFE/Source/Control/JoyAxisHandler.h b/RetroFE/Source/Control/JoyAxisHandler.h
+index 6154fbd..674d74c 100644
+--- a/RetroFE/Source/Control/JoyAxisHandler.h
++++ b/RetroFE/Source/Control/JoyAxisHandler.h
+@@ -33,4 +33,9 @@ private:
+     int lastWhich_ = -1;
+ 
+     bool pressed_{ false };
++    // ArcadeMaster: a direction counts once it has been held HoldMs. A flaky stick (the pedestal's UltraStik) sends
++    // 30-70 ms full-deflection blips nobody made; each one moved the menu ("it's like a ghost", 2026-11-26).
++    static const Uint32 HoldMs = 90;
++    bool inRange_{ false };
++    Uint32 inSince_{ 0 };
+ };

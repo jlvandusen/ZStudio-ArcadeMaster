@@ -66,13 +66,19 @@ foreach ($m in $Menu) {
   foreach ($n in $made) { if (-not $allNames.Contains($n)) { $allNames.Add($n) } }
 }
 if ($WhatIf) { return }
+# no series on this cabinet (a pedestal / CoinOPS build): its filters and buttons are its own - leave them alone. The
+# pedestal lost every filter but Favorites / Last played to the default list below (2026-11-26).
+if ($allNames.Count -eq 0) { Write-Host 'no series playlists here - settings.conf / controls.conf left as they are'; return }
 
 # settings.conf: the playlists the button cycles through (all first); controls.conf: the buttons, when missing
 $sc = Join-Path $RetroFE 'settings.conf'
 # the cabinet-wide lists stay in the cycle: Game of the Month (New-FeaturedPlaylist), Most played (Record-GamePlay),
-# RetroFE's own Last played and Favorites - a cyclePlaylist line names every playlist that can be reached
-$line = 'cyclePlaylist = ' + ((@('all', 'gameofthemonth', 'mostplayed', 'lastplayed', 'favorites') + $allNames) -join ',')
+# RetroFE's own Last played and Favorites - a cyclePlaylist line names every playlist that can be reached. What the
+# cabinet already cycles through stays, in its order; only missing names are added.
 $lines = [System.Collections.Generic.List[string]](Get-Content $sc); $done = $false
+$have = @(); foreach ($l in $lines) { if ($l -match '^\s*cyclePlaylist\s*=\s*(.*)$') { $have = @($Matches[1] -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) } }
+$want = @($have); foreach ($n in (@('all', 'gameofthemonth', 'mostplayed', 'lastplayed', 'favorites') + $allNames)) { if ($want -notcontains $n) { $want += $n } }
+$line = 'cyclePlaylist = ' + ($want -join ',')
 for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^\s*cyclePlaylist\s*=') { $lines[$i] = $line; $done = $true } }
 if (-not $done) { $lines.Add($line) }; Set-Content $sc $lines -Encoding ascii
 $cc = Join-Path $RetroFE 'controls.conf'
