@@ -74,6 +74,43 @@ class GameLink
     public void Stop() { Running = false; try { rx.Close(); } catch { } }
 }
 
+// RetroFE reads the panel only through its main window ("RetroFE 0"). A tap on the touch screen activated "RetroFE 1"
+// (the marquee / touch screen window) and the keys went there: the panel looked dead (2026-11-26). The extra windows
+// are made non-activating (taps still reach them) and the focus is handed back to the main window if it lands there.
+static class FrontendFocus
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern int GetWindowLong(IntPtr h, int i);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern int SetWindowLong(IntPtr h, int i, int v);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern int GetWindowThreadProcessId(IntPtr h, IntPtr pid);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool AttachThreadInput(int a, int b, bool attach);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] static extern int GetCurrentThreadId();
+    const int GWL_EXSTYLE = -20, WS_EX_NOACTIVATE = 0x08000000;
+
+    public static string Guard()
+    {
+        IntPtr main = FindWindow(null, "RetroFE 0");
+        if (main == IntPtr.Zero) return null;
+        string fixedWin = null;
+        for (int n = 1; n < 4; n++)
+        {
+            IntPtr w = FindWindow(null, "RetroFE " + n);
+            if (w == IntPtr.Zero) continue;
+            int ex = GetWindowLong(w, GWL_EXSTYLE);
+            if ((ex & WS_EX_NOACTIVATE) == 0) { SetWindowLong(w, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE); fixedWin = "RetroFE " + n; }
+            if (GetForegroundWindow() == w)
+            {
+                int fg = GetWindowThreadProcessId(w, IntPtr.Zero), me = GetCurrentThreadId();
+                AttachThreadInput(me, fg, true); SetForegroundWindow(main); AttachThreadInput(me, fg, false);
+                return "focus handed back from RetroFE " + n + " to the main window";
+            }
+        }
+        return fixedWin != null ? fixedWin + " made non-activating" : null;
+    }
+}
+
 class SearchIndex
 {
     public class Game { public string Item, Title, Collection, Year, Maker, Key; }

@@ -1,0 +1,21 @@
+Subject: [PATCH] A cabinet-link command stops attract mode
+
+The link only acts while the menu stands still, and attract mode keeps it moving: the touch-screen
+search took longer than the attract timeout to type, and every "goto" it sent was dropped. A
+command that arrives while the menu is busy now stops attract; the helper's resend then lands.
+---
+diff --git a/RetroFE/Source/RetroFE.cpp b/RetroFE/Source/RetroFE.cpp
+index 11b6040..b520761 100644
+--- a/RetroFE/Source/RetroFE.cpp
++++ b/RetroFE/Source/RetroFE.cpp
+@@ -752,7 +752,9 @@ void RetroFE::linkPoll() {
+ 
+ 	std::string cmd;
+ 	while (link.receive(cmd)) {
+-		if (!still || kioskLock_) continue;                    // busy: the command is dropped, the helper sends again
++		// ArcadeMaster: attract mode keeps the menu moving, so a command never found it standing still (the touch search
++		// typed for 20 s and its pick was dropped every time): a command stops attract, the helper's resend then lands
++		if (!still || kioskLock_) { if (!kioskLock_) attract_.reset(); continue; }   // busy: dropped, the helper sends again
+ 		std::vector<std::string> p;
+ 		std::stringstream ss(cmd); std::string part;
+ 		while (std::getline(ss, part, '\t')) p.push_back(part);
