@@ -211,6 +211,11 @@ def maker_menus(cols):
         os.makedirs(d, exist_ok=True)
         open(os.path.join(d, MADE_HERE), "w").write("menu\n")
         open(os.path.join(d, "menu.txt"), "w", newline="\r\n").write("\n".join(sorted(groups[m])) + "\n")
+        # RetroFE logs "Could not import any collection settings" for a collection without one
+        sc = os.path.join(d, "settings.conf")
+        if not os.path.exists(sc):
+            open(sc, "w", newline="\r\n").write("# ArcadeMaster maker menu (Import-RetroBatSystems.py): its systems are in menu.txt\n"
+                                                "list.includeMissingItems = false\nlist.menuSort = yes\n")
     # the main menu: the makers where Classic Systems was (kept as a collection, just not on the main menu)
     for fn in ("am-extra-menu.txt", "menu.txt"):
         p = os.path.join(cols, "Main", fn)

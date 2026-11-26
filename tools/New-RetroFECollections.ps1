@@ -266,7 +266,8 @@ foreach ($cat in $Order) {
 foreach ($e in $ExtraMenu) { if (Test-Path (Join-Path $cols $e)) { $menu.Add($e) } }
 # entries other tools add (Import-RetroBatSystems.py: "Classic Systems"), one per line, kept across rebuilds
 $extraFile = Join-Path $cols 'Main\am-extra-menu.txt'
-if (Test-Path $extraFile) { foreach ($e in Get-Content $extraFile) { $e = $e.Trim(); if ($e -and (Test-Path (Join-Path $cols $e)) -and $menu -notcontains $e) { $menu.Add($e) } } }
+$extras = @()
+if (Test-Path $extraFile) { foreach ($e in Get-Content $extraFile) { $e = $e.Trim(); if ($e -and (Test-Path (Join-Path $cols $e)) -and $menu -notcontains $e) { $menu.Add($e); $extras += $e } } }
 
 if ((Test-Path $menuTxt) -and -not (Test-Path "$menuTxt.am-backup")) { Copy-Item $menuTxt "$menuTxt.am-backup" }
 # A CoinOPS build (LEGENDS, CORE ...) has no Main menu: its library starts at settings.conf firstCollection (e.g. Arcades).
@@ -282,6 +283,14 @@ if ($own -and (Test-Path (Join-Path $cols $own))) {
   if ($menu -notcontains $own) { $menu.Add($own); Write-Host "kept the build's own library in the main menu: $own" }
 } else { $own = '' }
 New-Item -ItemType Directory -Force (Split-Path $menuTxt) | Out-Null
+# one order whatever ran last: the categories (Arcade ...), the build's own library (Arcades), the makers other tools add
+# (Nintendo, Sega ...), Tools at the end
+$ordered = New-Object System.Collections.Generic.List[string]
+foreach ($m in $menu) { if ($m -ne 'Tools' -and $m -ne $own -and $extras -notcontains $m) { $ordered.Add($m) } }
+if ($own) { $ordered.Add($own) }
+foreach ($m in $extras) { $ordered.Add($m) }
+if ($menu -contains 'Tools') { $ordered.Add('Tools') }
+$menu = $ordered
 Set-Content $menuTxt $menu -Encoding ascii
 if ($own) { Set-Content $libFile $own -Encoding ascii }
 Write-Host ("Main menu: " + ($menu -join ' | '))
