@@ -1,0 +1,25 @@
+Subject: [PATCH] A touch with no screen goes to the cabinet's extra screen
+
+Patch 0022's pointer check still left the pedestal's touches on "screen -1", so the touch bar
+(BACK | PREV | PLAY | NEXT | RANDOM) never answered. When neither the window nor the pointer says
+which screen was touched, and there is more than one screen, the last one is used: on ArcadeMaster
+cabinets the touch panel is the extra screen. The pointer position is logged (debug) to fix the
+check properly.
+---
+diff --git a/RetroFE/Source/Control/PointerInput.cpp b/RetroFE/Source/Control/PointerInput.cpp
+index e55bfc9..f40d2bc 100644
+--- a/RetroFE/Source/Control/PointerInput.cpp
++++ b/RetroFE/Source/Control/PointerInput.cpp
+@@ -79,7 +79,11 @@ int PointerInput::screenOfWindow(Uint32 windowID) {
+             SDL_GetWindowSize(w, &ww, &wh);
+             if (mx >= wx && mx < wx + ww && my >= wy && my < wy + wh) return s;
+         }
+-        return -1;
++        // ArcadeMaster: the pointer check missed (the pedestal kept "screen -1"): a cabinet's touch panel is its extra
++        // screen, so with more than one screen the last one is the touched one
++        const int n = SDL::getNumScreens() < MaxScreens ? SDL::getNumScreens() : MaxScreens;
++        LOG_DEBUG("Pointer", "touch without a window, pointer " << mx << "," << my << " on no screen - using screen " << (n > 1 ? n - 1 : -1));
++        return n > 1 ? n - 1 : -1;
+     }
+     for (int s = 0; s < SDL::getNumScreens() && s < MaxScreens; ++s) {
+         SDL_Window* w = SDL::getWindow(s);
