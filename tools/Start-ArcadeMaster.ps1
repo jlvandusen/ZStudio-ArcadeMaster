@@ -119,6 +119,16 @@ try {
     }
   }
 } catch { Write-Log "series playlists failed: $($_.Exception.Message)" }
+# the main menu follows menu.txt (Racing / Flight ... first, as New-RetroFECollections orders it) instead of A-Z, which
+# put EXIT first: every cabinet booted with EXIT selected and an idle cabinet sat on it
+try {
+  $mainConf = Join-Path $Root 'collections\Main\settings.conf'
+  if ((Test-Path $mainConf) -and (Select-String -LiteralPath $mainConf -Pattern '^\s*list\.menuSort\s*=\s*(yes|true)' -Quiet)) {
+    if (-not (Test-Path "$mainConf.am-sort-bak")) { Copy-Item -LiteralPath $mainConf "$mainConf.am-sort-bak" }
+    $mc0 = [IO.File]::ReadAllText($mainConf) -replace '(?m)^(\s*list\.menuSort\s*=\s*)(yes|true)', '${1}no'
+    [IO.File]::WriteAllText($mainConf, $mc0); Write-Log 'main menu: follows menu.txt order (was A-Z, which put EXIT first)'
+  }
+} catch { Write-Log "main menu order failed: $($_.Exception.Message)" }
 # one menu control layout on every cabinet type (catalog\menu-controls.json); quick and silent once it matches
 try { $mc = Invoke-Tool 'Set-MenuControls.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Apply'); if ($mc -match 'change\(s\) written') { Write-Log ('menu controls: ' + (($mc -split "`r?`n" | Where-Object { $_ -match '^\s+\S' } | ForEach-Object { $_.Trim() }) -join '; ')) } } catch { Write-Log "menu controls failed: $($_.Exception.Message)" }
 

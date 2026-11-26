@@ -60,8 +60,9 @@ summary table and the plan numbers (A1-A11); this is the detail to build from. "
 |---|---|
 | **CoinOPS** | on / off, dim the screen, "joystick exits" or button only. |
 | **Batocera** | screensaver (video / slideshow). |
-| **Ours** | RetroFE attract mode **on**: after 90 s idle it moves to another game every 20 s (settings.conf attractModeTime / NextTime). Only real button presses reset it (checked in the source), so a twitching wheel can't block it. |
-| **Plan (A8)** | Cycle the series playlists too (attractModeCyclePlaylist), dim after 10 min, any pedal or wheel turn exits; a Tools switch. |
+| **Ours (corrected 2026-11-25, watched on RACE1)** | Set on (90 s idle, 20 s per game), but it does little: see the findings below. |
+| **Findings** | 1. RACE1 **boots with EXIT selected**: Main is sorted A-Z (EXIT, Racing, Tools). 2. On the main menu attract mode runs (debug log: IDLE <-> SCROLLING) but never moves the sideways menu, so an idle cabinet sits on EXIT. 3. In Racing it moves once or twice and then stays; the controls card stays on the first game. 4. The series tour (attractModePlaylistTime + attractModeCyclePlaylist) switches the title and story to Daytona / Sega Rally but leaves the list and cards on the old series; pressing P does it right. Cause found: after attract's own scroll the list stays marked "scrolling forward" (a button release clears that, attract never does). Two fixes tried (switch only when the list is idle; clear the flag first) - the list then never reported idle and nothing switched, so nothing was shipped. 5. attractModeSkipCollection takes one name only (Tools and EXIT both need skipping). |
+| **Plan (A8)** | First a debugging session on why the list never reports idle after an attract scroll (Page::isMenuIdle vs ScrollingList), then patch 0017: tour that refreshes the list, skip list "Tools,EXIT", controls card follows attract. Boot onto Racing, not EXIT. Then dim after 10 min and a Tools switch. |
 
 ## 8. Hi-scores
 | | |
