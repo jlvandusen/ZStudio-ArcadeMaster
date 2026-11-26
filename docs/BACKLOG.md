@@ -199,7 +199,11 @@ The loop works like this (James, 2026-11-25):
   - [ ] A3. In-game menu on a hotkey combo: pause, save / load state, controls card, exit.
   - [ ] A2. On-screen controller setup for an unknown controller (RetroFE page + hot-plug listener).
   - [ ] A10. Play time per game (Most played / Recently played) and save backups to the NAS, 5 versions.
-  - [ ] A9. Hi-score tables on (engine already has iScored / QR). A8. Attract mode with our clips.
+  - [ ] A9. Hi-score tables on (engine already has iScored / QR).
+  - [ ] A8. Attract mode (watched on RACE1 2026-11-25, docs/15 section 7): boots with EXIT selected; on Main it never
+        moves; in a list it moves once or twice; the series tour leaves the list on the old series. Root cause: the list
+        stays "scrolling forward" after attract's scroll. Debug Page::isMenuIdle after attract, then patch 0017 (tour +
+        "Tools,EXIT" skip list + controls card follows). Quick one first: boot onto Racing instead of EXIT.
   - [ ] A5. Missing art and info from an open game database. A6. RetroAchievements. A7. Settings from a phone. A11. Menu music.
 
 ## 3. Performance
