@@ -13,14 +13,21 @@
                so the profile's relative GamePath works unchanged) and the profile into UserProfiles. Never overwrites:
                an existing game folder or profile is left alone and reported. Every file is size-checked after copying.
                Then run Rebuild Game Menus (or New-RetroFECollections) so the games show in the menus.
-  Dry run by default for -Publish / -Pull; -Apply copies.
+  -PublishMedia / -PullMedia   the same for the menus' images and videos (James: "mimic race2 for teknoparrot and images
+               and videos"): every file under <RetroFE>\collections\<TeknoParrot collections>\medium_artwork (logos,
+               fanart, cards, stories, original videos, ArcadeMaster's am_video previews and am_backdrop backdrops ...)
+               goes to Z:\ArcadeMaster\library\media\<collection>\; a pull copies in only the files this cabinet does not
+               have (never overwrites its own). -RetroFE defaults to the launcher config's RetroFERoot.
+  Dry run by default for -Publish / -Pull / -PublishMedia / -PullMedia; -Apply copies.
 .EXAMPLE
   tools\Sync-TeknoParrotGames.ps1 -Inventory
   tools\Sync-TeknoParrotGames.ps1 -Publish -For DESKTOP-RACE1 -Apply
   tools\Sync-TeknoParrotGames.ps1 -Pull -Apply
 #>
 param(
-  [switch]$Inventory, [switch]$Publish, [switch]$Pull,
+  [switch]$Inventory, [switch]$Publish, [switch]$Pull, [switch]$PublishMedia, [switch]$PullMedia,
+  [string]$RetroFE,
+  [string[]]$MediaCollections = @('TeknoParrot', 'TeknoParrotMulti'),
   [string]$For,
   [string[]]$Install = @('E:\DRIVE Collection\emulators\TeknoParrot', 'E:\DRIVE Collection\emulators\TeknoParrotMulti', 'D:\Emulators\TeknoParrot', 'D:\FLIGHT Collection\emulators\TeknoParrot'),
   [string]$Share = 'Z:\ArcadeMaster',
@@ -45,6 +52,26 @@ function Get-Games {
   }
 }
 function Get-Size([string]$d) { $s = Get-ChildItem -LiteralPath $d -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum; [pscustomobject]@{ bytes = [int64]$s.Sum; files = $s.Count } }
+
+if ($PublishMedia -or $PullMedia) {
+  if (-not $RetroFE) { foreach ($c in 'D:\ArcadeMaster\ArcadeMaster.config.json', 'R:\ArcadeMaster\ArcadeMaster.config.json') { if (Test-Path $c) { $RetroFE = (Get-Content $c -Raw | ConvertFrom-Json).RetroFERoot; break } } }
+  if (-not $RetroFE -or -not (Test-Path $RetroFE)) { throw 'no frontend found - give -RetroFE <root>' }
+  $media = Join-Path $Share 'library\media'
+  foreach ($col in $MediaCollections) {
+    $here = Join-Path $RetroFE "collections\$col\medium_artwork"; $there = Join-Path $media $col
+    $src = if ($PublishMedia) { $here } else { $there }; $dst = if ($PublishMedia) { $there } else { $here }
+    if (-not (Test-Path -LiteralPath $src)) { Write-Host "  ${col}: nothing at $src"; continue }
+    # only files the other side lacks: /XC /XN /XO skip every file that already exists there (never overwrites)
+    $listOnly = @(if (-not $Apply) { '/L' })   # @( ): a one-item array from an if stays an array (a bare string splats wrong)
+    $out = robocopy $src $dst /E /XC /XN /XO /COPY:DAT /R:2 /W:2 /NDL /NJH /NP /BYTES @listOnly
+    if ($LASTEXITCODE -ge 8) { throw "media copy for $col failed (robocopy $LASTEXITCODE)" }
+    $sum = $out | Select-String '^\s*(Files|Bytes)\s*:' | ForEach-Object { $_.Line.Trim() -replace '\s+', ' ' }
+    $copied = [regex]::Match(($sum -join ' '), 'Files : \d+ (\d+)').Groups[1].Value; $bytes = [regex]::Match(($sum -join ' '), 'Bytes : \d+ (\d+)').Groups[1].Value
+    Write-Host ("  {0} {1}: {2} file(s), {3:N2} GB {4} {5}" -f $(if ($Apply) { 'COPIED' } else { 'WOULD COPY' }), $col, $copied, ([double]$bytes / 1GB), $(if ($PublishMedia) { '->' } else { '<-' }), $there)
+  }
+  if ($PullMedia -and $Apply) { Write-Host 'media pulled - the menus show it at the next start of the frontend' }
+  return
+}
 
 if ($Inventory) {
   $games = @(Get-Games)
