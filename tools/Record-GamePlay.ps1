@@ -36,12 +36,23 @@ function Save-Json($obj, [string]$path) { $tmp = "$path.tmp"; [IO.File]::WriteAl
 $cur = Join-Path $playDir 'current.json'
 $key = "_$($Collection):$Item"
 
+# JoyToKey (CoinOPS builds run it for the menus) is closed while a game runs and started again after: the games read
+# the wheel themselves, and JoyToKey's keys on top of them double the inputs (James, 2026-11-26: "close it when playing
+# these as the wheel shows as a keyboard control already")
+$jtkFile = Join-Path $playDir 'joytokey-paused.txt'
 if ($Phase -eq 'start') {
+  $jtk = @(Get-Process JoyToKey -ErrorAction SilentlyContinue)
+  if ($jtk) { try { Set-Content $jtkFile $jtk[0].Path; $jtk | Stop-Process -Force; Write-PlayLog "JoyToKey closed for the game ($($jtk[0].Path))" } catch { } }
   Save-Json ([ordered]@{ key = $key; item = $Item; collection = $Collection; start = (Get-Date).ToString('o') }) $cur
   Write-PlayLog "start $key"
   return
 }
 
+# ------------------------------------------------------------------ end: JoyToKey back for the menus
+if (Test-Path $jtkFile) {
+  $jp = "$(Get-Content $jtkFile -Raw)".Trim(); Remove-Item $jtkFile -ErrorAction SilentlyContinue
+  if ($jp -and (Test-Path $jp) -and -not (Get-Process JoyToKey -ErrorAction SilentlyContinue)) { try { Start-Process $jp -WorkingDirectory (Split-Path $jp) -WindowStyle Minimized; Write-PlayLog 'JoyToKey started again (menus)' } catch { } }
+}
 # ------------------------------------------------------------------ end: play time
 $now = Get-Date
 $start = $null
