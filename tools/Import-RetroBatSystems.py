@@ -177,6 +177,61 @@ def rebuild_db(retrofe):
         return "meta.db rebuild timed out"
 
 
+# James 2026-11-26 (option B): the main menu shows the makers; each opens its systems, then the games. Matched against
+# the Classic Systems names (first rule that fits wins); anything unmatched goes to "Other Systems".
+MAKERS = [
+    ("Nintendo", r"nintendo|super nintendo|\bnes\b|famicom|game ?boy|\bwii\b|wii u|switch|gamecube|\bds\b|3ds"),
+    ("Sega", r"sega|master system|mark iii|megadrive|genesis|\b32x\b|game gear|saturn|dreamcast|sg-1000"),
+    ("Sony", r"playstation|\bpsp\b"),
+    ("Microsoft", r"xbox"),
+    ("Atari", r"atari|jaguar|lynx"),
+    ("NEC", r"pc engine|supergrafx|turbografx"),
+    ("SNK", r"neo ?geo"),
+    ("Computers", r"amiga|commodore|\bc64\b|spectrum|\bmsx\b|amstrad|\bdos\b"),
+    ("Arcade Boards", r"final burn|naomi|atomiswave|model [23]|teknoparrot|cps|daphne|laser"),
+]
+
+
+def maker_menus(cols):
+    """collections\\<Maker>\\menu.txt from Classic Systems\\menu.txt, and the makers on the main menu in place of
+    Classic Systems (Main\\am-extra-menu.txt + Main\\menu.txt). Returns a one-line summary."""
+    mt = os.path.join(cols, "Classic Systems", "menu.txt")
+    if not os.path.exists(mt):
+        return "maker menus: no Classic Systems menu yet"
+    systems = [l.strip() for l in open(mt) if l.strip() and os.path.isdir(os.path.join(cols, l.strip()))]
+    groups = {}
+    for s in systems:
+        name = next((m for m, rx in MAKERS if re.search(rx, s, re.I)), "Other Systems")
+        groups.setdefault(name, []).append(s)
+    order = [m for m, _ in MAKERS if m in groups] + (["Other Systems"] if "Other Systems" in groups else [])
+    for m in list(order):
+        d = os.path.join(cols, m)
+        if os.path.isdir(d) and not os.path.exists(os.path.join(d, MADE_HERE)):
+            print("  %s exists and was not made here - left alone" % m); order.remove(m); continue
+        os.makedirs(d, exist_ok=True)
+        open(os.path.join(d, MADE_HERE), "w").write("menu\n")
+        open(os.path.join(d, "menu.txt"), "w", newline="\r\n").write("\n".join(sorted(groups[m])) + "\n")
+    # the main menu: the makers where Classic Systems was (kept as a collection, just not on the main menu)
+    for fn in ("am-extra-menu.txt", "menu.txt"):
+        p = os.path.join(cols, "Main", fn)
+        lines = [l.strip() for l in open(p)] if os.path.exists(p) else []
+        lines = [l for l in lines if l]
+        if fn == "am-extra-menu.txt" and not lines:
+            lines = ["Classic Systems"]
+        if not lines:
+            continue
+        out = []
+        for l in lines:
+            if l == "Classic Systems":
+                out += [m for m in order if m not in lines]
+            elif l not in out:
+                out.append(l)
+        if "Classic Systems" not in lines:
+            out += [m for m in order if m not in out]
+        open(p, "w", newline="\r\n").write("\n".join(out) + "\n")
+    return "maker menus: " + ", ".join("%s (%d)" % (m, len(groups[m])) for m in order)
+
+
 def safe(s):
     return re.sub(r'[<>:"/\\|?*]', "", s).strip()
 
@@ -191,7 +246,11 @@ def main():
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-db", action="store_true", help="write the meta files but leave meta.db (Rebuild Menus rebuilds it)")
+    ap.add_argument("--menus-only", action="store_true", help="only (re)write the maker menus from Classic Systems")
     a = ap.parse_args()
+    if a.menus_only:
+        print(maker_menus(os.path.join(a.retrofe, "collections")))
+        return
     rb = a.retrobat
     es = os.path.join(rb, "emulationstation", ".emulationstation", "es_systems.cfg")
     launcher = os.path.join(rb, "emulationstation", "emulatorLauncher.exe")
@@ -306,10 +365,8 @@ def main():
             open(mt, "w", newline="\r\n").write("\n".join(sorted(set(keep + made))) + "\n")
             extra = os.path.join(cols, "Main", "am-extra-menu.txt")
             lines = [l.strip() for l in open(extra)] if os.path.exists(extra) else []
-            if "Classic Systems" not in lines:
-                os.makedirs(os.path.dirname(extra), exist_ok=True)
-                open(extra, "w", newline="\r\n").write("\n".join([l for l in lines if l] + ["Classic Systems"]) + "\n")
-            print("Classic Systems menu: %d systems (Main\\am-extra-menu.txt -> main menu at the next Rebuild Menus)" % len(set(keep + made)))
+            print("Classic Systems: %d systems" % len(set(keep + made)))
+            print(maker_menus(cols))
         if made and not a.no_db:
             print(rebuild_db(a.retrofe))
         with open(os.path.join(a.manifest, "systems.json"), "w", encoding="utf-8") as f:

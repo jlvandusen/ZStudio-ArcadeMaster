@@ -93,6 +93,12 @@ class ControllerChooser : Form
     float glide;               // the highlight's position, easing towards sel
     long lastMs;
     public string Picked { get; private set; }
+    // the marquee / touch screen shows a copy (James: "allow marquee buttons on screen to work there"): both copies share
+    // the highlight, a touch or press on either one picks for both. The copy never takes the keyboard focus.
+    public ControllerChooser Peer;
+    public bool Passive;
+    protected override bool ShowWithoutActivation { get { return Passive; } }
+    void Select(int i) { if (i == sel) return; sel = i; if (Peer != null) Peer.sel = i; Play(th.MoveSound); }
 
     public ControllerChooser(string title, List<Dictionary<string, object>> choices, string last, int seconds) : this(title, choices, last, seconds, new ChooserTheme()) { }
 
@@ -107,8 +113,8 @@ class ControllerChooser : Form
         for (int i = 0; i < choices.Count; i++) if (Convert.ToString(choices[i]["id"]) == last) sel = i;
         glide = sel;
         KeyDown += OnKey;
-        MouseClick += delegate (object s, MouseEventArgs e) { for (int i = 0; i < choices.Count; i++) if (TileRect(i).Contains(e.Location)) { sel = i; Done(); } };
-        MouseMove += delegate (object s, MouseEventArgs e) { for (int i = 0; i < choices.Count; i++) if (TileRect(i).Contains(e.Location) && sel != i) { sel = i; Play(th.MoveSound); } };
+        MouseClick += delegate (object s, MouseEventArgs e) { for (int i = 0; i < choices.Count; i++) if (TileRect(i).Contains(e.Location)) { sel = i; if (Peer != null) Peer.sel = i; Done(); } };
+        MouseMove += delegate (object s, MouseEventArgs e) { for (int i = 0; i < choices.Count; i++) if (TileRect(i).Contains(e.Location)) Select(i); };
         frame.Tick += delegate {
             long now = clock.ElapsedMilliseconds; int dt = (int)(now - lastMs); lastMs = now;
             if (Opacity < 1) Opacity = Math.Min(1.0, now / 220.0);           // fade in
@@ -116,7 +122,7 @@ class ControllerChooser : Form
             leftMs -= dt; if (leftMs <= 0) Done();
             Invalidate();
         };
-        Shown += delegate { Activate(); BringToFront(); Focus(); frame.Start(); };
+        Shown += delegate { if (!Passive) { Activate(); BringToFront(); Focus(); } frame.Start(); };
         FormClosed += delegate { frame.Stop(); if (bg != null) bg.Dispose(); };
     }
 
@@ -130,7 +136,7 @@ class ControllerChooser : Form
             case Keys.Right: case Keys.Down: case Keys.NumPad6: case Keys.G: sel = (sel + 1) % choices.Count; break;
             case Keys.ControlKey: case Keys.LControlKey: case Keys.Enter: case Keys.Space: case Keys.D1: case Keys.Escape: Done(); return;
         }
-        if (sel != was) Play(th.MoveSound);
+        if (sel != was) { Play(th.MoveSound); if (Peer != null) Peer.sel = sel; }
         e.Handled = true;
     }
 
@@ -140,7 +146,9 @@ class ControllerChooser : Form
         Picked = Convert.ToString(choices[sel]["id"]);
         Play(th.SelectSound);
         frame.Stop(); Invalidate(); Update();
+        if (Peer != null && Peer.Picked == null) { Peer.Picked = Picked; Peer.sel = sel; Peer.frame.Stop(); Peer.Invalidate(); Peer.Update(); }
         System.Threading.Thread.Sleep(160);   // the pick flashes before the game takes over
+        if (Peer != null && !Peer.IsDisposed) Peer.Close();
         Close();
     }
 
