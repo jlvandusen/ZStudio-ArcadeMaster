@@ -16,14 +16,20 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot
 function J([string]$p) { if (Test-Path -LiteralPath $p) { try { Get-Content -LiteralPath $p -Raw | ConvertFrom-Json } catch { $null } } }
 function Setting([string]$k) { $m = Select-String -Path (Join-Path $Root 'settings.conf') -Pattern "^\s*$([regex]::Escape($k))\s*=\s*(.*)$" -ErrorAction SilentlyContinue | Select-Object -Last 1; if ($m) { $m.Matches[0].Groups[1].Value.Trim() } else { '(default)' } }
-function Count([string]$glob) { @(Get-ChildItem $glob -File -ErrorAction SilentlyContinue).Count }
+# a glob on a drive this cabinet doesn't have (no D: on the pedestal) is 0 - PowerShell 5.1 can't even bind -File there
+function Count([string]$glob) { $root = [IO.Path]::GetPathRoot($glob); if ($root -and -not (Test-Path -LiteralPath $root)) { return 0 }; @(Get-ChildItem $glob -File -ErrorAction SilentlyContinue).Count }
 
+# git is not on PATH everywhere (the pedestal's scheduled task): find it the way Update-Cabinet does
+$gitCmd = (Get-Command git -ErrorAction SilentlyContinue).Source
+foreach ($g in 'C:\Program Files\Git\cmd\git.exe', (Join-Path $env:LOCALAPPDATA 'Programs\Git\cmd\git.exe')) { if (-not $gitCmd -and (Test-Path $g)) { $gitCmd = $g } }
+function git { if ($gitCmd) { & $gitCmd @args } }
 $s = [ordered]@{ machine = $env:COMPUTERNAME; written = (Get-Date).ToString('s'); root = $Root }
 # code and builds
 $s.commit = "$(git -C $repo rev-parse --short HEAD 2>$null)".Trim()
 $s.branch = "$(git -C $repo rev-parse --abbrev-ref HEAD 2>$null)".Trim()
 $s.localEdits = @(git -C $repo status --porcelain --untracked-files=no 2>$null).Count
-$bt = Join-Path $Root 'retrofe\am-build.txt'
+$bt = @((Join-Path $Root 'retrofe\am-build.txt'), (Join-Path $Root 'core\am-build.txt') | Where-Object { Test-Path $_ })[0]   # CoinOPS builds keep RetroFE in core\
+if (-not $bt) { $bt = Join-Path $Root 'retrofe\am-build.txt' }
 $s.retrofeBuild = if (Test-Path $bt) { ((Get-Content $bt | Where-Object { $_ -like 'key=*' }) -replace '^key=', '') } else { 'no am-build.txt' }
 $exe = @((Join-Path $Root 'retrofe\retrofe.exe'), (Join-Path $Root 'core\retrofe.exe') | Where-Object { Test-Path $_ })[0]
 $s.retrofeExe = $exe
