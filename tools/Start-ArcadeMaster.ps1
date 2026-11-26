@@ -227,6 +227,8 @@ if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
 # shadow mode it passes everything on to LEDBlinky, so having it running never changes the lights by itself.
 $amPanel = Join-Path (Split-Path $ManifestDir) 'AmPanel.exe'
 if (Test-Path $amPanel) { try { Start-Process $amPanel -ArgumentList '1' -WorkingDirectory (Split-Path $amPanel); Write-Log 'AmPanel started (tray)' } catch { Write-Log "AmPanel failed to start: $($_.Exception.Message)" } }
+# hold-to-exit (James 2026-11-26): PS on a wheel, Back + Start on a pad, held 5 s, leaves any game the frontend started
+try { if (-not $PrepOnly -and -not $Root.StartsWith($env:TEMP, [StringComparison]::OrdinalIgnoreCase)) { Start-Process powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'Watch-GameExit.ps1')`"", '-ManifestDir', "`"$ManifestDir`"", '-ParentPid', "$PID") -WindowStyle Hidden; Write-Log 'hold-to-exit watcher started (PS / Back + Start, 5 s)' } } catch { Write-Log "hold-to-exit failed to start: $($_.Exception.Message)" }
 # cabinet link (docs/16): similar cabinets browse in unison and start the same game. catalog\cabinet-link.json names
 # the cabinets that have it on; a cabinet whose settings.conf already says linkEvents = ... keeps its own choice
 # (Cabinet Settings > CABINET LINK). The helper ends with this launcher.
