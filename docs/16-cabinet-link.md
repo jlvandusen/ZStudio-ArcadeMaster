@@ -82,7 +82,7 @@ own PC, through a named pipe). "Is that cabinet there?" is judged by its counter
   A game this cabinet does not have: "not on this cabinet".
 - Everything this cabinet does because of the link is published as `remote`; only `user` actions are followed, so two
   cabinets cannot chase each other.
-- Log: `manifestmlink.log`.
+- Log: `manifest\amlink.log`.
 
 **Tested on RACE1 (2026-11-26) against a script acting as a second racing rig (a `DESKTOP-FAKE.json` peer file)**
 - From the main menu it followed into Tools and Racing and onto each selected game (Daytona 3 single / linked by
@@ -149,3 +149,23 @@ whether a hand is on the rim), only on an idle cabinet, and released the moment 
 - **A broken helper file no longer takes the link down.** The helper restarts itself when its script changes; it now
   parses the new file first and keeps running when the file has syntax errors (RACE1's link went off twice that way
   while this was being written).
+
+## Part 5: linked games - Model 3 first (2026-11-27)
+
+James ran Dirt Devils on both racing rigs through the link: both started, but "they don't seem to see each other". Each
+rig ran its own copy; Supermodel's net board was off on both (`Network = 0`), and RACE2's `AddressOut` was its own
+address, left over from the DRIVE copy.
+
+- `tools\Set-SupermodelLink.ps1 -Peer <other cabinet>` switches the net board on towards the other rig (`-Off` back to
+  single play). Dry run unless `-Apply`. The rig whose name sorts first listens on 1970 and sends to 1971, the other
+  the other way round. The other rig is looked up by name at every run, because both get their address from the
+  router (DHCP): RACE1 192.168.1.3, RACE2 192.168.1.4 today.
+- Both rigs run the same Supermodel build (the DRIVE copy's, 2022-03-31). Keep it that way: an update goes on both.
+- Still to do, with James at the cabinets:
+  1. One rig with the net board on, the game played alone: does it start and play normally? If yes, the boot turns
+     the net board on whenever the twin is in `catalog\cabinet-link.json`; if not, it goes on only for a joined start.
+  2. The first networked start raises the Windows firewall prompt for Supermodel on each rig; James allows it
+     (an administrator's change).
+  3. Each linked game is set to 2-machine link play in its own test menu, with the cabinet number (1 = RACE1, 2 = RACE2).
+- Not linked yet: Daytona (Model 2), TeknoParrot games. Each emulator has its own network settings; Model 3 is the
+  first because Supermodel has them in one file.
