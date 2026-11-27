@@ -74,7 +74,7 @@ from system_buttons import PAD
 
 # bezels (James 2026-11-27: "Snes needs bezels"): RetroBat's decoration sets, a png per system and a .info that says
 # where the game's picture goes. Not for arcade lists (vertical games would sit in a sideways frame).
-NO_BEZEL = {"fbneo", "naomi", "atomiswave", "mame", "neogeo"}
+NO_BEZEL = {"fbneo", "naomi", "atomiswave", "mame", "neogeo", "nds", "3ds"}   # + two-screen handhelds: own layouts
 # panel.json key names -> RetroArch key names
 KEYNAME = {"LCONTROL": "ctrl", "RCONTROL": "rctrl", "LALT": "alt", "RALT": "ralt", "LSHIFT": "shift", "RSHIFT": "rshift",
            "SPACE": "space", "BACKSLASH": "backslash", "SLASH": "slash", "ENTER": "enter", "TAB": "tab"}
