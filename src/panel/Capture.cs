@@ -299,7 +299,7 @@ class CaptureForm : Form
         foreach (var d in new[] { "UP", "DOWN", "LEFT", "RIGHT" }) { var hd = hit("TRON_" + d); if (hd != null) tdir[d] = hd.Key; }
         if (tt != null || tp != null || tdir.Count > 0)
         {
-            var ts = new Dictionary<string, object> { { "trigger", tt != null ? tt.Key : null }, { "top", tp != null ? tp.Key : null }, { "device", (tt ?? tp ?? hits.First(x => x.Step.StartsWith("TRON_"))).Device } };
+            var ts = new Dictionary<string, object> { { "trigger", tt != null ? tt.Key : null }, { "top", tp != null ? tp.Key : null }, { "device", (tt ?? hits.FirstOrDefault(x => x.Step.StartsWith("TRON_") && x.Step != "TRON_TOP") ?? tp).Device } };   // the stick itself, not a stand-in top button
             if (tdir.Count > 0) ts["directions"] = tdir;   // what each push the player means really sends (rotated mounts)
             // what this run did not capture stays as it was (a Tron-only run that skipped the trigger lost it, 2026-11-27)
             var old = panel.ContainsKey("tronStick") ? panel["tronStick"] as Dictionary<string, object> : null;
