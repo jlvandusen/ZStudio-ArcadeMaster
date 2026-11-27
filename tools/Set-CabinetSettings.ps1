@@ -162,6 +162,11 @@ $S.speech = @{ group = 'LIGHTS AND DECK'; label = 'ANNOUNCE THE GAME'; detail = 
     $cfg = [ordered]@{}; if (Test-Path $amCfg) { foreach ($p in (Get-Content $amCfg -Raw | ConvertFrom-Json).PSObject.Properties) { $cfg[$p.Name] = $p.Value } }
     $cfg['Speech'] = $v; $cfg | ConvertTo-Json | Set-Content $amCfg -Encoding ascii
     try { $c = New-Object IO.Pipes.NamedPipeClientStream('.', 'ArcadeMaster.Panel', [IO.Pipes.PipeDirection]::InOut); $c.Connect(500); $w = New-Object IO.StreamWriter($c); $w.AutoFlush = $true; $w.WriteLine("{`"cmd`":`"attract`",`"speech`":`"$v`",`"noreply`":true}"); $c.Dispose(); 'AmPanel updated' } catch { 'saved - AmPanel takes it at its next start' } } }
+# the Pixelcade LED marquee (tools\Set-Marquee.ps1): on = AmPanel finds Pixelcade and drives it (automatic at every boot);
+# off = AmPanel leaves it alone. Only matters with the ArcadeMaster engine - with LEDBlinky, LEDBlinky drives it.
+$S.marquee = @{ group = 'LIGHTS AND DECK'; label = 'LED MARQUEE (PIXELCADE)'; detail = 'The Pixelcade marquee shows the selected game; found automatically when one is connected'; kind = 'switch'; default = $true
+  get = { $v = $null; if (Test-Path $amCfg) { $v = (Get-Content $amCfg -Raw | ConvertFrom-Json).Marquee }; "$v" -ne 'off' }
+  set = { param($on) (& (Join-Path $PSScriptRoot 'Set-Marquee.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -On:([bool]$on) -Off:(-not $on) 6>&1 | Out-String).Trim() } }
 $S.ledCloseOnExit = @{ group = 'LIGHTS AND DECK'; label = 'LIGHTS OFF WHEN THE ARCADE CLOSES'; detail = 'LEDBlinky is closed together with the frontend'; kind = 'switch'; default = $false
   get = { IsYes (Conf 'LEDBlinkyCloseOnExit') }
   set = { param($on) SetConf 'LEDBlinkyCloseOnExit' $(if ($on) { 'yes' } else { 'no' }); '' } }

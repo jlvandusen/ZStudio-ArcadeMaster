@@ -549,7 +549,10 @@ if (-not (Test-Path $tools) -and $fix -and (Test-Path (Join-Path $RetroFE 'colle
 # button lights: a copied build still points LEDBlinky at the build it was copied from (often the live frontend, which
 # LEDBlinky then writes to). When the build has its own LEDBlinky folder, use it, and point its Settings.ini there too.
 $lbDir = Get-Setting 'LEDBlinkyDirectory'; $ownLb = Join-Path $RetroFE 'LEDBlinky'
-if ($fix -and $lbDir -and (Test-Path (Join-Path $ownLb 'LEDBlinky.exe')) -and ([IO.Path]::GetFullPath($lbDir).TrimEnd('\') -ne [IO.Path]::GetFullPath($ownLb).TrimEnd('\'))) {
+# ...but never when it points at AmPanel's shim (Set-ButtonLights -Engine ArcadeMaster): that is the cut-over, not a
+# leftover - "fixing" it silently gave the events back to LEDBlinky and took the lights and marquee from AmPanel
+$toShim = $lbDir -and ((Split-Path ([IO.Path]::GetFullPath($lbDir).TrimEnd('\')) -Leaf) -ieq 'ampanel-shim')
+if ($fix -and $lbDir -and -not $toShim -and (Test-Path (Join-Path $ownLb 'LEDBlinky.exe')) -and ([IO.Path]::GetFullPath($lbDir).TrimEnd('\') -ne [IO.Path]::GetFullPath($ownLb).TrimEnd('\'))) {
   $oldRoot = Split-Path ([IO.Path]::GetFullPath($lbDir).TrimEnd('\'))
   Set-Setting 'LEDBlinkyDirectory' $ownLb
   $ini = Join-Path $ownLb 'Settings.ini'
