@@ -445,6 +445,15 @@ def main():
                 pcsx2_pad(pick[0])
             if sysname == "xbox" and not a.dry_run:
                 xemu_pad(pick[0])
+            if sysname == "xbox360" and not a.dry_run:
+                # Xenia's one-time "DISCLAIMER ... open the quickstart guide?" box stops the first game on a new PC
+                # (James 2026-11-27); Xenia marks it seen in HKCU\Software\Xenia XEFLAGS = 1
+                try:
+                    import winreg
+                    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r"Software\Xenia") as k:
+                        winreg.SetValueEx(k, "XEFLAGS", 0, winreg.REG_DWORD, 1)
+                except OSError:
+                    pass
             args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{w}", str(w)).replace("{h}", str(h))
             conf = ["executable = %s" % pick[0], "arguments = %s" % args, "currentDirectory = %s" % os.path.dirname(pick[0])]
             how = os.path.basename(pick[0])
