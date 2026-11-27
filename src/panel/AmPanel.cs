@@ -1030,6 +1030,8 @@ static class AmPanel
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
+        if (toolsDir != null && retroFERoot != null)
+            menu.Items.Add("Set up this PC...", null, delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });   // first run (SetupWizard.cs)
         if (leds != null)
             menu.Items.Add("Buttons (which light is which)...", null, delegate { OpenButtons(); });
         if (leds != null)
