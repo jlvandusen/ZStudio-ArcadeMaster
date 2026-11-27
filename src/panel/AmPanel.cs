@@ -375,6 +375,10 @@ static class AmPanel
 
     static void ShowLoadingLater(string game)
     {
+        // with the frontend doing the hand-off (gameHandOff = true) the theme's own launch screen is the loading card
+        // (layout onGameEnter: the game's fan art, logo and controls card until the game is up) - AmPanel's card and
+        // its KeepGameOnMainScreen both step aside, docs/21 phase 2
+        if (FrontendHandsOff()) return;
         if (loadingOff || ui == null || string.IsNullOrEmpty(game) || game.StartsWith("__")) return;
         if (State.ContainsKey("emulator") && Convert.ToString(State["emulator"]) == "am_tools") return;   // Tools pages draw their own
         int seq = System.Threading.Interlocked.Increment(ref loadingSeq);
