@@ -98,6 +98,17 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
     - 6 buttons per player in 2 rows of 3, assumed; the input capture checks it.
   - **Lights and marquee:** `Set-ButtonLights -Engine ArcadeMaster` with `"Marquee": "pixelcade"`. LEDBlinky is no longer started.
   - **Boot:** `D:\ArcadeMaster\ArcadeMaster.exe` from the user's Startup folder, plus the "ArcadeMaster Update" task.
+- **Panel Test (AmPanel capture, 2026-11-27): what each control really sends,** from which device:
+  - **P1:** stick Up / Down / Left / Right; B1-B6 = L-Ctrl, L-Alt, Space, L-Shift, Z, X; Start 1, Coin 5. All from the **Mini-PAC (D209:0440)**.
+  - **P2:** stick R / F / D / G; B1-B6 = A, S, Q, W, I, K; Start 2, Coin 6. Also the Mini-PAC. Both players match the standard I-PAC layout.
+  - **Trackball:** the Mini-PAC's own mouse channel (D209:0440), X + Y.
+  - **Spinner:** a separate Ultimarc device, **D209:15A2** (X only).
+  - **Tron stick:** the trigger is **button 13 on the Xinmotek controller (16C0:05E1)**. The top button sends **J on the Mini-PAC** (P2 button 7 on the I-PAC layout). So the Tron stick is NOT on the Mini-PAC's P1 inputs, as first assumed.
+  - **Guns:** each trigger = left mouse button, from **AimTrak 1 (D209:1601)** and **AimTrak 2 (D209:1602)**.
+  - **Foot switches:** the **1A86:E026 encoder** sends **A**, **B** and **C**.
+    - **Clash:** A is also P2 button 1, and C is also a Mini-PAC button (P1 button 7). Most emulators can't tell keyboards apart.
+    - The foot-switch encoder should send keys no other control sends, as James planned (docs/20, "use keyboard keys on keys no other control sends").
+  - The map is in `<manifest>\panel.json`; every step, with its device, in `input-capture.json`.
 - **Devices found (Detect Controllers):**
   - 2 AimTrak guns (D209:1601 / 1602).
   - A **Mayflash DolphinBar** (057E:0306, 4 Wii Remote slots: James wants Wii Remotes connected as needed, a board job).

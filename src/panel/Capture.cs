@@ -61,6 +61,7 @@ class CaptureForm : Form
     readonly Stopwatch stepClock = Stopwatch.StartNew();
     readonly int[] joyButtons = new int[16]; readonly int[,] joyAxes = new int[16, 2];
     int at; string flash, flashDevice; long flashAt = -9999;
+    int rawCount;   // WM_INPUT messages seen (in the "skipped" log lines: 0 means nothing reached the capture)
     public bool Saved;
 
     public CaptureForm(string manifestDir, string toolsDir, int buttons, Action<string> log)
@@ -101,7 +102,7 @@ class CaptureForm : Form
 
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == WM_INPUT) try { OnRaw(m.LParam); } catch (Exception e) { log("capture: " + e.Message); }
+        if (m.Msg == WM_INPUT) { rawCount++; try { OnRaw(m.LParam); } catch (Exception e) { log("capture: " + e.Message); } }
         base.WndProc(ref m);
     }
 
@@ -112,8 +113,9 @@ class CaptureForm : Form
         IntPtr buf = Marshal.AllocHGlobal((int)size);
         try
         {
-            if (GetRawInputData(h, RID_INPUT, buf, ref size, hs) != size) return;
+            uint got = GetRawInputData(h, RID_INPUT, buf, ref size, hs);
             int type = Marshal.ReadInt32(buf); IntPtr dev = Marshal.ReadIntPtr(buf, 8);
+            if (got != size) return;
             IntPtr body = buf + (int)hs;
             string name = Name(dev), usb = Usb(name), label = DeviceLabel(usb, type == 1 ? "keyboard" : "mouse");
             if (type == 1)   // keyboard: MakeCode, Flags, Reserved, VKey, Message, ExtraInformation
@@ -122,14 +124,14 @@ class CaptureForm : Form
                 bool up = (flags & 1) != 0, e0 = (flags & 2) != 0;
                 if (up || vkey == 0xFF) return;
                 string key = KeyName(vkey, make, e0);
-                bool isPanel = usb != null && usb.StartsWith("D209:", StringComparison.OrdinalIgnoreCase);
-                // the keyboard (not the panel): Esc stops and saves, F2 skips a step
-                if (!isPanel && key == "ESC") { Finish(); return; }
-                if (!isPanel && key == "F2") { Next(null); return; }
+                // a PC keyboard is never a control: someone typing filled the 2P stand-up's map with D, O, I, T (2026-11-27).
+                // Its Esc stops and saves, F2 skips a step; its other keys are ignored.
+                if (PcDevice(usb)) { if (key == "ESC") Finish(); else if (key == "F2") Next(null); return; }
                 Take("key " + key, key, label, usb, "key");
             }
             else if (type == 0)   // mouse: Flags(2) pad(2) ButtonFlags(2) ButtonData(2) RawButtons(4) LastX(4) LastY(4)
             {
+                if (PcDevice(usb)) return;   // the desk mouse is never a trackball, spinner or gun
                 ushort mflags = (ushort)Marshal.ReadInt16(body, 0), bflags = (ushort)Marshal.ReadInt16(body, 4);
                 int dx = Marshal.ReadInt32(body, 12), dy = Marshal.ReadInt32(body, 16);
                 int btn = (bflags & 1) != 0 ? 1 : (bflags & 4) != 0 ? 2 : (bflags & 0x10) != 0 ? 3 : (bflags & 0x40) != 0 ? 4 : (bflags & 0x100) != 0 ? 5 : 0;
@@ -151,6 +153,12 @@ class CaptureForm : Form
         return devName[dev] = sb.ToString();
     }
     static string Usb(string devicePath) { var m = Regex.Match(devicePath ?? "", "VID_([0-9A-Fa-f]{4})&PID_([0-9A-Fa-f]{4})"); return m.Success ? (m.Groups[1].Value + ":" + m.Groups[2].Value).ToUpperInvariant() : null; }
+
+    // an ordinary PC keyboard or mouse: no USB id (PS/2, laptop), or a keyboard / mouse maker's vendor id. Light guns and
+    // arcade encoders are never in this list (Ultimarc D209, Xin-Mo / Sinden 16C0, 1A86 encoders, GUN4IR 2341 ...).
+    static readonly HashSet<string> PcVendors = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        "413C", "046D", "045E", "04F2", "0461", "17EF", "03F0", "05AC", "1532", "1B1C", "258A", "1C4F", "04CA", "0458", "093A", "04D9", "24AE", "3434", "320F", "1A2C", "0C45", "1EA7", "068E" };
+    static bool PcDevice(string usb) { return usb == null || (Guns.Kind(usb, null) == null && PcVendors.Contains(usb.Substring(0, 4))); }
 
     // what this cabinet's devices are called (USB ids seen on the cabinets; anything else by its id)
     static string DeviceLabel(string usb, string kind)
@@ -232,7 +240,7 @@ class CaptureForm : Form
 
     void Next(string took)
     {
-        if (took == null && at < steps.Count) log("capture: " + steps[at].Id + " skipped");
+        if (took == null && at < steps.Count) log("capture: " + steps[at].Id + " skipped (raw input messages so far: " + rawCount + ")");
         at++; stepClock.Restart(); moved.Clear();
         if (at >= steps.Count) Finish();
     }
