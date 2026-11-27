@@ -38,3 +38,6 @@ __pycache__/
 dist/panel-rules.json
 dist/exit-rules.json
 dist/light-guns.json
+
+# release builds (tools/Build-Release.ps1)
+dist/release/

@@ -300,6 +300,7 @@ static class AmPanel
     // a SEARCH pill on the touch screen while the menus are up; it opens the search page. Needs RetroFE's cabinet link
     // (settings.conf linkEvents = yes) to jump, and <manifest>\search-index.json (tools/New-SearchIndex.py).
     static GameLink gameLink;
+    static bool pendingSetup;   // "AmPanel.exe setup" before the tray window existed
     // the selected game's own list (a merged list's items keep theirs), for its system's button lights
     static string GameList() { return gameLink == null ? null : (gameLink.SelectedCollection ?? gameLink.Menu); }
     static SearchIndex searchIndex;
@@ -509,6 +510,13 @@ static class AmPanel
                 case "15": if (arg1 != null) State["selected"] = arg1; what = "light game controls"; break;
                 case "16": State["paused"] = true; what = "game pause"; break;
                 case "17": State["paused"] = false; what = "game unpause"; break;
+                // "AmPanel.exe setup": the release's Install.ps1 ends by opening Set up this PC (SetupWizard.cs)
+                case "setup":
+                    what = "setup wizard";
+                    if (ui != null && toolsDir != null && retroFERoot != null)
+                        ui.BeginInvoke((MethodInvoker)delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });
+                    else pendingSetup = true;   // a fresh start: the tray window comes later (RunTray)
+                    break;
                 default:
                     if (c.EndsWith(".lwax", StringComparison.OrdinalIgnoreCase)) { State["animation"] = c; what = "animation start"; }
                     // a main-menu entry (EXIT, CORE's cmd) is not a game: RetroFE "starts" it from the Main collection. As a
@@ -953,6 +961,8 @@ static class AmPanel
             catch (Exception e) { Log("reactive: not started - " + e.Message); }
         }
         ui = new Control(); ui.CreateControl(); var unused = ui.Handle;   // the tray thread's window: Invoke target
+        if (pendingSetup && toolsDir != null && retroFERoot != null)
+            ui.BeginInvoke((MethodInvoker)delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });
         StartSearch();
         if (!exitKey.Equals("none", StringComparison.OrdinalIgnoreCase))
         {
