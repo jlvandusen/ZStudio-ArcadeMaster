@@ -1,0 +1,5 @@
+# The frontend every cabinet builds (docs/21-own-frontend.md). Update-Cabinet.ps1 builds this exact commit of our
+# RetroFE fork; while this file exists, retrofe\patches\ is history only. Move the commit here (by PR) to ship a
+# frontend change to every cabinet.
+repo=https://github.com/jlvandusen/ZStudio-retrofe.git
+commit=5e4a57223a37f2dbc90088c8da98ca5fc8fe5f62
