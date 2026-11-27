@@ -45,6 +45,35 @@ $present = @($cab.devices | Where-Object { $_.type -ne 'Nintendo' } | ForEach-Ob
 $wheelName = ($cab.devices | Where-Object { $_.role -eq 'wheel' -or $_.type -eq 'Driving' } | Select-Object -First 1).name
 $stickName = ($cab.devices | Where-Object { $_.type -match 'Flight|Joystick' -and $_.role -notmatch 'wheel|handbrake' } | Select-Object -First 1).name
 
+# ---- no real Wii Remote: the panel plays as the remote + nunchuk (James 2026-11-27, 2P stand-up: "mapping nunchuck for
+# 8 way and buttons ... along with the standup standard buttons and joysticks"). Built from the button capture
+# (manifest\panel.json): P1 stick = nunchuk stick, buttons 1-6 = B A Z C 1 2, START / COIN = + / -, the P2 stick =
+# the remote's d-pad, the trackball (the mouse) = the pointer, HOME = TAB, shake = the Tron stick's second button (A2)
+# when captured. Only on a cabinet without a wheel: a wheel cabinet's emulated remote stays WheelMap's.
+$panelMap = $null
+$pj = Join-Path $ManifestDir 'panel.json'
+if (-not $cab.capabilities.wheel -and (Test-Path $pj)) {
+  try {
+    $pn = Get-Content $pj -Raw | ConvertFrom-Json
+    $p1 = @($pn.players)[0]; $p2 = @($pn.players)[1]
+    $dk = @{ LCONTROL = 'LCONTROL'; RCONTROL = 'RCONTROL'; LALT = 'LMENU'; RALT = 'RMENU'; LSHIFT = 'LSHIFT'; RSHIFT = 'RSHIFT'; ENTER = 'RETURN'; ESC = 'ESCAPE' }
+    function DKey($k) { if (-not $k) { return $null }; $k = "$k".ToUpper() -replace '^KEYCODE_', ''; if ($dk.ContainsKey($k)) { $k = $dk[$k] }; '`' + $k + '`' }
+    if ($p1 -and $p1.keys) {
+      $panelMap = [ordered]@{
+        'Device' = 'DInput/0/Keyboard Mouse'; 'Extension' = 'Nunchuk'
+        'Buttons/B' = DKey $p1.keys.P1B1; 'Buttons/A' = DKey $p1.keys.P1B2; 'Nunchuk/Buttons/Z' = DKey $p1.keys.P1B3; 'Nunchuk/Buttons/C' = DKey $p1.keys.P1B4
+        'Buttons/1' = DKey $p1.keys.P1B5; 'Buttons/2' = DKey $p1.keys.P1B6; 'Buttons/+' = DKey $p1.keys.P1START; 'Buttons/-' = DKey $p1.keys.P1COIN; 'Buttons/Home' = '`TAB`'
+        'Nunchuk/Stick/Up' = DKey $p1.stick.UP; 'Nunchuk/Stick/Down' = DKey $p1.stick.DOWN; 'Nunchuk/Stick/Left' = DKey $p1.stick.LEFT; 'Nunchuk/Stick/Right' = DKey $p1.stick.RIGHT
+        'IR/Up' = '`Cursor Y-`'; 'IR/Down' = '`Cursor Y+`'; 'IR/Left' = '`Cursor X-`'; 'IR/Right' = '`Cursor X+`'
+      }
+      if ($p2 -and $p2.stick) { $panelMap['D-Pad/Up'] = DKey $p2.stick.UP; $panelMap['D-Pad/Down'] = DKey $p2.stick.DOWN; $panelMap['D-Pad/Left'] = DKey $p2.stick.LEFT; $panelMap['D-Pad/Right'] = DKey $p2.stick.RIGHT }
+      if ($pn.tronStick -and "$($pn.tronStick.secondButton)" -match '^([A-Z0-9]+)\b') { $sk = DKey $Matches[1]; foreach ($a in 'X', 'Y', 'Z') { $panelMap["Shake/$a"] = $sk } }
+      foreach ($k in @($panelMap.Keys)) { if (-not $panelMap[$k]) { $panelMap.Remove($k) } }
+      foreach ($d in 'Up', 'Down', 'Left', 'Right') { $panelMap["IMUAccelerometer/$d"] = '' }   # the old tilt sat on the arrows = the nunchuk stick now
+    }
+  } catch { Write-Warning "panel.json not read for the Wii Remote mapping: $_" }
+}
+
 function Get-Ini([string]$p) { $l = New-Object Collections.Generic.List[string]; if (Test-Path $p) { foreach ($x in Get-Content $p) { $l.Add($x) } }; return , $l }   # , = return the List itself (not unrolled)
 function Get-IniValue($lines, [string]$sec, [string]$key) {
   $in = $false; foreach ($l in $lines) { if ($l -match '^\s*\[(.+)\]') { $in = $Matches[1] -eq $sec; continue }; if ($in -and $l -match "^\s*$([regex]::Escape($key))\s*=\s*(.*)$") { return $Matches[1].Trim() } }; return $null
@@ -74,6 +103,14 @@ foreach ($u in $DolphinUser) {
     } elseif ($state.wiimoteSource.ContainsKey($sec)) {
       Set-IniValue $w $sec 'Source' $state.wiimoteSource[$sec]; $changes += "$sec -> restored Source $($state.wiimoteSource[$sec])"; $state.wiimoteSource.Remove($sec)
     }
+  }
+  if ($panelMap) {
+    $was = @(); foreach ($k in $panelMap.Keys) { $was += "$k=$(Get-IniValue $w 'Wiimote1' $k)" }
+    if (-not $state.PSObject.Properties['panelBefore']) { $state | Add-Member -NotePropertyName panelBefore -NotePropertyValue ($was -join "`n") }
+    $diff = $false; foreach ($k in $panelMap.Keys) { if ((Get-IniValue $w 'Wiimote1' $k) -ne $panelMap[$k]) { Set-IniValue $w 'Wiimote1' $k $panelMap[$k]; $diff = $true } }
+    if ($diff) { $changes += 'Wii Remote 1 without a real remote: the panel (nunchuk = P1 stick, B A Z C 1 2 = buttons 1-6, pointer = trackball)' }
+    $pd = Join-Path $cfg 'Profiles\Wiimote'; New-Item -ItemType Directory -Force $pd | Out-Null
+    Set-Content (Join-Path $pd 'ArcadeMaster Panel Nunchuk.ini') (@('[Profile]') + @($panelMap.Keys | ForEach-Object { "$_ = $($panelMap[$_])" })) -Encoding ASCII
   }
   $bcur = Get-IniValue $w 'BalanceBoard' 'Source'
   if ($board -and $bcur -ne '2') { if ($null -eq $state.boardSource) { $state.boardSource = $(if ($bcur) { $bcur } else { '0' }) }; Set-IniValue $w 'BalanceBoard' 'Source' '2'; $changes += 'Balance Board -> Real' }
