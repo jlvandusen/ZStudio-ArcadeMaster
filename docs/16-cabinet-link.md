@@ -110,3 +110,20 @@ The G29's motor can turn the rim: RetroFE's frontend force feedback (`Control/Ha
 spring, and its constant-force "clicks" stepped the rim round (which is why they are off by default). Moving the
 spring's centre makes the wheel go to an angle and hold it. Limits: gentle force, a small angle (it cannot know
 whether a hand is on the rim), only on an idle cabinet, and released the moment somebody touches a control.
+
+## 2026-11-27: following by name, attract sync, stand-up cabinets
+
+- **Following stopped after one game.** A cabinet names the game and the list it took it from. RACE1 keeps some
+  TeknoParrot games in a list RACE2 does not have, so RACE2 went to the first game and then stood still. The helper now
+  tries twice with the list name, then by the game's name alone. After six tries the game is not on that cabinet and
+  it waits for the next one.
+- **Attract mode shows the link.** With nobody at any cabinet each one rolls its own games. Every two minutes, for 14
+  seconds, linked cabinets show the same game and a card at the top of the screen says so: "CABINET LINK - RACE1 +
+  RACE2 - pick a game here and the other cabinet follows - start it and it joins". The window comes from the clock, so
+  the cabinets are in it together; the cabinet whose name sorts first shows its game and the others go to it.
+  `-ShowLinkEverySec 0` switches it off.
+- **Stand-up cabinets link too.** The 4-player pedestal and the 2-player stand-up count as one kind ("arcade"), like a
+  racing rig and a driving-sim rig count as "racing". `catalog/cabinet-link.json` now has all four cabinets.
+- **Tested on RACE1** against a stand-in second cabinet (a `DESKTOP-FAKE.json` file on the share): it followed a game
+  named from a list RACE1 does not have, and in the attract window it went to the stand-in's game and showed the card.
+  **Not tested yet:** two real cabinets with the new helper, and the pedestal with the 2-player cabinet.

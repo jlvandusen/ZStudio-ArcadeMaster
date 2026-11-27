@@ -23,6 +23,8 @@ param(
   [string]$HostName = $env:COMPUTERNAME,      # tests: another name
   [int]$IdleSec = 30,
   [int]$CountdownSec = 5,
+  [int]$ShowLinkEverySec = 120,               # attract: every this many seconds the linked cabinets show the same game and say so (0 = off)
+  [int]$ShowLinkSec = 14,                     # ... for this long
   [int]$AttractEnterSec = 60,                 # idle this long on the main menu: go into the cabinet's game list (0 = off)
   [int]$EventPort = 47801,
   [int]$CommandPort = 47802,
@@ -44,6 +46,10 @@ try { $mf = Join-Path $ManifestDir 'cabinet-mode.json'; if (Test-Path $mf) { $ty
 $top = 'Main'; try { $fc = Select-String -LiteralPath (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*firstCollection\s*=\s*(\S+)' | Select-Object -Last 1; if ($fc) { $top = $fc.Matches[0].Groups[1].Value } } catch { }
 # the game list attract mode belongs in: the cabinet's own mode collection, when the main menu has it
 $attractCol = @{ racing = 'Racing'; simulation = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup = 'Arcade'; pedestal = 'Arcade' }[$type]
+# cabinets that play the same games count as one kind for the link: a 4-player pedestal and a 2-player stand-up are both
+# stand-up arcades (James 2026-11-27: "for pedestal and 2p they would do the same thing since they are standup arcades");
+# a racing rig and a driving-sim rig are both racing. The kind is what is published and compared from here on.
+$kinds = @{ pedestal = 'arcade'; standup = 'arcade'; arcade = 'arcade'; simulation = 'racing' }; if ($kinds.ContainsKey($type)) { $type = $kinds[$type] }
 $menuTxt = Join-Path $RetroFE 'collections\Main\menu.txt'; if ($attractCol -and (Test-Path $menuTxt) -and -not (@(Get-Content $menuTxt) -contains $attractCol)) { $attractCol = $null }; $attractSaid = $false; $helperStart = Get-Date   # RetroFE's idle clock does not start at 0 at boot: the helper counts from its own start too
 
 # ---- the countdown card: on top of RetroFE, never takes the keyboard / wheel away from it
@@ -68,11 +74,13 @@ public class AmLinkCard : Form {
 }
 '@
 $card = $null
-function Show-Card([string]$a, [string]$b, [string]$c) {
+function Show-Card([string]$a, [string]$b, [string]$c, [switch]$AtTop) {
   if (-not $script:card) {
     $script:card = New-Object AmLinkCard; $s = [Windows.Forms.Screen]::PrimaryScreen.Bounds
     $script:card.Size = New-Object Drawing.Size(1100, 210); $script:card.Location = New-Object Drawing.Point(($s.X + ($s.Width - 1100) / 2), ($s.Y + $s.Height - 330))
   }
+  # the countdown sits low on the screen; the "linked" note sits at the top, clear of the game's controls card
+  $s = [Windows.Forms.Screen]::PrimaryScreen.Bounds; $y = if ($AtTop) { $s.Y + 30 } else { $s.Y + $s.Height - 330 }; if ($script:card.Top -ne $y) { $script:card.Top = $y }
   $script:card.Line1 = $a; $script:card.Line2 = $b; $script:card.Line3 = $c
   if (-not $script:card.Visible) { $script:card.Show() }
   $script:card.Invalidate()
@@ -105,13 +113,24 @@ function Send-Cmd([string]$c, [double]$minGapSec = 0.6) {
   $b = [Text.Encoding]::UTF8.GetBytes($c); [void]$tx.Send($b, $b.Length, '127.0.0.1', $CommandPort)
   $script:lastCmd = $c; $script:lastCmdAt = $now
 }
-$me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idleMs = 9e11; menu = ''; playlist = ''; item = ''; col = ''; kind = ''; by = ''; selSeq = 0
+# Go to the same game here. The other cabinet names the game AND the list it took it from (TeknoParrot,
+# AM_TP_Emulators_TeknoParrot ...); the same game can sit in a differently named list on this cabinet (RACE2 stopped
+# following RACE1 after one game, 2026-11-27). So: twice with the list name, then by the game's name alone; after six
+# tries the game is not here and this cabinet stays where it is until the other one moves on.
+$gotoKey = ''; $gotoTries = 0
+function Send-Goto([string]$item, [string]$col, [double]$gap = 0.6) {
+  $k = "$item|$col"; if ($k -ne $script:gotoKey) { $script:gotoKey = $k; $script:gotoTries = 0 }
+  if ($script:gotoTries -ge 6) { return }
+  $before = $script:lastCmdAt
+  if ($col -and $script:gotoTries -lt 2) { Send-Cmd "goto`t$item`t$col" $gap } else { Send-Cmd "goto`t$item`t" $gap; if ($script:lastCmdAt -eq $before) { Send-Cmd "goto`t$item" $gap } }
+  if ($script:lastCmdAt -ne $before) { $script:gotoTries++ }
+}$me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idleMs = 9e11; menu = ''; playlist = ''; item = ''; col = ''; kind = ''; by = ''; selSeq = 0
                   launchSeq = 0; launchMenu = ''; launchItem = ''; launchCol = ''; launchBy = '' }
 $lastHello = [datetime]::MinValue; $lastUser = [datetime]::MinValue; $missItem = ''; $dirty = $true; $lastWrite = [datetime]::MinValue
 $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
 $noFollow = 'Tools', 'SETTINGS', 'Controller'      # menus that are not game lists: never followed into, nothing in them is joined
-$count = $null      # the countdown / join in progress: @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
+$linkShown = $false   # the "cabinets are linked" card is up (attract): @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
 Say "cabinet link started: $HostName ($type), share $Share, idle $IdleSec s, countdown $CountdownSec s"
 $startedAt = Get-Date; $lastParentCheck = Get-Date; $lastSelfCheck = Get-Date; $selfStamp = (Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc; $restartSelf = $false; $selfArgs = @($PSBoundParameters.GetEnumerator() | ForEach-Object { "-$($_.Key)"; if ($_.Value -isnot [switch]) { '"' + [string]$_.Value + '"' } })
 
@@ -178,7 +197,7 @@ try {
         if ($missItem -eq $count.item) { Say "$($count.item) is not on this cabinet"; Show-Card "$(Get-Cab $count.from) is playing" $count.title 'not on this cabinet'; $count.phase = 'note'; $count.until = $now.AddSeconds(3) }
         elseif (-not $alive -or $now -ge $count.until) { Hide-Card; $count = $null }                    # the game is up (no hello), or it took too long
         elseif ($me.menu -ne $count.menu) { if ($me.menu -eq $top) { if ($me.item -ne $count.menu) { Send-Cmd "goto`t$($count.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
-        elseif ($me.item -ne $count.item -or ($count.col -and $me.col -ne $count.col)) { Send-Cmd "goto`t$($count.item)`t$($count.col)" }
+        elseif ($me.item -ne $count.item) { Send-Goto $count.item $count.col }
         else {
           # the same game is selected here: open it ONCE and finish (a game that quits at once must not be started again)
           $b = [Text.Encoding]::UTF8.GetBytes('open'); [void]$tx.Send($b, $b.Length, '127.0.0.1', $CommandPort); $lastCmd = 'open'; $lastCmdAt = $now
@@ -197,9 +216,21 @@ try {
       }
       if ($lead -and $lead.item -and ($noFollow -notcontains [string]$lead.menu)) {       # somebody in Tools is doing maintenance: stay put
         if ($me.menu -ne $lead.menu) { if ($me.menu -eq $top) { if ($me.item -ne $lead.menu) { Send-Cmd "goto`t$($lead.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
-        elseif ($me.item -ne $lead.item -or ($lead.col -and $me.col -ne $lead.col)) { Send-Cmd "goto`t$($lead.item)`t$($lead.col)" 0.25 }
+        elseif ($me.item -ne $lead.item) { Send-Goto $lead.item $lead.col 0.25 }
       }
-      # 6. attract on a game list, not on the main menu (James 2026-11-26: the race cab "always misses attract mode" - on
+      # 5b. nobody anywhere (attract mode): each cabinet rolls its own games, but for $ShowLinkSec seconds every
+      #     $ShowLinkEverySec they show the SAME game and a card says they are linked (James 2026-11-27: "in attract they
+      #     can go their separate ways but sometimes sync so it shows it. Then advertise that they can talk to each
+      #     other"). The window comes from the clock, so every cabinet is in it at the same moment; the cabinet whose
+      #     name sorts first shows its game, the others go to it.
+      elseif ($ShowLinkEverySec -gt 0 -and ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() % $ShowLinkEverySec) -lt $ShowLinkSec -and $me.menu -ne $top -and ($noFollow -notcontains [string]$me.menu) -and
+              @($peers.Values | Where-Object { $_.data.type -eq $type -and $_.data.alive -and ($now - $_.seen).TotalSeconds -le 5 -and $_.data.menu -and $_.data.menu -ne $top -and ($noFollow -notcontains [string]$_.data.menu) }).Count) {
+        $mates = @($peers.Values | Where-Object { $_.data.type -eq $type -and $_.data.alive -and ($now - $_.seen).TotalSeconds -le 5 -and $_.data.menu -and $_.data.menu -ne $top -and ($noFollow -notcontains [string]$_.data.menu) } | ForEach-Object { $_.data })
+        $first = @(@($HostName) + @($mates | ForEach-Object { [string]$_.host }) | Sort-Object)[0]
+        if ($first -ne $HostName) { $ld = $mates | Where-Object { $_.host -eq $first } | Select-Object -First 1; if ($ld -and $ld.item -and $me.menu -eq [string]$ld.menu -and $me.item -ne [string]$ld.item) { Send-Goto ([string]$ld.item) ([string]$ld.col) 0.5 } }
+        Show-Card 'CABINET LINK' ("{0}  +  {1}" -f (Get-Cab $HostName), ((@($mates | ForEach-Object { Get-Cab ([string]$_.host) }) | Sort-Object) -join '  +  ')) 'pick a game here and the other cabinet follows  -  start it and it joins' -AtTop
+        if (-not $linkShown) { $linkShown = $true; Say "attract: showing the link with $((@($mates | ForEach-Object { $_.host })) -join ', ')" }
+      }      # 6. attract on a game list, not on the main menu (James 2026-11-26: the race cab "always misses attract mode" - on
       #    the main menu attract only rolls Racing / Tools / Exit). Nobody here and nobody to follow, sitting on the main
       #    menu: go into this cabinet's own game list (racing -> Racing ...), where attract rolls the games and their videos.
       elseif ($AttractEnterSec -gt 0 -and $me.menu -eq $top -and [double]$me.idleMs -ge $AttractEnterSec * 1000 -and ($now - $helperStart).TotalSeconds -ge $AttractEnterSec -and ($now - $lastUser).TotalSeconds -ge $AttractEnterSec -and $attractCol) {
@@ -207,6 +238,7 @@ try {
       }
       else { $attractSaid = $false }
     }
+    if ($linkShown -and -not $count -and ($userHere -or -not $alive -or $ShowLinkEverySec -le 0 -or ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() % $ShowLinkEverySec) -ge $ShowLinkSec)) { Hide-Card; $linkShown = $false }
     [Windows.Forms.Application]::DoEvents()
     Start-Sleep -Milliseconds 50
   }
