@@ -83,6 +83,25 @@ if ($git -and (Test-Path (Join-Path $repo '.git'))) {
 }
 Report 'hooks' $bad "$($hooks.Count) hooks use LF, commit check on"
 
+# ---- game list views: only pictures the release carries ----
+# A view (layouts\AM-*\gamelist.layout.xml) is copied into a list's own layout folder, so its pictures are named from
+# there (../../../). Every one must be in the repo: the theme's own (layouts\ArcadeMaster) or the view's images folder.
+# A picture that exists only on a cabinet would be a hole on a fresh install.
+$bad = @(); $lay = Join-Path $repo 'layouts'; $nViews = 0
+foreach ($vf in Get-ChildItem -LiteralPath $lay -Filter 'gamelist.layout.xml' -Recurse -File) {
+  $nViews++; $vdir = Split-Path $vf.FullName; $vt = [IO.File]::ReadAllText($vf.FullName)
+  try { [void][xml]$vt } catch { $bad += "$($vf.Directory.Name): not well-formed ($($_.Exception.Message))"; continue }
+  if ($vt -notmatch 'ArcadeMaster game list view: \w+|WALL OF GAMES - game list') { $bad += "$($vf.Directory.Name): no 'ArcadeMaster game list view: <name>' mark, so -View default could not take it away" }
+  foreach ($m in [regex]::Matches($vt, '(?:src|font)="([^"]+)"')) {
+    $p = $m.Groups[1].Value
+    if ($p -like '../../../images/am-views/*') { $q = Join-Path $vdir ('images\' + ($p -replace '^.*/am-views/', '')) }
+    elseif ($p -like '../../../*') { $q = Join-Path $lay ('ArcadeMaster\' + ($p.Substring(9) -replace '/', '\')) }
+    else { $q = Join-Path $lay ('ArcadeMaster\' + ($p -replace '/', '\')) }
+    if (-not (Test-Path -LiteralPath $q)) { $bad += "$($vf.Directory.Name): $p is not in the repo" }
+  }
+}
+Report 'views' $bad "$nViews game list views use only pictures and fonts that are in the repo"
+
 if ($Watchdog) {
   $t = Join-Path $env:TEMP ("am-selftest-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
   $problems = @()
