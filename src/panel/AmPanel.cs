@@ -54,6 +54,8 @@ static class AmPanel
     static string speech = "off";         // AmPanel.json "Speech": off | start
     static ExitGuard exitGuard;           // Esc ends any game (AmPanel.json "ExitKey": "ESC" | "none", "ExitGraceMs")
     static string exitKey = "ESC";
+    static GameOptions gameOptions;       // TAB on the selected game: emulator version, map buttons (AmPanel.json "GameOptionsKey")
+    static string gameOptionsKey = "Tab";
     static int exitGraceMs = 1500;
     static string gameStartAnimation, gamePauseAnimation;   // AmPanel.json defaults (.lwax name or "random"); per-game files win
     static ControllerChoices choicesDb;   // "which controller will you use?" (controller-choices.json)
@@ -192,6 +194,7 @@ static class AmPanel
         if (Str(cfg, "AttractAnimation") != null) attractAnimation = Str(cfg, "AttractAnimation").ToLowerInvariant();
         if (Str(cfg, "Speech") != null) speech = Str(cfg, "Speech").ToLowerInvariant();
         if (Str(cfg, "ExitKey") != null) exitKey = Str(cfg, "ExitKey");
+        if (Str(cfg, "GameOptionsKey") != null) gameOptionsKey = Str(cfg, "GameOptionsKey");
         if (Str(cfg, "ExitGraceMs") != null) exitGraceMs = Convert.ToInt32(cfg["ExitGraceMs"]);
         gameStartAnimation = Str(cfg, "GameStartAnimation"); gamePauseAnimation = Str(cfg, "GamePauseAnimation");
         // AmPanel.json "LoadingScreen": "off" - no LOADING screen over a starting game (James 2026-11-26 on DESKTOP-RACE2:
@@ -563,6 +566,11 @@ static class AmPanel
                 if (what == "game start") { exitGuard.Emulator = Convert.ToString(State.ContainsKey("emulator") ? State["emulator"] : null); exitGuard.GameRunning = true; }
                 else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") exitGuard.GameRunning = false;
             }
+            if (gameOptions != null)
+            {
+                if (what == "game start") gameOptions.GameRunning = true;
+                else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") gameOptions.GameRunning = false;
+            }
             // the LOADING screen for slow starts (TeknoParrot ...): only when the game has no window of its own yet
             if (what == "game start")
             {
@@ -895,6 +903,14 @@ static class AmPanel
                         new[] { Path.Combine(manifestDir, "exit-rules.json"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exit-rules.json") }, Log);
                 } catch (Exception e) { Log("exit guard: not started - " + e.Message); }
         }
+        if (!gameOptionsKey.Equals("none", StringComparison.OrdinalIgnoreCase) && retroFERoot != null)
+            try
+            {
+                gameOptions = new GameOptions(retroFERoot, manifestDir, gameOptionsKey, Log) { Ui = ui };
+                gameOptions.Selected = delegate { lock (Gate) return State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : null; };
+                gameOptions.SelectedSystem = delegate { lock (Gate) return State.ContainsKey("emulator") && State["emulator"] != null ? Convert.ToString(State["emulator"]) : null; };
+            }
+            catch (Exception e) { Log("game options: not started - " + e.Message); }
         if (!padKeysOff) try { padKeys = new PadKeys(manifestDir, new[] { "retrofe" }, Log); } catch (Exception e) { Log("pad keys: not started - " + e.Message); }
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };
         if (toolsDir != null && retroFERoot != null)
