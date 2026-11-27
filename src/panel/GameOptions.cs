@@ -98,6 +98,8 @@ class GameOptions
             if (alts.Count >= 2) menu.Add(Tile("emulator", "EMULATOR: " + Label(current), "joystick"));
             string mapWhat = MapKind(current);
             if (mapWhat != null) menu.Add(Tile("map", "MAP BUTTONS", "gamepad"));
+            string wiiId = mapWhat == "dolphin" ? WiiId(coll, item) : null;
+            if (wiiId != null) menu.Add(Tile("wii", "WII CONTROLS: " + WiiLayout(wiiId).ToUpperInvariant(), "joystick"));
             if (Changed(collName, item)) menu.Add(Tile("reset", "BACK TO DEFAULT", "mouse"));
             if (OpenSearch != null) menu.Add(Tile("search", "SEARCH ALL GAMES", "keyboard"));
             menu.Add(Tile("close", "CLOSE", "analog"));
@@ -112,6 +114,13 @@ class GameOptions
             }
             else if (pick == "reset") { current = Reset(coll, collName, item) ?? baseL; log("game options: " + collName + "/" + item + " back to default (" + current + ")"); }
             else if (pick == "map") { MapButtons(mapWhat, current, title, theme); return; }
+            else if (pick == "wii")
+            {
+                var tiles = new List<Dictionary<string, object>> {
+                    Tile("sideways", "SIDEWAYS (D-PAD, 1 + 2)", "gamepad"), Tile("nunchuk", "REMOTE + NUNCHUK", "joystick"), Tile("classic", "CLASSIC CONTROLLER", "gamepad") };
+                string l = Ask(title, "HOW IS THIS WII GAME PLAYED ON THE PANEL?", tiles, WiiLayout(wiiId), theme);
+                if (l != null && l != WiiLayout(wiiId)) SetWiiLayout(wiiId, l, title);
+            }
         }
     }
 
@@ -305,6 +314,50 @@ class GameOptions
             if (p != null) new Thread(() => { for (int i = 0; i < 40; i++) { Thread.Sleep(250); try { p.Refresh(); if (p.MainWindowHandle != IntPtr.Zero) { ShowWindow(p.MainWindowHandle, 9); SetForegroundWindow(p.MainWindowHandle); return; } } catch { return; } } }) { IsBackground = true }.Start();
         }
         catch (Exception e) { log("game options: could not open " + exe + " - " + e.Message); }
+    }
+
+    // ---------------------------------------------------------------- Wii games: the panel layout (James 2026-11-27: "allow mapping
+    // nunchuck for 8 way and buttons etc for games"). A game is known by its disc ID; tools\wii-layouts.json gives each game
+    // a starting layout, <manifest>\wii-layouts.json keeps this cabinet's choices. tools\Set-DolphinControllers.ps1 writes
+    // them into Dolphin (GameSettings\<id>.ini, only while no real Wii Remote is in slot 1).
+    public string ToolsDir;
+    static string WiiId(string coll, string item)
+    {
+        foreach (var ext in new[] { ".rvz", ".wia", ".iso", ".wbfs", ".gcm" })
+        {
+            string f = Path.Combine(coll, "roms", item + ext);
+            if (!File.Exists(f)) continue;
+            try
+            {
+                using (var fs = File.OpenRead(f))
+                {
+                    var b = new byte[0x260]; int n = fs.Read(b, 0, b.Length);
+                    int at = ext == ".rvz" || ext == ".wia" ? 0x58 : ext == ".wbfs" ? 0x200 : 0;
+                    if (n < at + 6) return null;
+                    string id = System.Text.Encoding.ASCII.GetString(b, at, 6);
+                    return System.Text.RegularExpressions.Regex.IsMatch(id, "^[A-Z0-9]{6}$") ? id : null;
+                }
+            }
+            catch { return null; }
+        }
+        return null;
+    }
+    string WiiLayout(string id)
+    {
+        object v;
+        if (ReadJson(Path.Combine(manifestDir, "wii-layouts.json")).TryGetValue(id, out v) && v != null) return Convert.ToString(v);
+        if (ToolsDir != null && ReadJson(Path.Combine(ToolsDir, "wii-layouts.json")).TryGetValue(id, out v) && v != null) return Convert.ToString(v);
+        return "nunchuk";
+    }
+    void SetWiiLayout(string id, string layout, string title)
+    {
+        string f = Path.Combine(manifestDir, "wii-layouts.json");
+        var d = ReadJson(f); d[id] = layout; WriteJson(f, d);
+        log("game options: " + title + " (" + id + ") Wii controls -> " + layout);
+        string tool = ToolsDir == null ? null : Path.Combine(ToolsDir, "Set-DolphinControllers.ps1");
+        if (tool == null || !File.Exists(tool)) return;
+        try { Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + tool + "\" -ManifestDir \"" + manifestDir + "\"") { UseShellExecute = false, CreateNoWindow = true }); }
+        catch (Exception e) { log("game options: Dolphin not updated - " + e.Message); }
     }
 
     // ---------------------------------------------------------------- json

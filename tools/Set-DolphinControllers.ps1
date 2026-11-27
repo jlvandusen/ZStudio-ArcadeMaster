@@ -50,7 +50,7 @@ $stickName = ($cab.devices | Where-Object { $_.type -match 'Flight|Joystick' -an
 # (manifest\panel.json): P1 stick = nunchuk stick, buttons 1-6 = B A Z C 1 2, START / COIN = + / -, the P2 stick =
 # the remote's d-pad, the trackball (the mouse) = the pointer, HOME = TAB, shake = the Tron stick's second button (A2)
 # when captured. Only on a cabinet without a wheel: a wheel cabinet's emulated remote stays WheelMap's.
-$panelMap = $null
+$panelMap = $null; $sideMap = $null; $classicMap = $null
 $pj = Join-Path $ManifestDir 'panel.json'
 if (-not $cab.capabilities.wheel -and (Test-Path $pj)) {
   try {
@@ -70,6 +70,33 @@ if (-not $cab.capabilities.wheel -and (Test-Path $pj)) {
       if ($pn.tronStick -and "$($pn.tronStick.secondButton)" -match '^([A-Z0-9]+)\b') { $sk = DKey $Matches[1]; foreach ($a in 'X', 'Y', 'Z') { $panelMap["Shake/$a"] = $sk } }
       foreach ($k in @($panelMap.Keys)) { if (-not $panelMap[$k]) { $panelMap.Remove($k) } }
       foreach ($d in 'Up', 'Down', 'Left', 'Right') { $panelMap["IMUAccelerometer/$d"] = '' }   # the old tilt sat on the arrows = the nunchuk stick now
+      # the remote held sideways (New Super Mario Bros., Donkey Kong Country Returns): the stick drives the d-pad turned a
+      # quarter, 2 / 1 on buttons 1 / 2, A / B on 3 / 4, shake on 5 and on A2
+      $sideMap = [ordered]@{
+        'Device' = 'DInput/0/Keyboard Mouse'; 'Extension' = 'None'
+        'D-Pad/Up' = DKey $p1.stick.LEFT; 'D-Pad/Down' = DKey $p1.stick.RIGHT; 'D-Pad/Left' = DKey $p1.stick.DOWN; 'D-Pad/Right' = DKey $p1.stick.UP
+        'Buttons/2' = DKey $p1.keys.P1B1; 'Buttons/1' = DKey $p1.keys.P1B2; 'Buttons/A' = DKey $p1.keys.P1B3; 'Buttons/B' = DKey $p1.keys.P1B4
+        'Buttons/+' = DKey $p1.keys.P1START; 'Buttons/-' = DKey $p1.keys.P1COIN; 'Buttons/Home' = '`TAB`'
+        'IR/Up' = '`Cursor Y-`'; 'IR/Down' = '`Cursor Y+`'; 'IR/Left' = '`Cursor X-`'; 'IR/Right' = '`Cursor X+`'
+      }
+      $shake = DKey $p1.keys.P1B5; if ($panelMap['Shake/X']) { $shake = "$shake | $($panelMap['Shake/X'])" }
+      foreach ($a in 'X', 'Y', 'Z') { $sideMap["Shake/$a"] = $shake }
+      foreach ($d in 'Up', 'Down', 'Left', 'Right') { $sideMap["IMUAccelerometer/$d"] = '' }
+      # the Classic Controller (Smash Bros. Brawl, Monster Hunter Tri, Xenoblade): P1 stick = left stick and d-pad, P2 stick =
+      # right stick, top row B A R, bottom row Y X L, ZL / ZR on P2 buttons 1 / 2
+      $classicMap = [ordered]@{
+        'Device' = 'DInput/0/Keyboard Mouse'; 'Extension' = 'Classic'
+        'Classic/Buttons/B' = DKey $p1.keys.P1B1; 'Classic/Buttons/A' = DKey $p1.keys.P1B2; 'Classic/Triggers/R' = DKey $p1.keys.P1B3
+        'Classic/Buttons/Y' = DKey $p1.keys.P1B4; 'Classic/Buttons/X' = DKey $p1.keys.P1B5; 'Classic/Triggers/L' = DKey $p1.keys.P1B6
+        'Classic/Buttons/+' = DKey $p1.keys.P1START; 'Classic/Buttons/-' = DKey $p1.keys.P1COIN; 'Classic/Buttons/Home' = '`TAB`'
+        'Classic/Left Stick/Up' = DKey $p1.stick.UP; 'Classic/Left Stick/Down' = DKey $p1.stick.DOWN; 'Classic/Left Stick/Left' = DKey $p1.stick.LEFT; 'Classic/Left Stick/Right' = DKey $p1.stick.RIGHT
+        'Classic/D-Pad/Up' = DKey $p1.stick.UP; 'Classic/D-Pad/Down' = DKey $p1.stick.DOWN; 'Classic/D-Pad/Left' = DKey $p1.stick.LEFT; 'Classic/D-Pad/Right' = DKey $p1.stick.RIGHT
+      }
+      if ($p2) {
+        foreach ($d in 'UP', 'DOWN', 'LEFT', 'RIGHT') { $classicMap["Classic/Right Stick/$((Get-Culture).TextInfo.ToTitleCase($d.ToLower()))"] = DKey $p2.stick.$d }
+        $classicMap['Classic/Buttons/ZL'] = DKey $p2.keys.P2B1; $classicMap['Classic/Buttons/ZR'] = DKey $p2.keys.P2B2
+      }
+      foreach ($m in $sideMap, $classicMap) { foreach ($k in @($m.Keys)) { if ($null -eq $m[$k]) { $m.Remove($k) } } }
     }
   } catch { Write-Warning "panel.json not read for the Wii Remote mapping: $_" }
 }
@@ -111,6 +138,28 @@ foreach ($u in $DolphinUser) {
     if ($diff) { $changes += 'Wii Remote 1 without a real remote: the panel (nunchuk = P1 stick, B A Z C 1 2 = buttons 1-6, pointer = trackball)' }
     $pd = Join-Path $cfg 'Profiles\Wiimote'; New-Item -ItemType Directory -Force $pd | Out-Null
     Set-Content (Join-Path $pd 'ArcadeMaster Panel Nunchuk.ini') (@('[Profile]') + @($panelMap.Keys | ForEach-Object { "$_ = $($panelMap[$_])" })) -Encoding ASCII
+    if ($sideMap) { Set-Content (Join-Path $pd 'ArcadeMaster Panel Sideways.ini') (@('[Profile]') + @($sideMap.Keys | ForEach-Object { "$_ = $($sideMap[$_])" })) -Encoding ASCII }
+    if ($classicMap) { Set-Content (Join-Path $pd 'ArcadeMaster Panel Classic.ini') (@('[Profile]') + @($classicMap.Keys | ForEach-Object { "$_ = $($classicMap[$_])" })) -Encoding ASCII }
+    # each Wii game's layout (tools\wii-layouts.json, the cabinet's own choices in <manifest>\wii-layouts.json win): its
+    # GameSettings\<disc id>.ini [Controls] WiimoteProfile1. Only while slot 1 is the panel - a real remote is never
+    # given a panel profile (the line is taken out again when one is synced).
+    $layouts = @{}
+    foreach ($lf in (Join-Path $PSScriptRoot 'wii-layouts.json'), (Join-Path $ManifestDir 'wii-layouts.json')) {
+      if (Test-Path $lf) { try { (Get-Content $lf -Raw | ConvertFrom-Json).PSObject.Properties | Where-Object { $_.Name -notlike '_*' } | ForEach-Object { $layouts[$_.Name] = "$($_.Value)" } } catch { Write-Warning "$lf unreadable: $_" } }
+    }
+    $gsDir = Join-Path $u 'GameSettings'; New-Item -ItemType Directory -Force $gsDir | Out-Null
+    $panelSlot1 = $realSlots -notcontains 1
+    $set = 0; $cleared = 0
+    foreach ($id in $layouts.Keys) {
+      $gf = Join-Path $gsDir "$id.ini"; $g1 = Get-Ini $gf; $before = $g1 -join "`n"
+      $want = @{ sideways = 'ArcadeMaster Panel Sideways'; nunchuk = 'ArcadeMaster Panel Nunchuk'; classic = 'ArcadeMaster Panel Classic' }[$layouts[$id].ToLower()]
+      $cur = Get-IniValue $g1 'Controls' 'WiimoteProfile1'
+      if ($panelSlot1 -and $want) { if ($cur -ne $want) { Set-IniValue $g1 'Controls' 'WiimoteProfile1' $want; $set++ } }
+      elseif ($cur -like 'ArcadeMaster Panel*') { for ($i = $g1.Count - 1; $i -ge 0; $i--) { if ($g1[$i] -match '^\s*WiimoteProfile1\s*=\s*ArcadeMaster Panel') { $g1.RemoveAt($i) } }; $cleared++ }
+      if (($g1 -join "`n") -ne $before) { if ((Test-Path $gf) -and -not (Test-Path "$gf.am-bak")) { Copy-Item $gf "$gf.am-bak" }; Set-Content $gf $g1 -Encoding ASCII }
+    }
+    if ($set) { $changes += "Wii games: $set given their panel layout (sideways / nunchuk / classic)" }
+    if ($cleared) { $changes += "Wii games: $cleared panel layouts taken off (a real Wii Remote is in slot 1)" }
   }
   $bcur = Get-IniValue $w 'BalanceBoard' 'Source'
   if ($board -and $bcur -ne '2') { if ($null -eq $state.boardSource) { $state.boardSource = $(if ($bcur) { $bcur } else { '0' }) }; Set-IniValue $w 'BalanceBoard' 'Source' '2'; $changes += 'Balance Board -> Real' }

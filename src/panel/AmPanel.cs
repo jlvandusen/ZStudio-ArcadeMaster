@@ -1000,7 +1000,7 @@ static class AmPanel
         if (!gameOptionsKey.Equals("none", StringComparison.OrdinalIgnoreCase) && retroFERoot != null)
             try
             {
-                gameOptions = new GameOptions(retroFERoot, manifestDir, gameOptionsKey, Log) { Ui = ui, OpenSearch = pendingPanelSearch };
+                gameOptions = new GameOptions(retroFERoot, manifestDir, gameOptionsKey, Log) { Ui = ui, OpenSearch = pendingPanelSearch, ToolsDir = toolsDir };
                 gameOptions.Selected = delegate { lock (Gate) return State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : null; };
                 gameOptions.SelectedSystem = delegate { lock (Gate) return State.ContainsKey("emulator") && State["emulator"] != null ? Convert.ToString(State["emulator"]) : null; };
             }

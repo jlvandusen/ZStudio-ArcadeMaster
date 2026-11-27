@@ -1,0 +1,16 @@
+{
+  "_comment": "Which panel layout a Wii game starts with on a cabinet without a real Wii Remote (tools/Set-DolphinControllers.ps1). Key = the game's disc ID (6 characters). sideways = the remote held sideways (d-pad + 1 / 2), nunchuk = remote + nunchuk (stick moves, trackball points), classic = Classic Controller. A cabinet's own choices (Game Options > WII CONTROLS) are in <manifest>\\wii-layouts.json and win.",
+  "SF8E01": "sideways",
+  "SMNE01": "sideways",
+  "RK5E01": "sideways",
+  "R8PE01": "sideways",
+  "RMCE01": "nunchuk",
+  "RB4E08": "nunchuk",
+  "RUYE41": "nunchuk",
+  "R2VE01": "nunchuk",
+  "RLGE64": "nunchuk",
+  "SBLE5G": "nunchuk",
+  "RSBE01": "classic",
+  "RMHE08": "classic",
+  "SX4E01": "classic"
+}
