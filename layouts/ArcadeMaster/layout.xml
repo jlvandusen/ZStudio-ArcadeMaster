@@ -577,4 +577,18 @@
     <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
   </reloadableImage>
 
+  <!-- am-loading-card: shown the moment a choice is made and kept through the load (James 2026-11-27: "delays with a please
+       wait ... to not press into games by accident"; the frontend also drops presses made while it is frozen) -->
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="19">
+    <onMenuExit><set duration=".12"><animate type="alpha" to=".7"/></set></onMenuExit>
+    <onExit><set duration=".12"><animate type="alpha" to=".7"/></set></onExit>
+    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>
+    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>
+  </image>
+  <text value="LOADING - PLEASE WAIT" x="960" y="540" xOrigin="center" yOrigin="center" fontSize="64" loadFontSize="64" fontColor="ffe259" alpha="0" layer="19">
+    <onMenuExit><set duration=".12"><animate type="alpha" to="1"/></set></onMenuExit>
+    <onExit><set duration=".12"><animate type="alpha" to="1"/></set></onExit>
+    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>
+    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>
+  </text>
 </layout>

@@ -184,7 +184,7 @@ class LedEngine
         bool was = StopAnim();
         if (string.IsNullOrEmpty(kind) || kind == "stop") { if (was) RestoreBase(); return "animation stopped"; }
         if (!open) return "LED boards not open";
-        if (kind != "breathe" && kind != "chase" && kind != "audio") return "unknown animation '" + kind + "' (breathe, chase, audio, stop)";
+        if (kind != "breathe" && kind != "chase" && kind != "audio" && kind != "show") return "unknown animation '" + kind + "' (show, breathe, chase, audio, stop)";
         var labels = new List<string>(pins.Keys); labels.Sort(StringComparer.OrdinalIgnoreCase);
         animRun = true; Animation = kind;
         anim = new System.Threading.Thread(delegate () { AnimLoop(kind, labels); }) { IsBackground = true, Name = "led-anim" };
@@ -298,6 +298,82 @@ class LedEngine
         Flush();
     }
 
+    // ---------------------------------------------------------------- "show": a random series of effects over the real
+    // board (James 2026-11-27: "other ones like waves around the board ... a series of effects that are random but
+    // generate interest"). Button positions come from <manifest>\panel.json ("P1B1": [x, y]); a label without one is
+    // spread along the panel by its order. Every ~12 s the next effect, in a shuffled order.
+    readonly Dictionary<string, double[]> pos = new Dictionary<string, double[]>(StringComparer.OrdinalIgnoreCase);
+    public int LoadPanelPositions(string panelJson)
+    {
+        pos.Clear();
+        if (panelJson == null || !File.Exists(panelJson)) return 0;
+        var raw = new Dictionary<string, double[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(panelJson),
+                 "\"(P\\d+[A-Z0-9]+|[A-Z]+\\d*)\"\\s*:\\s*\\[\\s*(-?\\d+(?:\\.\\d+)?)\\s*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\]"))
+            raw[m.Groups[1].Value] = new[] { double.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture), double.Parse(m.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture) };
+        if (raw.Count == 0) return 0;
+        double x0 = raw.Values.Min(v => v[0]), x1 = raw.Values.Max(v => v[0]), y0 = raw.Values.Min(v => v[1]), y1 = raw.Values.Max(v => v[1]);
+        foreach (var kv in raw) pos[kv.Key] = new[] { (kv.Value[0] - x0) / Math.Max(1, x1 - x0), (kv.Value[1] - y0) / Math.Max(1, y1 - y0) };
+        return pos.Count;
+    }
+    static readonly int[] showOrder = { 0, 1, 2, 3, 4, 5, 6, 7 };
+    int[] showSeq;
+    int[] ShowColor(string label, int index, int count, double t)
+    {
+        const double Each = 12.0;
+        int slot = (int)(t / Each);
+        if (showSeq == null || slot % showOrder.Length == 0 && showSeqSlot != slot)
+        {
+            // a fresh shuffled order each round, never the same effect twice in a row
+            var s = showOrder.OrderBy(_ => { lock (rnd) return rnd.Next(); }).ToArray();
+            if (showSeq != null && s[0] == showSeq[showSeq.Length - 1]) { var tmp = s[0]; s[0] = s[1]; s[1] = tmp; }
+            showSeq = s; showSeqSlot = slot;
+        }
+        int fx = showSeq[slot % showSeq.Length];
+        double te = t % Each;
+        double[] p; if (!pos.TryGetValue(label, out p)) p = new[] { (index + 0.5) / Math.Max(1, count), 0.5 };
+        double x = p[0], y = p[1], b; int[] c;
+        // a short fade at the start and end of each effect, so one flows into the next
+        double fade = Math.Min(1.0, Math.Min(te / 0.6, (Each - te) / 0.6));
+        switch (fx)
+        {
+            case 0:   // wave: a band of light rolling across the board, its colour drifting
+                b = 0.5 + 0.5 * Math.Sin(2 * Math.PI * (x * 1.4 - te * 0.7)); c = Hue((t * 0.04) % 1.0); break;
+            case 1:   // rainbow flowing across the board
+                b = 1; c = Hue((x * 0.8 + te * 0.25) % 1.0); break;
+            case 2:   // ripple: rings spreading out from the middle
+            {
+                double d = Math.Sqrt((x - 0.5) * (x - 0.5) + (y - 0.5) * (y - 0.5));
+                b = Math.Max(0, Math.Cos(2 * Math.PI * (d * 2.6 - te * 0.8))); b *= b; c = Hue((te * 0.08 + 0.55) % 1.0); break;
+            }
+            case 3:   // sparkle: buttons twinkling at random
+            {
+                int h = label.GetHashCode() & 0x7fffffff;
+                double ph = (h % 1000) / 1000.0;
+                b = Math.Pow(Math.Max(0, Math.Sin(te * (2.2 + (h % 7) * 0.4) + ph * 6.283)), 10);
+                c = (h % 3 == 0) ? new[] { 255, 255, 255 } : Hue(((h % 360) / 360.0 + te * 0.02) % 1.0); break;
+            }
+            case 4:   // scanner: a light sweeping back and forth
+            {
+                double at = 0.5 + 0.5 * Math.Sin(te * 1.7);
+                b = Math.Exp(-Math.Pow((x - at) / 0.09, 2)); c = new[] { 255, 20, 20 }; break;
+            }
+            case 5:   // colour wipe: the board fills with a colour, then the next colour fills over it
+            {
+                double prog = (te % 3.0) / 3.0; int n = (int)(te / 3.0);
+                bool newer = x <= prog;
+                c = Hue(((newer ? n : n - 1) * 0.27 + 0.05) % 1.0); b = 1; break;
+            }
+            case 6:   // vertical sweep: rows of light top to bottom
+                b = 0.5 + 0.5 * Math.Sin(2 * Math.PI * (y * 1.2 - te * 0.9)); c = Hue((0.75 + t * 0.03) % 1.0); break;
+            default:  // theatre chase: marching lights, colour rotating
+                b = ((index + (int)(te * 6)) % 3 == 0) ? 1 : 0.05; c = Hue((te * 0.05) % 1.0); break;
+        }
+        b = Math.Max(0, Math.Min(1, b)) * fade;
+        return new[] { (int)(c[0] * b), (int)(c[1] * b), (int)(c[2] * b) };
+    }
+    int showSeqSlot = -1;
+
     public float AudioLevelNow;   // the smoothed level the "audio" animation shows (pipe status, tests)
 
     void AnimLoop(string kind, List<string> labels)
@@ -329,6 +405,8 @@ class LedEngine
                     double k = pos <= env ? 0.35 + 0.65 * env : 0.06;
                     rgb = new[] { (int)(b[0] * k), (int)(b[1] * k), (int)(b[2] * k) };
                 }
+                else if (kind == "show")
+                    rgb = ShowColor(labels[i], i, labels.Count, t);
                 else if (kind == "breathe")
                 {
                     // the game's own colours pulsing (soft white where the game has none), 2.5 s per breath
