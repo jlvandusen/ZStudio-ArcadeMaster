@@ -37,19 +37,10 @@ $Pos = [ordered]@{
 $BadgeAt = @{ 'Share' = @(131, 198); 'Options' = @(169, 207); 'PS' = @(131, 217); 'Plus' = @(92, 185); 'Minus' = @(92, 197); 'Dial right' = @(207, 177); 'Dial left' = @(207, 177); 'Dial press' = @(207, 177) }
 $HatMask = @{ 'D-pad up' = 1; 'D-pad right' = 2; 'D-pad down' = 4; 'D-pad left' = 8 }
 # the real wheel / pedals / shifter pictures that Logitech G HUB installs (newest depot); none -> simple drawing
-$GHub = Get-ChildItem 'C:\ProgramData\LGHUB\depots\*\g29\g29_wheel_front.png' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
-# G HUB can be uninstalled (DESKTOP-RACE1, 2026-11-26) and takes its pictures with it: keep a copy in this PC's cache
-# while it is there, and without G HUB use the cache, filled from the cabinets' share when another cabinet put them there.
-$wheelPics = Join-Path $env:ProgramData 'ArcadeMaster\wheels\g29'; $sharePics = 'Z:\ArcadeMaster\media\ghub-g29'
-try {
-  if ($GHub) {
-    if (-not (Test-Path (Join-Path $wheelPics 'g29_wheel_front.png'))) { New-Item -ItemType Directory -Force $wheelPics | Out-Null; Copy-Item (Join-Path $GHub '*.png') $wheelPics -Force }
-    if ((Test-Path 'Z:\ArcadeMaster') -and -not (Test-Path (Join-Path $sharePics 'g29_wheel_front.png'))) { New-Item -ItemType Directory -Force $sharePics | Out-Null; Copy-Item (Join-Path $GHub '*.png') $sharePics -Force }
-  } else {
-    if (-not (Test-Path (Join-Path $wheelPics 'g29_wheel_front.png')) -and (Test-Path (Join-Path $sharePics 'g29_wheel_front.png'))) { New-Item -ItemType Directory -Force $wheelPics | Out-Null; Copy-Item (Join-Path $sharePics '*.png') $wheelPics -Force }
-    if (Test-Path (Join-Path $wheelPics 'g29_wheel_front.png')) { $GHub = $wheelPics }
-  }
-} catch { }
+# G HUB's PNGs (older G HUB), its WebPs converted (newer G HUB), or the cache / share copy on a PC without G HUB -
+# see lib\GHubPictures.ps1 (G HUB can be uninstalled and takes its pictures with it: DESKTOP-RACE1, 2026-11-26)
+. (Join-Path $PSScriptRoot 'lib\GHubPictures.ps1')
+$GHub = Get-AmGHubPictures 'g29'
 function Get-Physical([string]$bind) {
   # TeknoParrot BindNameDi: "Driving Buttons4", "Driving X -", "Driving RotationZ -", "Driving PointOfViewControllers0 UP", "Keyboard Button Return", "Supplemental Sliders0 +"
   if (-not $bind) { return $null }
