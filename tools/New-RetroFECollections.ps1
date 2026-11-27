@@ -253,6 +253,27 @@ if (Test-Path -LiteralPath $storyKeep) {
 }
 
 # --- category collections (merged .sub views)
+# one entry per game in a category: CoinOPS builds list the same games in several collections (Arcades, ArcadesMini,
+# Fight: 719 each on the pedestal - every game three times, the subset copies without art; James 2026-11-26 "a lot of
+# duplicate games ... a lot of arcade without the logos"). A game kept in several sources stays in the one with the
+# most logos; backup folders (*.am-bak*) never count as a source.
+$logoCount = @{}
+function Get-LogoCount([string]$col) {
+  if (-not $logoCount.ContainsKey($col)) { $d = Join-Path $cols "$col\medium_artwork\logo"; $logoCount[$col] = if (Test-Path $d) { @(Get-ChildItem $d -File -ErrorAction SilentlyContinue).Count } else { 0 } }
+  $logoCount[$col]
+}
+foreach ($cat in @($subs.Keys)) {
+  foreach ($src in @($subs[$cat].Keys)) { if ($src -match '\.am-bak' -or $src -eq 'zzzShutdown') { $subs[$cat].Remove($src) } }   # zzzShutdown = CoinOPS settings scripts, not games
+  $ranked = @($subs[$cat].Keys | Sort-Object { - (Get-LogoCount $_) })
+  $taken = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+  $dropped = 0
+  foreach ($src in $ranked) {
+    $keep = New-Object System.Collections.Generic.List[string]
+    foreach ($it in $subs[$cat][$src]) { if ($taken.Add($it)) { $keep.Add($it) } else { $dropped++ } }
+    if ($keep.Count) { $subs[$cat][$src] = $keep } else { $subs[$cat].Remove($src) }
+  }
+  if ($dropped) { Write-Host ("{0}: {1} duplicate entr(ies) left out (kept in the source with the most art)" -f $cat, $dropped) }
+}
 $menu = New-Object System.Collections.Generic.List[string]
 foreach ($cat in $Order) {
   if (-not $subs.ContainsKey($cat)) { continue }
