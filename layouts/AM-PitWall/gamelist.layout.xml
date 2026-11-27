@@ -42,8 +42,10 @@
     <onMenuScroll><set duration=".05"><animate type="alpha" to=".55"/></set></onMenuScroll>
     <onMenuIdle><set duration=".15"><animate type="alpha" to="1"/></set></onMenuIdle>
   </image>
+  <!-- the chosen game's place in the list, on the bar like a position number -->
+  <reloadableText type="collectionIndex" menuScrollReload="true" x="92" y="500" xOrigin="center" yOrigin="center" fontSize="34" loadFontSize="34" fontColor="0a0c14" alpha="1" layer="11"/>
   <menu type="custom" menuIndex="0" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
-    <itemDefaults x="280" y="500" xOrigin="center" yOrigin="center" width="290" maxHeight="56" alpha="0" layer="10" fontColor="ffffff" fontSize="30" loadFontSize="30"/>
+    <itemDefaults x="300" y="500" xOrigin="center" yOrigin="center" width="290" maxHeight="56" alpha="0" layer="10" fontColor="ffffff" fontSize="30" loadFontSize="30"/>
     <item xOffset="0" yOffset="-304" width="290" maxHeight="56" alpha="0"/>
     <item xOffset="0" yOffset="-228" width="290" maxHeight="56" alpha=".85"/>
     <item xOffset="0" yOffset="-152" width="290" maxHeight="56" alpha=".85"/>
