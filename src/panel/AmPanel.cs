@@ -781,6 +781,7 @@ static class AmPanel
                     int nb = req.ContainsKey("buttons") ? Convert.ToInt32(req["buttons"]) : PanelButtons();
                     ui.BeginInvoke((MethodInvoker)delegate {
                         if (gameOptions != null) gameOptions.GameRunning = true;   // TAB is just a button while capturing
+                        CaptureForm.Only = req.ContainsKey("only") ? Convert.ToString(req["only"]) : null;   // {"cmd":"capture","only":"TRON"}
                         var f = new CaptureForm(manifestDir, toolsDir, nb, Log);
                         f.FormClosed += delegate { if (gameOptions != null) gameOptions.GameRunning = false; };
                         f.Show();

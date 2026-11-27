@@ -59,11 +59,13 @@ class CaptureForm : Form
     readonly Dictionary<IntPtr, int[]> moved = new Dictionary<IntPtr, int[]>();   // per mouse: |dx|, |dy| this step
     readonly Timer poll = new Timer { Interval = 15 };
     readonly Stopwatch stepClock = Stopwatch.StartNew();
-    readonly int[] joyButtons = new int[16]; readonly int[,] joyAxes = new int[16, 2];
+    readonly int[] joyButtons = new int[16]; readonly int[,] joyAxes = new int[16, 2]; readonly bool[] joyArmed = new bool[16];
     int at; string flash, flashDevice; long flashAt = -9999;
     int rawCount;   // WM_INPUT messages seen (in the "skipped" log lines: 0 means nothing reached the capture)
     public bool Saved;
 
+    // only the steps whose id starts with this ("TRON", "P2", "GUN" ...): everything else in panel.json stays as it is
+    public static string Only;
     public CaptureForm(string manifestDir, string toolsDir, int buttons, Action<string> log)
     {
         this.manifestDir = manifestDir; this.toolsDir = toolsDir; this.log = log ?? delegate { };
@@ -78,6 +80,9 @@ class CaptureForm : Form
         steps.Add(new Step("SPINNER", "TURN THE SPINNER", "move"));
         steps.Add(new Step("TRON_TRIGGER", "TRON STICK: TRIGGER", "key"));
         steps.Add(new Step("TRON_TOP", "TRON STICK: TOP BUTTON", "key"));
+        // the stick's real directions: a stick can be mounted turned (the 2P stand-up's Tron stick base is 90 degrees to
+        // the left - pushing up reports left, 2026-11-27). Push the way the PLAYER means; what it sends is recorded.
+        foreach (var d in new[] { "UP", "DOWN", "LEFT", "RIGHT" }) steps.Add(new Step("TRON_" + d, "TRON STICK: PUSH " + d, "key"));
         steps.Add(new Step("GUN1_TRIGGER", "GUN 1: PULL THE TRIGGER", "key"));
         steps.Add(new Step("GUN2_TRIGGER", "GUN 2: PULL THE TRIGGER", "key"));
         steps.Add(new Step("PEDAL1", "FOOT SWITCH 1", "key"));
@@ -85,6 +90,7 @@ class CaptureForm : Form
         steps.Add(new Step("EXTRA1", "ANY OTHER BUTTON (OR WAIT)", "key"));
         steps.Add(new Step("EXTRA2", "ANY OTHER BUTTON (OR WAIT)", "key"));
 
+        if (!string.IsNullOrEmpty(Only)) steps.RemoveAll(s => !s.Id.StartsWith(Only, StringComparison.OrdinalIgnoreCase));
         Text = "ArcadeMaster - Panel Test"; FormBorderStyle = FormBorderStyle.None; TopMost = true; ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual; Bounds = Screen.PrimaryScreen.Bounds; BackColor = Color.FromArgb(8, 9, 14); DoubleBuffered = true; KeyPreview = true;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
@@ -214,10 +220,14 @@ class CaptureForm : Form
             var c = new JOYCAPS(); if (joyGetDevCaps(id, ref c, Marshal.SizeOf(typeof(JOYCAPS))) == 0) { usb = c.Mid.ToString("X4") + ":" + c.Pid.ToString("X4"); label = DeviceLabel(usb, "joystick") + " (joystick " + (id + 1) + ")"; }
         }
         for (int b = 0; b < 32; b++) if ((newly & (1 << b)) != 0) { Take("joystick " + (id + 1) + " button " + (b + 1), "JOY" + (id + 1) + "_BUTTON" + (b + 1), label, usb, "key"); return; }
+        // a direction counts once, and only after the stick was back in the centre: one push on the 2P stand-up's Tron stick
+        // filled two steps (left, then its spring-back past the centre as right, 2026-11-27)
+        bool centred = Math.Abs(j.X - 32767) < 8000 && Math.Abs(j.Y - 32767) < 8000;
+        if (centred) joyArmed[id] = true;
         foreach (var ax in new[] { 0, 1 })
         {
             int v = ax == 0 ? j.X : j.Y, rest = joyAxes[id, ax];
-            if (Math.Abs(v - rest) > 20000) { joyAxes[id, ax] = v; Take("joystick " + (id + 1) + " " + (ax == 0 ? "X" : "Y") + (v > rest ? "+" : "-"), "JOY" + (id + 1) + "_" + (ax == 0 ? "X" : "Y") + (v > rest ? "+" : "-"), label, usb, "key"); return; }
+            if (Math.Abs(v - rest) > 20000 && joyArmed[id]) { joyArmed[id] = false; joyAxes[id, ax] = v; Take("joystick " + (id + 1) + " " + (ax == 0 ? "X" : "Y") + (v > rest ? "+" : "-"), "JOY" + (id + 1) + "_" + (ax == 0 ? "X" : "Y") + (v > rest ? "+" : "-"), label, usb, "key"); return; }
             if (Math.Abs(v - 32767) < 8000) joyAxes[id, ax] = v;   // back near the centre: ready for the next push
         }
     }
@@ -279,7 +289,23 @@ class CaptureForm : Form
         var tb = hit("TRACKBALL"); if (tb != null) panel["trackball"] = new Dictionary<string, object> { { "name", "Trackball" }, { "buttons", 0 }, { "keys", new Dictionary<string, object>() }, { "device", tb.Device }, { "usb", tb.Usb } };
         var sp = hit("SPINNER"); if (sp != null) panel["spinner"] = new Dictionary<string, object> { { "name", "Spinner" }, { "buttons", 0 }, { "keys", new Dictionary<string, object>() }, { "device", sp.Device }, { "usb", sp.Usb } };
         var tt = hit("TRON_TRIGGER"); var tp = hit("TRON_TOP");
-        if (tt != null || tp != null) panel["tronStick"] = new Dictionary<string, object> { { "trigger", tt != null ? tt.Key : null }, { "top", tp != null ? tp.Key : null }, { "device", (tt ?? tp).Device } };
+        var tdir = new Dictionary<string, object>();
+        foreach (var d in new[] { "UP", "DOWN", "LEFT", "RIGHT" }) { var hd = hit("TRON_" + d); if (hd != null) tdir[d] = hd.Key; }
+        if (tt != null || tp != null || tdir.Count > 0)
+        {
+            var ts = new Dictionary<string, object> { { "trigger", tt != null ? tt.Key : null }, { "top", tp != null ? tp.Key : null }, { "device", (tt ?? tp ?? hits.First(x => x.Step.StartsWith("TRON_"))).Device } };
+            if (tdir.Count > 0) ts["directions"] = tdir;   // what each push the player means really sends (rotated mounts)
+            // what this run did not capture stays as it was (a Tron-only run that skipped the trigger lost it, 2026-11-27)
+            var old = panel.ContainsKey("tronStick") ? panel["tronStick"] as Dictionary<string, object> : null;
+            if (old != null)
+            {
+                foreach (var k in new[] { "trigger", "top" }) if (ts[k] == null && old.ContainsKey(k)) ts[k] = old[k];
+                foreach (var k in new[] { "rotation", "name" }) if (old.ContainsKey(k) && !ts.ContainsKey(k)) ts[k] = old[k];
+                var od = old.ContainsKey("directions") ? old["directions"] as Dictionary<string, object> : null;
+                if (od != null) { if (!ts.ContainsKey("directions")) ts["directions"] = new Dictionary<string, object>(); var nd = (Dictionary<string, object>)ts["directions"]; foreach (var kv in od) if (!nd.ContainsKey(kv.Key)) nd[kv.Key] = kv.Value; }
+            }
+            panel["tronStick"] = ts;
+        }
         var pedals = hits.Where(x => x.Step.StartsWith("PEDAL")).Select(x => (object)new Dictionary<string, object> { { "key", x.Key }, { "device", x.Device } }).ToList();
         if (pedals.Count > 0) panel["pedals"] = pedals;
         var extras = hits.Where(x => x.Step.StartsWith("EXTRA")).Select(x => (object)new Dictionary<string, object> { { "key", x.Key }, { "device", x.Device } }).ToList();
