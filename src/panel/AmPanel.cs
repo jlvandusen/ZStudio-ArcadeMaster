@@ -580,6 +580,8 @@ static class AmPanel
             {
                 CloseLoading();
                 LoadingScreen.RestoreFrontend();
+                // with gameHandOff = true the frontend's end hook (Record-GamePlay.ps1) runs the self-heal instead
+                if (what == "game stop" && healGame != null && FrontendHandsOff()) healGame = null;
                 if (what == "game stop" && healGame != null) { RepairRoms(healGame, healCollection, healEmulator, (DateTime.Now - healStarted).TotalSeconds); healGame = null; }
             }
             State["lastEvent"] = what;

@@ -35,7 +35,10 @@ the host. Here the frontend itself becomes ours.
      RACE2 with Arctic Thunder.
      - To test a build without the updater putting the official one back: `<retrofe>\am-test-build.txt` keeps a
        hand-copied exe for 4 h.
-     - Still to move in: the loading card, Repair-GameRoms after each game, and consoles started hidden from the start.
+     - **Self-heal after each game moved (2026-11-27):** with `gameHandOff = true`, the frontend's own end hook
+       (`Record-GamePlay.ps1`) starts `Repair-GameRoms.py`, detached and with the game's launcher as the emulator, and
+       AmPanel leaves it alone.
+     - Still to move in: the loading card, and consoles started hidden from the start.
 3. **Cabinet profile at start.**
    - The frontend reads the detected cabinet type and capabilities.
    - Controls, the touch layout and the tools follow from it.
