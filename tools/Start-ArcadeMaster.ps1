@@ -140,6 +140,25 @@ try { $mc = Invoke-Tool 'Set-MenuControls.ps1' @('-RetroFE', $Root, '-ManifestDi
 # the main menu's wheel shows the wheel this cabinet really has (G HUB's picture of it); redrawn only when it changed
 try { $rw = Invoke-Tool 'New-RealWheelArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout); if ($rw -match '->|removed') { Write-Log (($rw -split "`r?`n" | Where-Object { $_ -match 'real wheel' }) -join ' ') } } catch { Write-Log "real wheel art failed: $($_.Exception.Message)" }
 
+# the per-game controls cards (the real G29 with the game's buttons numbered, the pedals, the legend) are drawn from the
+# LIVE bindings: remade when a wheel cabinet has none yet, or a TeknoParrot binding is newer than the cards (Wheel Setup,
+# a profile edit). James 2026-11-27: "the bottom controller preview is back to default and not the detected wheel" -
+# RACE2 had never had them made (New-GameControlsArt was never run there). Before RetroFE starts, which only finds art
+# folders that exist at its start. About 10 s, and only when needed.
+try {
+  $cm = Join-Path $ManifestDir 'cabinet-mode.json'
+  $wheelCab = (Test-Path $cm) -and ("$((Get-Content $cm -Raw | ConvertFrom-Json).effective)" -match 'racing|simulation|flight')
+  if ($wheelCab) {
+    $cards = Join-Path $Root 'collections\TeknoParrot\medium_artwork\am_controls_wheel'
+    $newest = if (Test-Path $cards) { (Get-ChildItem $cards -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1).LastWriteTime } else { $null }
+    $prof = Get-ChildItem (Join-Path $Root 'emulators\TeknoParrot\UserProfiles') -Filter *.xml -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $newest -or ($prof -and $prof.LastWriteTime -gt $newest)) {
+      $ca = Invoke-Tool 'New-GameControlsArt.ps1' @('-RetroFE', $Root)
+      Write-Log ("controls cards remade ($(if (-not $newest) { 'none yet' } else { "$($prof.Name) is newer" })): " + (($ca -split "`r?`n" | Where-Object { $_ -match 'controls cards:' }) -join ' '))
+    }
+  }
+} catch { Write-Log "controls cards failed: $($_.Exception.Message)" }
+
 if (-not $NoShuffle) {
   try {
     $sw = [Diagnostics.Stopwatch]::StartNew()
