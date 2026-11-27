@@ -64,7 +64,7 @@ static class AmPanel
     static Control ui;                    // created on the tray thread: pipe threads show windows through it
     static string toolsDir, retroFERoot;
     static bool reactive = true;
-    static string attractAnimation = "chase";   // step 6: AmPanel.json "AttractAnimation": chase | breathe
+    static string attractAnimation = "show";    // step 6: AmPanel.json "AttractAnimation": show (random effects over the board) | chase | breathe | audio
     static Marquee marquee;               // AmPanel.json "Marquee": "pixelcade" = AmPanel drives the Pixelcade LED marquee, not LEDBlinky
     static PadKeys padKeys;               // wheel / stick buttons that type keys in games - G HUB's key mappings (PadKeys.cs); "PadKeys": "off"
     static bool padKeysOff;
@@ -234,6 +234,7 @@ static class AmPanel
             leds = new LedEngine(ledBlinkyDir);
             leds.LoadOverrides(Path.Combine(manifestDir, "led-colors.json"));   // this cabinet's own colours (step 11)
             leds.LoadAuto(Path.Combine(manifestDir, "led-colors-auto.json"));    // games Colors.ini doesn't know (New-LedColorsAuto.py)
+            Log("lights: " + leds.LoadPanelPositions(Path.Combine(manifestDir, "panel.json")) + " button positions for the attract show");
             Log("lights: generated colours for " + leds.AutoGames + " games" + (leds.LastError != null ? " - " + leds.LastError : ""));
             leds.LwaDir = Path.Combine(ledBlinkyDir, "lwa");                     // LEDBlinky's .lwax animations
             passThrough = false;       // two programs must never drive the same boards
