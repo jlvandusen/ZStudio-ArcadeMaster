@@ -83,7 +83,7 @@
   </reloadableImage>
   <image src="../../../images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" alpha=".75" layer="1"/>
   <!-- the consoles, left: one after another, 5 s each (a maker's line-up), looping while the menu is idle -->
-  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console1" mode="layout" x="540" y="430" xOrigin="center" yOrigin="center" maxWidth="900" maxHeight="560" alpha="0" layer="12">
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console1" mode="layout" x="560" y="410" xOrigin="center" yOrigin="center" maxWidth="1000" maxHeight="640" alpha="0" layer="12">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="465" to="430" algorithm="easeOutCubic"/></set>
@@ -92,7 +92,7 @@
       <set duration="10"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console2" mode="layout" x="540" y="430" xOrigin="center" yOrigin="center" maxWidth="900" maxHeight="560" alpha="0" layer="12">
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console2" mode="layout" x="560" y="410" xOrigin="center" yOrigin="center" maxWidth="1000" maxHeight="640" alpha="0" layer="12">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="5"><animate type="nop"/></set>
@@ -102,7 +102,7 @@
       <set duration="5"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console3" mode="layout" x="540" y="430" xOrigin="center" yOrigin="center" maxWidth="900" maxHeight="560" alpha="0" layer="12">
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console3" mode="layout" x="560" y="410" xOrigin="center" yOrigin="center" maxWidth="1000" maxHeight="640" alpha="0" layer="12">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="10"><animate type="nop"/></set>

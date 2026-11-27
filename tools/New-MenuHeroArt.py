@@ -109,6 +109,23 @@ def write_png(src, dst, max_h, force):
     return True
 
 
+def write_fit(src, dst, box_w, box_h, force):
+    """Scale (up or down) to fill box_w x box_h keeping the shape: RetroFE's maxWidth / maxHeight never enlarge, and
+    RELOAD's console photos are small (James 2026-11-27: "make bigger those symbols on the left")."""
+    if not force and fresh(src, dst) and Image.open(dst).size[0] >= min(box_w, 10 ** 6) * 0.98 or \
+       (not force and fresh(src, dst) and Image.open(dst).size[1] >= box_h * 0.98):
+        return False
+    im = Image.open(src).convert("RGBA")
+    bb = im.getbbox()   # trim the empty margin first, so the console itself fills the box
+    if bb:
+        im = im.crop(bb)
+    k = min(box_w / im.width, box_h / im.height)
+    im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    im.save(dst)
+    return True
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--retrofe", required=True)
@@ -158,7 +175,7 @@ def main():
             made += write_png(cast[i % len(cast)], os.path.join(out, "am_hero_char%d" % (i + 1), entry + ".png"), 900, a.force)
         for i in range(3):   # three slots; fewer consoles repeat, so the fade never shows an empty slot
             if cons:
-                made += write_png(cons[i % len(cons)], os.path.join(out, "am_hero_console%d" % (i + 1), entry + ".png"), 700, a.force)
+                made += write_fit(cons[i % len(cons)], os.path.join(out, "am_hero_console%d" % (i + 1), entry + ".png"), 1000, 640, a.force)
         if os.path.exists(blank):   # no dial over the hero art
             sp = os.path.join(out, "am_spinner", entry + ".png")
             if not os.path.exists(sp):
