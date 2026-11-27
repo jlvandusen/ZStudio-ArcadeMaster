@@ -109,6 +109,8 @@ function On-Event($e) {
       $M.settings = @{ items = @($e.items); idx = [Math]::Min($idx, @($e.items).Count); scroll = $scroll; message = "$($e.message)"; busy = $false; at = Get-Date; armed = $null; armedAt = [datetime]::MinValue; rest = @{}; moveAt = [datetime]::MinValue; dir = 0; done = $false }
       if ($M.yielded) { $M.yielded = $false; $form.WindowState = 'Normal'; $form.Bounds = $SB; $form.TopMost = $true; $form.Activate() }
     }
+    # the tool hands over to something the player must see (Windows' admin prompt for a driver install): the panel goes
+    'close' { $timer.Stop(); $form.BeginInvoke([Action]{ Close-Screen "tool: $($e.why)" }) | Out-Null }
     'yield' { $M.yielded = $true; if ($M.settings) { $M.settings.message = "$($e.message)" }; $form.TopMost = $false; $form.WindowState = 'Minimized' }
     'choice' { foreach ($op in @($e.options)) { if ($op.preview -and (Test-Path $op.preview) -and -not $M.thumbs[$op.preview]) { try { $bytes = [IO.File]::ReadAllBytes($op.preview); $M.thumbs[$op.preview] = [Drawing.Image]::FromStream((New-Object IO.MemoryStream (, $bytes))) } catch { } } }
       $M.choice = @{ opts = @($e.options); idx = [int]$e.selected; title = $e.title; prompt = $e.prompt; confirmed = $false; at = Get-Date; rest = @{}; moveAt = [datetime]::MinValue; dir = 0 } }
@@ -603,6 +605,10 @@ $timer.Add_Tick({
 })
 $form.Add_KeyDown({ param($s, $e)
   if ($M.done) { Close-Screen "key $($e.KeyCode)"; return }
+  # F8 always closes a tool screen, even while its tool is still working (James 2026-11-27: the Graphics Driver tool
+  # waited on Windows' admin prompt and F8 did nothing). Closing ends the tool's process tree (FormClosed below); an
+  # installer already running elevated is not ours to end and finishes by itself.
+  if ("$($e.KeyCode)" -eq 'F8') { $M.cancelled = $true; Close-Screen 'closed (F8)'; return }
   # the panel's buttons work like Enter / Esc (James 2026-11-26: "should be b1 and b2 back etc as well as enter"):
   # P1 button 1 (LCtrl) and P1 Start (1) accept, P1 button 2 (LAlt) goes back. In the wizard button 2 is its BACK step.
   $k = "$($e.KeyCode)"
@@ -612,7 +618,9 @@ $form.Add_KeyDown({ param($s, $e)
     switch ($k) { 'Down' { $st.idx = [Math]::Min($n - 1, $st.idx + 1) } 'Up' { $st.idx = [Math]::Max(0, $st.idx - 1) } 'Return' { Activate-Setting } 'Space' { Activate-Setting } 'Escape' { $st.idx = $n - 1; Activate-Setting } }; return }
   if ($M.choice -and -not $M.choice.confirmed) { $c = $M.choice; $n = $c.opts.Count
     switch ($k) { 'Right' { $c.idx = ($c.idx + 1) % $n } 'Left' { $c.idx = ($c.idx - 1 + $n) % $n } 'Down' { $c.idx = [Math]::Min($n - 1, $c.idx + 4) } 'Up' { $c.idx = [Math]::Max(0, $c.idx - 4) } 'Return' { Confirm-Choice } 'Escape' { Close-Screen 'cancelled (Esc)' } }; return }
-  if ($M.wiz -and -not $M.wizEnd) { switch ($k) { 'S' { Send-WizKey 'S' } 'R' { Send-WizKey 'R' } 'B' { Send-WizKey 'B' } 'Q' { Send-WizKey 'Q' } 'Return' { Send-WizKey 'Enter' } 'Escape' { $M.cancelled = $true; Close-Screen 'cancelled (Esc)' } } }
+  if ($M.wiz -and -not $M.wizEnd) { switch ($k) { 'S' { Send-WizKey 'S' } 'R' { Send-WizKey 'R' } 'B' { Send-WizKey 'B' } 'Q' { Send-WizKey 'Q' } 'Return' { Send-WizKey 'Enter' } 'Escape' { $M.cancelled = $true; Close-Screen 'cancelled (Esc)' } }; return }
+  # a plain tool still working (no wizard, list or settings page of its own): Esc / Back stops it and closes the screen
+  if ($k -eq 'Escape') { $M.cancelled = $true; Close-Screen 'cancelled (Esc)' }
 })
 $form.Add_MouseDown({ param($s, $e)
   if ($M.done) { Close-Screen 'tap/click'; return }
