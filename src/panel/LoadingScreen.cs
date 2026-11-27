@@ -154,6 +154,7 @@ class LoadingScreen : Form
     static void ShowGame(IntPtr game, Action<string> log)
     {
         var main = Screen.PrimaryScreen.Bounds;
+        IntPtr away = IntPtr.Zero;
         EnumWindows(delegate (IntPtr h, IntPtr l) {
             if (!IsWindowVisible(h) || IsIconic(h)) return true;
             int pid; GetWindowThreadProcessId(h, out pid);
@@ -170,12 +171,20 @@ class LoadingScreen : Form
             }
             if (!pn.Equals("retrofe", StringComparison.OrdinalIgnoreCase)) return true;
             RECT r; if (!GetWindowRect(h, out r)) return true;
-            if (!Screen.FromRectangle(new Rectangle(r.L, r.T, Math.Max(1, r.R - r.L), Math.Max(1, r.B - r.T))).Primary) return true;
+            if (!Screen.FromRectangle(new Rectangle(r.L, r.T, Math.Max(1, r.R - r.L), Math.Max(1, r.B - r.T))).Primary) { away = h; return true; }
             ShowWindow(h, 6 /* SW_MINIMIZE */);
             lock (minimisedFrontend) minimisedFrontend.Add(h);
             return true;
         }, IntPtr.Zero);
         System.Threading.Thread.Sleep(300);
+        // Supermodel draws nothing in full screen until it loses the focus and gets it back (what Alt+Tab did for
+        // James, 2026-11-27): the focus goes to the frontend's touch-screen window for a moment, then to the game
+        if (away != IntPtr.Zero)
+        {
+            keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);
+            SetForegroundWindow(away);
+            System.Threading.Thread.Sleep(400);
+        }
         keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);   // an Alt tap lets us hand over the foreground
         ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
         int gp; GetWindowThreadProcessId(game, out gp);

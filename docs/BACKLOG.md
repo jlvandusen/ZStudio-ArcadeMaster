@@ -33,6 +33,17 @@ The loop works like this (James, 2026-11-25):
       `Supermodel.ini.am-bak-panel`. Still to do: confirm RetroBat's automatic controller setup doesn't overwrite
       this; set up the P2 keys; map the yoke to the UltraStik analog axes; find out why James saw poor picture
       quality at 4K.
+      **On hold (James 2026-11-27: "lets table model3 games for right now").** State when it was parked:
+      - Supermodel shows black in full screen until its window loses focus and gets it back (Alt+Tab). AmPanel now
+        does that switch 3 s after the game window is up (LoadingScreen.ShowGame), but this is untested: a manual
+        focus switch made the picture appear once, but it may also have been a slow load.
+      - Its console opens in Windows Terminal, which RetroBat cannot hide. AmPanel minimises it. The real fix,
+        Settings > System > For developers > Terminal = Windows Console Host, needs James's OK.
+      - RetroBat es_settings: model3.videomode 1920x1080x32x60, model3.forcefullscreen 1,
+        model3.disableautocontrollers 1 (backup `es_settings.cfg.am-bak-model3`). 4K was black in every mode.
+      - Star Wars starts with the EVENT button (panel B2), not Start.
+      - Ideas: RetroFE `minimizeOnFocusLoss` / `unloadSDL`, `-ss=2` supersampling at 1080, borderless instead of
+        exclusive full screen.
 - [x] Self-heal for incomplete ROM sets (tools/Repair-GameRoms.py, run by AmPanel after every game) - PR #236.
 
 ## 2a. James 2026-11-25: full settings like the race cabinet, and our own LED engine
