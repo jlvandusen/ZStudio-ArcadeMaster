@@ -33,6 +33,9 @@ MADE_HERE = "am-retrobat.txt"          # marker file: this collection belongs to
 FOLDER = {"dolphin": "dolphin-emu", "cxbx": "cxbx-reloaded", "pcsx2": "pcsx2", "duckstation": "duckstation"}
 # the better choice when es_systems lists another first (docs/16): VICE x64sc is the accurate C64
 PREFER = {"c64": ("libretro", "vice_x64sc")}
+# RetroBat system name -> other folder names the library may hold it under (Move-ToLibrary keeps the source build's name)
+LIBRARY_ALIASES = {"3ds": ("n3ds",), "n3ds": ("3ds",), "megadrive": ("genesis",), "genesis": ("megadrive",),
+                   "pcengine": ("tg16",), "sega32x": ("32x",), "mastersystem": ("sms",)}
 MEDIA = [("marquee", ["logo"]), ("image", ["screenshot", "am_backdrop"]), ("thumb", ["cover"]), ("video", ["video"])]
 
 
@@ -279,6 +282,12 @@ def main():
         # else RetroBat's folder. Art and gamelist.xml stay in RetroBat's folder (media is never moved).
         artdir = os.path.join(rb, "roms", s["name"])
         libdir = os.path.join(a.library, "roms", s["name"])
+        # the library may file a system under another build's folder name (2026-11-27: the 3DS games went to
+        # library\roms\n3ds, RetroBat calls the system 3ds, and the import skipped it)
+        for alias in LIBRARY_ALIASES.get(s["name"], ()):
+            alt = os.path.join(a.library, "roms", alias)
+            if not games_in(libdir, s["extensions"]) and games_in(alt, s["extensions"]):
+                libdir = alt
         romdir = libdir if games_in(libdir, s["extensions"]) else artdir
         games = games_in(romdir, s["extensions"])
         choice = None

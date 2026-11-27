@@ -99,6 +99,16 @@ before you reach it.
 reboot, before and after.
 
 ### 5. Loading a list on a thread, not the frame (medium) - now the top speed item
+**Done in part (RACE2, 2026-11-27, ZStudio-retrofe PR 11):** opening Racing froze one frame for **163 ms, now 70 ms**.
+- **Timing first** (with `perfLog` on): `open Racing: 159.7 ms = collection 21.0 + page 11.5 + select 5.2 + allocate 0.9 +
+  first render 121.0`, plus per first-render pass the wait / pump time and the slowest components. 82 % was the first
+  render: waiting for every background decode, then many pictures turned into textures on the main thread (1-6 ms each).
+- **`textureUploadBudgetMs`** in settings.conf (0 = off) caps that texture work per frame; a picture over the budget
+  finishes on a later frame. With a budget the page shows after one pass and doesn't wait for every decode.
+- **Results with budget 8:** open 159.7 -> 80.8 -> 51.2 ms, freeze 163 -> 98 -> 70 ms; no hitch afterwards (worst frame
+  32 ms). Screenshots 0.3 s after opening show the whole page drawn.
+- **Left:** reading the collection (20 ms, fix (a) below: keep it between visits) and building the page (11 ms).
+
 **Measured on RACE1 (2026-11-25, timing build, not installed):** entering Racing is one 100-136 ms frame:
 | step | ms |
 |---|---|
