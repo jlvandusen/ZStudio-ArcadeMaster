@@ -94,10 +94,11 @@ $S.menuSounds = @{ group = 'SCREEN AND SOUND'; label = 'MENU SOUNDS'; detail = '
 $S.story = @{ group = 'MENUS'; label = 'GAME STORY PANEL'; detail = 'After 8 s on a game, its story scrolls over the video'; kind = 'switch'; default = $true
   get = { [bool](Read-AmUi $ManifestDir).story }
   set = { param($on) 'layout updated' + (SetUi 'story' $on) } }
-# the game lists as a wall of picture tiles (layouts\AM-GameWall, tools\Set-GameListView.ps1); the default stays the default
-$S.gameWall = @{ group = 'MENUS'; label = 'WALL OF GAMES'; detail = 'Game lists show fifteen games at once as picture tiles, the chosen one playing in the middle. Off = one game at a time'; kind = 'switch'; default = $false
-  get = { $ln = Conf 'layout'; if (-not $ln) { $ln = 'ArcadeMaster' }; [bool]@(Get-ChildItem -Path (Join-Path $RetroFE "layouts\$ln\collections\*\layout\layout.xml") -ErrorAction SilentlyContinue | Where-Object { [IO.File]::ReadAllText($_.FullName) -match 'WALL OF GAMES - game list' }).Count }
-  set = { param($on) $o = & (Join-Path $t 'Set-GameListView.ps1') -RetroFE $RetroFE -View $(if ($on) { 'wall' } else { 'default' }) 6>&1 | Out-String; (($o.Trim() -split "`r?`n") | Select-Object -Last 1) } }
+# how the game lists look (tools\Set-GameListView.ps1): the default, or one of the views built from the theme mock-ups
+$S.gameListView = @{ group = 'MENUS'; label = 'GAME LIST VIEW'; detail = 'DEFAULT: one game at a time. WALL: fifteen picture tiles, the chosen game playing in the middle. PITWALL: the preview fills the screen, the list is a tower on the left'; kind = 'cycle'; presets = @('default', 'wall', 'pitwall'); default = 'default'
+  get = { "$(& (Join-Path $t 'Set-GameListView.ps1') -RetroFE $RetroFE -Current)".Trim() }
+  show = { param($v) "$v".ToUpper() }
+  set = { param($v) $o = & (Join-Path $t 'Set-GameListView.ps1') -RetroFE $RetroFE -View $v 6>&1 | Out-String; (($o.Trim() -split "`r?`n") | Select-Object -Last 1) } }
 $S.controlHints = @{ group = 'MENUS'; label = 'SPECIAL-CONTROL REMINDERS'; detail = 'Banner for trackball, spinner, gun, wheel and 4-way games'; kind = 'switch'; default = $true
   get = { [bool](Read-AmUi $ManifestDir).controlHints }
   set = { param($on) 'layout updated' + (SetUi 'controlHints' $on) } }
