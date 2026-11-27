@@ -4,6 +4,8 @@
   same lists, built from the theme mock-ups James picked from (2026-11-27):
     wall      WALL OF GAMES  fifteen picture tiles, the chosen game playing in the middle   (layouts\AM-GameWall)
     pitwall   PIT WALL       the chosen game's preview fills the screen, the list is a timing tower down the left
+    split     SPLIT SCREEN   the game playing on the left, the list as a strip down the middle, on the right what the
+                             game is and how often it has been played on this cabinet         (layouts\AM-Split)
                                                                                              (layouts\AM-PitWall)
   A view changes the game lists only: the main menu, Tools and Settings keep the theme's own look.
 
@@ -32,7 +34,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 # view name -> its folder in the repo's layouts, and whether it shows the small tiles
-$views = [ordered]@{ wall = @{ dir = 'AM-GameWall'; tiles = $true; label = 'WALL OF GAMES' }; pitwall = @{ dir = 'AM-PitWall'; tiles = $false; label = 'PIT WALL' } }
+$views = [ordered]@{ wall = @{ dir = 'AM-GameWall'; tiles = $true; label = 'WALL OF GAMES' }; pitwall = @{ dir = 'AM-PitWall'; tiles = $false; label = 'PIT WALL' }; split = @{ dir = 'AM-Split'; tiles = $false; label = 'SPLIT SCREEN' } }
 if ($View -and $View -ne 'default' -and -not $views.Contains($View)) { throw "unknown view '$View' (default, $($views.Keys -join ', '))" }
 $markRx = 'ArcadeMaster game list view: (\w+)|WALL OF GAMES - game list'      # the second form: files written before views had names
 $sc = Join-Path $RetroFE 'settings.conf'
