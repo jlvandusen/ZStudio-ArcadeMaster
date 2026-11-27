@@ -209,7 +209,7 @@ def main():
         if os.path.isdir(os.path.join(rb, d)):
             moves.append((os.path.join(rb, d), os.path.join(dest, d)))
 
-    print("to move (rename, same drive):")
+    print("to link (folder links, RetroBat untouched):" if a.mode == "link" else "to move (rename, same drive):")
     blocked, merges = [], []
     for src, dst in moves:
         busy = os.path.exists(dst) and not is_link_to(dst, src) and (not os.path.isdir(dst) or os.listdir(dst))
