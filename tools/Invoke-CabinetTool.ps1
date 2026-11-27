@@ -241,6 +241,8 @@ switch ($Tool) {
       & $py (Join-Path $t 'New-PanelControlsArt.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
       Step 'panelcards' 'Button layout cards' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
+    # every other cabinet (a wheel rig has its own controls cards): only the filter bar's banners from that tool
+    elseif ($py) { & $py (Join-Path $t 'New-PanelControlsArt.py') --retrofe $RetroFE --manifest $ManifestDir --banners-only 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") } }
     # every cabinet: the story panel's text for each game (history.dat, the build's story files, games.json)
     if ($py) {
       Step 'stories' 'Game stories' 'run'
