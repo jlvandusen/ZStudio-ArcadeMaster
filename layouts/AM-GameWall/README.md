@@ -15,5 +15,12 @@ comes up over the bottom row. The filter box, breadcrumbs and BACK / FILTERS hin
   both ends, so a game leaving one row slides out of sight before it comes in on the next. Both lists (tiles and
   logos) carry `menuIndex="0"`: without it the second one becomes a deeper menu level and is not drawn.
 
-Not done yet: a place in Tools > Themes (today's look stays the default), a main menu of its own, a check on the
-pedestal's 4K screen and second screen, and a measured menu-ready time against the default.
+## Switching it on and off
+
+- **Tools > Cabinet Settings > MENUS > WALL OF GAMES.** On: every game list of the cabinet (Racing, Flight, Arcade, the all-games list ...) shows the wall. Off: the default view. The main menu, Tools and Settings keep the theme's own look.
+- By hand: `tools\Set-GameListView.ps1 -RetroFE <frontend> -View wall` or `-View default`; without `-View` it says which view each list has.
+- With the frontend open the page changes at once; the tiles are made the first time (about 12 s for 380 games).
+- A cabinet with a second screen keeps what that screen showed: the theme's extra-screen layouts are copied beside the wall.
+- A list that already has a layout of its own (not ours) is left alone.
+
+Not done yet: its own main menu, a check on the pedestal's 4K screen and second screen, a measured menu-ready time against the default, and a cursor that moves freely around the grid (today the chosen game stays in the middle and the wall moves past it).
