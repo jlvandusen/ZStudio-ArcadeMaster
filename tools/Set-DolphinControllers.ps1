@@ -27,6 +27,18 @@ if (-not $DolphinUser) {
 }
 # a DolphinBar's slots count as real remotes: a remote synced to any slot then just works (continuous scanning)
 $real = if ($wii) { [Math]::Min(4, [int]$wii.wiimotes + [int]$wii.dolphinBarSlots) } else { 0 }
+$realSlots = @(1..4 | Where-Object { $_ -le $real })
+# AmPanel watches a DolphinBar and writes which of its slots has a remote synced right now (WiiRemotes.cs):
+# only those become Real; the others keep the emulated remote on the panel, so a Wii game works with either
+$liveFile = Join-Path $ManifestDir 'wii-remotes.json'
+if ($wii -and [int]$wii.dolphinBarSlots -gt 0 -and (Test-Path $liveFile)) {
+  try {
+    $live = @((Get-Content $liveFile -Raw | ConvertFrom-Json).slots | ForEach-Object { [int]$_ })
+    $bt = [Math]::Min(4, [int]$wii.wiimotes)   # remotes paired over Bluetooth take the first free slots
+    $realSlots = @($live) + @(1..4 | Where-Object { $live -notcontains $_ } | Select-Object -First $bt)
+    $real = $realSlots.Count
+  } catch { }
+}
 $board = $wii -and [int]$wii.balanceBoard -gt 0
 $gcad = $wii -and [bool]$wii.gcAdapter
 $present = @($cab.devices | Where-Object { $_.type -ne 'Nintendo' } | ForEach-Object { $_.name })
@@ -57,7 +69,7 @@ foreach ($u in $DolphinUser) {
   $wf = Join-Path $cfg 'WiimoteNew.ini'; $w = Get-Ini $wf; $w0 = ($w -join "`n")
   for ($i = 1; $i -le 4; $i++) {
     $sec = "Wiimote$i"; $cur = Get-IniValue $w $sec 'Source'
-    if ($i -le $real) {
+    if ($realSlots -contains $i) {
       if ($cur -ne '2') { if (-not $state.wiimoteSource.ContainsKey($sec)) { $state.wiimoteSource[$sec] = $(if ($cur) { $cur } else { '1' }) }; Set-IniValue $w $sec 'Source' '2'; $changes += "$sec -> Real Wii Remote" }
     } elseif ($state.wiimoteSource.ContainsKey($sec)) {
       Set-IniValue $w $sec 'Source' $state.wiimoteSource[$sec]; $changes += "$sec -> restored Source $($state.wiimoteSource[$sec])"; $state.wiimoteSource.Remove($sec)

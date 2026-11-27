@@ -54,6 +54,7 @@ static class AmPanel
     static string speech = "off";         // AmPanel.json "Speech": off | start
     static ExitGuard exitGuard;           // Esc ends any game (AmPanel.json "ExitKey": "ESC" | "none", "ExitGraceMs")
     static string exitKey = "ESC";
+    static WiiRemotes wii;                // which DolphinBar slots have a Wii Remote; Dolphin's slots follow (WiiRemotes.cs)
     static GameOptions gameOptions;       // TAB on the selected game: emulator version, map buttons (AmPanel.json "GameOptionsKey")
     static string gameOptionsKey = "Tab";
     static int exitGraceMs = 1500;
@@ -573,6 +574,11 @@ static class AmPanel
                 if (what == "game start") { exitGuard.Emulator = Convert.ToString(State.ContainsKey("emulator") ? State["emulator"] : null); exitGuard.GameRunning = true; }
                 else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") exitGuard.GameRunning = false;
             }
+            if (wii != null)
+            {
+                if (what == "game start") wii.GameRunning = true;
+                else if (what == "game stop" || what == "frontend start" || what == "game selected" || what == "frontend quit") wii.GameRunning = false;
+            }
             if (gameOptions != null)
             {
                 if (what == "game start") gameOptions.GameRunning = true;
@@ -929,6 +935,12 @@ static class AmPanel
                         new[] { Path.Combine(manifestDir, "exit-rules.json"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exit-rules.json") }, Log);
                 } catch (Exception e) { Log("exit guard: not started - " + e.Message); }
         }
+        try
+        {
+            wii = new WiiRemotes(manifestDir, toolsDir, Log);
+            wii.Changed = delegate { lock (Gate) State["wiiRemotes"] = wii.Live.Length == 0 ? "none synced (" + wii.Slots + " DolphinBar slots)" : "slot " + wii.Live; SaveState(); };
+        }
+        catch (Exception e) { Log("wii: not started - " + e.Message); }
         if (!gameOptionsKey.Equals("none", StringComparison.OrdinalIgnoreCase) && retroFERoot != null)
             try
             {
