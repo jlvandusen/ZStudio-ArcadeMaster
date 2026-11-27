@@ -49,6 +49,9 @@ class GameOptions
     public Control Ui;                     // shows the menu on AmPanel's UI thread
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
 
+    // one-screen cabinet: the search page, worked with the stick (James 2026-11-27: "need a way to open search on the
+    // same screen if there is no touch otherwise I can't get to tron easily"). Set by AmPanel when the index is there.
+    public Action OpenSearch;
     public GameOptions(string retroFERoot, string manifestDir, string key, Action<string> log)
     {
         root = retroFERoot; this.manifestDir = manifestDir; this.log = log ?? delegate { };
@@ -96,9 +99,11 @@ class GameOptions
             string mapWhat = MapKind(current);
             if (mapWhat != null) menu.Add(Tile("map", "MAP BUTTONS", "gamepad"));
             if (Changed(collName, item)) menu.Add(Tile("reset", "BACK TO DEFAULT", "mouse"));
+            if (OpenSearch != null) menu.Add(Tile("search", "SEARCH ALL GAMES", "keyboard"));
             menu.Add(Tile("close", "CLOSE", "analog"));
             string pick = Ask(title, "GAME OPTIONS", menu, null, theme);
             if (pick == null || pick == "close") return;
+            if (pick == "search") { OpenSearch(); return; }
             if (pick == "emulator")
             {
                 var tiles = alts.Select(a => Tile(a, Label(a), "joystick")).ToList();

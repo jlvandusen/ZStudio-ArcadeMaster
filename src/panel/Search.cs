@@ -400,6 +400,19 @@ class SearchScreen : NoFocusForm
 
     // keyboard: opened from a keyboard hotkey (the 2-player cabinet has a keyboard and no touch screen) - the page takes
     // the focus, typing goes into it, and the focus goes back to the frontend when it closes
+    // panel: opened from the panel (Game Options > SEARCH on a one-screen cabinet, James 2026-11-27: "need a way to open
+    // search on the same screen if there is no touch"). The stick moves a highlight over the on-screen keyboard and down
+    // into the results; button 1 (Left Ctrl) presses it, button 2 (Left Alt) deletes (closes when empty), Tab / Esc close.
+    // Letter keys are ignored: a keyboard-wired panel sends letters for player 2 (A, S, Q, W ...).
+    readonly bool panel;
+    int cr = 1, cc;          // the highlighted key (row, column); starts on Q
+    bool inResults;          // the highlight is in the results, not the keyboard
+    public SearchScreen(SearchIndex index, GameLink link, ChooserTheme theme, string retroFERoot, bool keyboard, bool panel) : this(index, link, theme, retroFERoot, keyboard || panel)
+    {
+        this.panel = panel;
+        if (panel) Shown += delegate { ControllerChooser.TakeFocus(Handle); };   // opened by AmPanel itself: Windows needs the help
+    }
+
     public SearchScreen(SearchIndex index, GameLink link, ChooserTheme theme, string retroFERoot, bool keyboard)
     {
         TakesFocus = keyboard; KeyPreview = true;
@@ -423,6 +436,7 @@ class SearchScreen : NoFocusForm
     {
         lastTouch = DateTime.Now;
         var k = e.KeyCode;
+        if (panel) { OnPanelKey(e); e.Handled = true; e.SuppressKeyPress = true; return; }
         if (k == Keys.Escape) { Close(); }
         else if (k == Keys.Back) Press("DEL");
         else if (k == Keys.Space) Press("SPACE");
@@ -442,6 +456,30 @@ class SearchScreen : NoFocusForm
         else if (k == Keys.Oem1 && e.Shift) Press(":");
         else return;
         e.Handled = true; e.SuppressKeyPress = true;
+    }
+
+    void OnPanelKey(KeyEventArgs e)
+    {
+        var k = e.KeyCode;
+        if (k == Keys.Escape || k == Keys.Tab) { Close(); return; }
+        if (k == Keys.Menu || k == Keys.LMenu || k == Keys.Back) { if (query.Length == 0) Close(); else Press("DEL"); return; }   // button 2
+        bool fire = k == Keys.ControlKey || k == Keys.LControlKey || k == Keys.Enter || k == Keys.D1;                              // button 1, Start
+        if (inResults)
+        {
+            if (fire) { if (sel < results.Count) Pick(results[sel]); return; }
+            if (k == Keys.Up) { if (sel < 2) inResults = false; else sel -= 2; }
+            else if (k == Keys.Down) sel = Math.Min(results.Count - 1, sel + 2);
+            else if (k == Keys.Left) sel = Math.Max(0, sel - 1);
+            else if (k == Keys.Right) sel = Math.Min(results.Count - 1, sel + 1);
+            Invalidate(); return;
+        }
+        if (fire) { Press(KeyAt(cr, cc)); return; }
+        if (k == Keys.Up) cr = Math.Max(0, cr - 1);
+        else if (k == Keys.Down) { if (cr == Layout.Length - 1) { if (results.Count > 0) { inResults = true; sel = 0; } } else cr++; }
+        else if (k == Keys.Left) cc = (cc + Layout[cr].Length - 1) % Layout[cr].Length;
+        else if (k == Keys.Right) cc = (cc + 1) % Layout[cr].Length;
+        cc = Math.Min(cc, Layout[cr].Length - 1);
+        Invalidate();
     }
 
     void OnTap(object s, MouseEventArgs e)
@@ -540,7 +578,7 @@ class SearchScreen : NoFocusForm
             var rr = new RectangleF(pad + (i % 2) * (cw + pad), ry + (i / 2) * (rh + H * 0.012f), cw, rh);
             rows.Add(new KeyValuePair<RectangleF, SearchIndex.Game>(rr, results[i]));
             using (var p = Round(rr, rh * 0.25f)) using (var b = new SolidBrush(Color.FromArgb(28, 32, 46))) g.FillPath(b, p);
-            if (TakesFocus && i == sel) using (var p = Round(rr, rh * 0.25f)) using (var pen = new Pen(th.Accent, 3)) g.DrawPath(pen, p);   // keyboard: the row Enter jumps to
+            if (TakesFocus && i == sel && (!panel || inResults)) using (var p = Round(rr, rh * 0.25f)) using (var pen = new Pen(th.Accent, 3)) g.DrawPath(pen, p);   // keyboard: the row Enter jumps to
             var logo = Logo(results[i]); float tx = rr.X + rh * 0.3f;
             if (logo != null)
             {
@@ -586,6 +624,8 @@ class SearchScreen : NoFocusForm
                 Color fill = line[i] == "CLOSE" ? Color.FromArgb(70, 20, 30) : line[i] == "SHIFT" && shift ? Color.FromArgb(Math.Min(255, th.Accent.R / 2), Math.Min(255, th.Accent.G / 2), Math.Min(255, th.Accent.B / 2)) : line[i].Length > 1 ? Color.FromArgb(30, 36, 56) : Color.FromArgb(22, 25, 36);
                 using (var p = Round(kr, kr.Height * 0.2f)) using (var b = new SolidBrush(hot ? th.Accent : fill)) g.FillPath(b, p);
                 using (var p = Round(kr, kr.Height * 0.2f)) using (var pen = new Pen(Color.FromArgb(70, 255, 255, 255), 1.5f)) g.DrawPath(pen, p);
+                if (panel && !inResults && row == cr && i == cc)   // the stick's highlight
+                    using (var p = Round(kr, kr.Height * 0.2f)) using (var pen = new Pen(th.Accent, 4)) g.DrawPath(pen, p);
                 using (var f = new Font(th.Family, kr.Height * (line[i].Length > 1 ? 0.28f : 0.42f), FontStyle.Bold, GraphicsUnit.Pixel))
                 using (var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
                     g.DrawString(line[i], f, hot ? Brushes.Black : Brushes.White, kr, fmt);
