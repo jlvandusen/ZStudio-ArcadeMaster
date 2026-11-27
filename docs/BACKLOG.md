@@ -21,6 +21,17 @@ The loop works like this (James, 2026-11-25):
 - Open PRs: CI, review comments, conflicts.
 - Delete merged branches and stale worktrees.
 
+## 1b. James 2026-11-27: "a good start shippable version" - next: more themes
+Shippable baseline (2026-11-27): our own frontend build (fork, retrofe/fork.txt), touch buttons / list / panels /
+breadcrumbs, SEARCH as a theme button with system badges, the main-menu hero show (New-MenuHeroArt.py: backdrops,
+cycling consoles with captions, 24-character show, dropping facts, logo strip, timeline), menu music (Tools > Menu
+Music), content refresh on every cabinet after boot.
+- [ ] **More themes** (James: "we will need more themes"). Variations of the main-menu hero show: several rotating
+      backdrops per entry, different character entrances (drop in, pop up, from the left), colour / font sets. Theme
+      engine work is RACE1's phase 4 (docs/21): agree the split there before building.
+- [ ] More rave / NCS tracks for Menu Music (only 22 on the drive today).
+- [x] Main menu: no dial, hero art, facts, music (PRs 283-294).
+
 ## 2. James 2026-11-26: systems menus, controls per system, self-heal
 - [ ] **Maker and system menus look mind-blowing and stay fast.** Each maker gets a high-resolution picture
       (Nintendo, Sega, Sony, Microsoft ...) with its consoles rotating, plus specs and a timeline (e.g. Xbox, then
