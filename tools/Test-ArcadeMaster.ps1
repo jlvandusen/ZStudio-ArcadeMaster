@@ -155,7 +155,7 @@ if ($Watchdog) {
 
 if ($Cabinet) {
   $problems = @(); $cfg = $null
-  foreach ($cf in 'R:\ArcadeMaster\ArcadeMaster.config.json', 'D:\ArcadeMaster\ArcadeMaster.config.json', 'C:\ArcadeMaster\ArcadeMaster.config.json') { if (Test-Path $cf) { $cfg = Get-Content $cf -Raw | ConvertFrom-Json; break } }
+  foreach ($cf in (Join-Path (Split-Path (Split-Path $PSScriptRoot)) 'ArcadeMaster.config.json'), 'R:\ArcadeMaster\ArcadeMaster.config.json', 'D:\ArcadeMaster\ArcadeMaster.config.json', 'C:\ArcadeMaster\ArcadeMaster.config.json') { if (Test-Path $cf) { $cfg = Get-Content $cf -Raw | ConvertFrom-Json; break } }
   if (-not $cfg -or -not $cfg.RetroFERoot -or -not (Test-Path $cfg.RetroFERoot)) { $problems += 'no ArcadeMaster.config.json with a RetroFERoot that exists on this machine' }
   else {
     . (Join-Path $PSScriptRoot 'lib\AmPython.ps1'); $py = Find-AmPython
@@ -180,7 +180,9 @@ if ($Cabinet) {
       # the MAME per-game mappings: the json reads, every cfg it names parses (dry run writes nothing)
       $mOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-MameControls.ps1') -RetroFE $cfg.RetroFERoot 2>&1
       $mErr = @($mOut | Where-Object { $_ -is [Management.Automation.ErrorRecord] })
-      if ($mErr -or $LASTEXITCODE) { $problems += "Set-MameControls (dry run): $(if ($mErr) { ($mErr[0].ToString() -split "`n")[0] } else { "exit $LASTEXITCODE" })" }
+      # a frontend without MAME (a fresh release install) has no MAME cfg folder: nothing to check there, not a problem
+    if (($mOut | Out-String) -match 'no MAME cfg folder') { $mErr = @(); $LASTEXITCODE = 0 }
+    if ($mErr -or $LASTEXITCODE) { $problems += "Set-MameControls (dry run): $(if ($mErr) { ($mErr[0].ToString() -split "`n")[0] } else { "exit $LASTEXITCODE" })" }
       $ErrorActionPreference = 'Stop'
     }
   }

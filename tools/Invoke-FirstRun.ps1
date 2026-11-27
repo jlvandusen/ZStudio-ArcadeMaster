@@ -57,13 +57,25 @@ if (-not $RetroBat) {
   if ($rb) { $m = Select-String -LiteralPath $rb.FullName -Pattern '^executable\s*=\s*(.+?)\\emulationstation\\emulatorLauncher\.exe' | Select-Object -First 1; if ($m) { $RetroBat = $m.Matches[0].Groups[1].Value.Trim() } }
 }
 if (-not $RetroBat) {
-  $drives = Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | ForEach-Object { $_.DeviceID }
-  foreach ($d in $drives) {
+  # every RetroBat on the local drives; the one with the most systems that hold games wins (a PC can keep an old or empty
+  # one - the pedestal has R:\RetroBat next to the real R:\CP78\RetroBat): the most games, then the most systems
+  $found = @()
+  foreach ($d in (Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | ForEach-Object { $_.DeviceID })) {
     foreach ($pat in "$d\RetroBat", "$d\*\RetroBat", "$d\*\*\RetroBat") {
-      $hit = Get-Item $pat -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName 'emulationstation\emulatorLauncher.exe') } | Select-Object -First 1
-      if ($hit) { $RetroBat = $hit.FullName; break }
+      foreach ($hit in @(Get-Item $pat -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName 'emulationstation\emulatorLauncher.exe') })) {
+        $sys = 0; $games = 0
+        foreach ($rd in @(Get-ChildItem (Join-Path $hit.FullName 'roms') -Directory -ErrorAction SilentlyContinue)) {
+          $g = @(Get-ChildItem $rd.FullName -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch '^(gamelist\.xml|_info\.txt)$' }).Count
+          if ($g) { $sys++; $games += $g }
+        }
+        $found += [pscustomobject]@{ Path = $hit.FullName; Systems = $sys; Games = $games }
+      }
     }
-    if ($RetroBat) { break }
+  }
+  $found = @($found | Sort-Object Games, Systems -Descending)
+  if ($found.Count) {
+    $RetroBat = $found[0].Path
+    if ($found.Count -gt 1) { Say ("RetroBat installs: " + (($found | ForEach-Object { "$($_.Path) ($($_.Games) games in $($_.Systems) systems)" }) -join ', ') + " - using the first; -RetroBat picks another") }
   }
 }
 Say $(if ($RetroBat) { "RetroBat found: $RetroBat (its emulators and games are used; RetroBat itself is never changed)" } else { 'no RetroBat: lists come from the frontend''s own systems' })
@@ -75,11 +87,16 @@ if ($RetroBat) { $imp += @('--retrobat', $RetroBat) }
 Step 'lists' $py $imp
 # 3. launchers (+ panel keys in every emulator)
 Step 'launchers' $py (@((Join-Path $tools 'New-DirectLaunchers.py'), '--retrofe', $RetroFE, '--manifest', $ManifestDir) + $dry)
+if (-not $Apply) { Say '    (a dry run counts only the lists that exist already: with -Apply every list above gets its launcher)' }
 # 4. links (or moves)
 if ($RetroBat) {
   $mv = @((Join-Path $tools 'Move-OffRetroBat.py'), '--retrobat', $RetroBat, '--dest', $root, '--retrofe', $RetroFE, '--manifest', $ManifestDir, '--mode', $(if ($Move) { 'move' } else { 'link' }))
   if ($Apply) { $mv += '--apply' }
   Step $(if ($Move) { 'moves' } else { 'links' }) $py $mv
+}
+# 4b. the panel's keys in every emulator: after the links, because on a fresh install <root>\emulators only exists now
+if ($Apply -and (Test-Path (Join-Path $root 'emulators'))) {
+  Step 'panel keys' $py @((Join-Path $tools 'Set-EmulatorPanelKeys.py'), '--manifest', $ManifestDir, '--emulators', (Join-Path $root 'emulators'))
 }
 # 5. content + lights (only when applying: they write art and data)
 if ($Apply) {
