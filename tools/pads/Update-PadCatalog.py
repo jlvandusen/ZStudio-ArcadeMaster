@@ -57,6 +57,26 @@ FAMILIES = {
                 'buttons': ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', 'Minus', 'Plus', 'LS', 'RS', 'Home', 'Capture']},
 }
 
+# How each family's buttons stand for the "retropad" the emulators think in (b = bottom, a = right, y = left, x = top
+# of the four face buttons; tools/system_buttons.py turns retropad into each console's own names). With this a card
+# can say "the console's A is your Circle".
+RETROPAD = {
+    'ps3':  {'b': 'Cross', 'a': 'Circle', 'y': 'Square', 'x': 'Triangle', 'l': 'L1', 'r': 'R1', 'l2': 'L2', 'r2': 'R2', 'select': 'Select', 'start': 'Start'},
+    'psx':  {'b': 'Cross', 'a': 'Circle', 'y': 'Square', 'x': 'Triangle', 'l': 'L1', 'r': 'R1', 'l2': 'L2', 'r2': 'R2', 'select': 'Select', 'start': 'Start'},
+    'ps4':  {'b': 'Cross', 'a': 'Circle', 'y': 'Square', 'x': 'Triangle', 'l': 'L1', 'r': 'R1', 'l2': 'L2', 'r2': 'R2', 'select': 'Share', 'start': 'Options'},
+    'ps5':  {'b': 'Cross', 'a': 'Circle', 'y': 'Square', 'x': 'Triangle', 'l': 'L1', 'r': 'R1', 'l2': 'L2', 'r2': 'R2', 'select': 'Create', 'start': 'Options'},
+    'xbox': {'b': 'A', 'a': 'B', 'y': 'X', 'x': 'Y', 'l': 'LB', 'r': 'RB', 'l2': 'LT', 'r2': 'RT', 'select': 'View', 'start': 'Menu'},
+    'switch': {'b': 'B', 'a': 'A', 'y': 'Y', 'x': 'X', 'l': 'L', 'r': 'R', 'l2': 'ZL', 'r2': 'ZR', 'select': 'Minus', 'start': 'Plus'},
+    'snes': {'b': 'B', 'a': 'A', 'y': 'Y', 'x': 'X', 'l': 'L', 'r': 'R', 'select': 'Select', 'start': 'Start'},
+    'snespro': {'b': 'B', 'a': 'A', 'y': 'Y', 'x': 'X', 'l': 'L', 'r': 'R', 'l2': 'L2', 'r2': 'R2', 'select': 'Select', 'start': 'Start'},
+    'nes':  {'b': 'B', 'a': 'A', 'select': 'Select', 'start': 'Start'},
+    'genesis': {'y': 'A', 'b': 'B', 'a': 'C', 'l': 'X', 'x': 'Y', 'r': 'Z', 'l2': 'L', 'r2': 'R', 'select': 'Mode', 'start': 'Start'},
+    'n64':  {'b': 'B', 'a': 'A', 'l': 'L', 'r': 'R', 'l2': 'Z', 'start': 'Start'},
+    'gamecube': {'b': 'A', 'y': 'B', 'a': 'X', 'x': 'Y', 'r': 'Z', 'l2': 'L', 'r2': 'R', 'start': 'Start'},
+}
+for _f, _m in RETROPAD.items():
+    FAMILIES[_f]['retropad'] = _m
+
 # first rule that matches the list's name decides the family (order matters: "NES30 Pro" before "NES")
 RULES = [
     (r'\bPS5\b|DualSense', 'ps5'),
