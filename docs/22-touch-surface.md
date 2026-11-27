@@ -31,8 +31,12 @@ Any layout component becomes a button with `touchAction="<action>"`.
 
 ## Next steps
 
-2. **Touch the list itself.** A tap on a game in a menu selects that game, and a tap on the selected game starts it.
-   Flicks scroll the list with momentum.
+2. **Touch the list itself (done, ZStudio-retrofe PR 10).**
+   - A tap on another visible game jumps straight to it, like the cabinet link's `goto`.
+   - A tap on the selected game presses Select, which starts it.
+   - It only works while the menu stands still, and it ends attract mode.
+   - Log: `[Touch] list: jump 1 on screen 0`.
+   - Still to do: flicks scrolling the list with momentum.
 3. **Companion panels.** One touch layout holds several panels: details, controls card, video, search, filters,
    favourites and settings. A tab row switches between them (`touchAction="panel:controls"`, with
    `onPanelEnter` / `onPanelExit` events), and the panels follow the selected game. AmPanel's search and chooser
