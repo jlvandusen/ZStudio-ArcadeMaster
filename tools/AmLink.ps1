@@ -141,7 +141,10 @@ $peers = @{}; $lastPeerRead = [datetime]::MinValue
 $noFollow = 'Tools', 'SETTINGS', 'Controller'      # menus that are not game lists: never followed into, nothing in them is joined
 $linkShown = $false   # the "cabinets are linked" card is up (attract)
 $missSaid = ''; $noteUntil = $null   # the "not on this cabinet" note: said once per game, taken down after a few seconds: @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
-$rejoinSec = $IdleSec; try { $am = Select-String -LiteralPath (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*attractModeTime\s*=\s*(\d+)' | Select-Object -Last 1; if ($am -and [int]$am.Matches[0].Groups[1].Value -gt $rejoinSec) { $rejoinSec = [int]$am.Matches[0].Groups[1].Value } } catch { }
+# attractModeTime as RetroFE sees it: settings.conf, then settings1-15.conf on top (the cabinet type's defaults are in
+# settings8.conf, docs/21 phase 3)
+$amFiles = @(Join-Path $RetroFE 'settings.conf') + @(1..15 | ForEach-Object { Join-Path $RetroFE "settings$_.conf" } | Where-Object { Test-Path -LiteralPath $_ })
+$rejoinSec = $IdleSec; try { $am = Select-String -LiteralPath $amFiles -Pattern '^\s*attractModeTime\s*=\s*(\d+)' | Select-Object -Last 1; if ($am -and [int]$am.Matches[0].Groups[1].Value -gt $rejoinSec) { $rejoinSec = [int]$am.Matches[0].Groups[1].Value } } catch { }
 Say "cabinet link started: $HostName ($type), share $Share, follows again after $rejoinSec s without a press here (attract mode), countdown $CountdownSec s"
 $startedAt = Get-Date; $lastParentCheck = Get-Date; $lastSelfCheck = Get-Date; $selfStamp = (Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc; $restartSelf = $false; $selfArgs = @($PSBoundParameters.GetEnumerator() | ForEach-Object { "-$($_.Key)"; if ($_.Value -isnot [switch]) { '"' + [string]$_.Value + '"' } })
 
