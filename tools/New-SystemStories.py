@@ -28,6 +28,8 @@ STORIES = {
                  ["Super Smash Bros. Melee is still played competitively today.", "Metroid Prime and The Wind Waker came out on it."]),
     "nintendo ds": ("Nintendo DS (Nintendo, 2004)", "Two screens, one of them a touch screen, plus a microphone.",
                     ["Brain Age and Nintendogs reached people who had never played games.", "Over 150 million sold, one of the best-selling consoles ever."]),
+    "nintendo 3ds": ("Nintendo 3DS (Nintendo, 2011)", "The DS's two screens, with 3D on the top one and no glasses needed.",
+                     ["Super Mario 3D Land and Pokemon X and Y made full use of the 3D screen.", "It also plays the whole DS library.", "Over 75 million sold across the 3DS family."]),
     "wii": ("Wii (Nintendo, 2006)", "Motion controls with a pointing remote brought whole families to video games.",
             ["Wii Sports came in the box in most regions and became a phenomenon.", "Over 100 million sold."]),
     "wii u": ("Wii U (Nintendo, 2012)", "A console whose controller had its own screen, the forerunner of the Switch.",
