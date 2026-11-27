@@ -10,5 +10,8 @@ switch the filters; the filter box sits at the top of the tower and the breadcru
 - Switch: **Tools > Cabinet Settings > MENUS > GAME LIST VIEW** steps through DEFAULT, WALL, PITWALL.
 - Tried on RACE1 (GTX 1650, 1080p) on the Racing list: draws, scrolls, the video plays full screen, the card comes up.
 
-Not done yet: a 4:3 preview leaves plain bars at the sides (the game's backdrop should show there), numbers down the
-tower like a real timing screen, and a check on the pedestal's 4K screen and second screen.
+Fixed on 2026-11-27 after the first try:
+- **Black bars beside 4:3 previews.** The bars were baked into the preview clips (a 4:3 game inside a 16:9 file). `tools\New-PreviewMedia.py --trim-bars` takes them off clips already made (8 of RACE1's 265), and new clips are made without them. The game's backdrop now shows at the sides.
+- **The chosen game's position** in the list is on the bright bar, like a position number.
+
+Not done yet: a check on the pedestal's 4K screen and second screen.

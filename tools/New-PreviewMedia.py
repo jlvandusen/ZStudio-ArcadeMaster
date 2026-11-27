@@ -32,6 +32,7 @@ import argparse
 import io
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -216,6 +217,40 @@ def target_size(info: dict) -> tuple[int, int]:
     return min(tw, MAX_W), min(th, MAX_H)
 
 
+def detect_bars(ffmpeg: str, src: str, info: dict) -> tuple[int, int, int, int] | None:
+    """Black bars baked into the picture: (w, h, x, y) of the real picture, or None when it fills the frame.
+
+    Many arcade videos are a 4:3 game inside a 16:9 file. Shown full screen the bars are black stripes over the game's
+    own backdrop (Pit Wall view, RACE1 2026-11-27). ffmpeg's cropdetect looks at three places in the clip; the
+    largest picture found wins, so one dark scene cannot cut the picture down. A crop of less than a tenth of the
+    frame is left alone (not worth a re-encode), and so is one that would keep under 40 % (a fade, not bars)."""
+    w, h, dur = info['width'], info['height'], info.get('duration') or 0
+    best = None
+    for frac in (0.15, 0.45, 0.75):
+        cmd = [ffmpeg, '-hide_banner', '-nostdin', '-ss', f'{max(0.0, dur * frac):.2f}', '-i', src, '-t', '2',
+               '-map', f'0:{info["vindex"]}', '-vf', 'cropdetect=limit=24:round=2:reset=0', '-an', '-f', 'null', '-']
+        try:
+            r = run(cmd, timeout=120)
+        except Exception:
+            continue
+        found = re.findall(r'crop=(\d+):(\d+):(\d+):(\d+)', r.stderr or '')
+        if not found:
+            continue
+        cw, ch, cx, cy = (int(v) for v in found[-1])
+        if best is None:
+            best = [cx, cy, cx + cw, cy + ch]
+        else:
+            best = [min(best[0], cx), min(best[1], cy), max(best[2], cx + cw), max(best[3], cy + ch)]
+    if not best:
+        return None
+    cw, ch = best[2] - best[0], best[3] - best[1]
+    if cw < w * 0.4 or ch < h * 0.4:
+        return None
+    if cw > w * 0.9 and ch > h * 0.9:
+        return None
+    return cw - cw % 2, ch - ch % 2, best[0], best[1]
+
+
 def can_copy(info: dict) -> bool:
     return (info['vcodec'] == 'h264' and info['width'] <= MAX_W and 0 < info['vbitrate'] < COPY_MAX_BPS
             and info['pix_fmt'] in ('yuv420p', 'yuvj420p', None))
@@ -223,7 +258,8 @@ def can_copy(info: dict) -> bool:
 
 def video_cmd(ffmpeg: str, src: str, out: str, info: dict, encoder: str) -> tuple[list[str], str]:
     cmd = [ffmpeg, '-hide_banner', '-nostdin', '-v', 'error', '-y']
-    copy = can_copy(info)
+    crop = info.get('crop')
+    copy = can_copy(info) and not crop
     if not copy and encoder == 'nvenc':
         cmd += ['-hwaccel', 'cuda']           # NVDEC decode; ffmpeg falls back to software for other codecs
     cmd += ['-i', src, '-t', str(MAX_SECONDS), '-map', f'0:{info["vindex"]}']
@@ -234,9 +270,11 @@ def video_cmd(ffmpeg: str, src: str, out: str, info: dict, encoder: str) -> tupl
         cmd += ['-c:v', 'copy']
         mode = 'copy'
     else:
-        tw, th = target_size(info)
+        tw, th = target_size(dict(info, width=crop[0], height=crop[1]) if crop else info)
         out_fps = min(info['fps'] or MAX_FPS, MAX_FPS)
         vf = [f'scale={tw}:{th}:flags=bicubic', 'setsar=1']
+        if crop:
+            vf.insert(0, f'crop={crop[0]}:{crop[1]}:{crop[2]}:{crop[3]}')     # bars baked into the picture come off first
         if (info['fps'] or 0) > MAX_FPS + 0.5:
             vf.append(f'fps={int(MAX_FPS)}')
         gop = max(1, int(round(out_fps)))
@@ -366,6 +404,54 @@ def up_to_date(out: str, src_mtime: float) -> bool:
 
 
 # ----------------------------------------------------------------------------------------------------- main
+def trim_bars(root: str, wanted: set[str] | None, ffmpeg: str, ffprobe_exe: str, encoder: str, dry: bool, limit: int) -> int:
+    """Existing preview clips (am_video) with black bars baked in are encoded again without them, in place.
+    The clip itself is the source: the game's original video is never touched. A clip without bars is left alone, so
+    a second run does nothing."""
+    cdir = os.path.join(root, 'collections')
+    done = same = failed = 0
+    t0 = time.time()
+    for col in sorted(os.listdir(cdir)):
+        if wanted and col.lower() not in wanted:
+            continue
+        vd = os.path.join(cdir, col, 'medium_artwork', 'am_video')
+        if not os.path.isdir(vd):
+            continue
+        for name in sorted(os.listdir(vd)):
+            if not name.lower().endswith('.mp4') or name.lower().endswith('.part.mp4'):
+                continue
+            clip = os.path.join(vd, name)
+            try:
+                info = media_info(ffprobe(ffprobe_exe, clip), os.path.getsize(clip))
+                crop = detect_bars(ffmpeg, clip, info)
+                if not crop:
+                    same += 1
+                    continue
+                print(f'  {col}/{name}: picture is {crop[0]}x{crop[1]} inside {info["width"]}x{info["height"]}'
+                      + ('  (dry run)' if dry else ''), flush=True)
+                done += 1
+                if not dry:
+                    check_write_file(clip, root)
+                    part = clip[:-4] + '.part.mp4'
+                    cmd, _ = video_cmd(ffmpeg, clip, part, dict(info, crop=crop), encoder)
+                    r = run(cmd, timeout=1800)
+                    if r.returncode != 0 or not os.path.isfile(part) or os.path.getsize(part) == 0:
+                        if os.path.exists(part):
+                            os.remove(part)
+                        raise RuntimeError(' | '.join((r.stderr or '').strip().splitlines()[-2:]))
+                    os.replace(part, clip)
+                if limit and done >= limit:
+                    break
+            except Exception as e:          # one bad clip must not stop the rest
+                failed += 1
+                print(f'  {col}/{name}: not trimmed - {e}', flush=True)
+        if limit and done >= limit:
+            break
+    print(f'preview bars: {done} clip(s) {"would be " if dry else ""}trimmed, {same} already fill the frame, {failed} failed, '
+          f'{time.time() - t0:.0f}s')
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--retrofe', default=DEFAULT_RETROFE)
@@ -377,6 +463,8 @@ def main() -> int:
     ap.add_argument('--jobs', type=int, default=0, help='parallel jobs (default 3 NVENC, 4 x264)')
     ap.add_argument('--ffmpeg', help='ffmpeg.exe or its folder')
     ap.add_argument('--encoder', choices=['auto', 'nvenc', 'x264'], default='auto')
+    ap.add_argument('--trim-bars', action='store_true',
+                    help='only: go through the preview clips already made and take baked-in black bars off them')
     ap.add_argument('--manifest', default=None, help='default: <drive>/ArcadeMaster/manifest beside the frontend')
     ap.add_argument('--max-minutes', type=float, default=0,
                     help='start no new conversion after N minutes (the rest continue next run); 0 = no limit')
@@ -407,6 +495,8 @@ def main() -> int:
     enc_label = 'h264_nvenc' if encoder == 'nvenc' else 'libx264 -preset veryfast'
 
     wanted = {c.strip().lower() for c in a.collections.split(',')} if a.collections else None
+    if a.trim_bars:
+        return trim_bars(root, wanted, ffmpeg, ffprobe_exe, encoder, a.dry_run, a.limit)
     items = discover(root, wanted)
     if a.limit:
         items = items[:a.limit]
@@ -530,6 +620,9 @@ def main() -> int:
             if need_v:
                 check_write_file(ov, root)
                 part = ov[:-4] + '.part.mp4'
+                info['crop'] = detect_bars(ffmpeg, src, info)
+                if info['crop']:
+                    rec['bars_trimmed'] = list(info['crop'])
                 cmd, mode = video_cmd(ffmpeg, src, part, info, encoder)
                 with enc_sem:
                     r = run(cmd, timeout=1800)
