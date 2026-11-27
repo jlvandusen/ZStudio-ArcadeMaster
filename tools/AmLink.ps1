@@ -121,6 +121,30 @@ function Send-Cmd([string]$c, [double]$minGapSec = 0.6) {
   $b = [Text.Encoding]::UTF8.GetBytes($c); [void]$tx.Send($b, $b.Length, '127.0.0.1', $CommandPort)
   $script:lastCmd = $c; $script:lastCmdAt = $now
 }
+# Does this cabinet have the game at all? A list by that name, or a game by that name in any list (the search index,
+# <manifest>\search-index.json, read once). Names are compared without version / update tags: the pedestal's "Donkey
+# Kong Country - Tropical Freeze (USA) (v16)" is "Donkey Kong Country - Tropical Freeze (USA)" on the 2P stand-up.
+# Returns the name to look for here, or '' when the game is not on this cabinet. No index: the name as it came.
+$haveNames = $null
+function Get-LooseName([string]$n) { (($n.ToLower() -replace '\((v\s?[\d.]+|rev\s?[\w.]+|dlc|update|unl)\)', '') -replace '\s+', ' ').Trim() }
+function Find-HereGame([string]$item, [string]$col) {
+  if ($col -and (Test-Path -LiteralPath (Join-Path $RetroFE "collections\$col"))) { return $item }
+  if ($null -eq $script:haveNames) {
+    $script:haveNames = @{}
+    $ix = Join-Path (Split-Path (Split-Path $RetroFE)) 'manifest\search-index.json'
+    if (-not (Test-Path -LiteralPath $ix)) { $ix = 'D:\ArcadeMaster\manifest\search-index.json' }
+    if (Test-Path -LiteralPath $ix) {
+      foreach ($m in [regex]::Matches([IO.File]::ReadAllText($ix), '"n":"((?:[^"\\]|\\.)*)"')) {
+        $n = [regex]::Unescape($m.Groups[1].Value); $k = Get-LooseName $n
+        if (-not $script:haveNames.ContainsKey($k)) { $script:haveNames[$k] = $n }
+      }
+    } else { $script:haveNames['*'] = '*' }
+  }
+  if ($script:haveNames.ContainsKey('*')) { return $item }
+  $k = Get-LooseName $item
+  if ($script:haveNames.ContainsKey($k)) { return $script:haveNames[$k] }
+  return ''
+}
 # Go to the same game here. The other cabinet names the game AND the list it took it from (TeknoParrot,
 # AM_TP_Emulators_TeknoParrot ...); the same game can sit in a differently named list on this cabinet (RACE2 stopped
 # following RACE1 after one game, 2026-11-27). So: twice with the list name, then by the game's name alone; after six
@@ -193,7 +217,16 @@ try {
         $joinable = $j.launchMenu -and ($noFollow -notcontains [string]$j.launchMenu) -and ([string]$j.launchMenu -ne $top)
         if ($launched -and $joinable -and $j.launchBy -eq 'user' -and $j.type -eq $type -and $alive -and -not $userHere -and (-not $count -or $count.phase -eq 'note' -or $count.item -ne [string]$j.launchItem)) {
           $count = @{ from = $j.host; menu = [string]$j.launchMenu; item = [string]$j.launchItem; col = [string]$j.launchCol; title = (Get-Title ([string]$j.launchCol) ([string]$j.launchItem)); until = $now.AddSeconds($CountdownSec); phase = 'count'; started = $now }
-          $missItem = ''; Say "$($j.host) started $($j.launchItem): countdown"
+          $missItem = ''
+          # a system this cabinet does not have at all is not followed: no countdown, no search through the menus
+          # (James 2026-11-27: the pedestal started Call of Duty 2 - Big Red One on the Xbox, the 2P stand-up has no
+          # Xbox and moved through its menus for 15 s)
+          $here = Find-HereGame $count.item $count.col
+          if ($here -and $here -ne $count.item) { Say "$($count.item) is $here on this cabinet"; $count.item = $here }
+          if (-not $here) {
+            Say "$($j.host) started $($j.launchItem) ($($count.col)): not on this cabinet - staying here"
+            Show-Card "$(Get-Cab $count.from) is playing $($count.title)" 'NOT ON THIS CABINET' ''; $count.phase = 'note'; $count.until = $now.AddSeconds(4)
+          } else { Say "$($j.host) started $($j.launchItem): countdown" }
         }
       }
     }
