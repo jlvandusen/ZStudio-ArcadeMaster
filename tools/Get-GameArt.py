@@ -144,6 +144,44 @@ def title_card(title, pic, out):
     im.save(out)
 
 
+def cover_card(title, pic, out):
+    """a portrait 'box' for a game with no box art: its system's console picture and its name"""
+    W, H, S = 480, 640, 2
+    im = Image.new("RGBA", (W * S, H * S), (14, 16, 26, 255))
+    d = ImageDraw.Draw(im)
+    for i in range(H * S):   # a dark gradient, lighter at the top
+        c = int(34 - 22 * i / (H * S))
+        d.line([(0, i), (W * S, i)], fill=(c, c + 2, c + 10, 255))
+    d.rectangle((8 * S, 8 * S, (W - 8) * S, (H - 8) * S), outline=tiles.ACCENT + (200,), width=3 * S)
+    if pic:
+        try:
+            p = Image.open(pic).convert("RGBA")
+            p.thumbnail(((W - 80) * S, 300 * S), Image.LANCZOS)
+            im.alpha_composite(p, (int((W * S - p.width) / 2), int(70 * S + (300 * S - p.height) / 2)))
+        except Exception:
+            pass
+    label = re.sub(r"\s*\([^)]*\)", "", title).strip() or title
+    size, lines = 48, [label]
+    while size > 18:
+        f = tiles.font(size)
+        lines, cur = [], ""
+        for w in label.split():
+            t = (cur + " " + w).strip()
+            if d.textlength(t, font=f) <= (W - 60) * S:
+                cur = t
+            else:
+                lines.append(cur); cur = w
+        lines.append(cur)
+        if len(lines) <= 3:
+            break
+        size -= 2
+    f = tiles.font(size)
+    lh = size * 1.15 * S
+    for i, l in enumerate(lines):
+        d.text((W * S / 2, 440 * S + i * lh), l, font=f, fill=(255, 255, 255, 255), anchor="mm")
+    im.convert("RGB").resize((W, H), Image.LANCZOS).save(out)
+
+
 def fetch(url, dest):
     req = urllib.request.Request(url, headers={"User-Agent": "ArcadeMaster-art/1.0"})
     try:
@@ -232,12 +270,18 @@ def main():
                             break
                         time.sleep(0.15)
                     stats["cover" if got else "cover_miss"] += 1
+                    if got:
+                        generated.discard("cover\t" + tag)
                     time.sleep(0.25)
+                # still no cover (not in the library, or --no-download): a made cover with the system's console picture
+                if not have(cover_dir, it):
+                    cover_card(it, pic, os.path.join(cover_dir, it + ".png"))
+                    generated.add("cover\t" + tag); stats["cover_card"] = stats.get("cover_card", 0) + 1
             print("  %-42s done (covers %d, missing %d, logos copied %d, cards %d)" % (system, stats["cover"], stats["cover_miss"], stats["logo_donor"], stats["logo_card"]), flush=True)
     with open(gen_file, "w", encoding="utf-8") as f:
         f.write("\n".join(sorted(generated)) + ("\n" if generated else ""))
-    print("art: %d covers downloaded, %d not in the library; logos: %d copied from other builds, %d title cards made" %
-          (stats["cover"], stats["cover_miss"], stats["logo_donor"], stats["logo_card"]))
+    print("art: %d covers downloaded, %d not in the library, %d cover cards made; logos: %d copied from other builds, %d title cards made" %
+          (stats["cover"], stats["cover_miss"], stats.get("cover_card", 0), stats["logo_donor"], stats["logo_card"]))
 
 
 if __name__ == "__main__":
