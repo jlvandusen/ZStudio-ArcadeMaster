@@ -82,7 +82,9 @@ if ($PublishMedia -or $PullMedia) {
     if (-not (Test-Path -LiteralPath $src)) { Write-Host "  ${col}: nothing at $src"; continue }
     # only files the other side lacks: /XC /XN /XO skip every file that already exists there (never overwrites)
     $listOnly = @(if (-not $Apply) { '/L' })   # @( ): a one-item array from an if stays an array (a bare string splats wrong)
-    $out = robocopy $src $dst /E /XC /XN /XO /COPY:DAT /R:2 /W:2 /NDL /NJH /NP /BYTES @listOnly
+    # not shared: pictures drawn FOR one cabinet from its own controls - the controls cards, the wheel on them and the
+    # button hints. A stand-up's joystick card for Race Driver GRID showed on RACE1's wheel rig (James, 2026-11-27).
+    $out = robocopy $src $dst /E /XC /XN /XO /XD am_controls am_controls_wheel am_hint /COPY:DAT /R:2 /W:2 /NDL /NJH /NP /BYTES @listOnly
     if ($LASTEXITCODE -ge 8) { throw "media copy for $col failed (robocopy $LASTEXITCODE)" }
     $sum = $out | Select-String '^\s*(Files|Bytes)\s*:' | ForEach-Object { $_.Line.Trim() -replace '\s+', ' ' }
     $copied = [regex]::Match(($sum -join ' '), 'Files : \d+ (\d+)').Groups[1].Value; $bytes = [regex]::Match(($sum -join ' '), 'Bytes : \d+ (\d+)').Groups[1].Value
