@@ -21,6 +21,20 @@ The loop works like this (James, 2026-11-25):
 - Open PRs: CI, review comments, conflicts.
 - Delete merged branches and stale worktrees.
 
+## 2. James 2026-11-26: systems menus, controls per system, self-heal
+- [ ] **Maker and system menus look mind-blowing and stay fast.** Each maker gets a high-resolution picture
+      (Nintendo, Sega, Sony, Microsoft ...) with its consoles rotating, plus specs and a timeline (e.g. Xbox, then
+      Xbox 360). Each system gets its console picture and history. Measure the frame time and memory before and
+      after; no stutter.
+- [ ] **Controller card per system:** the original controller art (RELOAD theme `art/controls/<sys>.png`) plus
+      the panel mapping (es_input bottom-row layout), shown as each game's `am_controls`.
+- [ ] **Supermodel (Model 3) on the panel:** the shared P1 bindings are moved to the panel keys (LCtrl, LAlt,
+      Space, Shift; coin only on 5), and Star Wars has trigger B1 / event B2. The old file is kept as
+      `Supermodel.ini.am-bak-panel`. Still to do: confirm RetroBat's automatic controller setup doesn't overwrite
+      this; set up the P2 keys; map the yoke to the UltraStik analog axes; find out why James saw poor picture
+      quality at 4K.
+- [x] Self-heal for incomplete ROM sets (tools/Repair-GameRoms.py, run by AmPanel after every game) - PR #236.
+
 ## 2a. James 2026-11-25: full settings like the race cabinet, and our own LED engine
 - [ ] **[PEDESTAL] CONTROLS settings group** (the pedestal's counterpart of the race cab's wheel / FFB / pedal
       settings), in Tools > Cabinet Settings and as Tools items:
