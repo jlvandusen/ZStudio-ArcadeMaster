@@ -43,6 +43,13 @@ if ($exe -and (Test-Path 'Z:\ArcadeMaster\builds')) {
     if ((Test-Path $hf) -and ("$(Get-Content $hf -Raw)".Trim() -split '\s+')[0] -ieq $s.retrofeExeSha256) { $s.retrofeExeIsBuild = $bd.Name; break }
   }
 }
+# AmPanel: the installed build (Update-AmPanel.ps1 writes <ArcadeMaster>\AmPanel.build.txt), the commit it came from, and
+# the build this clone would make now - so "behind" or "running a branch / uncommitted work" shows next to the other
+# cabinets (James 2026-11-27: "the ampanel build is different than what pedestal and 2p is working on")
+$abt = Join-Path (Split-Path $ManifestDir) 'AmPanel.build.txt'
+$s.ampanelBuild = if (Test-Path $abt) { ((Get-Content $abt | Where-Object { $_ -like 'key=*' }) -replace '^key=', '') } else { 'not recorded' }
+$s.ampanelCommit = if (Test-Path $abt) { ((Get-Content $abt | Where-Object { $_ -like 'commit=*' }) -replace '^commit=', '') } else { '' }
+try { $want = (& (Join-Path $PSScriptRoot 'Update-AmPanel.ps1') -ManifestDir $ManifestDir -Show 6>&1 | Out-String); $s.ampanelRepoWants = if ($want -match 'repo wants (\w+)') { $Matches[1] } else { '' } } catch { $s.ampanelRepoWants = '' }
 $s.retrofePatched = if ($exe) { [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exe)).Contains('liveButton') } else { $false }
 $t = Get-ScheduledTask -TaskName 'ArcadeMaster Update' -ErrorAction SilentlyContinue
 $s.autoUpdate = if ($t) { $i = Get-ScheduledTaskInfo $t; "$($t.State), last $($i.LastRunTime.ToString('s')) result $($i.LastTaskResult)" } else { 'not scheduled' }
@@ -78,7 +85,18 @@ $s.features = [ordered]@{
   saveBackups       = (Test-Path (Join-Path 'Z:\ArcadeMaster\saves' $env:COMPUTERNAME))
   gameOfTheMonth    = (Test-Path (Join-Path $ManifestDir 'featured-history.json'))
   ffmpeg            = [bool](Get-Command ffmpeg -ErrorAction SilentlyContinue) -or @(Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Gyan.FFmpeg*", 'D:\ArcadeMaster\_tools\ffmpeg' -Recurse -Filter ffmpeg.exe -ErrorAction SilentlyContinue).Count -gt 0
-  amPanel           = (Setting 'arcadeMasterPanel') -ne '(default)'
+  # what AmPanel really does here (the old 'arcadeMasterPanel' setting is set by nothing, so this read False everywhere)
+  amPanel           = $(
+    $amRoot = Split-Path $ManifestDir; $ap = Join-Path $amRoot 'AmPanel.exe'
+    if (-not (Test-Path $ap)) { 'not installed' } else {
+      $cfg = J (Join-Path $amRoot 'AmPanel.json'); $lb = Setting 'LEDBlinkyDirectory'
+      $parts = @($(if (Get-Process AmPanel -ErrorAction SilentlyContinue) { 'running' } else { 'installed, not running' }))
+      $parts += $(if ($lb -match 'ampanel-shim') { 'gets the frontend events' } else { 'LEDBlinky gets the events' })
+      if ($cfg -and "$($cfg.Lights)" -eq 'own') { $parts += 'drives the lights' }
+      if ($cfg -and "$($cfg.Marquee)" -eq 'pixelcade') { $parts += 'drives the marquee' }
+      if ((Setting 'gameHandOff') -match '^(true|yes|1)$') { $parts += 'frontend does the game hand-off' }
+      $parts -join ', '
+    })
   playlistKeys      = [bool](Select-String -Path (Join-Path $Root 'controls.conf') -Pattern '^\s*nextPlaylist\s*=' -Quiet -ErrorAction SilentlyContinue)
   vsync             = Setting 'vsync'
   hardwareVideo     = Setting 'HardwareVideoAccel'
