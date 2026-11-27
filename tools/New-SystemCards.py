@@ -83,12 +83,25 @@ def find_theme(theme):
     return None
 
 
+# a build's own system lists by name (no RetroBat launcher to read the system from): the RetroBat system key, so the
+# console's own button names still apply
+NAME_KEY = {
+    "nintendo entertainment system": "nes", "super nintendo entertainment system": "snes", "nintendo 64": "n64",
+    "nintendo gamecube": "gamecube", "nintendo wii": "wii", "nintendo wii u": "wiiu", "nintendo game boy": "gb",
+    "nintendo game boy color": "gbc", "nintendo game boy advance": "gba", "sega genesis": "megadrive",
+    "sega 32x": "sega32x", "sega saturn": "saturn", "sega dreamcast": "dreamcast", "sega game gear": "gamegear",
+    "sony playstation": "psx", "sony playstation 2": "ps2", "sony playstation 3": "ps3", "sony psp": "psp",
+    "atari 7800": "atari7800", "atari 2600": "atari2600",
+}
+
+
 def system_key(retrofe, coll):
     sc = os.path.join(retrofe, "collections", coll, "settings.conf")
-    if not os.path.exists(sc):
-        return None
-    m = re.search(r"^\s*launcher\s*=\s*AM_RB_(\S+)", open(sc, encoding="latin-1").read(), re.M)
-    return m.group(1).lower() if m else None
+    if os.path.exists(sc):
+        m = re.search(r"^\s*launcher\s*=\s*AM_RB_(\S+)", open(sc, encoding="latin-1").read(), re.M)
+        if m:
+            return m.group(1).lower()
+    return NAME_KEY.get(coll.lower())
 
 
 def card(title, controller, key, dst):
@@ -144,9 +157,8 @@ def main():
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
     theme = find_theme(a.theme)
-    if not theme:
-        print("system cards: no RELOAD theme art - skipped")
-        return
+    if not theme:   # a build without RetroBat (James 2026-11-27: "we don't want to rely on any other frontends")
+        print("system cards: no RELOAD theme art - each system's own art (system_artwork) is used")
     cols = os.path.join(a.retrofe, "collections")
     menu = os.path.join(cols, "Main", "menu.txt")
     makers = [l.strip() for l in open(menu, encoding="utf-8", errors="replace")] if os.path.exists(menu) else []
@@ -160,14 +172,19 @@ def main():
             key = system_key(a.retrofe, coll)
             if not key:
                 continue
-            ctrl = os.path.join(theme, "controls", key + ".png")
+            own = os.path.join(cols, coll, "system_artwork")
+            ctrl = os.path.join(theme, "controls", key + ".png") if theme else ""
+            if not os.path.exists(ctrl):
+                ctrl = os.path.join(own, "device.png")
             title = re.sub(r"\s*\(RetroBat\)", "", coll)
             dst = os.path.join(art, "am_controls", coll + ".png")
             if a.force or not os.path.exists(dst):
                 card(title, ctrl if os.path.exists(ctrl) else None, key, dst)
                 done += 1
                 sure += key in NATIVE
-            bg = os.path.join(theme, "background fanart", key + ".jpg")
+            bg = os.path.join(theme, "background fanart", key + ".jpg") if theme else ""
+            if not os.path.exists(bg):
+                bg = os.path.join(own, "fanart.jpg")
             bdst = os.path.join(art, "am_backdrop", coll + ".jpg")
             if os.path.exists(bg) and (a.force or not os.path.exists(bdst)):
                 backdrop(bg, bdst)

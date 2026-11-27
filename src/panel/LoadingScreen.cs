@@ -123,6 +123,9 @@ class LoadingScreen : Form
     [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);
     [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+    // the Async forms: a game window that has stopped answering (Arctic Thunder froze the frontend's hand-off on the plain
+    // calls, RACE2 2026-11-27) cannot hang the watcher for the rest of the game
+    [DllImport("user32.dll")] static extern bool ShowWindowAsync(IntPtr h, int cmd);
     [DllImport("user32.dll")] static extern bool AttachThreadInput(int a, int b, bool attach);
     [DllImport("user32.dll")] static extern int GetWindowThreadProcessId(IntPtr h, IntPtr pid);
     [DllImport("kernel32.dll")] static extern int GetCurrentThreadId();
@@ -131,7 +134,8 @@ class LoadingScreen : Form
     // "Need to always keep emulator infront"). A game's own launcher or dialog is never on this list, so it is left alone.
     static readonly HashSet<string> Intruders = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         "retrofe", "explorer", "Code", "Code - Insiders", "WindowsTerminal", "OpenConsole", "conhost", "cmd", "powershell", "pwsh",
-        "msedge", "chrome", "firefox", "Teams", "ms-teams", "Discord", "Slack", "Spotify", "OneDrive", "notepad", "devenv", "Taskmgr" };
+        "msedge", "chrome", "firefox", "Teams", "ms-teams", "Discord", "Slack", "Spotify", "OneDrive", "notepad", "devenv" };
+    // never on the list: Task Manager (ending a hung game) and RustDesk (remote help) stay in front (RACE2, 2026-11-27)
 
     // the game's window in front with the keyboard - only when the frontend (or no program) has the foreground, so a
     // game's own launcher / dialog the player is using is never pushed aside
@@ -146,7 +150,7 @@ class LoadingScreen : Form
         int ft = GetWindowThreadProcessId(fg, IntPtr.Zero), me = GetCurrentThreadId();
         AttachThreadInput(me, ft, true);
         keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);   // an Alt tap: Windows then lets us hand over the foreground
-        ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
+        ShowWindowAsync(game, 9 /* SW_RESTORE */); SetWindowPos(game, IntPtr.Zero, 0, 0, 0, 0, 0x4000 | 0x0001 | 0x0002 | 0x0010 /* ASYNCWINDOWPOS NOSIZE NOMOVE NOACTIVATE: to the top */); SetForegroundWindow(game);
         AttachThreadInput(me, ft, false);
         // a desktop program took over a running game (James 2026-11-27: VS Code came in front of MAME; MAME's full-screen
         // picture then stayed black and took no buttons until Alt+Tab). The program is minimised - never the frontend (it
@@ -154,7 +158,7 @@ class LoadingScreen : Form
         // the game again, as Alt+Tab does. That redraws a full-screen picture and gives the game the keyboard.
         if (fg != IntPtr.Zero && !fgName.Equals("retrofe", StringComparison.OrdinalIgnoreCase) && (folder || !fgName.Equals("explorer", StringComparison.OrdinalIgnoreCase)))
         {
-            ShowWindow(fg, 6 /* SW_MINIMIZE */);
+            ShowWindowAsync(fg, 6 /* SW_MINIMIZE */);
             Reactivate(game);
             log("game window was behind " + fgName + " - " + fgName + " minimised, game switched back in (Alt+Tab)");
         }
@@ -196,7 +200,7 @@ class LoadingScreen : Form
         if (GetForegroundWindow() != game)
         {
             keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);
-            ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
+            ShowWindowAsync(game, 9 /* SW_RESTORE */); SetWindowPos(game, IntPtr.Zero, 0, 0, 0, 0, 0x4000 | 0x0001 | 0x0002 | 0x0010 /* ASYNCWINDOWPOS NOSIZE NOMOVE NOACTIVATE: to the top */); SetForegroundWindow(game);
         }
     }
     static readonly HashSet<IntPtr> clicked = new HashSet<IntPtr>();
@@ -246,13 +250,13 @@ class LoadingScreen : Form
                 var t = new System.Text.StringBuilder(512); GetWindowText(h, t, 512);
                 string title = t.ToString();
                 if (title.IndexOf(@"\emulators\", StringComparison.OrdinalIgnoreCase) >= 0 || title.IndexOf("RetroBat", StringComparison.OrdinalIgnoreCase) >= 0)
-                { ShowWindow(h, 6 /* SW_MINIMIZE */); log("emulator console '" + title + "' minimised"); }
+                { ShowWindowAsync(h, 6 /* SW_MINIMIZE */); log("emulator console '" + title + "' minimised"); }
                 return true;
             }
             if (!pn.Equals("retrofe", StringComparison.OrdinalIgnoreCase)) return true;
             RECT r; if (!GetWindowRect(h, out r)) return true;
             if (!Screen.FromRectangle(new Rectangle(r.L, r.T, Math.Max(1, r.R - r.L), Math.Max(1, r.B - r.T))).Primary) { away = h; return true; }
-            ShowWindow(h, 6 /* SW_MINIMIZE */);
+            ShowWindowAsync(h, 6 /* SW_MINIMIZE */);
             lock (minimisedFrontend) minimisedFrontend.Add(h);
             return true;
         }, IntPtr.Zero);
@@ -266,7 +270,7 @@ class LoadingScreen : Form
             System.Threading.Thread.Sleep(400);
         }
         keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);   // an Alt tap lets us hand over the foreground
-        ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
+        ShowWindowAsync(game, 9 /* SW_RESTORE */); SetWindowPos(game, IntPtr.Zero, 0, 0, 0, 0, 0x4000 | 0x0001 | 0x0002 | 0x0010 /* ASYNCWINDOWPOS NOSIZE NOMOVE NOACTIVATE: to the top */); SetForegroundWindow(game);
         int gp; GetWindowThreadProcessId(game, out gp);
         string name = "?"; try { using (var p = Process.GetProcessById(gp)) name = p.ProcessName; } catch { }
         log("game window " + name + " shown: frontend minimised, game activated");
@@ -277,7 +281,7 @@ class LoadingScreen : Form
     {
         List<IntPtr> list;
         lock (minimisedFrontend) { list = new List<IntPtr>(minimisedFrontend); minimisedFrontend.Clear(); }
-        foreach (var h in list) ShowWindow(h, 9 /* SW_RESTORE */);
+        foreach (var h in list) ShowWindowAsync(h, 9 /* SW_RESTORE */);
     }
 
     public static void KeepGameOnMainScreen(HashSet<IntPtr> baseline, Func<bool> stillPlaying, Action<string> log)

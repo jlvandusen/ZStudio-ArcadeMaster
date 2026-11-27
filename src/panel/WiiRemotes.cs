@@ -35,16 +35,42 @@ class WiiRemotes
     public string Live = "";       // "1,3": the slots with a remote
     public int Slots;              // DolphinBar slots seen (4 per DolphinBar)
     public Action Changed;         // AmPanel updates its status line
+    // which player each DolphinBar slot plays as in arcade games: 1-4, 0 = menus only (James 2026-11-27: "ask - you have a
+    // wii controller, do you want to use it for p3 or p4 or p1, or not at all"). <manifest>\wii-players.json; AmPanel asks
+    // when a remote connects (Connected) and calls SetPlayer with the answer.
+    public Action<int> Connected;
+    readonly int[] player = { 1, 2, 3, 4 };
+    public int PlayerOf(int slot) { lock (player) return slot >= 1 && slot <= 4 ? player[slot - 1] : 0; }
+    public void SetPlayer(int slot, int p)
+    {
+        if (slot < 1 || slot > 4) return;
+        lock (player) player[slot - 1] = p;
+        log("wii: slot " + slot + " remote " + (p == 0 ? "works the menus only" : "plays as P" + p + " in arcade games"));
+        try { lock (player) File.WriteAllText(Path.Combine(manifestDir, "wii-players.json"), "{\"players\":[" + string.Join(",", player) + "]}"); } catch { }
+    }
+    void LoadPlayers()
+    {
+        try
+        {
+            string f = Path.Combine(manifestDir, "wii-players.json");
+            if (!File.Exists(f)) return;
+            var m = System.Text.RegularExpressions.Regex.Match(File.ReadAllText(f), @"\[\s*(\d)\s*,\s*(\d)\s*,\s*(\d)\s*,\s*(\d)\s*\]");
+            if (m.Success) lock (player) for (int i = 0; i < 4; i++) player[i] = int.Parse(m.Groups[i + 1].Value);
+        }
+        catch { }
+    }
 
     public WiiRemotes(string manifestDir, string toolsDir, Action<string> log)
     {
         this.manifestDir = manifestDir; this.toolsDir = toolsDir; this.log = log ?? delegate { };
+        LoadPlayers();
         new Thread(Loop) { IsBackground = true, Name = "wii" }.Start();
     }
 
     void Loop()
     {
         string last = null;
+        List<int> lastLive = null;
         while (true)
         {
             try
@@ -64,8 +90,10 @@ class WiiRemotes
                             log("wii: " + (live.Count == 0 ? "no remote synced" : "remote(s) synced in DolphinBar slot " + now) + " (" + paths.Count + " slots)");
                             Save(live);
                             if (last != null || live.Count > 0) Follow();   // Dolphin's slots follow (not on a quiet start with none)
-                            last = now;
+                            last = now; lastLive = live;
                             if (Changed != null) Changed();
+                            if (Connected != null && last != null)
+                                foreach (int sl in live) if (lastLive == null || !lastLive.Contains(sl)) Connected(sl);
                         }
                     }
                 }
@@ -168,42 +196,170 @@ class WiiRemotes
             if (h.IsInvalid) return;
             int len = 22; IntPtr pd;
             if (HidD_GetPreparsedData(h, out pd)) { HIDP_CAPS c; if (HidP_GetCaps(pd, out c) == 0x110000 && c.InputReportByteLength > 0) len = c.InputReportByteLength; HidD_FreePreparsedData(pd); }
-            Mode(h);
-            log("wii: slot " + slot + " remote drives the menus (sideways: d-pad moves, 2 / A select, 1 / B back, + / - letters, HOME options)");
-            var buf = new byte[len]; int held = 0;
+            // Dolphin and Cemu set the remote up themselves (report mode, the nunchuk): while either runs AmPanel only
+            // listens and never writes to the remote (James 2026-11-27: the nunchuk died in Donkey Kong Country Returns
+            // while AmPanel re-set the report mode under Dolphin). When they close, the remote is set up again here.
+            bool owned = EmulatorOwnsRemote();
+            if (!owned) { StartExtension(h); Mode(h); }
+            log("wii: slot " + slot + " remote drives the menus (sideways: d-pad moves, 2 / A select, 1 / B back, + / - letters, HOME options)"
+                + "; in arcade games it plays as " + (PlayerOf(slot) == 0 ? "nobody (menus only)" : "P" + PlayerOf(slot)) + " (nunchuk stick or d-pad = stick, B A Z C 1 2 = buttons 1-6, + start, - coin)");
+            var buf = new byte[len];
+            var down = new HashSet<byte>();   // keys this remote holds down right now
+            bool hadExt = false;
             while (true)
             {
-                int n; if (!ReadFile(h, buf, len, out n, IntPtr.Zero) || n < 3) return;   // the remote went away
+                int n;
+                if (!ReadFile(h, buf, len, out n, IntPtr.Zero) || n < 3) { foreach (var k in down) Key(k, false); return; }   // the remote went away
                 byte id = buf[0];
-                if (id == 0x20) Mode(h);                          // a status report (the slot poll) ends the report mode: ask again
-                if (id < 0x20 || id > 0x37) continue;
-                int now = ((buf[1] & 0x1F) << 8) | (buf[2] & 0x9F);
-                if (now == held) continue;
-                bool menus = InMenus();
-                foreach (var m in Map)
+                bool nowOwned = EmulatorOwnsRemote();
+                if (nowOwned != owned)
                 {
-                    bool was = (held & m[0]) != 0, isNow = (now & m[0]) != 0;
-                    if (was == isNow) continue;
-                    if (isNow && !menus) continue;                // a press only counts in the menus; a release always goes out
-                    Key((byte)m[1], isNow);
+                    owned = nowOwned;
+                    foreach (var k in down) Key(k, false); down.Clear();
+                    if (!owned) { StartExtension(h); Mode(h); }   // Dolphin / Cemu closed: the menus get the remote back
                 }
-                held = now;
+                if (owned) continue;
+                if (id == 0x20)   // a status report (the slot poll, a nunchuk plugged / pulled) ends the report mode: set it up again
+                {
+                    bool ext = n > 3 && (buf[3] & 0x02) != 0;
+                    if (ext && !hadExt) { StartExtension(h); log("wii: slot " + slot + " nunchuk plugged in"); }
+                    hadExt = ext;
+                    Mode(h);
+                }
+                if (id < 0x20 || id > 0x37) continue;
+                int core = ((buf[1] & 0x1F) << 8) | (buf[2] & 0x9F);
+                // nunchuk (report 0x32: 8 extension bytes after the buttons): stick X, stick Y, 3 accel bytes, then Z / C bits (0 = pressed)
+                int sx = 128, sy = 128; bool nz = false, nc = false;
+                if (id == 0x32 && n >= 9 && hadExt && !(buf[3] == 0xFF && buf[4] == 0xFF))
+                {
+                    sx = buf[3]; sy = buf[4]; nz = (buf[8] & 0x01) == 0; nc = (buf[8] & 0x02) == 0;
+                }
+                var want = new HashSet<byte>();
+                string where = Where();
+                if (where == "menus")
+                {
+                    foreach (var m in Map) if ((core & m[0]) != 0) want.Add((byte)m[1]);
+                    if (sx < 128 - Dead) want.Add(0x25); if (sx > 128 + Dead) want.Add(0x27);
+                    if (sy > 128 + Dead) want.Add(0x26); if (sy < 128 - Dead) want.Add(0x28);
+                    if (nz) want.Add(0x0D); if (nc) want.Add(0x1B);
+                }
+                else if (where == "game")
+                {
+                    // James 2026-11-27: "auto mapping to mame and other legacy emulators when detected", "still use the
+                    // arcade controllers so either or", "if there are 4 wii motes then we could actually create p3 and p4".
+                    // The remote presses the same keys as that player's panel controls, so either works. Held the way James
+                    // plays: the remote upright (B trigger, A under the thumb, d-pad), the nunchuk in the other hand (stick,
+                    // C, Z). The stick is 8-way: past the dead zone on each axis.
+                    var keys = PlayerKeys(PlayerOf(slot));   // the player this remote was given (0 = menus only: nothing)
+                    bool up = (core & 0x0800) != 0 || sy > 128 + Dead, dn = (core & 0x0400) != 0 || sy < 128 - Dead;
+                    bool lf = (core & 0x0100) != 0 || sx < 128 - Dead, rt = (core & 0x0200) != 0 || sx > 128 + Dead;
+                    Add(want, keys, "UP", up); Add(want, keys, "DOWN", dn); Add(want, keys, "LEFT", lf); Add(want, keys, "RIGHT", rt);
+                    Add(want, keys, "B1", (core & 0x0004) != 0);      // B (trigger)
+                    Add(want, keys, "B2", (core & 0x0008) != 0);      // A
+                    Add(want, keys, "B3", nz);                        // Z (nunchuk trigger)
+                    Add(want, keys, "B4", nc);                        // C
+                    Add(want, keys, "B5", (core & 0x0002) != 0);      // 1
+                    Add(want, keys, "B6", (core & 0x0001) != 0);      // 2
+                    Add(want, keys, "START", (core & 0x1000) != 0);   // +
+                    Add(want, keys, "COIN", (core & 0x0010) != 0);    // -
+                }
+                foreach (var k in new List<byte>(down)) if (!want.Contains(k)) { Key(k, false); down.Remove(k); }
+                foreach (var k in want) if (!down.Contains(k)) { Key(k, true); down.Add(k); }
             }
         }
     }
 
-    static void Mode(SafeFileHandle h)
+    static bool EmulatorOwnsRemote()
     {
-        var r = new byte[22]; r[0] = 0x12; r[1] = 0x00; r[2] = 0x30;   // report buttons when they change
-        int w; WriteFile(h, r, r.Length, out w, IntPtr.Zero);
+        foreach (var n in new[] { "Dolphin", "DolphinWx", "Cemu" }) { var ps = Process.GetProcessesByName(n); bool any = ps.Length > 0; foreach (var p in ps) p.Dispose(); if (any) return true; }
+        return false;
     }
 
-    bool InMenus()
+    const int Dead = 40;   // nunchuk stick: centre 128, about 35..228 at the ends
+
+    static void Add(HashSet<byte> want, Dictionary<string, byte> keys, string what, bool on)
     {
-        if (GameRunning || Process.GetProcessesByName("Dolphin").Length > 0) return false;
+        byte vk; if (on && keys != null && keys.TryGetValue(what, out vk)) want.Add(vk);
+    }
+
+    // a nunchuk (or any extension) on the remote: switched on unencrypted (0x55 -> 0xA400F0, then 0x00 -> 0xA400FB)
+    static void StartExtension(SafeFileHandle h)
+    {
+        foreach (var w in new[] { new byte[] { 0xF0, 0x55 }, new byte[] { 0xFB, 0x00 } })
+        {
+            var r = new byte[22]; r[0] = 0x16; r[1] = 0x04; r[2] = 0xA4; r[3] = 0x00; r[4] = w[0]; r[5] = 1; r[6] = w[1];
+            int n; WriteFile(h, r, r.Length, out n, IntPtr.Zero);
+            Thread.Sleep(50);
+        }
+    }
+
+    // the keys player <slot> uses: this cabinet's panel (manifest\panel.json, from the button capture) for the players it
+    // has, MAME's own player 3 / 4 keys for the rest (a 2-player panel has no P3 / P4). Read again after a minute.
+    static readonly Dictionary<string, string>[] MameDefault = {
+        null, null,
+        new Dictionary<string, string> { { "UP", "I" }, { "DOWN", "K" }, { "LEFT", "J" }, { "RIGHT", "L" }, { "B1", "RCONTROL" }, { "B2", "RSHIFT" }, { "B3", "ENTER" }, { "START", "3" }, { "COIN", "7" } },
+        new Dictionary<string, string> { { "UP", "8_PAD" }, { "DOWN", "2_PAD" }, { "LEFT", "4_PAD" }, { "RIGHT", "6_PAD" }, { "B1", "0_PAD" }, { "B2", "DEL_PAD" }, { "B3", "ENTER_PAD" }, { "START", "4" }, { "COIN", "8" } } };
+    Dictionary<string, byte>[] playerKeys = new Dictionary<string, byte>[4];
+    DateTime keysAt = DateTime.MinValue;
+    Dictionary<string, byte> PlayerKeys(int slot)
+    {
+        if (slot < 1 || slot > 4) return null;
+        if ((DateTime.Now - keysAt).TotalSeconds > 60)
+        {
+            keysAt = DateTime.Now;
+            var all = new Dictionary<string, byte>[4];
+            try
+            {
+                var js = new System.Web.Script.Serialization.JavaScriptSerializer();
+                var panel = js.Deserialize<Dictionary<string, object>>(File.ReadAllText(Path.Combine(manifestDir, "panel.json")));
+                var players = panel.ContainsKey("players") ? panel["players"] as System.Collections.ArrayList : null;
+                for (int i = 0; players != null && i < players.Count && i < 4; i++)
+                {
+                    var pl = players[i] as Dictionary<string, object>; if (pl == null) continue;
+                    var d = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+                    var keys = pl.ContainsKey("keys") ? pl["keys"] as Dictionary<string, object> : null;
+                    if (keys != null) foreach (var kv in keys)
+                    {
+                        var m = System.Text.RegularExpressions.Regex.Match(kv.Key, @"^P\d(B\d+|START|COIN)$");
+                        int vk = ReactiveKeys.VkOf(Convert.ToString(kv.Value));
+                        if (m.Success && vk > 0) d[m.Groups[1].Value] = (byte)vk;
+                    }
+                    var stick = pl.ContainsKey("stick") ? pl["stick"] as Dictionary<string, object> : null;
+                    if (stick != null) foreach (var kv in stick) { int vk = ReactiveKeys.VkOf(Convert.ToString(kv.Value)); if (vk > 0) d[kv.Key.ToUpperInvariant()] = (byte)vk; }
+                    if (d.Count > 0) all[i] = d;
+                }
+            }
+            catch (Exception e) { log("wii: panel keys not read - " + e.Message); }
+            for (int i = 0; i < 4; i++)
+                if (all[i] == null && MameDefault[i] != null)
+                {
+                    var d = new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var kv in MameDefault[i]) { int vk = ReactiveKeys.VkOf(kv.Value); if (vk > 0) d[kv.Key] = (byte)vk; }
+                    all[i] = d;
+                }
+            playerKeys = all;
+        }
+        return playerKeys[slot - 1];
+    }
+
+    // "menus" (the frontend or AmPanel in front, no game), "game" (an arcade / legacy emulator in front; Dolphin and Cemu
+    // read the remote themselves, so nothing is pressed while either runs), or "" (anything else: nothing is pressed)
+    string Where()
+    {
+        if (Process.GetProcessesByName("Dolphin").Length > 0 || Process.GetProcessesByName("Cemu").Length > 0) return "";
         int pid; GetWindowThreadProcessId(GetForegroundWindow(), out pid);
-        try { using (var p = Process.GetProcessById(pid)) return p.ProcessName.Equals("retrofe", StringComparison.OrdinalIgnoreCase) || p.Id == Process.GetCurrentProcess().Id; }
-        catch { return false; }
+        string name;
+        try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { return ""; }
+        bool ours = name.Equals("retrofe", StringComparison.OrdinalIgnoreCase) || pid == Process.GetCurrentProcess().Id;
+        if (!GameRunning) return ours ? "menus" : "";
+        if (ours || name.Equals("explorer", StringComparison.OrdinalIgnoreCase) || name.Equals("Code", StringComparison.OrdinalIgnoreCase)) return "";
+        return "game";
+    }
+
+    static void Mode(SafeFileHandle h)
+    {
+        var r = new byte[22]; r[0] = 0x12; r[1] = 0x00; r[2] = 0x32;   // buttons + 8 extension bytes (the nunchuk), when they change
+        int w; WriteFile(h, r, r.Length, out w, IntPtr.Zero);
     }
 
     static void Key(byte vk, bool down)
