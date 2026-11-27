@@ -965,6 +965,27 @@ static class AmPanel
         {
             wii = new WiiRemotes(manifestDir, toolsDir, Log);
             wii.Changed = delegate { lock (Gate) State["wiiRemotes"] = wii.Live.Length == 0 ? "none synced (" + wii.Slots + " DolphinBar slots)" : "slot " + wii.Live; SaveState(); };
+            // a remote just connected: which player is it in arcade games? The last answer for that slot is highlighted and
+            // taken by itself after a few seconds; the remote's own d-pad and 2 / A answer too (it works AmPanel's screens)
+            wii.Connected = delegate (int slot) {
+                ui.BeginInvoke((MethodInvoker)delegate {
+                    try
+                    {
+                        bool playing; lock (Gate) playing = State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"];
+                        if (playing) return;
+                        var tiles = new List<Dictionary<string, object>>();
+                        for (int p = 1; p <= 4; p++) tiles.Add(new Dictionary<string, object> { { "id", "p" + p }, { "label", "PLAYER " + p }, { "icon", "gamepad" } });
+                        tiles.Add(new Dictionary<string, object> { { "id", "p0" }, { "label", "MENUS ONLY" }, { "icon", "mouse" } });
+                        var th = ChooserTheme.Load(retroFERoot, null, null);
+                        using (var f = new ControllerChooser("WII REMOTE", tiles, "p" + wii.PlayerOf(slot), 12, th) { Menu = true, Question = "WII REMOTE IN SLOT " + slot + ": WHO PLAYS WITH IT IN ARCADE GAMES?", PickWord = "OK" })
+                        {
+                            f.ShowDialog();
+                            if (f.Picked != null && f.Picked.StartsWith("p")) wii.SetPlayer(slot, f.Picked[1] - '0');
+                        }
+                    }
+                    catch (Exception e) { Log("wii: question - " + e.Message); }
+                });
+            };
         }
         catch (Exception e) { Log("wii: not started - " + e.Message); }
         try

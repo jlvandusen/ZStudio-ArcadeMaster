@@ -195,13 +195,39 @@ MAKERS = [
 ]
 
 
-def maker_menus(cols):
-    """collections\\<Maker>\\menu.txt from Classic Systems\\menu.txt, and the makers on the main menu in place of
-    Classic Systems (Main\\am-extra-menu.txt + Main\\menu.txt). Returns a one-line summary."""
-    mt = os.path.join(cols, "Classic Systems", "menu.txt")
-    if not os.path.exists(mt):
-        return "maker menus: no Classic Systems menu yet"
-    systems = [l.strip() for l in open(mt) if l.strip() and os.path.isdir(os.path.join(cols, l.strip()))]
+# the build's own system menus (a CoinOPS build: CONSOLES, HANDHELDS, COMPUTERS, each a folder menu\<system>.txt). A
+# cabinet without RetroBat gets its maker menus from these (James 2026-11-27, the 2P stand-up: "maker menus - we don't
+# want to rely on any other frontends"); they leave the main menu, the makers take their place.
+BUILD_MENUS = ("CONSOLES", "HANDHELDS", "COMPUTERS")
+
+
+def own_systems(cols):
+    out = []
+    for m in BUILD_MENUS:
+        d = os.path.join(cols, m, "menu")
+        if not os.path.isdir(d):
+            continue
+        for f in sorted(os.listdir(d)):
+            n = os.path.splitext(f)[0]
+            if f.lower().endswith(".txt") and os.path.isdir(os.path.join(cols, n)) and n not in out:
+                out.append(n)
+    return out
+
+
+def maker_menus(cols, systems=None):
+    """collections\\<Maker>\\menu.txt from Classic Systems\\menu.txt (or the given systems: the build's own), and the
+    makers on the main menu in place of Classic Systems / the build's system menus (Main\\am-extra-menu.txt +
+    Main\\menu.txt). Returns a one-line summary."""
+    replaced = {"Classic Systems"}
+    if systems is None:
+        mt = os.path.join(cols, "Classic Systems", "menu.txt")
+        if not os.path.exists(mt):
+            return "maker menus: no Classic Systems menu yet"
+        systems = [l.strip() for l in open(mt) if l.strip() and os.path.isdir(os.path.join(cols, l.strip()))]
+    else:
+        replaced |= set(BUILD_MENUS)
+    if not systems:
+        return "maker menus: no systems"
     groups = {}
     for s in systems:
         name = next((m for m, rx in MAKERS if re.search(rx, s, re.I)), "Other Systems")
@@ -230,12 +256,14 @@ def maker_menus(cols):
             continue
         out = []
         for l in lines:
-            if l == "Classic Systems":
-                out += [m for m in order if m not in lines]
+            if l in replaced:
+                out += [m for m in order if m not in lines and m not in out]
             elif l not in out:
                 out.append(l)
-        if "Classic Systems" not in lines:
+        if not (replaced & set(lines)):
             out += [m for m in order if m not in out]
+        if fn == "menu.txt" and "Tools" in out:   # Tools stays last
+            out.remove("Tools"); out.append("Tools")
         open(p, "w", newline="\r\n").write("\n".join(out) + "\n")
     return "maker menus: " + ", ".join("%s (%d)" % (m, len(groups[m])) for m in order)
 
@@ -257,13 +285,18 @@ def main():
     ap.add_argument("--menus-only", action="store_true", help="only (re)write the maker menus from Classic Systems")
     a = ap.parse_args()
     if a.menus_only:
-        print(maker_menus(os.path.join(a.retrofe, "collections")))
+        cols = os.path.join(a.retrofe, "collections")
+        mine = None if os.path.exists(os.path.join(cols, "Classic Systems", "menu.txt")) else own_systems(cols)
+        print(maker_menus(cols, mine))
         return
     rb = a.retrobat
     es = os.path.join(rb, "emulationstation", ".emulationstation", "es_systems.cfg")
     launcher = os.path.join(rb, "emulationstation", "emulatorLauncher.exe")
     if not (os.path.exists(es) and os.path.exists(launcher)):
         print("no RetroBat at %s (es_systems.cfg + emulatorLauncher.exe) - nothing to import on this cabinet" % rb)
+        own = own_systems(os.path.join(a.retrofe, "collections"))
+        if own and not a.dry_run:
+            print(maker_menus(os.path.join(a.retrofe, "collections"), own) + " (this build's own systems)")
         return
     picks = {}
     pf = os.path.join(a.manifest, "systems-cabinet.json")

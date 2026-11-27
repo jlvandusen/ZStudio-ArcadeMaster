@@ -336,14 +336,14 @@ def main():
             if hits:
                 a.theme = hits[0]
                 break
-    if not os.path.isdir(a.theme):
-        print("menu heroes: no RELOAD theme art at %s - main menu keeps its old look" % a.theme)
-        return
+    own = not os.path.isdir(a.theme)
+    if own:   # a build without RetroBat (James 2026-11-27: "we don't want to rely on any other frontends")
+        print("menu heroes: no RELOAD theme art - the makers' own systems give the pictures (system_artwork)")
     menu = os.path.join(a.retrofe, "collections", "Main", "menu.txt")
     entries = [l.strip() for l in open(menu, encoding="utf-8", errors="replace")] if os.path.exists(menu) else list(HEROES)
     out = os.path.join(a.retrofe, "layouts", a.layout, "collections", "Main", "medium_artwork")
     blank = os.path.join(a.retrofe, "layouts", a.layout, "images", "blank.png")
-    bgdir, chardir, condir = (os.path.join(a.theme, d) for d in ("background fanart", "characters", "consoles"))
+    bgdir, chardir, condir = (os.path.join(a.theme, d) for d in ("background fanart", "characters", "consoles")) if not own else ("", "", "")
     made, heroes, missing = 0, [], []
     manifest = a.manifest or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(a.retrofe))), "manifest")
     counts = game_counts(manifest)
@@ -351,9 +351,19 @@ def main():
         if not entry or entry not in HEROES:
             continue
         key, consoles = HEROES[entry]
-        bg = find(bgdir, key, (".jpg", ".png"))
-        ch = find(chardir, key, (".png",))
-        cons = [p for p in (find(condir, c, (".png",)) for c in consoles) if p]
+        colls = entry_collections(a.retrofe, entry)
+        if own:
+            # the maker's own systems: the biggest one's fan art behind, their device pictures as the line-up
+            sysart = lambda c, f: os.path.join(a.retrofe, "collections", c, "system_artwork", f)
+            ranked = [c for _, c in sorted(((counts.get(c, 0), c) for c in colls), reverse=True)]
+            bg = next((sysart(c, "fanart.jpg") for c in ranked if os.path.exists(sysart(c, "fanart.jpg"))), None)
+            ch = None
+            own_cons = [(c, sysart(c, "device.png")) for c in colls if os.path.exists(sysart(c, "device.png"))][:6]
+            cons = [pth for _, pth in own_cons]
+        else:
+            bg = find(bgdir, key, (".jpg", ".png"))
+            ch = find(chardir, key, (".png",))
+            cons = [p for p in (find(condir, c, (".png",)) for c in consoles) if p]
         if not (bg or ch or cons):
             missing.append(entry)
             continue
@@ -361,7 +371,7 @@ def main():
         if bg:
             made += write_bg(bg, os.path.join(out, "am_hero_bg", entry + ".jpg"), a.force)
         # the cast: SLOTS characters (fewer repeat, so the show never has a gap)
-        cast = [p for p in (find(chardir, c, (".png",)) for c in CAST.get(entry, [key])) if p]
+        cast = [p for p in (find(chardir, c, (".png",)) for c in CAST.get(entry, [key])) if p] if not own else []
         if not cast and ch:
             cast = [ch]
         for i in range(SLOTS if cast else 0):
@@ -371,12 +381,13 @@ def main():
                 made += write_fit(cons[i % len(cons)], os.path.join(out, "am_hero_console%d" % (i + 1), entry + ".png"), 1000, 640, a.force)
         # the info around the pictures (James 2026-11-27: "still feels empty, fill more info on those screens")
         color = COLORS.get(entry, "ff2fa0")
-        con_keys = [c for c in consoles if find(condir, c, (".png",))]   # same order as the console slots
+        if own:
+            names = [c.upper() for c, _ in own_cons]
+        else:
+            names = [CONSOLE_NAMES.get(c, c.upper()) for c in consoles if find(condir, c, (".png",))]   # same order as the console slots
         for i in range(3):
-            if con_keys:
-                ck = con_keys[i % len(con_keys)]
-                neon_text(CONSOLE_NAMES.get(ck, ck.upper()), 44, color, os.path.join(out, "am_hero_caption%d" % (i + 1), entry + ".png"), 900)
-        colls = entry_collections(a.retrofe, entry)
+            if names:
+                neon_text(names[i % len(names)], 44, color, os.path.join(out, "am_hero_caption%d" % (i + 1), entry + ".png"), 900)
         n_games = sum(counts.get(c, 0) for c in colls)
         stats = entry.upper()
         if len(colls) > 1 and entry not in ("Recently Played",):

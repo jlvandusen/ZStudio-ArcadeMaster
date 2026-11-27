@@ -111,6 +111,12 @@ def main():
             plain = re.sub(r"\s*\(retrobat\)\s*$", "", system.lower()).strip()
             key = ALIAS.get(plain) or byfull.get(plain)
             pic = picture(a.themes, key) if key else None
+            if not pic:   # the system's own art (a build without RetroBat; James 2026-11-27: "we don't want to rely on any other frontends")
+                for own in ("device.png", "logo.png"):
+                    p = os.path.join(cols, system, "system_artwork", own)
+                    if os.path.exists(p):
+                        pic = p
+                        break
             if not pic:
                 missing += 1
             tile(re.sub(r"\s*\(RetroBat\)\s*$", "", system), counts.get(system.lower(), 0), pic, os.path.join(out, system + ".png"))
