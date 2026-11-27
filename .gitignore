@@ -37,3 +37,4 @@ __pycache__/
 # build copy of tools/panel-rules.json (Build-AmPanel.ps1)
 dist/panel-rules.json
 dist/exit-rules.json
+dist/light-guns.json
