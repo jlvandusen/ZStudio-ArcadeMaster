@@ -127,3 +127,8 @@ whether a hand is on the rim), only on an idle cabinet, and released the moment 
 - **Tested on RACE1** against a stand-in second cabinet (a `DESKTOP-FAKE.json` file on the share): it followed a game
   named from a list RACE1 does not have, and in the attract window it went to the stand-in's game and showed the card.
   **Not tested yet:** two real cabinets with the new helper, and the pedestal with the 2-player cabinet.
+- **A cabinet that was used stops following until it is back in attract mode** (James, 2026-11-27: "if someone else
+  moves it on the other cab it should break sync till it's in attract mode"). After a press on a cabinet's own controls
+  it follows nobody for the frontend's `attractModeTime` (90 s on the racing rigs); `-IdleSec` is only the floor. The
+  join countdown follows the same rule. The cabinet where somebody is browsing still leads the idle ones. Tested on
+  RACE1: 45 s after a press it stayed put while a stand-in cabinet browsed; at 100 s it followed.
