@@ -90,10 +90,50 @@ class Marquee
         catch (Exception e) { log("marquee: LEDBlinky settings not read - " + e.Message); }
     }
 
+    // ---------------------------------------------------------------- AmPanel drives the board itself (PixelDirect)
+    // AmPanel.json "PixelcadeDriver": "direct": the listener is stopped and AmPanel opens the board's serial port (port=
+    // in <Pixelcade>\settings.ini). If that fails, the listener is started again and everything goes through it.
+    PixelDirect direct;
+    // set before StartDirect runs: until the board is open, events wait for it (dropped, the next one shows) instead of
+    // going to the listener - one did, found no listener, and started it again (2026-11-27)
+    public volatile bool DirectWanted;
+    public string Driver { get { return direct != null ? "direct (" + direct.Board + ")" : "listener"; } }
+    public void StartDirect()
+    {
+        if (PixelcadeDir == null) { log("marquee: direct driver needs PixelcadeDir"); return; }
+        string port = PixelDirect.PortFromSettings(PixelcadeDir) ?? "COM7";
+        StopListener();
+        Thread.Sleep(1500);   // Windows frees the port a moment after the listener is gone
+        var d = new PixelDirect(PixelcadeDir, port, log);
+        if (d.Open()) { direct = d; return; }
+        log("marquee: direct driver could not open the board (" + d.LastError + ") - the listener takes over again");
+        DirectWanted = false; lastListenerStart = DateTime.MinValue; EnsureListener();
+    }
+    void StopListener()
+    {
+        try
+        {
+            string d = Path.GetFullPath(PixelcadeDir).TrimEnd('\\') + "\\";
+            using (var q = new System.Management.ManagementObjectSearcher("SELECT ProcessId, ExecutablePath FROM Win32_Process WHERE Name='java.exe' OR Name='javaw.exe' OR Name='pixelweb.exe'"))
+                foreach (System.Management.ManagementObject p in q.Get())
+                    if (Convert.ToString(p["ExecutablePath"]).StartsWith(d, StringComparison.OrdinalIgnoreCase))
+                        try { Process.GetProcessById(Convert.ToInt32(p["ProcessId"])).Kill(); log("marquee: stopped the Pixelcade listener (" + p["ExecutablePath"] + ")"); } catch { }
+        }
+        catch (Exception e) { log("marquee: could not stop the listener - " + e.Message); }
+    }
+    static System.Drawing.Color ToColor(string c)
+    {
+        if (string.IsNullOrEmpty(c)) return System.Drawing.Color.White;
+        if (System.Text.RegularExpressions.Regex.IsMatch(c, "^#?[0-9a-fA-F]{6}$")) { int v = System.Convert.ToInt32(c.TrimStart('#'), 16); return System.Drawing.Color.FromArgb((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF); }
+        var k = System.Drawing.Color.FromName(c);
+        return k.IsKnownColor ? k : System.Drawing.Color.White;
+    }
+
     // ---------------------------------------------------------------- the frontend's events
-    public void FrontendStart() { inAttract = false; Send(Text(StartText, 1, "FEStart")); }
+    public void FrontendStart() { if (direct != null) { direct.Text(StartText, ToColor(PickColor(null))); return; } inAttract = false; Send(Text(StartText, 1, "FEStart")); }
     public void FrontendQuit()
     {
+        if (direct != null) { direct.Text(QuitText, ToColor(PickColor(null))); return; }
         inAttract = false;
         var r = new List<string>();
         string t = Text(QuitText, 1, "FEQuit"); if (t != null) r.Add(t);
@@ -103,11 +143,13 @@ class Marquee
     public void ListChange(string system)
     {
         if (string.IsNullOrEmpty(system)) return;
+        if (direct != null) { direct.Console(system, system.ToUpperInvariant()); return; }
         Send("/console/stream/" + Esc(system) + "?t=" + Esc(system.ToUpperInvariant()) + "&c=white&ss=" + Esc(Speed) + "&l=0&event=FEListChange");
     }
     public void Selected(string game, string system)
     {
         if (string.IsNullOrEmpty(game)) return;
+        if (direct != null) { direct.Game(system, game, null, true); return; }
         Send(StopAttract(), Stream(game, system, 0, null, "FEScroll"));
     }
     public void GameStart(string game, string system, string title)
@@ -115,24 +157,27 @@ class Marquee
         if (string.IsNullOrEmpty(game)) return;
         string np = (NowPlaying ?? "").Replace("~game~", title ?? game).Replace("~system~", system ?? "");
         np = System.Text.RegularExpressions.Regex.Replace(np, "~[a-z0-9]+~", "").Trim();   // ~hiscoretop3~ etc.: not yet
+        if (direct != null) { direct.GameStart(system, game, np, System.Drawing.Color.Lime); return; }
         Send(StopAttract(), "/arcade/stream/black/dummy?l=0&event=GameStart", Text(np, 1, "GameStart", "green", game, system),
              Stream(game, system, 99999, game, "GameStart"));
     }
-    public void GameStop(string selected, string system) { if (!string.IsNullOrEmpty(selected)) Send(Stream(selected, system, 0, null, "FEScroll")); }
+    public void GameStop(string selected, string system) { if (direct != null) { if (!string.IsNullOrEmpty(selected)) direct.Game(system, selected, null, true); return; } if (!string.IsNullOrEmpty(selected)) Send(Stream(selected, system, 0, null, "FEScroll")); }
     public void ScreensaverStart()
     {
         // "random" (default): a random animation from <Pixelcade>\animations, held until the screensaver ends -
         // what LEDBlinky did here (PixelcadeFEScreenSaverAniUserFile=<Random>). "attract": Pixelcade's own attract
         // mode, which needs a newer listener (4.4.7 on the 2P stand-up does not have /attract). "none": leave it.
+        if (direct != null) { if (Screensaver != "none") direct.RandomAnimation(); return; }
         if (Screensaver == "attract") { inAttract = true; Send("/attract"); }
         else if (Screensaver != "none") Send("/animations/stream/random?r&l=99999&event=FEScreenSaver");
     }
     public void ScreensaverStop(string selected, string system)
     {
+        if (direct != null) { if (!string.IsNullOrEmpty(selected)) direct.Game(system, selected, null, true); return; }
         string stop = StopAttract();
         if (!string.IsNullOrEmpty(selected)) Send(stop, Stream(selected, system, 0, null, "FEScroll")); else Send(stop);
     }
-    public void ShowText(string text, string color) { Send(StopAttract(), Text(text, 1, null, color, null, null)); }
+    public void ShowText(string text, string color) { if (direct != null) { direct.Text(text, ToColor(PickColor(color))); return; } Send(StopAttract(), Text(text, 1, null, color, null, null)); }
 
     // ---------------------------------------------------------------- requests
     string StopAttract() { if (!inAttract) return null; inAttract = false; return "/attract/stop"; }
@@ -167,6 +212,7 @@ class Marquee
 
     void Send(params string[] paths)
     {
+        if (DirectWanted) return;   // the direct driver is opening the board: never wake the listener
         var list = new List<string>();
         foreach (var p in paths) if (p != null) list.Add(p);
         if (list.Count == 0) return;
@@ -267,6 +313,7 @@ class Marquee
 
     public string Status()
     {
+        if (direct != null) return string.Format("pixelcade direct on board {0}: {1} frames sent{2}", direct.Board, direct.Frames, direct.LastError != null ? " (last error: " + direct.LastError + ")" : "");
         return string.Format("pixelcade at {0}: {1} sent, {2} failed{3}", BaseUrl, Sent, Failed, LastError != null && Failed > 0 ? " (last: " + LastError + ")" : "");
     }
 }

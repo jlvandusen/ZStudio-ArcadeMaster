@@ -249,6 +249,8 @@ static class AmPanel
             if (Str(cfg, "MarqueeColor") != null) marquee.Color = Str(cfg, "MarqueeColor");
             if (Str(cfg, "MarqueeSpeed") != null) marquee.Speed = Str(cfg, "MarqueeSpeed");
             if (Str(cfg, "MarqueeScreensaver") != null) marquee.Screensaver = Str(cfg, "MarqueeScreensaver").ToLowerInvariant();
+            // "PixelcadeDriver": "direct" = AmPanel drives the board over its serial port; the Java listener is stopped
+            if (string.Equals(Str(cfg, "PixelcadeDriver"), "direct", StringComparison.OrdinalIgnoreCase)) { var mq = marquee; mq.DirectWanted = true; new Thread(() => mq.StartDirect()) { IsBackground = true, Name = "pixel-open" }.Start(); }
             // two programs must never drive the same marquee: LEDBlinky stops getting the commands, unless
             // AmPanel.json asks for it with "PassThrough": true (then LEDBlinky's UsePixelcade must be 0)
             if (Str(cfg, "PassThrough") == null) passThrough = false;
