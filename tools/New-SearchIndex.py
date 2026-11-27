@@ -56,6 +56,16 @@ def readable(full):
     return re.sub(r"\s*[\(\[].*$", "", full).strip() or full
 
 
+def fix_text(s):
+    """UTF-8 read as Latin-1 somewhere upstream ("PokkÃ©n" -> "Pokkén")."""
+    if "Ã" in s or "Â" in s:
+        try:
+            return s.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+    return s
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--retrofe", required=True)
@@ -72,12 +82,35 @@ def main():
         if not name or (coll, name) in seen:
             continue
         seen.add((coll, name))
-        t = title or name
+        t = fix_text(title or name)
+        manu = fix_text(manu or "")
         # only a set name ("mutnat", no space, no lower-case letter after a capital): MAME's full name
         if (t.lower() == name.lower()) and name.lower() in mame:
             t = readable(mame[name.lower()])
             named += 1
         out.append({"n": name, "t": t, "c": coll or "", "y": year or "", "m": manu or ""})
+    # games meta.db doesn't know (TeknoParrot's list is item ids: "PokkenTournament", James 2026-11-27 "can't find
+    # pokken tournament"): the frontend's own catalog, games.json, by the collection and item it lists them under
+    n_cat = 0
+    gj = os.path.join(a.manifest, "games.json")
+    if os.path.exists(gj):
+        g = json.load(open(gj, encoding="utf-8-sig"))
+        g = g.get("games", g) if isinstance(g, dict) else g
+        for x in (g if isinstance(g, list) else g.values()):
+            title = fix_text(x.get("title") or "")
+            for s in x.get("sources") or []:
+                if not isinstance(s, dict) or s.get("frontend", "retrofe") != "retrofe":
+                    continue
+                coll, item = s.get("collection") or "", s.get("item") or ""
+                if not coll or not item or (coll, item) in seen:
+                    continue
+                if not os.path.exists(os.path.join(a.retrofe, "collections", coll, "settings.conf")):
+                    continue
+                seen.add((coll, item))
+                out.append({"n": item, "t": title or item, "c": coll, "y": str(x.get("year") or ""),
+                            "m": fix_text(x.get("manufacturer") or x.get("maker") or "")})
+                n_cat += 1
+    print("from the catalog: %d games meta.db doesn't have" % n_cat)
     path = os.path.join(a.manifest, "search-index.json")
     with open(path + ".tmp", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
