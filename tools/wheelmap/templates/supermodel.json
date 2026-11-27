@@ -2,6 +2,8 @@
   "schema": "wheelmap.template.supermodel/1",
   "description": "Supermodel 0.3a [ Global ] input keys -> logical controls. Input mappings are global only in Supermodel (per-game sections are ignored for inputs). Values: JOYn_XAXIS/YAXIS/ZAXIS/RXAXIS/RYAXIS/RZAXIS/SLIDER1/SLIDER2 (+ _POS/_NEG half, _INV inverted), JOYn_BUTTONk (1-based), JOYn_POVm_UP/DOWN/LEFT/RIGHT (1-based). n = DirectInput enumeration order (WheelMap -Detect shows it as JOYn). Unmapped keys keep their current value.",
   "pedalStyle": "auto",
+  "settings": { "InputJoy{wheel}XSaturation": "40" },
+  "settingsNote": "Extra [ Global ] lines written as they are; {wheel} is the wheel's JOY number on the cabinet. InputJoyNXSaturation = 40: full lock at 40 % of the wheel's travel, about 180 degrees each way on a 900-degree G29 (James on RACE2, 2026-11-27, Dirt Devils: \"need more sensitivity on turning degrees\", then \"Race2 perfect\"). It applies to every Model 3 game.",
   "pedalStyleNote": "auto = decide from the captured travel: pedals resting near the centre use the pressed half (JOYn_YAXIS_NEG/_POS, what the previous owner's G29 file uses); pedals resting at one end use the whole axis (JOYn_YAXIS_INV when pressing lowers the value). half / full force one form.",
   "keys": {
     "InputStart1": "Start",
