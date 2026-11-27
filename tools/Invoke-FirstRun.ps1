@@ -38,6 +38,8 @@ if (-not $py) { $py = Get-ChildItem "$env:LOCALAPPDATA\Programs\Python\Python3*\
 if (-not $py) { throw 'Python 3 not found - run tools\Install-Prerequisites.ps1 first' }
 function Step([string]$name, [string]$exe, [string[]]$argv) {
   Say "--- $name"
+  # a tool's error text is logged, never a stop (PowerShell 5.1 turns a native program's stderr into errors)
+  $ErrorActionPreference = 'Continue'
   $out = & $exe @argv 2>&1 | ForEach-Object { "$_" }
   $code = $LASTEXITCODE
   foreach ($l in ($out | Select-Object -Last 25)) { Say "    $l" }
@@ -81,6 +83,12 @@ if (-not $RetroBat) {
 Say $(if ($RetroBat) { "RetroBat found: $RetroBat (its emulators and games are used; RetroBat itself is never changed)" } else { 'no RetroBat: lists come from the frontend''s own systems' })
 
 $dry = if ($Apply) { @() } else { @('--dry-run') }
+# the panel's keys: learned from LEDBlinky on a cabinet; a new PC gets the standard I-PAC / MAME keyboard layout
+$pj = Join-Path $ManifestDir 'panel.json'
+if (-not (Test-Path $pj)) {
+  if ($Apply) { Copy-Item (Join-Path $tools 'panels\default-ipac.json') $pj; Say 'panel: none learned - the standard I-PAC / MAME keyboard layout is used (panel.json)' }
+  else { Say 'panel: none learned - -Apply uses the standard I-PAC / MAME keyboard layout' }
+}
 # 2. lists
 $imp = @((Join-Path $tools 'Import-RetroBatSystems.py'), '--retrofe', $RetroFE, '--manifest', $ManifestDir, '--all') + $dry
 if ($RetroBat) { $imp += @('--retrobat', $RetroBat) }

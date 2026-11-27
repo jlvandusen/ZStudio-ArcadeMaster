@@ -306,7 +306,9 @@ def main():
         t2, k = run(t)
         if not k:
             continue
-        b = os.path.join(bak, os.path.splitdrive(p)[1].lstrip("\\/"))
+        # a short unique name (the full path under <dest> passed the 260-character limit); undo.json says where it goes
+        import hashlib
+        b = os.path.join(bak, hashlib.sha1(os.path.normcase(p).encode("utf-8")).hexdigest()[:12] + "_" + os.path.basename(p))
         os.makedirs(os.path.dirname(b), exist_ok=True)
         if not os.path.exists(b):
             shutil.copy2(p, b)
