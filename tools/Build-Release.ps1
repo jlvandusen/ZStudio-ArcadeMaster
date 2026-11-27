@@ -76,6 +76,7 @@ New-Item -ItemType Directory -Force (Join-Path $stage 'manifest') | Out-Null
 
 Copy-Item (Join-Path $repo 'release\Install.ps1') $stage
 Copy-Item (Join-Path $repo 'LICENSE') $stage
+Copy-Item (Join-Path $repo 'docs\USER-GUIDE.md') $stage   # the complete instructions, at the top of the install
 "$Version $commit" | Set-Content (Join-Path $stage 'version.txt') -Encoding ASCII   # tools/Update-Release.ps1 compares against it
 @"
 ArcadeMaster $Version (commit $commit) - an arcade cabinet frontend for Windows
@@ -88,6 +89,9 @@ INSTALL
   3. "Set up this PC" opens. Press 1. CHECK THIS PC: it finds your emulators and games and tells you what it would do.
      Nothing changes. Then press 2. SET IT UP.
   4. Start ArcadeMaster.exe.
+
+  Everything else - controls, the touch screen, themes, lights, pads, adding games, updates, troubleshooting - is in
+  USER-GUIDE.md next to this file.
 
 WHAT IT USES
   Your own emulators and games: RetroBat's (its folders are linked, RetroBat keeps working), RetroArch and the
