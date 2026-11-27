@@ -45,7 +45,7 @@ elseif ((Test-Path -LiteralPath $WheelProfile) -and ($pj = Get-Content -LiteralP
 $firstRecord = -not $written   # another cabinet's profile, or none: take what is plugged in now as the starting point
 
 # ---- what is plugged in now
-if ($LiveJson) { $live = @((Get-Content -LiteralPath $LiveJson -Raw | ConvertFrom-Json) | ForEach-Object { Get-Pad $_ }) }
+if ($LiveJson) { $live = @((Get-Content -LiteralPath $LiveJson -Raw | ConvertFrom-Json) | ForEach-Object { $p = Get-Pad $_; if ($null -ne $_.axes) { $p | Add-Member -NotePropertyName axes -NotePropertyValue ([int]$_.axes) -Force; $p | Add-Member -NotePropertyName buttons -NotePropertyValue ([int]$_.buttons) -Force }; $p }) }
 elseif ($ScanFile -and (Test-Path -LiteralPath $ScanFile)) {
   # Get-CabinetDevices' DirectInput scan (refreshed by it whenever the USB devices change): JOYn, name, VID/PID, GUID
   $live = @(); $cur = $null
@@ -53,11 +53,39 @@ elseif ($ScanFile -and (Test-Path -LiteralPath $ScanFile)) {
     if ($l -match '^\s{2}JOY(\d+)\s+(.+?)\s*$') { if ($cur) { $live += $cur }; $cur = [pscustomobject]@{ id = $Matches[2]; productName = $Matches[2]; instanceGuid = ''; enumIndex = [int]$Matches[1]; vid = ''; pid = '' } }
     elseif ($cur -and $l -match 'VID_([0-9A-F]{4})&PID_([0-9A-F]{4})') { if (-not $cur.vid) { $cur.vid = $Matches[1]; $cur.pid = $Matches[2] } }
     elseif ($cur -and $l -match 'instance GUID\s+([0-9a-fA-F-]{36})') { $cur.instanceGuid = $Matches[1].ToLower() }
+    if ($cur -and $l -match 'axes=(\d+)\s+buttons=(\d+)') { $cur | Add-Member -NotePropertyName axes -NotePropertyValue ([int]$Matches[1]) -Force; $cur | Add-Member -NotePropertyName buttons -NotePropertyValue ([int]$Matches[2]) -Force }
   }
   if ($cur) { $live += $cur }
   $live = @($live | Where-Object { $_.instanceGuid })
 }
 else { . (Join-Path $wm 'lib\Common.ps1'); $live = @((Get-WMDevices).directInput | Where-Object { -not $_.error } | ForEach-Object { Get-Pad $_ }) }
+# ---- Model 3: is the game's steering on the wheel at all?
+# A copied drive can come with Supermodel.ini written for another PC's controller order. RACE2's had every control on
+# JOY2, which on RACE2 is the handbrake lever (one slider, no buttons): Start did nothing in Dirt Devils, and the first
+# run here recorded that file as correct (2026-11-27). When InputSteering names a controller that is not there, or one
+# that cannot be a wheel (no buttons, or fewer than two axes), and exactly one plugged-in controller can be (3+ axes and
+# 10+ buttons), the two numbers are swapped in the whole file. Runs every time; needs the scan's axes / buttons counts.
+$wheels = @($live | Where-Object { $null -ne $_.axes -and $_.axes -ge 3 -and $_.buttons -ge 10 })
+if ($wheels.Count -eq 1) {
+  $sr = @(); if ($Roots) { $sr = $Roots } else {
+    $fe0 = Join-Path $RetroFE 'emulators'; if (Test-Path -LiteralPath $fe0) { $sr += @(Get-ChildItem -LiteralPath $fe0 -Directory | ForEach-Object FullName) }
+    $tf0 = Join-Path $wm "targets\$env:COMPUTERNAME.json"; if (Test-Path -LiteralPath $tf0) { foreach ($e in @((Get-Content -LiteralPath $tf0 -Raw | ConvertFrom-Json).supermodel)) { if ($e.ini) { $sr += (Split-Path (Split-Path ([string]$e.ini))) } } }
+  }
+  foreach ($r0 in @($sr | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Sort-Object -Unique)) {
+    $ini0 = Join-Path $r0 'Config\Supermodel.ini'; if (-not (Test-Path -LiteralPath $ini0)) { continue }
+    $enc0 = [Text.Encoding]::GetEncoding(28591); $txt0 = [IO.File]::ReadAllText($ini0, $enc0); $sm = [regex]::Match($txt0, '(?m)^\s*InputSteering\s*=\s*"?JOY(\d+)_'); if (-not $sm.Success) { continue }
+    $sj = [int]$sm.Groups[1].Value; $wj = [int]$wheels[0].enumIndex; if ($sj -eq $wj) { continue }
+    $sd = @($live | Where-Object { $_.enumIndex -eq $sj })[0]
+    if ($sd -and $null -ne $sd.axes -and $sd.buttons -gt 0 -and $sd.axes -ge 2) { continue }      # another real controller: somebody's choice, left alone
+    $what = if ($sd) { "'$($sd.productName)' ($($sd.axes) axis, $($sd.buttons) buttons)" } else { 'a controller that is not plugged in' }
+    Write-Host ("  {0} {1}: steering was on JOY{2}, {3} - JOY{2} and JOY{4} ('{5}') swapped in the whole file" -f $(if ($Apply) { 'FIXED' } else { 'WOULD FIX' }), $ini0, $sj, $what, $wj, $wheels[0].productName)
+    if ($Apply) {
+      Copy-Item -LiteralPath $ini0 "$ini0.wheel-$stamp.bak"
+      $new0 = [regex]::Replace($txt0, '\bJOY(\d+)_', { param($m) $i = [int]$m.Groups[1].Value; if ($i -eq $sj) { "JOY${wj}_" } elseif ($i -eq $wj) { "JOY${sj}_" } else { $m.Value } })
+      [IO.File]::WriteAllText($ini0, $new0, $enc0)   # byte for byte: the file is not always UTF-8
+    }
+  }
+}
 if ($firstRecord) {
   if (-not $live) { Write-Host 'emulator controllers: nothing plugged in and no record yet - nothing to do'; return }
   Write-Host "emulator controllers: first run on this cabinet - recorded the $($live.Count) device(s) plugged in now; changes are fixed from the next run"
