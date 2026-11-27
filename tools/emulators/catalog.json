@@ -1,0 +1,38 @@
+{
+  "_comment": "ArcadeMaster's own emulator catalog (James 2026-11-27: no RetroBat requirement - run the emulators directly). exe = file names to look for on the local drives; systems = what each runs (RetroBat-style short names). launch / config come per emulator as each is moved to a direct launcher (docs/BACKLOG 1a).",
+  "emulators": {
+    "retroarch":   { "exe": ["retroarch.exe"], "systems": ["nes", "snes", "gb", "gbc", "gba", "megadrive", "mastersystem", "gamegear", "sega32x", "segacd", "pcengine", "pcenginecd", "atari2600", "atari7800", "atarilynx", "neogeo", "neogeopocketcolor", "psx", "n64", "nds", "wonderswancolor", "c64", "amiga", "msx", "zxspectrum", "amstradcpc", "colecovision", "intellivision", "vectrex"], "cores": "cores\\*_libretro.dll" },
+    "mame":        { "exe": ["mame.exe", "mame64.exe"], "systems": ["mame", "arcade"] },
+    "supermodel":  { "exe": ["supermodel.exe"], "systems": ["model3"] },
+    "teknoparrot": { "exe": ["TeknoParrotUi.exe"], "systems": ["teknoparrot"] },
+    "m2emulator":  { "exe": ["EMULATOR.EXE", "emulator_multicpu.exe"], "systems": ["model2"] },
+    "dolphin":     { "exe": ["Dolphin.exe"], "systems": ["gamecube", "wii"] },
+    "pcsx2":       { "exe": ["pcsx2-qt.exe", "pcsx2-qtx64.exe", "pcsx2.exe"], "systems": ["ps2"] },
+    "duckstation": { "exe": ["duckstation-qt-x64-ReleaseLTCG.exe", "duckstation-nogui-x64-ReleaseLTCG.exe"], "systems": ["psx"] },
+    "ppsspp":      { "exe": ["PPSSPPWindows64.exe", "PPSSPPWindows.exe"], "systems": ["psp"] },
+    "cemu":        { "exe": ["Cemu.exe"], "systems": ["wiiu"] },
+    "ryujinx":     { "exe": ["Ryujinx.exe"], "systems": ["switch"] },
+    "yuzu":        { "exe": ["yuzu.exe", "suyu.exe", "sudachi.exe", "citron.exe", "eden.exe"], "systems": ["switch"] },
+    "citra":       { "exe": ["citra-qt.exe", "azahar.exe", "lime3ds-gui.exe"], "systems": ["3ds"] },
+    "xemu":        { "exe": ["xemu.exe"], "systems": ["xbox"] },
+    "xenia":       { "exe": ["xenia_canary.exe", "xenia.exe"], "systems": ["xbox360"] },
+    "flycast":     { "exe": ["flycast.exe"], "systems": ["dreamcast", "naomi", "atomiswave"] },
+    "redream":     { "exe": ["redream.exe"], "systems": ["dreamcast"] },
+    "demul":       { "exe": ["demul.exe"], "systems": ["naomi", "atomiswave", "dreamcast"] },
+    "rpcs3":       { "exe": ["rpcs3.exe"], "systems": ["ps3"] },
+    "mednafen":    { "exe": ["mednafen.exe"], "systems": ["saturn", "pcfx", "virtualboy"] },
+    "ares":        { "exe": ["ares.exe"], "systems": ["n64", "snes", "megadrive"] },
+    "melonds":     { "exe": ["melonDS.exe"], "systems": ["nds"] }
+  },
+  "romFolders": {
+    "_comment": "folder names that mean a system (RetroBat / EmulationStation / LaunchBox style)",
+    "nes": ["nes", "famicom", "Nintendo Entertainment System"], "snes": ["snes", "sfc", "Super Nintendo"], "n64": ["n64", "Nintendo 64"],
+    "gb": ["gb", "Game Boy"], "gbc": ["gbc", "Game Boy Color"], "gba": ["gba", "Game Boy Advance"], "nds": ["nds", "Nintendo DS"],
+    "3ds": ["3ds", "n3ds", "Nintendo 3DS"], "gamecube": ["gamecube", "gc", "GameCube"], "wii": ["wii"], "wiiu": ["wiiu", "Wii U"], "switch": ["switch"],
+    "megadrive": ["megadrive", "genesis", "Sega Genesis", "Mega Drive"], "mastersystem": ["mastersystem", "sms"], "gamegear": ["gamegear", "gg"],
+    "saturn": ["saturn"], "dreamcast": ["dreamcast", "dc"], "psx": ["psx", "ps1", "PlayStation"], "ps2": ["ps2", "PlayStation 2"],
+    "psp": ["psp"], "ps3": ["ps3"], "xbox": ["xbox"], "xbox360": ["xbox360"], "pcengine": ["pcengine", "tg16", "TurboGrafx-16"],
+    "neogeo": ["neogeo"], "mame": ["mame", "arcade", "roms"], "model3": ["model3"], "model2": ["model2"], "naomi": ["naomi"],
+    "atomiswave": ["atomiswave"], "atari2600": ["atari2600"], "c64": ["c64", "Commodore 64"], "amiga": ["amiga"]
+  }
+}
