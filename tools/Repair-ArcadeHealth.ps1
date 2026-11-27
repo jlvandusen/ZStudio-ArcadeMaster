@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Self-healing health check for an ArcadeMaster cabinet. Runs at every boot (Start-ArcadeMaster) and from
   Tools > System Health. Each check reports OK / FIXED / WARN; fixes are conservative and backed up.
@@ -58,7 +58,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; ffbdriver = 'Wheel force feedback driver'; gpu = 'Graphics driver'; emulators = 'Emulator versions'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; ffbdriver = 'Wheel force feedback driver'; ghub = 'Logitech G HUB'; gpu = 'Graphics driver'; emulators = 'Emulator versions'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -496,6 +496,27 @@ try {
   elseif ($ffbOk) { Add-Result 'ffbdriver' $checks.ffbdriver 'OK' "$ffbOk wheel(s) with their force feedback driver in place" }
   else { Add-Result 'ffbdriver' $checks.ffbdriver 'OK' 'no force feedback wheel plugged in' }
 } catch { Add-Result 'ffbdriver' $checks.ffbdriver 'OK' "not checked: $($_.Exception.Message)" }
+# Logitech G HUB on a wheel cabinet: it is the wheel's driver (force feedback, and the Options / dial / PS buttons), and
+# a G HUB update once stopped the wheel (James, 2026-11-27: "we have to run an old version - latest the wheel stopped
+# working"). Warns when the installed version is not one proven on a cabinet (catalog\ghub.json) and when G HUB is set to
+# update itself. Read-only: its update switch is an administrator's file (Settings > untick "Enable automatic updates").
+Emit @{ type = 'step'; id = 'ghub'; label = $checks.ghub; status = 'run' }
+try {
+  $ghWheel = @(Get-PnpDevice -PresentOnly -Class HIDClass -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_046D&PID_(C24F|C260|C262|C266|C267|C26D|C26E|C272|C29B|C294)' }).Count
+  $ghVerFile = Join-Path $env:ProgramData 'LGHUB\version.json'
+  if (-not $ghWheel) { Add-Result 'ghub' $checks.ghub 'OK' 'no Logitech wheel plugged in' }
+  elseif (-not (Test-Path $ghVerFile)) { Add-Result 'ghub' $checks.ghub 'WARN' 'a Logitech wheel is plugged in but G HUB is not installed: no force feedback, and the Options / dial / PS buttons can go dead' }
+  else {
+    $ghVer = [string](Get-Content $ghVerFile -Raw | ConvertFrom-Json).version
+    $ghGood = @(); $ghCat = Join-Path (Split-Path $PSScriptRoot) 'catalog\ghub.json'; if (Test-Path $ghCat) { $ghGood = @((Get-Content $ghCat -Raw | ConvertFrom-Json).goodVersions) }
+    $ghAuto = $false; $ghPc = Join-Path $env:ProgramData 'LGHUB\periodic_check.json'
+    if (Test-Path $ghPc) { try { $pcj = Get-Content $ghPc -Raw | ConvertFrom-Json; $ghAuto = [bool]$pcj.checkPeriodically -or [bool]$pcj.downloadAutomatically } catch { } }
+    $ghWarn = @()
+    if ($ghGood -and $ghGood -notcontains $ghVer) { $ghWarn += "version $ghVer is not one proven with the wheel ($($ghGood -join ', ')) - if the wheel misbehaves, go back to that version" }
+    if ($ghAuto) { $ghWarn += 'G HUB updates itself (a newer version stopped the wheel once): in G HUB, Settings, untick "Enable automatic updates"' }
+    if ($ghWarn) { Add-Result 'ghub' $checks.ghub 'WARN' ("G HUB $ghVer`: " + ($ghWarn -join '; ')) } else { Add-Result 'ghub' $checks.ghub 'OK' "G HUB $ghVer, a version proven with the wheel; automatic updates off" }
+  }
+} catch { Add-Result 'ghub' $checks.ghub 'OK' "not checked: $($_.Exception.Message)" }
 # graphics driver: the newest driver from NVIDIA / AMD for this card (legacy cards included), looked up by
 # Update-GpuDriver.ps1 in the background at most once a day - this check only reads its last answer, never waits
 Emit @{ type = 'step'; id = 'gpu'; label = $checks.gpu; status = 'run' }

@@ -745,3 +745,18 @@ Next steps towards our own G29 library, without G HUB:
 2. Send it from AmPanel when a C294 appears.
 3. Read PS and Insert from below Logitech's filter. Either take the filter off the wheel's driver stack, after checking
    force feedback still works, or read the report another way.
+
+## Logitech G HUB: the version that works, and its updates
+
+- **Keep G HUB installed on a wheel cabinet.** It is the wheel's driver: force feedback, and the Options, red dial and PS
+  buttons. What G HUB does with a button press is small and readable (a "G-key" number that is the joystick button
+  number, linked to a keystroke); the driver part is what cannot be replaced.
+- **Version 2026.7.1011216 works** (RACE1, installed 2026-11-26; RACE2 runs G HUB too). A newer version stopped the wheel
+  (James, 2026-11-27: "we have to run an old version - latest the wheel stopped working"). Versions proven on a cabinet
+  are listed in `catalog/ghub.json`.
+- **Switch G HUB's own updates off:** G HUB, Settings (the gear), untick "Enable automatic updates". It is an
+  administrator's setting, so ArcadeMaster cannot switch it for you.
+- **System Health, "Logitech G HUB"** warns when the installed version is not in that list, when automatic updates are
+  on, and when a Logitech wheel is plugged in without G HUB.
+- **James's two G HUB mappings** (default desktop profile): button 24 (red dial press) types Enter, button 25 (PS)
+  types Esc. Hold PS / Esc for 5 seconds to leave any game.

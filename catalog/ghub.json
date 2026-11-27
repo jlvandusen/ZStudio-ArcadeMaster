@@ -1,0 +1,4 @@
+{
+  "_comment": "Logitech G HUB versions the wheel cabinets are known to work with (System Health 'Logitech G HUB'). James, 2026-11-27: 'we have to run an old version - latest the wheel stopped working'; 2026.7.1011216 was installed on RACE1 on 2026-11-26 and works ('this version works'). Add a version here once it is proven on a cabinet. A cabinet on another version, or with G HUB's own automatic updates on, gets a warning - nothing is changed for it.",
+  "goodVersions": ["2026.7.1011216"]
+}
