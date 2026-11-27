@@ -25,7 +25,8 @@ param(
   [string]$RetroFE,
   [switch]$Off,
   [switch]$On,
-  [switch]$Show
+  [switch]$Show,
+  [switch]$Force      # -Off on a G29 anyway (PS / Insert stop working)
 )
 $ErrorActionPreference = 'Stop'
 $dry = $env:AM_SYSTEM_DRYRUN -eq '1'
@@ -61,6 +62,14 @@ function Restart-AmPanel {
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if ($Off) {
+  # A G29 sends PS and the red Insert / dial press ONLY while G HUB's app runs: with lghub_agent closed (drivers loaded)
+  # neither appears as a joystick button nor on the two vendor channels - nothing at all, while Options and Share do
+  # (RACE2 raw-HID test with James at the wheel, 2026-11-27). Pad keys cannot type a key for a button Windows never sees.
+  $g29 = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match 'VID_046D&PID_C24F' }).Count -gt 0
+  if ($g29 -and -not $Force) {
+    Write-Host "G HUB stays on: this cabinet has a Logitech G29, whose PS and Insert (dial press) buttons only work while G HUB's app runs (tested 2026-11-27). -Force switches it off anyway; leaving a game then needs another button (docs/06)."
+    return
+  }
   Write-Host "G HUB off$(if ($dry) { ' (dry run)' }):"
   if ($s.drivers -lt 1) { Write-Warning 'no Logitech wheel driver is running - force feedback and the Options / dial / PS buttons need it; check the wheel is plugged in' }
   # 1. the mappings first, so nothing is lost

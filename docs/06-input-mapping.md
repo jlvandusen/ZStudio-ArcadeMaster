@@ -683,5 +683,21 @@ Who does what instead:
   - `-On` puts everything back.
   - `AM_SYSTEM_DRYRUN=1` changes nothing.
 
-Still to test with someone at the wheel: Options / dial / PS reported by the drivers with the app off, and pad keys in a
-game (PS leaves it, the dial press confirms).
+**Tested with James at the wheel (2026-11-27, RACE2), result: on a G29 the app has to stay.** With G HUB's app
+closed and the drivers loaded:
+- **Options and Share** still arrive. Options is joystick button 9, raw report byte 2 bit 0x20.
+- **PS and the red Insert (dial press)** send nothing: no joystick button, and no byte on either vendor HID channel.
+  James pressed each several times while a raw reader watched all three channels.
+
+So G HUB's app is what turns those two buttons on, and with it gone no tool, ours included, can see them.
+Two more things the app does, found in the same session:
+- **It switches the wheel to full G29 mode.** After a replug the wheel shows up as USB ID **C294** ("G29 Driving Force
+  Racing Wheel (PS3)", the basic compatibility mode). About 15 s after G HUB starts it comes back as **C24F** with the
+  same instance ID, so every binding still matches. Without G HUB a freshly plugged wheel would stay in C294, with
+  other buttons, axes and names.
+- **PS4 mode (the switch on the wheel) is worse without G HUB.** The wheel becomes USB ID **C260** and is taken by G HUB's
+  own USB driver (`LGHUBWinUSB`). Windows then lists no game controller at all. Keep the switch on **PS3**.
+
+`Set-GHub.ps1 -Off` now refuses on a cabinet with a G29 unless `-Force` is given. The pad keys stay for other wheels and
+sticks, and step aside while G HUB runs. Next step if we still want G HUB off: capture what G HUB sends the wheel at start
+(USB capture) and have AmPanel send the same.
