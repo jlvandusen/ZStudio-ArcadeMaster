@@ -347,6 +347,29 @@ static class AmPanel
     static LoadingScreen loading;
     static bool loadingOff;             // AmPanel.json "LoadingScreen": "off"
     static int loadingSeq;
+    // settings.conf "gameHandOff = true": RetroFE (ZStudio fork, GameHandOff.cpp) keeps the game on the main screen,
+    // brings it forward and minimises the frontend itself - AmPanel's LoadingScreen.KeepGameOnMainScreen steps aside
+    static bool FrontendHandsOff()
+    {
+        try
+        {
+            if (retroFERoot == null) return false;
+            string sc = Path.Combine(retroFERoot, "settings.conf");
+            if (!File.Exists(sc)) return false;
+            bool on = false;
+            foreach (var raw in File.ReadAllLines(sc))
+            {
+                string l = raw.Trim();
+                if (!l.StartsWith("gameHandOff", StringComparison.OrdinalIgnoreCase)) continue;
+                int eq = l.IndexOf('='); if (eq < 0) continue;
+                string v = l.Substring(eq + 1).Trim().ToLowerInvariant();
+                on = v == "true" || v == "yes" || v == "1";
+            }
+            return on;
+        }
+        catch { return false; }
+    }
+
     static void ShowLoadingLater(string game)
     {
         if (loadingOff || ui == null || string.IsNullOrEmpty(game) || game.StartsWith("__")) return;
@@ -354,9 +377,11 @@ static class AmPanel
         int seq = System.Threading.Interlocked.Increment(ref loadingSeq);
         HashSet<IntPtr> baseline;
         try { baseline = LoadingScreen.Snapshot(); } catch { return; }
-        // the game opens on the main screen, and is moved there if it lands on the touch screen
+        // the game opens on the main screen, and is moved there if it lands on the touch screen - unless the frontend
+        // does the hand-off itself (settings.conf "gameHandOff = true", docs/21 phase 2): two programs moving and
+        // focusing the same windows would fight
         var keep = baseline;
-        System.Threading.ThreadPool.QueueUserWorkItem(delegate {
+        if (!FrontendHandsOff()) System.Threading.ThreadPool.QueueUserWorkItem(delegate {
             LoadingScreen.KeepGameOnMainScreen(keep, delegate { lock (Gate) return State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"]; }, Log);
         });
         System.Threading.ThreadPool.QueueUserWorkItem(delegate {

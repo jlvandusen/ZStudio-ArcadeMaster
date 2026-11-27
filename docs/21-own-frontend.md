@@ -28,6 +28,14 @@ the host. Here the frontend itself becomes ours.
    - Emulator consoles are hidden properly.
    - Self-heal runs after each game.
    - This removes the black-screen and behind-the-frontend class of bugs at the source.
+   - **Started (RACE2, 2026-11-27):** ZStudio-retrofe PR 8, `Execute/GameHandOff.cpp`, is on with `gameHandOff = true`
+     in settings.conf. It keeps the game on the main screen, brings it forward, and minimises the frontend with the
+     touch-screen focus round trip (Supermodel). It also minimises emulator consoles in Windows Terminal and reads
+     rectangles DPI aware. AmPanel steps aside when it's on, and the frontend comes back after the game. Tested on
+     RACE2 with Arctic Thunder.
+     - To test a build without the updater putting the official one back: `<retrofe>\am-test-build.txt` keeps a
+       hand-copied exe for 4 h.
+     - Still to move in: the loading card, Repair-GameRoms after each game, and consoles started hidden from the start.
 3. **Cabinet profile at start.**
    - The frontend reads the detected cabinet type and capabilities.
    - Controls, the touch layout and the tools follow from it.
