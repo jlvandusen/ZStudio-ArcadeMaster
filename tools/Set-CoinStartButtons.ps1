@@ -70,7 +70,7 @@ foreach ($r in $Roots) {
     $prefix = 'Driving'; foreach ($n in $nodes) { if ((& $onWheel $n) -and [string]$n.BindNameDi -match '^(.*?) ?Buttons ?\d+$') { $prefix = $Matches[1]; break } }
     $tmpl = $nodes | Where-Object { & $onWheel $_ } | Select-Object -First 1
     $done = @()
-    $wants = @(@{ rx = '^(Coin|Coin ?1|P1 Coin|Player 1 Coin)$'; btn = $Coin; what = 'coin' }, @{ rx = '^(Start|Start ?1|P1 Start|Player 1 Start|Start Button)$'; btn = $Start; what = 'start' })
+    $wants = @(@{ rx = '^(Coin|Coin ?1|P1 Coin|Player 1 Coin|Credit|Credit ?1|P1 Credit)$'; btn = $Coin; what = 'coin' }, @{ rx = '^(Start|Start ?1|P1 Start|Player 1 Start|Start Button)$'; btn = $Start; what = 'start' })
     if ($Test -ge 0) { $wants += @{ rx = '^(Test|Test Button|Test Switch|Test SW)$'; btn = $Test; what = 'test' } }
     if ($Service -ge 0) { $wants += @{ rx = '^(Service|Service ?1|Service Button|Service SW)$'; btn = $Service; what = 'service' } }
     foreach ($want in $wants) {
