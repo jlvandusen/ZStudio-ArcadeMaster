@@ -239,7 +239,9 @@ class SearchIndex
         {
             bool here = !string.IsNullOrEmpty(menu) && string.Equals(g.Collection, menu, StringComparison.OrdinalIgnoreCase);
             if (!here && Openable != null && !Openable.Contains(g.Collection)) continue;
-            bool all = true; int score = here ? 0 : 5;
+            // the original first (James 2026-11-27: "Donkey Kong ... loaded c64 version"): arcade, then consoles, home
+            // computers last, for equally good matches
+            bool all = true; int score = (here ? 0 : 5) + Tier(g.Collection) * 2;
             foreach (var w in words)
             {
                 int at = g.Key.IndexOf(w, StringComparison.Ordinal);
@@ -253,6 +255,27 @@ class SearchIndex
         var r = new List<Game>();
         for (int i = 0; i < hits.Count && i < max; i++) r.Add(hits[i].Value);
         return r;
+    }
+
+    // 0 = arcade, 1 = console / handheld, 2 = home computer (by collection name)
+    static readonly System.Text.RegularExpressions.Regex ArcadeRx = new System.Text.RegularExpressions.Regex(
+        @"^(MAME|Final Burn|Arcades|ArcadesMini|Fight|Atomiswave|Naomi|Model \d|TeknoParrot|Neo Geo$|Laser Disc|AM_TP)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    static readonly System.Text.RegularExpressions.Regex ComputerRx = new System.Text.RegularExpressions.Regex(
+        @"^(Commodore|ZX Spectrum|Amstrad|MSX|Atari 800|Amiga(?! CD32)|Ports|PC Gamer|Apple|DOS)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    public static int Tier(string collection)
+    {
+        if (string.IsNullOrEmpty(collection)) return 1;
+        if (ArcadeRx.IsMatch(collection)) return 0;
+        if (ComputerRx.IsMatch(collection)) return 2;
+        return 1;
+    }
+    // the system as a player reads it: "Commodore 64 (RetroBat)" -> "COMMODORE 64"
+    public static string SystemLabel(string collection)
+    {
+        string s = (collection ?? "").Replace("(RetroBat)", "").Trim();
+        if (s.StartsWith("AM_TP", StringComparison.OrdinalIgnoreCase)) s = "TeknoParrot";
+        if (string.Equals(s, "Arcades", StringComparison.OrdinalIgnoreCase) || string.Equals(s, "MAME", StringComparison.OrdinalIgnoreCase) || string.Equals(s, "Final Burn", StringComparison.OrdinalIgnoreCase)) s = "Arcade";
+        return s.ToUpperInvariant();
     }
 
     public bool HasMenu(string menu)
@@ -498,10 +521,25 @@ class SearchScreen : NoFocusForm
                 g.DrawImage(logo, rr.X + rh * 0.2f + (lw - logo.Width * k) / 2, rr.Y + (rh - logo.Height * k) / 2, logo.Width * k, logo.Height * k);
                 tx = rr.X + rh * 2.3f;
             }
+            // the system as a coloured badge on the right of the row (James 2026-11-27: it "didn't show me which system"):
+            // arcade magenta, console blue, home computer amber
+            string sys = SearchIndex.SystemLabel(results[i].Collection);
+            float badgeW = 0;
+            using (var bf = new Font(th.Family, rh * 0.24f, FontStyle.Bold, GraphicsUnit.Pixel))
+            {
+                var sz = g.MeasureString(sys, bf);
+                badgeW = Math.Min(sz.Width + rh * 0.4f, rr.Width * 0.42f);
+                var br = new RectangleF(rr.Right - badgeW - rh * 0.15f, rr.Y + rh * 0.12f, badgeW, rh * 0.38f);
+                int tier = SearchIndex.Tier(results[i].Collection);
+                Color c = tier == 0 ? Color.FromArgb(255, 47, 160) : tier == 2 ? Color.FromArgb(255, 176, 0) : Color.FromArgb(46, 200, 255);
+                using (var p = Round(br, br.Height * 0.5f)) using (var b = new SolidBrush(c)) g.FillPath(b, p);
+                using (var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap })
+                    g.DrawString(sys, bf, Brushes.Black, br, fmt);
+            }
             using (var f = new Font(th.Family, rh * 0.3f, FontStyle.Bold, GraphicsUnit.Pixel)) using (var fmt = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap })
-                g.DrawString(results[i].Title, f, Brushes.White, new RectangleF(tx, rr.Y + rh * 0.14f, rr.Right - tx - rh * 0.2f, rh * 0.42f), fmt);
+                g.DrawString(results[i].Title, f, Brushes.White, new RectangleF(tx, rr.Y + rh * 0.14f, Math.Max(10, rr.Right - tx - badgeW - rh * 0.4f), rh * 0.42f), fmt);
             using (var f = new Font(th.Family, rh * 0.22f, FontStyle.Regular, GraphicsUnit.Pixel)) using (var b = new SolidBrush(th.Dim))
-                g.DrawString((results[i].Collection + "   " + results[i].Year + "   " + results[i].Maker).Trim(), f, b, tx, rr.Y + rh * 0.58f);
+                g.DrawString((results[i].Year + "   " + results[i].Maker).Trim(), f, b, tx, rr.Y + rh * 0.58f);
         }
         if (results.Count == 0 && query.Trim().Length > 0)
             using (var f = new Font(th.Family, H * 0.03f, FontStyle.Bold, GraphicsUnit.Pixel)) using (var b = new SolidBrush(th.Dim)) g.DrawString("NO GAME BY THAT NAME HERE", f, b, pad, ry);
