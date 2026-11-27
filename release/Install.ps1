@@ -27,7 +27,7 @@ $sc = Join-Path $fe 'settings.conf'
 (Get-Content $sc -Raw).Replace('{ROOT}', $root) | Set-Content $sc -Encoding UTF8
 $cfg = [ordered]@{
   RepoPath = $repo; RepoUrl = 'https://github.com/jlvandusen/ZStudio-ArcadeMaster.git'; Branch = 'main'
-  RetroFERoot = $fe; ManifestDir = $manifest; AutoUpdate = $false; CheckOnly = $false
+  RetroFERoot = $fe; ManifestDir = $manifest; AutoUpdate = $false; ReleaseUpdate = $true; CheckOnly = $false
   CabinetType = 'auto'; FollowHardware = $true; ShowAllModes = $false; CabinetTitle = ''; CabinetTagline = ''; SecondScreen = $true
 }
 $cfg | ConvertTo-Json | Set-Content (Join-Path $root 'ArcadeMaster.config.json') -Encoding UTF8

@@ -1042,6 +1042,27 @@ static class AmPanel
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
         if (toolsDir != null && retroFERoot != null)
             menu.Items.Add("Set up this PC...", null, delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });   // first run (SetupWizard.cs)
+        if (toolsDir != null)
+            menu.Items.Add("Check for updates...", null, delegate {
+                // a release install asks GitHub (tools\Update-Release.ps1 -Check); the update itself installs when ArcadeMaster
+                // next starts, before the frontend opens. A git install updates through git at every start.
+                string script = Path.Combine(toolsDir, "Update-Release.ps1"), root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+                string msg;
+                if (Directory.Exists(Path.Combine(Path.GetDirectoryName(toolsDir), ".git"))) msg = "This cabinet runs from a git copy of ArcadeMaster: it updates from GitHub every time it starts.";
+                else if (!File.Exists(script)) msg = "Update tool not found: " + script;
+                else
+                {
+                    try
+                    {
+                        var p = Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\" -Root \"" + root + "\" -ManifestDir \"" + manifestDir + "\" -Check")
+                            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true });
+                        string o = p.StandardOutput.ReadToEnd(); p.WaitForExit(60000);
+                        var lines = o.Trim().Split('\n'); msg = lines[lines.Length - 1].Trim();
+                    }
+                    catch (Exception ex) { msg = "Update check failed: " + ex.Message; }
+                }
+                MessageBox.Show(msg, "ArcadeMaster updates");
+            });
         if (leds != null)
             menu.Items.Add("Buttons (which light is which)...", null, delegate { OpenButtons(); });
         if (leds != null)
