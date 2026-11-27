@@ -216,6 +216,18 @@
   </reloadableImage>
   <reloadableText type="collectionIndexSize" menuScrollReload="true" x="400" y="82" xOrigin="center" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="9aa3b2" alpha=".9" layer="11"/>
 
+  <!-- ================= NAV HEADER (James 2026-11-27: "show breadcrumbs ... and nav buttons to move back and forth") ================= -->
+  <!-- where you are: MAIN > RACING > ALL GAMES (am_breadcrumb, frontend fork 2026-11-27; older builds show nothing here) -->
+  <reloadableText type="am_breadcrumb" x="740" y="34" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alpha=".95" layer="11"/>
+  <!-- how to move: back one level, switch filter; the same words on every cabinet type -->
+  <!-- under the filter bar, either side of the 1/11 counter (clear of the video frame) -->
+  <text value="&lt; BACK" x="110" y="82" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="ff2fa0" alpha=".9" layer="11"/>
+  <text value="&lt; &gt;  FILTERS" x="560" y="82" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="2ec8ff" alpha=".9" layer="11"/>
+  <!-- touch: the bar's own arrows switch filters, BACK goes back (touch-capable main screens) -->
+  <image src="images/touch_hit.png" touchAction="prevPlaylist" x="100" y="5" width="110" height="60" layer="12"/>
+  <image src="images/touch_hit.png" touchAction="nextPlaylist" x="590" y="5" width="110" height="60" layer="12"/>
+  <image src="images/touch_hit.png" touchAction="back" x="100" y="64" width="130" height="40" layer="12"/>
+
   <!-- ================= GAME STORY: what made it special (tools/New-GameStories.py -> medium_artwork/am_story/<item>.txt) ================= -->
   <!-- after 8 s on one game a glass panel covers the video and the story scrolls; any move hides it again -->
   <!--am-ui:story-->
