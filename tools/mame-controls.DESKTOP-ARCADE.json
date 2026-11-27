@@ -1,0 +1,19 @@
+{
+  "_comment": "DESKTOP-ARCADE (2P stand-up) only - merged on top of mame-controls.json by tools/Set-MameControls.ps1. The Tron stick is the Xinmotek controller (USB 16C0:05E1): MAME 0.251 lists it as joystick #8 (pinned below with mapdevice, so the number stays if Windows reorders the controllers). Its base is turned 90 degrees (James, 2026-11-27); the Panel Test captured what each push sends: up = X right, right = Y down, down = X left, left = Y up. The trigger is its button 13. Ports from MAME 0.251 itself (tron, -autoboot_script dump of manager.machine.ioport, 2026-11-27). Every input keeps the panel's P1 key as well.",
+  "_seq": {
+    "TRON_UP": "JOYCODE_8_XAXIS_RIGHT_SWITCH OR KEYCODE_UP",
+    "TRON_DOWN": "JOYCODE_8_XAXIS_LEFT_SWITCH OR KEYCODE_DOWN",
+    "TRON_LEFT": "JOYCODE_8_YAXIS_UP_SWITCH OR KEYCODE_LEFT",
+    "TRON_RIGHT": "JOYCODE_8_YAXIS_DOWN_SWITCH OR KEYCODE_RIGHT",
+    "TRON_FIRE": "JOYCODE_8_BUTTON13 OR KEYCODE_LCONTROL"
+  },
+  "tron": { "about": "the Tron stick moves (turned 90 degrees on this cabinet), its trigger fires; the P1 stick and button 1 still work",
+    "mapdevice": [ { "device": "Xinmotek Controller product_05e116c0-0000-0000-0000-504944564944 instance_d6f70e20-8570-11ed-800f-444553540000", "controller": "JOYCODE_8" } ],
+    "ports": [
+      { "tag": ":ssio:IP2", "type": "P1_JOYSTICK_UP",    "mask": 4,  "defvalue": 4,  "seq": "TRON_UP" },
+      { "tag": ":ssio:IP2", "type": "P1_JOYSTICK_DOWN",  "mask": 8,  "defvalue": 8,  "seq": "TRON_DOWN" },
+      { "tag": ":ssio:IP2", "type": "P1_JOYSTICK_LEFT",  "mask": 1,  "defvalue": 1,  "seq": "TRON_LEFT" },
+      { "tag": ":ssio:IP2", "type": "P1_JOYSTICK_RIGHT", "mask": 2,  "defvalue": 2,  "seq": "TRON_RIGHT" },
+      { "tag": ":ssio:IP0", "type": "P1_BUTTON1",        "mask": 16, "defvalue": 16, "seq": "TRON_FIRE" }
+    ] }
+}
