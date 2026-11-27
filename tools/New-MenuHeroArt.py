@@ -15,6 +15,7 @@ An entry without art keeps the old look. Only redraws what changed (cheap at eve
 """
 import argparse
 import os
+import re
 
 from PIL import Image
 
@@ -230,11 +231,23 @@ def random_title(manifest, colls):
         games = [g for g in json.load(open(os.path.join(manifest, "search-index.json"), encoding="utf-8")) if g.get("c") in colls]
     except Exception:
         return None
-    games = [g for g in games if 3 <= len(g.get("t", "")) <= 40 and "(" not in g.get("t", "")] or games
-    if not games:
+    # a real title only (James 2026-11-27: "TRY: MUTNAT" - the MAME set name, not "Mutation Nation"): the title must
+    # differ from the item / rom name and read like words; "(Rev A)" style tails are cut off
+    def clean(t):
+        t = re.sub(r"\s*[\(\[].*$", "", t or "").strip()
+        return t
+
+    real = []
+    for g in games:
+        t, n = clean(g.get("t", "")), (g.get("n") or "").strip()
+        if not (4 <= len(t) <= 40) or t.lower() == n.lower() or t.lower() == clean(n).lower():
+            continue
+        if " " not in t and not any(ch.islower() for ch in t):   # one all-caps word: still a set name
+            continue
+        real.append(t)
+    if not real:
         return None
-    g = random.choice(games)
-    return g.get("t", "")
+    return random.choice(real)
 
 
 def game_counts(manifest):
