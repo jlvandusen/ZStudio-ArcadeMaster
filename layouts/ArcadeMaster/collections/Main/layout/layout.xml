@@ -74,7 +74,7 @@
   <!-- ================= HERO ART (James 2026-11-27: "something better than that ugly dial ... awesome graphics and
        backdrops"). tools/New-MenuHeroArt.py: per entry a sharp themed backdrop, a character and up to three consoles
        from the cabinet's RELOAD theme. An entry without hero art shows nothing here and keeps the old look. ========== -->
-  <reloadableImage useTextureCache="true" type="am_hero_bg" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_bg" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="width" from="2000" to="1960" algorithm="easeOutCubic"/><animate type="height" from="1125" to="1103" algorithm="easeOutCubic"/></set>
@@ -83,40 +83,393 @@
   </reloadableImage>
   <image src="../../../images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" alpha=".75" layer="1"/>
   <!-- the consoles, left: one after another, 5 s each (a maker's line-up), looping while the menu is idle -->
-  <reloadableImage useTextureCache="true" type="am_hero_console1" mode="layout" x="460" y="470" xOrigin="center" yOrigin="center" maxWidth="640" maxHeight="400" alpha="0" layer="12">
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console1" mode="layout" x="540" y="430" xOrigin="center" yOrigin="center" maxWidth="900" maxHeight="560" alpha="0" layer="12">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
-      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="500" to="470" algorithm="easeOutCubic"/></set>
-      <set duration="3.6"><animate type="y" to="458" algorithm="easeInOutSine"/></set>
+      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="465" to="430" algorithm="easeOutCubic"/></set>
+      <set duration="3.6"><animate type="y" to="415" algorithm="easeInOutSine"/></set>
       <set duration=".7"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
       <set duration="10"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage useTextureCache="true" type="am_hero_console2" mode="layout" x="460" y="470" xOrigin="center" yOrigin="center" maxWidth="640" maxHeight="400" alpha="0" layer="12">
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console2" mode="layout" x="540" y="430" xOrigin="center" yOrigin="center" maxWidth="900" maxHeight="560" alpha="0" layer="12">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="5"><animate type="nop"/></set>
-      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="500" to="470" algorithm="easeOutCubic"/></set>
-      <set duration="3.6"><animate type="y" to="458" algorithm="easeInOutSine"/></set>
+      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="465" to="430" algorithm="easeOutCubic"/></set>
+      <set duration="3.6"><animate type="y" to="415" algorithm="easeInOutSine"/></set>
       <set duration=".7"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
       <set duration="5"><animate type="nop"/></set>
     </onIdle>
   </reloadableImage>
-  <reloadableImage useTextureCache="true" type="am_hero_console3" mode="layout" x="460" y="470" xOrigin="center" yOrigin="center" maxWidth="640" maxHeight="400" alpha="0" layer="12">
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_console3" mode="layout" x="540" y="430" xOrigin="center" yOrigin="center" maxWidth="900" maxHeight="560" alpha="0" layer="12">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onIdle>
       <set duration="10"><animate type="nop"/></set>
-      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="500" to="470" algorithm="easeOutCubic"/></set>
-      <set duration="3.6"><animate type="y" to="458" algorithm="easeInOutSine"/></set>
+      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="465" to="430" algorithm="easeOutCubic"/></set>
+      <set duration="3.6"><animate type="y" to="415" algorithm="easeInOutSine"/></set>
       <set duration=".7"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
     </onIdle>
   </reloadableImage>
-  <!-- the character, right: slides in when the entry is chosen -->
-  <reloadableImage useTextureCache="true" type="am_hero_char" mode="layout" x="1480" y="690" xOrigin="center" yOrigin="bottom" maxWidth="760" maxHeight="660" alpha="0" layer="12">
+  <!-- the character show, right: 24 slots, one every 5 s (New-MenuHeroArt.py writes am_hero_char1..24 per entry).
+       Each slides in, stops, waves (a hop and a tilt), slides off - then the next arrives. Loops while the menu is idle. -->
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char1" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
-    <onMenuIdle>
-      <set duration=".55"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="x" from="1620" to="1480" algorithm="easeOutBack"/></set>
-    </onMenuIdle>
+    <onIdle>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="115"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char2" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="5"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="110"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char3" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="10"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="105"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char4" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="15"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="100"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char5" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="20"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="95"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char6" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="25"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="90"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char7" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="30"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="85"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char8" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="35"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="80"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char9" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="40"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="75"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char10" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="45"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="70"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char11" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="50"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="65"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char12" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="55"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="60"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char13" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="60"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="55"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char14" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="65"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="50"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char15" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="70"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="45"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char16" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="75"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="40"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char17" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="80"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="35"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char18" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="85"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="30"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char19" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="90"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="25"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char20" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="95"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="20"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char21" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="100"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="15"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char22" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="105"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="10"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char23" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="110"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+      <set duration="5"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_char24" mode="layout" x="2200" y="690" xOrigin="center" yOrigin="bottom" maxWidth="720" maxHeight="620" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="115"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" from="2200" to="1480" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="y" to="655" algorithm="easeOutQuadratic"/><animate type="angle" to="-7" algorithm="easeOutQuadratic"/></set>
+      <set duration=".18"><animate type="y" to="690" algorithm="easeInQuadratic"/><animate type="angle" to="6" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-5" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="2.8"><animate type="nop"/></set>
+      <set duration=".6"><animate type="x" to="2200" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".2"><animate type="nop"/></set>
+    </onIdle>
   </reloadableImage>
 
   <!-- studio mark, breathing -->
