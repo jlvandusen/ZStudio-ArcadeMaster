@@ -29,6 +29,7 @@ class GameLink
     public string LastMiss { get; private set; }
     public DateTime LastHello { get; private set; }
     public bool Running { get; private set; }
+    public event Action<string> Request;   // "search", ... from the frontend's theme buttons
     UdpClient rx;
     readonly Action<string> log;
 
@@ -58,6 +59,8 @@ class GameLink
                 if (p.Length >= 2 && p[0] == "hello") { Menu = p[1]; LastHello = DateTime.Now; }
                 else if (p.Length >= 5 && p[0] == "select") { Menu = p[2]; Selected = p[4]; SelectedCollection = p.Length >= 6 && p[5] != "" ? p[5] : p[2]; }
                 else if (p.Length >= 2 && p[0] == "miss") LastMiss = p[1];
+                // a theme button asked AmPanel for something (touchAction="am:search" -> "request\tsearch", docs/22)
+                else if (p.Length >= 2 && p[0] == "request" && Request != null) Request(p[1]);
             }
             catch { if (!Running) return; Thread.Sleep(200); }
         }
@@ -105,6 +108,30 @@ static class FrontendFocus
         IntPtr fg = GetForegroundWindow();
         int ft = GetWindowThreadProcessId(fg, IntPtr.Zero), me = GetCurrentThreadId();
         AttachThreadInput(me, ft, true); SetForegroundWindow(main); AttachThreadInput(me, ft, false);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);
+    // the frontend in front when it starts (James 2026-11-27: "when it opens it doesn't set it in the front, vscode is
+    // in front"): Windows refuses the foreground to a program started from the background, so on "frontend start" this
+    // waits for the main window, taps Alt (which lets us hand the foreground over) and brings it up - a few tries
+    public static void BringFrontendForward(Action<string> log)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 30000)
+        {
+            System.Threading.Thread.Sleep(1000);
+            IntPtr main = FindWindow(null, "RetroFE 0");
+            if (main == IntPtr.Zero) continue;
+            if (GetForegroundWindow() == main) { log("focus: the frontend is in front"); return; }
+            keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);
+            ShowWindow(main, 9 /* SW_RESTORE */); BringWindowToTop(main);
+            IntPtr fg = GetForegroundWindow();
+            int ft = GetWindowThreadProcessId(fg, IntPtr.Zero), me = GetCurrentThreadId();
+            AttachThreadInput(me, ft, true); SetForegroundWindow(main); AttachThreadInput(me, ft, false);
+        }
+        log("focus: could not bring the frontend to the front");
     }
 
     public static string Guard()

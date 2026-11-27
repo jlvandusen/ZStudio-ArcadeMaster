@@ -52,7 +52,11 @@
   <text value="&gt;" x="415" y="75" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="2ec8ff" layer="8"/>
   <reloadableText type="am_breadcrumb" x="490" y="75" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="e6e9f0" layer="8"/>
 
-  <!-- the panel tabs: a column on the right, below AmPanel's SEARCH button (layout x 1598-1872, y 36-126) -->
+  <!-- SEARCH (top right): the theme's own button - the frontend asks AmPanel to open its search screen (am:search) -->
+  <image src="images/touch_hit.png" touchAction="am:search" x="1600" y="30" width="290" height="110" layer="9"/>
+  <text value="SEARCH" x="1745" y="85" xOrigin="center" yOrigin="center" fontSize="46" loadFontSize="46" fontColor="ffb000" layer="9"/>
+
+  <!-- the panel tabs: a column on the right, below SEARCH -->
   <image src="images/touch_hit.png" touchAction="panel:info"   x="1600" y="150" width="290" height="100" layer="8"/>
   <text value="INFO"     x="1745" y="200" xOrigin="center" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="2ec8ff" layer="8"/>
   <image src="images/touch_hit.png" touchAction="panel:boxart" x="1600" y="260" width="290" height="100" layer="8"/>
@@ -70,7 +74,7 @@
   <image src="images/touch_hit.png" touchAction="select" x="768"  y="720" width="384" height="360" layer="8"/>
   <image src="images/touch_hit.png" touchAction="down"   x="1152" y="720" width="384" height="360" layer="8"/>
   <image src="images/touch_hit.png" touchAction="random" x="1536" y="720" width="384" height="360" layer="8"/>
-  <image src="images/studio_realz.png" x="1870" y="20" xOrigin="right" width="110" height="110" alpha=".85" layer="8"/>
+  <image src="images/studio_realz.png" x="1880" y="380" xOrigin="right" width="90" height="90" alpha=".85" layer="8"/>
 
   <!-- launch: flash + logo punch -->
   <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="9">

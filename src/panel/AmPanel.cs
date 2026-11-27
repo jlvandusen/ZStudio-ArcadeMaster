@@ -326,11 +326,21 @@ static class AmPanel
                 };
             if (!touchScreen) { Log("search: " + searchIndex.Games.Count + " games indexed, F3 opens it (one screen: no SEARCH button)"); return; }
             searchButton = new SearchButton(th);
-            searchButton.Tapped += delegate {
+            Action openSearch = delegate {
                 if (searchScreen != null && !searchScreen.IsDisposed) return;
                 searchScreen = new SearchScreen(searchIndex, gameLink, th, retroFERoot);
                 searchScreen.FormClosed += delegate { searchScreen = null; };
                 searchScreen.Show();
+            };
+            searchButton.Tapped += delegate { openSearch(); };
+            // the theme's own SEARCH button (touchAction="am:search", docs/22): the frontend asks over the cabinet link.
+            // AmPanel's floating button could end up invisible over the frontend (James 2026-11-27: "search is missing")
+            gameLink.Request += delegate (string what) {
+                if (!string.Equals(what, "search", StringComparison.OrdinalIgnoreCase)) return;
+                bool playing; lock (Gate) playing = State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"];
+                if (playing) return;
+                Log("search: opened by the theme's SEARCH button");
+                ui.BeginInvoke((MethodInvoker)delegate { openSearch(); });
             };
             // shown while the menus are up, hidden while a game runs or the frontend is closed
             var t = new System.Windows.Forms.Timer { Interval = 500 };
@@ -464,7 +474,9 @@ static class AmPanel
             if (c == "3" && arg1 != null) { c = arg1; arg1 = arg2; arg2 = a.Length > 3 ? a[3] : null; }
             switch (c)
             {
-                case "1": State["frontend"] = "running"; what = "frontend start"; break;
+                case "1": State["frontend"] = "running"; what = "frontend start";
+                    System.Threading.ThreadPool.QueueUserWorkItem(delegate { FrontendFocus.BringFrontendForward(Log); });   // not behind VS Code / the desktop
+                    break;
                 case "2": State["frontend"] = "quit"; State["game"] = null; what = "frontend quit"; break;
                 case "4": State["playing"] = false; what = "game stop"; break;
                 case "5": State["screensaver"] = true; what = "screensaver start"; break;
