@@ -37,7 +37,8 @@ function Get-MameInis {
 }
 $startup = [Environment]::GetFolderPath('Startup'); $lnk = Join-Path $startup 'ArcadeMaster.lnk'
 $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-$keepRun = '(?i)lghub|logitech|joytokey|sinden|dolphinbar|mayflash|gun4ir|ultimarc|ledblinky|desk.?console|arcademaster|nvidia|realtek|audio'
+$usbSub = '2a737441-1930-4402-8d77-b2bebba308a3'; $usbSuspend = '48e6b7a6-50f5-4782-a5d4-53bb8f07e226'   # USB settings > USB selective suspend
+$keepRun ='(?i)lghub|logitech|joytokey|sinden|dolphinbar|mayflash|gun4ir|ultimarc|ledblinky|desk.?console|arcademaster|nvidia|realtek|audio'
 $noisyRun = '(?i)onedrive|teams|msedge|edge|spotify|discord|steam|epic|skype|dropbox|googledrive|adobe|cortana|xbox'
 
 $S = [ordered]@{
@@ -96,6 +97,37 @@ $S = [ordered]@{
       powercfg /change monitor-timeout-ac 0; powercfg /change standby-timeout-ac 0; 'display + sleep timeouts off'
     }
     off = { $s = Get-Saved 'alwaysOn'; if ($s) { powercfg /setacvalueindex SCHEME_CURRENT SUB_VIDEO VIDEOIDLE $s['VIDEOIDLE']; powercfg /setacvalueindex SCHEME_CURRENT SUB_SLEEP STANDBYIDLE $s['STANDBYIDLE']; powercfg /setactive SCHEME_CURRENT }; Clear-Saved 'alwaysOn'; 'previous power timeouts restored' }
+  }
+  # USB devices never powered down: the 2P stand-up's Pixelcade marquee board (an idle USB serial device) dropped off
+  # its hub and stayed dark until it was plugged in again (2026-11-27). USB selective suspend off in the power plan, and
+  # "allow the computer to turn off this device to save power" off on every USB hub and device (that part needs admin).
+  usbAlwaysOn = @{ label = 'USB ALWAYS ON'; detail = 'Windows never powers down USB devices (marquee, guns, encoders) to save energy'
+    get = { $v = (powercfg /query SCHEME_CURRENT $usbSub $usbSuspend | Select-String 'Current AC Power Setting Index:\s+0x([0-9a-f]+)').Matches[0].Groups[1].Value; [Convert]::ToInt32($v, 16) -eq 0 }
+    on = {
+      if (-not (Get-Saved 'usbAlwaysOn')) {
+        $q = powercfg /query SCHEME_CURRENT $usbSub $usbSuspend
+        Save-Value 'usbAlwaysOn' 'ac' ([Convert]::ToInt32(($q | Select-String 'Current AC Power Setting Index:\s+0x([0-9a-f]+)').Matches[0].Groups[1].Value, 16))
+        Save-Value 'usbAlwaysOn' 'dc' ([Convert]::ToInt32(($q | Select-String 'Current DC Power Setting Index:\s+0x([0-9a-f]+)').Matches[0].Groups[1].Value, 16))
+      }
+      powercfg /setacvalueindex SCHEME_CURRENT $usbSub $usbSuspend 0; powercfg /setdcvalueindex SCHEME_CURRENT $usbSub $usbSuspend 0; powercfg /setactive SCHEME_CURRENT
+      $done = 0; $denied = 0; $saved = @()
+      foreach ($d in @(Get-CimInstance -Namespace root\wmi -ClassName MSPower_DeviceEnable -ErrorAction SilentlyContinue | Where-Object { $_.InstanceName -match '^USB' -and $_.Enable })) {
+        try { Set-CimInstance -InputObject $d -Property @{ Enable = $false } -ErrorAction Stop; $saved += $d.InstanceName; $done++ } catch { $denied++ }
+      }
+      if ($saved) { $prev = @(Get-Saved 'usbAlwaysOn')['devices']; Save-Value 'usbAlwaysOn' 'devices' ((@($prev) + $saved | Where-Object { $_ }) -join '|') }
+      "USB selective suspend off; $done USB device(s) no longer turned off to save power$(if ($denied) { "; $denied need admin - run again as administrator" })"
+    }
+    off = {
+      $s = Get-Saved 'usbAlwaysOn'
+      if ($s) {
+        if ($null -ne $s['ac']) { powercfg /setacvalueindex SCHEME_CURRENT $usbSub $usbSuspend $s['ac'] }
+        if ($null -ne $s['dc']) { powercfg /setdcvalueindex SCHEME_CURRENT $usbSub $usbSuspend $s['dc'] }
+        powercfg /setactive SCHEME_CURRENT
+        $names = @("$($s['devices'])" -split '\|' | Where-Object { $_ })
+        foreach ($d in @(Get-CimInstance -Namespace root\wmi -ClassName MSPower_DeviceEnable -ErrorAction SilentlyContinue | Where-Object { $names -contains $_.InstanceName })) { try { Set-CimInstance -InputObject $d -Property @{ Enable = $true } -ErrorAction Stop } catch { } }
+      }
+      Clear-Saved 'usbAlwaysOn'; 'USB power saving back as it was'
+    }
   }
 }
 
