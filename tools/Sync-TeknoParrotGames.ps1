@@ -51,6 +51,25 @@ function Get-Games {
     }
   }
 }
+# A profile from another cabinet can name the game by a full path on THAT cabinet's drive (RACE2: D:\FLIGHT Collection\...,
+# RACE1 keeps the same games under E:\DRIVE Collection\...). When that path is not on this cabinet and the same file is in
+# the folder the game was pulled to, the profile is pointed there. A path that exists, or a relative one, is left alone.
+function Set-LocalGamePath([string]$xmlFile, [string]$gameDir) {
+  if (-not (Test-Path -LiteralPath $xmlFile)) { return }
+  $text = [IO.File]::ReadAllText($xmlFile); $script:glpChanged = $false
+  $new = [regex]::Replace($text, '<(GamePath2?)>([^<]+)</\1>', {
+      param($m)
+      $v = [Net.WebUtility]::HtmlDecode($m.Groups[2].Value)
+      if (-not [IO.Path]::IsPathRooted($v) -or (Test-Path -LiteralPath $v)) { return $m.Value }
+      $r = [regex]::Match($v, '(?i)^(.*\\roms\\[^\\]+)(\\.*)?$'); if (-not $r.Success) { return $m.Value }
+      $local = $gameDir + $r.Groups[2].Value
+      if (-not (Test-Path -LiteralPath $local)) { return $m.Value }
+      Write-Host "    $(if ($Apply) { 'path set' } else { 'would set path' }): $($m.Groups[1].Value) $v -> $local"
+      $script:glpChanged = $true
+      "<$($m.Groups[1].Value)>$([Security.SecurityElement]::Escape($local))</$($m.Groups[1].Value)>"
+    })
+  if ($script:glpChanged -and $Apply) { Copy-Item -LiteralPath $xmlFile "$xmlFile.am-path.bak" -Force; [IO.File]::WriteAllText($xmlFile, $new, $u8) }
+}
 function Get-Size([string]$d) { $s = Get-ChildItem -LiteralPath $d -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum; [pscustomobject]@{ bytes = [int64]$s.Sum; files = $s.Count } }
 
 if ($PublishMedia -or $PullMedia) {
@@ -119,7 +138,15 @@ if ($Pull) {
     $tp = @($Install | Where-Object { (Split-Path $_ -Leaf) -ieq $entry.install -and (Test-Path -LiteralPath $_) })[0]
     if (-not $tp) { Write-Host "  SKIP $($entry.profile): no '$($entry.install)' install on this cabinet"; continue }
     $dstDir = [IO.Path]::GetFullPath((Join-Path $tp $entry.relDir)); $dstXml = Join-Path $tp "UserProfiles\$($entry.profile).xml"
-    if (Test-Path -LiteralPath $dstDir) { Write-Host "  SKIP $($entry.profile): $dstDir already exists (not overwritten)"; continue }
+    if (Test-Path -LiteralPath $dstDir) {
+      # the game files are here already: only the profile can be missing, or still point at the other cabinet's drive
+      if (-not (Test-Path -LiteralPath $dstXml)) {
+        Write-Host "  $(if ($Apply) { 'PROFILE' } else { 'WOULD ADD PROFILE' }) $($entry.profile): game folder already here ($dstDir, not overwritten), its TeknoParrot profile is added"
+        if ($Apply) { Copy-Item -LiteralPath (Join-Path $e.FullName "$($entry.profile).xml") $dstXml }
+      } else { Write-Host "  SKIP $($entry.profile): $dstDir already exists (not overwritten)" }
+      Set-LocalGamePath $dstXml $dstDir
+      continue
+    }
     if (Test-Path -LiteralPath $dstXml) { Write-Host "  NOTE $($entry.profile): profile exists, only the game folder is copied" }
     $gb = (@($entry.files | ForEach-Object { [int64]$_.bytes }) | Measure-Object -Sum).Sum / 1GB
     Write-Host ("  {0} {1} ({2}): {3:N2} GB -> {4}" -f $(if ($Apply) { 'PULL' } else { 'WOULD PULL' }), $entry.profile, $entry.game, $gb, $dstDir)
@@ -130,6 +157,7 @@ if ($Pull) {
     $bad = @($entry.files | Where-Object { $f = Join-Path $dstDir $_.path; -not (Test-Path -LiteralPath $f) -or (Get-Item -LiteralPath $f).Length -ne [int64]$_.bytes })
     if ($bad) { throw "$($entry.profile): $($bad.Count) file(s) missing or the wrong size after copying - check $dstDir" }
     if (-not (Test-Path -LiteralPath $dstXml)) { Copy-Item -LiteralPath (Join-Path $e.FullName "$($entry.profile).xml") $dstXml }
+    Set-LocalGamePath $dstXml $dstDir
   }
   Write-Host ("pull: {0} game(s) {1}" -f $n, $(if ($Apply) { 'copied in - run Rebuild Game Menus so they show' } else { '(dry run - add -Apply)' }))
 }
