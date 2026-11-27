@@ -127,9 +127,14 @@ class ButtonStudio : Form
             var sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<dat>\r\n  <meta>\r\n    <description name=\"Used by LEDBlinky for LED Input Map Data.\"/>\r\n");
             sb.Append("    <generatedBy name=\"ArcadeMaster AmPanel (Buttons window)\"/>\r\n    <date name=\"").Append(DateTime.Now.ToString("s")).Append("\"/>\r\n  </meta>\r\n");
             var boards = new List<int>(table.Keys); boards.Sort();
+            var kinds = BoardKinds(leds.InputMapUsed);
             foreach (var b in boards)
             {
-                sb.Append("  <ledController type=\"6\" id=\"").Append(b).Append("\" name=\"iPACUltimateIO\">\r\n");
+                // each board keeps the type / name the map it replaces gave it (a PacLED64 or a Nano-LED was saved as an
+                // I-PAC Ultimate I/O before); a board that map did not have is taken for an Ultimate I/O, as LEDBlinky does
+                KeyValuePair<string, string> k;
+                if (!kinds.TryGetValue(b, out k)) k = new KeyValuePair<string, string>("6", "iPACUltimateIO");
+                sb.Append("  <ledController type=\"").Append(Esc(k.Key)).Append("\" id=\"").Append(b).Append("\" name=\"").Append(Esc(k.Value)).Append("\">\r\n");
                 foreach (var p in table[b])
                     sb.Append("    <port number=\"").Append(p.Key).Append("\" label=\"").Append(Esc(p.Value.Key)).Append("\" type=\"").Append(p.Value.Value == 'S' ? "S" : p.Value.Value.ToString())
                       .Append("\" inputCodes=\"").Append(Esc(leds.InputCodesOf(p.Value.Key))).Append("\"/>\r\n");
@@ -140,6 +145,26 @@ class ButtonStudio : Form
             return "saved " + learned.Count + " group(s) -> " + outFile + " (used from AmPanel's next start)";
         }
         catch (Exception e) { return "save failed: " + e.Message; }
+    }
+
+    // <ledController type="6" id="1" name="iPACUltimateIO"> of the input map in use: id -> (type, name)
+    static Dictionary<int, KeyValuePair<string, string>> BoardKinds(string mapFile)
+    {
+        var d = new Dictionary<int, KeyValuePair<string, string>>();
+        try
+        {
+            if (string.IsNullOrEmpty(mapFile) || !File.Exists(mapFile)) return d;
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(mapFile), "<ledController\\b[^>]*>", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                string tag = m.Value;
+                var id = System.Text.RegularExpressions.Regex.Match(tag, "\\bid\\s*=\\s*\"(\\d+)\"", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                var ty = System.Text.RegularExpressions.Regex.Match(tag, "\\btype\\s*=\\s*\"([^\"]*)\"", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                var nm = System.Text.RegularExpressions.Regex.Match(tag, "\\bname\\s*=\\s*\"([^\"]*)\"", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (id.Success && ty.Success) d[int.Parse(id.Groups[1].Value)] = new KeyValuePair<string, string>(ty.Groups[1].Value, nm.Success ? nm.Groups[1].Value : "");
+            }
+        }
+        catch { }
+        return d;
     }
 
     static string Esc(string s) { return (s ?? "").Replace("&", "&amp;").Replace("\"", "&quot;").Replace("<", "&lt;"); }
