@@ -145,7 +145,7 @@ try {
     # when the file was written (a phase-2 test build, docs/21), then the right build goes back by itself
     $testMark = Join-Path $rtDir 'am-test-build.txt'
     if ((Test-Path -LiteralPath $testMark) -and ((Get-Date) - (Get-Item -LiteralPath $testMark).LastWriteTime).TotalHours -lt 4) {
-      Write-Host "RetroFE test build kept ($testMark: $((Get-Content -LiteralPath $testMark -TotalCount 1)); until $((Get-Item -LiteralPath $testMark).LastWriteTime.AddHours(4).ToString('HH:mm')))"; return
+      Write-Host "RetroFE test build kept (${testMark}: $((Get-Content -LiteralPath $testMark -TotalCount 1)); until $((Get-Item -LiteralPath $testMark).LastWriteTime.AddHours(4).ToString('HH:mm')))"; return
     }
     if ((Test-Path -LiteralPath $builtExe) -and (Test-Path -LiteralPath $instExe) -and (Get-FileHash -LiteralPath $builtExe).Hash -ne (Get-FileHash -LiteralPath $instExe).Hash) {
       if ($running) { Say "retrofe.exe is not build $key (a test or hand-copied exe?) - it is put back when RetroFE is closed" }
