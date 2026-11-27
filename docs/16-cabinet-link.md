@@ -167,13 +167,19 @@ address, left over from the DRIVE copy.
   2. The first networked start raises the Windows firewall prompt for Supermodel on each rig; James allows it
      (an administrator's change).
   3. Each linked game is set to 2-machine link play in its own test menu, with the cabinet number (1 = RACE1, 2 = RACE2).
-- **Connects (2026-11-27, Dirt Devils, RACE1 + RACE2); racing together to be confirmed by James.** What it took:
-  1. `Set-SupermodelLink -Peer <twin> -Apply` on both rigs, then each Supermodel started again (it reads the file only
-     at start: RACE1's copy had joined the game before the change and stayed unlinked).
-  2. In the game's test menu on RACE1 (Test = the G29's **+**, Service = **-**, or keypad +/-): network link, this
-     cabinet = MASTER; on RACE2 the same setting = SLAVE (left on MASTER, RACE2's game warned of a duplicate master).
-     The game keeps it in its NVRAM and restarts itself after the change.
-  3. Supermodel then connects both ways (RACE2: out to RACE1:1970 and in from RACE1 on 1971, both Established).
+- **Works: RACE1 and RACE2 raced each other in Dirt Devils (James, 2026-11-27: "It works!").** What it takes:
+  1. `Set-SupermodelLink -Peer <twin> -Apply` on both rigs (Start-ArcadeMaster now does it at every start, from
+     `model3Pairs` in `catalog\cabinet-link.json`). Supermodel reads the file only when it starts, so a game already
+     running keeps its old settings until it is started again.
+  2. Once per game, in its own test menu (Test = the G29's **+**, Service = **-**, or keypad +/-): RACE1 = MASTER,
+     RACE2 = SLAVE. Both on MASTER gives a duplicate-master warning. The game keeps it in its NVRAM and restarts itself.
+  3. Each Supermodel listens on its port and keeps trying to connect out to the other's; when both directions are
+     up the games leave CHECKING NETWORK. Start order does not matter.
+  4. **Never test the ports by hand (Test-NetConnection, telnet) while a game runs.** A Supermodel accepts exactly one
+     connection on its port; a probe used RACE2's up, its partner could then never get in, and both games sat on
+     CHECKING NETWORK until RACE2's game was started again.
+  Timeline of the working start (RACE2's side): 14:03:23 Supermodel starts and listens on 1971; 14:03:30 RACE1
+  connects in; 14:03:38 RACE2 connects out to RACE1:1970.
 - A game played alone with the net board on starts and plays normally (RACE2, Dirt Devils, RACE1 not listening), so
   the net board can stay on. Windows Firewall is off on both rigs, so no prompt came up.
 - Not linked yet: Daytona (Model 2), TeknoParrot games. Each emulator has its own network settings; Model 3 is the
