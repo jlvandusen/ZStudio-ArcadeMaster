@@ -90,6 +90,7 @@ switch ($PSCmdlet.ParameterSetName) {
         foreach ($d in $det.directInput) {
             Write-Host ("  JOY{0}  {1}" -f $d.enumIndex, $d.productName) -ForegroundColor White
             Write-Host ("        VID_{0}&PID_{1}  type={2}  role-guess={3}  FFB={4}  axes={5} buttons={6} hats={7}" -f $d.vid, $d.pid, $d.diType, $d.roleGuess, $d.forceFeedback, $d.axisCount, $d.buttonCount, $d.povCount)
+            if ($d.pad) { Write-Host ("        pad           {0} ({1}): {2}" -f $d.pad.label, $d.pad.family, ($d.pad.buttons -join ' ')) }
             Write-Host ("        instance GUID {0}   (TeknoParrot <JoystickGuid>, Cemu <uuid>)" -f $d.instanceGuid)
             Write-Host ("        registry      {0}" -f $(if ($d.registryKey) { $d.registryKey + '  (matches)' } else { 'no DirectInput calibration key found' }))
             Write-Host ("        MAME JOYCODE  {0} (guess; winhybrid numbers XInput pads first)" -f $d.mameIndexGuess)

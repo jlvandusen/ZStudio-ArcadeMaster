@@ -1,4 +1,4 @@
-﻿# Common.ps1 - shared helpers for WheelMap (PowerShell 5.1)
+# Common.ps1 - shared helpers for WheelMap (PowerShell 5.1)
 Set-StrictMode -Version 1.0
 
 $script:WMLib = $PSScriptRoot
@@ -101,6 +101,29 @@ function Get-WMRoleGuess($d) {
     }
 }
 
+# Hand-held controllers by name: tools\pads\pads.json (PS3, PS4, N64, SNES-style, Genesis-style ... - James, 2026-11-27).
+# Found by USB id first, else by the longest piece of the name Windows reports. $null = not a pad we know.
+$script:WMPads = $null
+function Get-WMPad($d, [string]$Role) {
+    if ($Role -notin 'pad', 'controller', 'aux') { return $null }      # wheels, sticks, guns are named elsewhere
+    if ($null -eq $script:WMPads) {
+        $pf = Join-Path (Split-Path $script:WMRoot) 'pads\pads.json'
+        $script:WMPads = $(if (Test-Path -LiteralPath $pf) { Get-Content -LiteralPath $pf -Raw | ConvertFrom-Json } else { $false })
+    }
+    if (-not $script:WMPads) { return $null }
+    $fam = $null; $model = $null
+    $usb = ("{0}:{1}" -f $d.Vid, $d.Pid).ToUpper()
+    $hit = @($script:WMPads.pads | Where-Object { $_.usb -eq $usb }) | Select-Object -First 1
+    if ($hit) { $fam = $hit.family; $model = $hit.model }
+    $n = "$($d.ProductName) $($d.InstanceName)"; $best = ''
+    foreach ($r in $script:WMPads.names) { foreach ($m in $r.match) { if ($m.Length -gt $best.Length -and $n.IndexOf($m, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        # a pad's own name beats the USB id only when the id is unknown or says "Xbox" (a pad in X-input mode)
+        if (-not $fam -or $fam -eq 'xbox') { $best = $m; $fam = $r.family; $model = $d.ProductName } } } }
+    if (-not $fam) { return $null }
+    $F = $script:WMPads.families.$fam
+    return [pscustomobject]@{ family = $fam; model = $model; label = $F.label; buttons = @($F.buttons); sticks = $F.sticks; like = @($F.like) }
+}
+
 function Get-WMDevices {
     <# Enumerates DirectInput game controllers (+objects), XInput slots and registry GUIDs. #>
     Import-WMInput
@@ -124,6 +147,7 @@ function Get-WMDevices {
             pid            = $d.Pid
             diType         = $d.TypeName
             roleGuess      = (Get-WMRoleGuess $d)
+            pad            = (Get-WMPad $d (Get-WMRoleGuess $d))
             forceFeedback  = $d.ForceFeedback
             axisCount      = $d.AxisCount
             buttonCount    = $d.ButtonCount

@@ -799,3 +799,28 @@ Next steps towards our own G29 library, without G HUB:
 - A correction to the Model 3 section above: RACE2's 2022 build of the plug-in also crashes on exit on RACE1, while
   RACE2 itself exits clean with it. So on RACE1 it is the plug-in as such; the difference between the rigs is elsewhere
   (their `SDL2.dll` beside Supermodel differs). RACE1 runs Model 3 without the plug-in.
+## Hand-held controllers by name (2026-11-27)
+
+The controller scan (`tools\wheelmap\WheelMap.ps1 -Detect`) now names hand-held pads and sorts each into a family: the
+shape and the words printed on its buttons.
+
+| Family | Pads |
+|---|---|
+| `ps3`, `ps4`, `ps5`, `psx` | PlayStation controllers and their look-alikes |
+| `n64` | Nintendo 64 pads and adapters (Mayflash, Raphnet, Hyperkin, 8BitDo 64, Switch Online) |
+| `snes`, `snespro` | SNES-style pads; `snespro` has two sticks (8BitDo SN30 Pro, Pro 2, Ultimate) |
+| `nes` | NES-style pads (8BitDo N30, Zero) |
+| `genesis` | Genesis / Mega Drive / Saturn-style six-button pads (8BitDo M30, Retro-Bit) |
+| `gamecube`, `switch`, `xbox` | the rest |
+
+The list is `tools\pads\pads.json`, written by `python tools\pads\Update-PadCatalog.py` from the public SDL controller
+list (583 pads). A pad is found by its USB id, else by its name. Run the script again when a pad is not recognised;
+the family rules are at the top of that script.
+
+An 8BitDo pad switched to X-input mode looks like an Xbox 360 controller to Windows. When its name still says 8BitDo
+the scan goes by the name; otherwise leave the pad in D-input mode (hold START + B to turn it on).
+
+A PS3 controller needs a driver on Windows before any program sees it (DsHidMini). That is an install: ask James.
+
+Still to do: the pad's picture and button names on the controls cards, and setting the emulators up for the pad that
+is plugged in.
