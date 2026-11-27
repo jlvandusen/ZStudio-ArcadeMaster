@@ -113,13 +113,43 @@ class LoadingScreen : Form
     // screen, and for a minute any big game window that lands on another screen is moved there at the same size.
     [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);
+    [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+    [DllImport("user32.dll")] static extern bool AttachThreadInput(int a, int b, bool attach);
+    [DllImport("user32.dll")] static extern int GetWindowThreadProcessId(IntPtr h, IntPtr pid);
+    [DllImport("kernel32.dll")] static extern int GetCurrentThreadId();
+    static readonly HashSet<IntPtr> broughtUp = new HashSet<IntPtr>();
+
+    // the game's window in front with the keyboard - only when the frontend (or no program) has the foreground, so a
+    // game's own launcher / dialog the player is using is never pushed aside
+    static void BringForward(IntPtr game, Action<string> log)
+    {
+        IntPtr fg = GetForegroundWindow();
+        if (fg == game) return;
+        int fgPid; GetWindowThreadProcessId(fg, out fgPid);
+        string fgName = ""; try { using (var p = Process.GetProcessById(fgPid)) fgName = p.ProcessName; } catch { }
+        if (fg != IntPtr.Zero && !fgName.Equals("retrofe", StringComparison.OrdinalIgnoreCase) && !fgName.Equals("explorer", StringComparison.OrdinalIgnoreCase)) return;
+        int ft = GetWindowThreadProcessId(fg, IntPtr.Zero), me = GetCurrentThreadId();
+        AttachThreadInput(me, ft, true);
+        ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
+        AttachThreadInput(me, ft, false);
+        if (broughtUp.Add(game))
+        {
+            int pid; GetWindowThreadProcessId(game, out pid);
+            string name = "?"; try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { }
+            log("game window " + name + " was behind the frontend - brought to the front");
+        }
+    }
+
     public static void KeepGameOnMainScreen(HashSet<IntPtr> baseline, Func<bool> stillPlaying, Action<string> log)
     {
         var main = Screen.PrimaryScreen.Bounds;
         try { SetCursorPos(main.X + main.Width / 2, main.Y + main.Height / 2); } catch { }
         var moved = new HashSet<IntPtr>();
         var sw = Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < 60000 && stillPlaying())
+        while (sw.ElapsedMilliseconds < 120000 && stillPlaying())
         {
             try
             {
@@ -129,7 +159,14 @@ class LoadingScreen : Form
                     RECT r; if (!GetWindowRect(h, out r)) continue;
                     var rect = new Rectangle(r.L, r.T, Math.Max(1, r.R - r.L), Math.Max(1, r.B - r.T));
                     var scr = Screen.FromRectangle(rect);
-                    if (scr.Primary) continue;
+                    if (scr.Primary)
+                    {
+                        // the game must be in front (James 2026-11-26: Star Wars Trilogy ran BEHIND the frontend's black
+                        // screens and took no input): while the frontend or nothing else holds the foreground, bring the
+                        // game's window up and give it the keyboard - every game, every emulator
+                        BringForward(h, log);
+                        continue;
+                    }
                     // same place on the main screen, same size (a borderless full-screen game stays full screen)
                     int x = main.X + (rect.X - scr.Bounds.X), y = main.Y + (rect.Y - scr.Bounds.Y);
                     SetWindowPos(h, IntPtr.Zero, x, y, 0, 0, 0x0001 | 0x0004 | 0x0010 /* NOSIZE NOZORDER NOACTIVATE */);
