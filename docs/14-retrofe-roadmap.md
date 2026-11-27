@@ -158,6 +158,17 @@ video frame.
 - meta.db: open it in WAL mode with `synchronous=NORMAL` (the fork sets no journal mode now, so each write waits on the disk).
 - Write the hitch log summary (count and worst per menu) to the health report each boot.
 
+**Done (2026-11-26, RACE2):**
+- **Crash reports:** real crashes go to `Z:\ArcadeMaster\reports\crashes\<PC>\<crash folder>` once (`sent.txt` marks
+  them), before the local cap of 10 folders drops them. "Real" means the folder has a minidump or the crash handler's
+  `FATAL CRASH` line. A killed or closed RetroFE has neither and stays local.
+- **Stale dump fixed:** the watchdog copied an old `retrofe_crash.dmp` into every later crash folder. Now it moves the
+  dump only when this run wrote it, and adds `am-build.txt` so the report says which build crashed.
+- **Hitch summary:** the health report's logs line adds "N hitch(es) in log.txt, worst M ms" when the hitch log is on.
+- **meta.db WAL: not done, on purpose.** MetadataDatabase writes in a few large transactions (`BEGIN IMMEDIATE ...
+  COMMIT`), so the journal mode costs a few syncs per start, not one per row. It's not worth a patch and rebuild
+  until a timing shows the database in the start-up time.
+
 ### 10. Builds (needs James)
 GitHub builds wait on `gh auth refresh -h github.com -s workflow` on RACE1 (BACKLOG 7). With them every cabinet
 downloads the same tested build instead of compiling 435 MB itself.
