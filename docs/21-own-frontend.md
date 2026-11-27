@@ -13,7 +13,7 @@ the host. Here the frontend itself becomes ours.
 | | |
 |---|---|
 | **Base** | `jlvandusen/ZStudio-retrofe`: CoinOPS RetroFE at `caab32e6` plus all our patches 0001-0029 (synced 2026-11-27). From here on, frontend changes are commits in that repo, not new `retrofe/patches/*.patch` files. |
-| **Licence** | GPL-3.0, inherited from RetroFE. Free for our own cabinets. Anyone we hand a build to must be able to get its source. Themes, art, catalog data and the Z Studios name are not covered by this. **Open question for James:** will ArcadeMaster be sold or handed to others? |
+| **Licence** | GPL-3.0, inherited from RetroFE. James, 2026-11-27: "I hope to take donations for the effort but share with community". That fits the GPL. The frontend and AmPanel are public and open source, with a donation link, and RetroFE and CoinOPS are credited. A community release ships our code, tools, layouts and our own art only. ROMs, BIOS files, emulator builds and game artwork (logos, videos, box art) stay out: the installer points at the user's own files and fetches art from the user's own sources. |
 | **AmPanel** | Merges into the frontend as modules: lights, sticks, ServoStik, Stream Deck, self-heal, search, the loading screen, focus and game hand-off, Recently Played. Until a module has moved, AmPanel keeps running beside the frontend. |
 | **One codebase** | Every cabinet (pedestal 4P, RACE1 racing/flight, the 2P stand-up, anything new) runs the same build. The cabinet is found at start from its devices (`tools/Get-CabinetDevices.ps1` builds `manifest\cabinet.json` and `tools/lib/CabinetTypes.ps1` turns that into a type), and the type picks the controls, theme variant, touch surface and tools. No per-cabinet forks. |
 
