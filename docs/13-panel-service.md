@@ -234,8 +234,28 @@ and a cabinet without AmPanel installed is left alone. Before this, fixes reache
     - AmPanel.json `"GameOptionsKey"`: `"Tab"` (default), any key name, or `"none"`. docs/21: a module that moves into the
       frontend later.
 15. **Pixelcade listener window:** pixelweb opens a console window titled "Pixelcade Listener". AmPanel hides it
-    whenever it shows up (its log stays in `<Pixelcade>\pixelweb.log`). Next: AmPanel drives the board itself (COM7)
-    and pixelweb retires.
+    whenever it shows up (its log stays in `<Pixelcade>\pixelweb.log`).
+16. **AmPanel drives the Pixelcade board itself (2026-11-27, the 2-player stand-up):** `src/panel/PixelDirect.cs`.
+    AmPanel.json `"PixelcadeDriver": "direct"` (with `"Marquee": "pixelcade"` and `PixelcadeDir`).
+    - **Start:** AmPanel stops the Java listener (pixelweb.exe and its java.exe), then opens the board's serial port,
+      the `port=` in `<Pixelcade>\settings.ini` (COM7 on the stand-up). If the board can't be opened, the listener is
+      started again and everything goes through it, as before. Without the setting, nothing changes.
+    - **Protocol,** from the open-source Pixelcade code (alinke/PIXEL, ioio-commons):
+      - the board's hello is `0x00 'IOIO'` + hardware / bootloader / firmware ids (the stand-up: PIXL0025, IOIO0401,
+        PIXL0010);
+      - interface check: `0x02 "YTAI0002"`;
+      - matrix on: `0x1E 0x14` (4 chained 32-wide panels, 16-row scan: ADAFRUIT_128x32, Pixelcade's "matrix type 15");
+      - each frame: `0x1F` + 6144 bytes (3 bit-planes; `RgbLedMatrixImpl.convertAdafruit`).
+    - **Art,** found like the listener finds it:
+      - `<Pixelcade>\<folder>\<game>.gif` (or `<game>_NN.gif` at random), then `.png`. The folder comes from
+        `console.csv` (e.g. `arcade` -> `mame`);
+      - then `console\<folder>`, `console\default-<folder>`, `console\default-marquee`;
+      - else the title scrolls as text.
+      - GIFs play with their own frame timing.
+    - **Events:** as with the listener (welcome, list change, selected game, Now Playing + the game held, game stop,
+      a random animation for the screensaver, Thanks for Playing). A newer event replaces what is playing; a one-time
+      text goes back to the last held picture.
+    - **Only 128x32** (the Adafruit kind) so far. Other Pixelcade sizes keep the listener.
 
 ## Safety
 
