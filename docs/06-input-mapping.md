@@ -650,3 +650,38 @@ for 5 secs".
 - Tool fix found on the way: the Model 2 step swapped Start straight back when it met the same files a second time
   (the frontend's copy and the E: copy are the same files) and coin did not change. Each button pair is now handled by
   itself and only in a file that still has the old button.
+
+## Replacing Logitech G HUB: drivers stay, the app goes (2026-11-26, DESKTOP-RACE2)
+G HUB is two things. Only the app is replaced:
+- **Logitech's drivers** (`logi_joy_*`, 5-6 of them) carry force feedback and the Options, dial-press and PS buttons.
+  They load with the wheel whether or not the app runs. Test: with `lghub_agent` and the tray closed, SDL opened the
+  G29's force feedback and a 25 % constant push turned the wheel 49 degrees (`scratchpad ffbtest.ps1`, same as with
+  the app running). RACE1 lost them because G HUB was **uninstalled**, which removes the drivers. Never uninstall;
+  switch the app off.
+- **The app** did three things on RACE2:
+  - It typed keys. Its desktop profile maps **G24 (button 23, dial press) = Enter** and **G25 (button 24, PS) = Escape**.
+    G HUB writes the key's USB code into the card id: `...-012800000000` = 0x28 Enter, `...-012900000000` = 0x29 Escape.
+  - It set the rotation: 900 degrees, which the wheel keeps.
+  - It set a centre spring of 20 % and damping of 10 %. Games set their own force feedback.
+
+Who does what instead:
+- `tools\Import-GHubMappings.py --manifest <manifest>` reads a copy of `%LOCALAPPDATA%\LGHUB\settings.db` (SQLite, one JSON
+  document) and writes `<manifest>\padkeys.json` (`--show` only prints). It reads the desktop profile's G-keys
+  (gN = button N-1) and the single keys they type.
+- **AmPanel's pad keys** (`src\panel\PadKeys.cs`) type those keys as scan codes, so SDL and DirectInput games see them.
+  Without padkeys.json the default is G29 dial press = Enter, PS = Escape. Pad keys stay quiet:
+  - while `lghub_agent` runs, so G HUB and AmPanel never both type;
+  - while RetroFE is the window in front, because the menu reads `joyButtonN` itself;
+  - when AmPanel.json has `"PadKeys": "off"`.
+
+  A key goes up exactly when its press went out, so none is left held.
+- `tools\Set-GHub.ps1 -Off | -On | -Show`:
+  - `-Off` imports the mappings, removes G HUB's logon start (kept in `<manifest>\ghub-off.json`) and closes the app.
+    With admin it also sets the updater service to manual. Then it restarts AmPanel.
+  - Before changing anything it warns about a button that both `controls.conf` and JoyToKey read, because with G HUB
+    off one menu press would count twice. RACE2 has one: button 23 = `joyButton23` + JoyToKey `Button24`.
+  - `-On` puts everything back.
+  - `AM_SYSTEM_DRYRUN=1` changes nothing.
+
+Still to test with someone at the wheel: Options / dial / PS reported by the drivers with the app off, and pad keys in a
+game (PS leaves it, the dial press confirms).
