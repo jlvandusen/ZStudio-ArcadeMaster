@@ -1113,11 +1113,18 @@ def main(argv=None):
     ap.add_argument('--list-sigs', action='store_true', help='print every signature with its game count')
     ap.add_argument('--no-filters', action='store_true', help='do not write the player / control filters (playlists)')
     ap.add_argument('--layout', default='ArcadeMaster', help='layout whose _common playlist banners are written')
+    ap.add_argument('--banners-only', action='store_true', help='only write the filter banners (a wheel cabinet has its own controls cards and no panel)')
     a = ap.parse_args(argv)
     t0 = time.time()
     log = lambda m: print(m, flush=True)
     root, man = a.retrofe.resolve(), a.manifest.resolve()
     fe = Frontend(root)
+    if a.banners_only:
+        # the filter bar at the top of every game list shows a banner per playlist (ALL GAMES, FAVOURITES, a series ...).
+        # A wheel cabinet never ran the rest of this tool, so it had no banners and the bar was empty (RACE1, 2026-11-27).
+        n = write_banners(fe, root / 'layouts' / a.layout, a.dry_run, a.force)
+        log(f'filter banners: {n} written' + ('  [dry run]' if a.dry_run else ''))
+        return 0
     global PANEL_HASH
     PANEL_HASH = load_panel(man, log)
     p1 = PANEL['players'][0] if PANEL['players'] else {}

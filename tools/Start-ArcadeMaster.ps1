@@ -124,6 +124,16 @@ try {
     }
   }
 } catch { Write-Log "series playlists failed: $($_.Exception.Message)" }
+# the filter bar's banners (ALL GAMES, FAVOURITES, each series ...): a wheel cabinet never ran the panel card tool that
+# also draws them, so its filter bar was empty (RACE1, 2026-11-27). Made here when a playlist has no banner yet.
+try {
+  $bnDir = Join-Path $Root 'layouts\ArcadeMaster\collections\_common\medium_artwork\playlist'
+  $bnNeed = @('all', 'favorites') + @(Get-ChildItem (Join-Path $Root 'collections') -Directory -ErrorAction SilentlyContinue | ForEach-Object { Get-ChildItem (Join-Path $_.FullName 'playlists') -Filter *.txt -File -ErrorAction SilentlyContinue | ForEach-Object BaseName })
+  if (@($bnNeed | Select-Object -Unique | Where-Object { -not (Test-Path -LiteralPath (Join-Path $bnDir "$_.png")) }).Count) {
+    . (Join-Path $PSScriptRoot 'lib\AmPython.ps1'); $bnPy = Find-AmPython
+    if ($bnPy) { $bn = & $bnPy (Join-Path $PSScriptRoot 'New-PanelControlsArt.py') --retrofe $Root --manifest $ManifestDir --banners-only 2>&1 | Out-String; Write-Log ($bn.Trim() -split "`r?`n" | Select-Object -Last 1) }
+  }
+} catch { Write-Log "filter banners failed: $($_.Exception.Message)" }
 # the main menu follows menu.txt (Racing / Flight ... first, as New-RetroFECollections orders it) instead of A-Z, which
 # put EXIT first: every cabinet booted with EXIT selected and an idle cabinet sat on it
 try {
