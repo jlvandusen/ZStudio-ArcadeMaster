@@ -470,6 +470,14 @@ def main():
         print("  " + d)
     if skipped:
         print("  left on RetroBat (no RetroArch core for it yet): " + ", ".join(sorted(set(skipped))))
+    # the panel's keys in every standalone emulator (tools/Set-EmulatorPanelKeys.py)
+    if not a.dry_run:
+        import subprocess
+        import sys
+        here = os.path.dirname(os.path.abspath(__file__))
+        emus = os.path.join(os.path.dirname(a.manifest), "emulators")
+        if os.path.isdir(emus):
+            subprocess.call([sys.executable, os.path.join(here, "Set-EmulatorPanelKeys.py"), "--manifest", a.manifest, "--emulators", emus])
 
 
 if __name__ == "__main__":
