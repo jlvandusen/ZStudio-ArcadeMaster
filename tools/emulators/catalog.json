@@ -1,7 +1,7 @@
 {
   "_comment": "ArcadeMaster's own emulator catalog (James 2026-11-27: no RetroBat requirement - run the emulators directly). exe = file names to look for on the local drives; systems = what each runs (RetroBat-style short names). launch / config come per emulator as each is moved to a direct launcher (docs/BACKLOG 1a).",
   "emulators": {
-    "retroarch":   { "exe": ["retroarch.exe"], "systems": ["nes", "snes", "gb", "gbc", "gba", "megadrive", "mastersystem", "gamegear", "sega32x", "segacd", "pcengine", "pcenginecd", "atari2600", "atari7800", "atarilynx", "neogeo", "neogeopocketcolor", "psx", "n64", "nds", "wonderswancolor", "c64", "amiga", "msx", "zxspectrum", "amstradcpc", "colecovision", "intellivision", "vectrex"], "cores": "cores\\*_libretro.dll" },
+    "retroarch":   { "exe": ["retroarch.exe"], "systems": ["nes", "snes", "gb", "gbc", "gba", "megadrive", "mastersystem", "gamegear", "sega32x", "segacd", "pcengine", "pcenginecd", "atari2600", "atari7800", "atarilynx", "neogeo", "neogeopocketcolor", "psx", "n64", "nds", "wonderswancolor", "c64", "amiga", "msx", "zxspectrum", "amstradcpc", "colecovision", "intellivision", "vectrex", "saturn", "dreamcast", "naomi", "atomiswave", "3do", "jaguar", "fbneo", "sg-1000", "virtualboy"], "cores": "cores\\*_libretro.dll" },
     "mame":        { "exe": ["mame.exe", "mame64.exe"], "systems": ["mame", "arcade"] },
     "supermodel":  { "exe": ["supermodel.exe"], "systems": ["model3"] },
     "teknoparrot": { "exe": ["TeknoParrotUi.exe"], "systems": ["teknoparrot"] },
