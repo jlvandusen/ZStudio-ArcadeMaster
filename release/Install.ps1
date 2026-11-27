@@ -11,7 +11,7 @@
   GPL-3.0: source and licence at https://github.com/jlvandusen/ZStudio-ArcadeMaster (frontend:
   https://github.com/jlvandusen/ZStudio-retrofe, based on RetroFE; thanks to the RetroFE and CoinOPS teams).
 #>
-param([switch]$Startup, [switch]$SkipPrerequisites)
+param([switch]$Startup, [switch]$SkipPrerequisites, [switch]$NoWizard)   # -NoWizard: tests on a PC whose AmPanel is already running
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $repo = Join-Path $root 'repo'

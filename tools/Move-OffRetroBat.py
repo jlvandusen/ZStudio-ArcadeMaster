@@ -161,7 +161,8 @@ def main():
         print("undone: %d moves, %d files restored" % (len(u["moves"]), len(u["backups"])))
         return
 
-    if os.path.splitdrive(rb)[0].lower() != os.path.splitdrive(dest)[0].lower():
+    # a move must stay on one drive (a rename); links work across local drives
+    if a.mode == "move" and os.path.splitdrive(rb)[0].lower() != os.path.splitdrive(dest)[0].lower():
         print("refused: %s and %s are on different drives (a move would copy hundreds of GB)" % (rb, dest))
         return
 
