@@ -1,4 +1,4 @@
-﻿// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
+// AmPanel - ArcadeMaster's panel service (docs/13-panel-service.md), step 1.
 //
 //   AmPanel.exe [LEDBlinky-style arguments]       e.g.  AmPanel.exe 9 "bzone" "mame"
 //
@@ -291,7 +291,7 @@ static class AmPanel
     static void OpenButtons()
     {
         var f = new ButtonStudio(leds, Gate, manifestDir, delegate {
-            lock (Gate) leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null));   // normal lights again
+            lock (Gate) leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null), GameList());   // normal lights again
         });
         f.Show(); f.Activate();
     }
@@ -300,6 +300,8 @@ static class AmPanel
     // a SEARCH pill on the touch screen while the menus are up; it opens the search page. Needs RetroFE's cabinet link
     // (settings.conf linkEvents = yes) to jump, and <manifest>\search-index.json (tools/New-SearchIndex.py).
     static GameLink gameLink;
+    // the selected game's own list (a merged list's items keep theirs), for its system's button lights
+    static string GameList() { return gameLink == null ? null : (gameLink.SelectedCollection ?? gameLink.Menu); }
     static SearchIndex searchIndex;
     static SearchButton searchButton;
     static SearchScreen searchScreen;
@@ -518,7 +520,7 @@ static class AmPanel
             if (leds != null)
             {
                 // the documented events that change what the panel shows
-                if (c == "9" || c == "15") State["lights"] = leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null));
+                if (c == "9" || c == "15") State["lights"] = leds.LightGame(Convert.ToString(State.ContainsKey("selected") ? State["selected"] : null), GameList());
                 else if (c == "2") { leds.AllOff(); State["lights"] = "off (frontend quit)"; }
                 else if (c == "5") State["lights"] = "attract: " + (attractAnimation.EndsWith(".lwax") || attractAnimation == "random" ? leds.Play(attractAnimation, true) : leds.Animate(attractAnimation));
                 else if (c == "11") State["lights"] = leds.Animate("stop");
@@ -528,7 +530,7 @@ static class AmPanel
                 {
                     // the game's colours, then LEDBlinky's per-game animations (lwa\GameSpecific): GamePlay loops for
                     // the whole game, else GameStart (the game's own file, or AmPanel.json GameStartAnimation) plays once
-                    State["lights"] = leds.LightGame(c);
+                    State["lights"] = leds.LightGame(c, GameList());
                     string play = leds.GameAnimation("GamePlay", c), start = leds.GameAnimation("GameStart", c) ?? gameStartAnimation;
                     if (play != null) State["lights"] = leds.Play(play, true);
                     else if (start != null) State["lights"] = leds.Play(start, false);
@@ -538,7 +540,7 @@ static class AmPanel
                     // back in the menus: no game animation outlives the game; the selected game's colours again
                     leds.Animate("stop"); leds.AudioFollowOff();
                     string sel =Convert.ToString(State.ContainsKey("selected") && State["selected"] != null ? State["selected"] : State.ContainsKey("game") ? State["game"] : null);
-                    State["lights"] = leds.LightGame(sel);
+                    State["lights"] = leds.LightGame(sel, GameList());
                 }
                 else if (c == "14") State["lights"] = leds.SetPorts(string.Join(",", a, 1, a.Length - 1));
                 else if (c == "16")

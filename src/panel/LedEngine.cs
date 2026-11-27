@@ -436,12 +436,23 @@ class LedEngine
     static double Clamp(double v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
 
     // a game's colours: every control it lists lit in its colour, every other button off. Unknown game: attract white.
-    public string LightGame(string rom)
+    // collection: the game's list. A console list has "@<collection>" in led-colors-auto.json (New-LedColorsAuto.py
+    // system_lights: the buttons its emulator really maps, in the controls card's colours) and that wins for its games.
+    public string LightGame(string rom, string collection = null)
     {
         if (!open) return "LED boards not open";
         StopAnim();
         foreach (var f in frame.Values) Array.Clear(f, 0, f.Length);
         baseColor.Clear();
+        Dictionary<string, int[]> sys;
+        if (!string.IsNullOrEmpty(collection) && autoColors.TryGetValue("@" + collection, out sys))
+        {
+            int n = 0;
+            foreach (var kv in sys) if (SetLabel(kv.Key, kv.Value)) { baseColor[kv.Key] = kv.Value; n++; }
+            if (rom != null) n += ApplyOverrides(rom);
+            RestDim(); Flush();
+            return n + " controls lit for " + (rom ?? "?") + " (" + collection + " buttons)";
+        }
         Dictionary<string, string> g;
         if (rom == null || !games.TryGetValue(rom, out g))
         {
