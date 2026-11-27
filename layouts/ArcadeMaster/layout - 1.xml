@@ -44,6 +44,13 @@
     <onMenuScroll><set duration=".06"><animate type="alpha" to=".8"/></set></onMenuScroll>
     <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
   </image>
+  <!-- touch buttons (docs/22): one transparent button over each cell of the bar. Builds with touchAction fire the action;
+       older builds ignore the attribute and keep using the controls.conf region taps for the same cells -->
+  <image src="images/touch_hit.png" touchAction="back"   x="0"    y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="up"     x="384"  y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="select" x="768"  y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="down"   x="1152" y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="random" x="1536" y="720" width="384" height="360" layer="8"/>
   <image src="images/studio_realz.png" x="1870" y="20" xOrigin="right" width="110" height="110" alpha=".85" layer="8"/>
 
   <!-- launch: flash + logo punch -->
