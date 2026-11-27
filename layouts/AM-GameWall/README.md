@@ -23,4 +23,9 @@ comes up over the bottom row. The filter box, breadcrumbs and BACK / FILTERS hin
 - A cabinet with a second screen keeps what that screen showed: the theme's extra-screen layouts are copied beside the wall.
 - A list that already has a layout of its own (not ours) is left alone.
 
-Not done yet: its own main menu, a check on the pedestal's 4K screen and second screen, a measured menu-ready time against the default, and a cursor that moves freely around the grid (today the chosen game stays in the middle and the wall moves past it).
+Not done yet: its own main menu, a check on the pedestal's 4K screen and second screen, a cursor that moves freely around the grid (today the chosen game stays in the middle and the wall moves past it).
+
+## Measured (RACE1, GTX 1650, 1080p, 89 racing games, 2026-11-27)
+
+- Opening the Racing list four times each, with `perfLog` on: the wall took 34 - 107 ms, the default view 35 - 63 ms. In both, nearly all of it is reading the game list; building the page is 5 - 9 ms and the first frame under 10 ms. The tiles and the preview fill in after the list is on screen.
+- Not measured: a 16,000-game list (pedestal), and how long the tiles take to fill in while scrolling fast.
