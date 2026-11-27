@@ -21,6 +21,20 @@ The loop works like this (James, 2026-11-25):
 - Open PRs: CI, review comments, conflicts.
 - Delete merged branches and stale worktrees.
 
+## 1a. James 2026-11-27: installer + demo for Daniel Spies (YouTube) - "when this is ready to rock"
+James: "we need to also create a installer when this is ready to rock, we need to then consolidate as much as
+possible into our ampanel so I can demo it and send to Daniel Spies as he will be a great influencer to get the word
+out about my company". James sends it himself; no session contacts anyone outside.
+- [ ] **AmPanel is the one ArcadeMaster app:** tray, settings, lights, Panel Test, menu music, updates, search and the
+      touch surface. The ArcadeMaster.exe launcher folds into it. The frontend (our fork) is its screen.
+- [ ] **Installer for a fresh PC.** It ships the frontend, AmPanel, the tools and our layouts / own art. It finds the
+      user's RetroBat, emulators and game folders, detects the cabinet type, then builds the menus, hero art and
+      controls cards from the user's own files. **Never** ROMs, BIOS files, emulator builds or game art (GPL / community
+      release, docs/21). GPL-3.0 source link and credits (RetroFE, CoinOPS) in About.
+- [ ] **Demo kit:** the installer, a one-page "what it does", and a showcase checklist: hero main menu, the touch
+      screen (panels, search, list touch), the attract light show, the loading card, menu music, the cabinet link.
+- [ ] A clean-PC dry run (a spare PC or VM) before anything is sent.
+
 ## 1b. James 2026-11-27: "a good start shippable version" - next: more themes
 Shippable baseline (2026-11-27): our own frontend build (fork, retrofe/fork.txt), touch buttons / list / panels /
 breadcrumbs, SEARCH as a theme button with system badges, the main-menu hero show (New-MenuHeroArt.py: backdrops,
