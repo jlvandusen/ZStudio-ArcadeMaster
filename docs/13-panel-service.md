@@ -162,6 +162,12 @@ One "BUTTON LIGHTS & OUTPUTS" screen (Tools, and the tray window on a desktop), 
    TeknoParrot output plugins). Learns each game's output names; live meters.
 10. Trigger -> activity rules (global / system / game): lamps -> LEDs, recoil -> gun, motors -> rumble / FFB.
 11. The assignment screen (Buttons / Colours / Triggers tabs above).
+**Keeping AmPanel current (2026-11-26):** each boot runs `tools\Update-AmPanel.ps1 -Boot` before AmPanel starts.
+When `src\panel`, Build-AmPanel.ps1 or the rule files changed since the installed build (`<ArcadeMaster>\AmPanel.build.txt`),
+it compiles AmPanel and installs it, together with the LEDBlinky.exe shim. A failed compile leaves the installed copy in place,
+and a cabinet without AmPanel installed is left alone. Before this, fixes reached a cabinet only through a hand-run
+`Build-AmPanel.ps1 -InstallTo`.
+
 12. Cut-over: AmPanel is the default; LEDBlinky.exe and the Ultimarc utilities are no longer started.
     **First part done (2026-11-26):** AmPanel no longer needs the LEDBlinky install at run time. Set-ButtonLights copies
     the following into `<ArcadeMaster>\panel-data` and points AmPanel.json `LEDBlinkyDir` there:
