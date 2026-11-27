@@ -141,6 +141,12 @@ try {
     # the recorded build is right - but is the exe really that build? A test exe copied over it by hand (2026-11-25) went
     # unnoticed: compare with the exe that was built and put it back, keeping the odd one aside
     $builtExe = Join-Path $built 'retrofe.exe'; $instExe = Join-Path $rtDir 'retrofe.exe'
+    # ...unless somebody is testing on purpose: <retrofe>\am-test-build.txt keeps a hand-copied exe for 4 hours from
+    # when the file was written (a phase-2 test build, docs/21), then the right build goes back by itself
+    $testMark = Join-Path $rtDir 'am-test-build.txt'
+    if ((Test-Path -LiteralPath $testMark) -and ((Get-Date) - (Get-Item -LiteralPath $testMark).LastWriteTime).TotalHours -lt 4) {
+      Write-Host "RetroFE test build kept (${testMark}: $((Get-Content -LiteralPath $testMark -TotalCount 1)); until $((Get-Item -LiteralPath $testMark).LastWriteTime.AddHours(4).ToString('HH:mm')))"; return
+    }
     if ((Test-Path -LiteralPath $builtExe) -and (Test-Path -LiteralPath $instExe) -and (Get-FileHash -LiteralPath $builtExe).Hash -ne (Get-FileHash -LiteralPath $instExe).Hash) {
       if ($running) { Say "retrofe.exe is not build $key (a test or hand-copied exe?) - it is put back when RetroFE is closed" }
       else {
