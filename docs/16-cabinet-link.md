@@ -167,5 +167,14 @@ address, left over from the DRIVE copy.
   2. The first networked start raises the Windows firewall prompt for Supermodel on each rig; James allows it
      (an administrator's change).
   3. Each linked game is set to 2-machine link play in its own test menu, with the cabinet number (1 = RACE1, 2 = RACE2).
+- **Connects (2026-11-27, Dirt Devils, RACE1 + RACE2); racing together to be confirmed by James.** What it took:
+  1. `Set-SupermodelLink -Peer <twin> -Apply` on both rigs, then each Supermodel started again (it reads the file only
+     at start: RACE1's copy had joined the game before the change and stayed unlinked).
+  2. In the game's test menu on RACE1 (Test = the G29's **+**, Service = **-**, or keypad +/-): network link, this
+     cabinet = MASTER; on RACE2 the same setting = SLAVE (left on MASTER, RACE2's game warned of a duplicate master).
+     The game keeps it in its NVRAM and restarts itself after the change.
+  3. Supermodel then connects both ways (RACE2: out to RACE1:1970 and in from RACE1 on 1971, both Established).
+- A game played alone with the net board on starts and plays normally (RACE2, Dirt Devils, RACE1 not listening), so
+  the net board can stay on. Windows Firewall is off on both rigs, so no prompt came up.
 - Not linked yet: Daytona (Model 2), TeknoParrot games. Each emulator has its own network settings; Model 3 is the
   first because Supermodel has them in one file.
