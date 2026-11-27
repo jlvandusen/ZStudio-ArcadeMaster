@@ -773,6 +773,21 @@ static class AmPanel
             {
                 rep["result"] = exitGuard == null ? "exit guard off" : exitGuard.EndNow(); rep["ok"] = exitGuard != null;
             }
+            else if (cmd == "capture")   // {"cmd":"capture"} - the guided Panel Test (Capture.cs); {"buttons":6} per player
+            {
+                if (ui == null) { rep["ok"] = false; rep["error"] = "no UI thread"; }
+                else
+                {
+                    int nb = req.ContainsKey("buttons") ? Convert.ToInt32(req["buttons"]) : PanelButtons();
+                    ui.BeginInvoke((MethodInvoker)delegate {
+                        if (gameOptions != null) gameOptions.GameRunning = true;   // TAB is just a button while capturing
+                        var f = new CaptureForm(manifestDir, toolsDir, nb, Log);
+                        f.FormClosed += delegate { if (gameOptions != null) gameOptions.GameRunning = false; };
+                        f.Show();
+                    });
+                    rep["ok"] = true; rep["buttons"] = nb;
+                }
+            }
             else if (cmd == "buttons")   // {"cmd":"buttons"} - open the Buttons window on the cabinet (Tools)
             {
                 if (leds == null || ui == null) { rep["ok"] = false; rep["error"] = "lights are not AmPanel's (AmPanel.json Lights = own)"; }
@@ -1022,6 +1037,20 @@ static class AmPanel
     {
         try { return File.Exists(p) ? Json.Deserialize<Dictionary<string, object>>(File.ReadAllText(p)) : null; } catch { return null; }
     }
+    // buttons per player from <manifest>\panel.json (the first player's "buttons"), else 6
+    static int PanelButtons()
+    {
+        try
+        {
+            var p = ReadJson(Path.Combine(manifestDir, "panel.json"));
+            var players = p != null && p.ContainsKey("players") ? p["players"] as System.Collections.ArrayList : null;
+            var first = players != null && players.Count > 0 ? players[0] as Dictionary<string, object> : null;
+            if (first != null && first.ContainsKey("buttons")) { int n = Convert.ToInt32(first["buttons"]); if (n >= 1 && n <= 12) return n; }
+        }
+        catch { }
+        return 6;
+    }
+
     static string Str(Dictionary<string, object> d, string k) { return d != null && d.ContainsKey(k) && d[k] != null ? Convert.ToString(d[k]) : null; }
 
     static void Log(string m)

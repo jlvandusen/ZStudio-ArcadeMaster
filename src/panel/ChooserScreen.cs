@@ -172,7 +172,7 @@ class ControllerChooser : Form
     // Windows lets a program take the keyboard from the window in front only if it is allowed to. Opened by AmPanel itself
     // (Game Options on TAB) it was not: the menu showed, but the stick and Esc still went to the frontend behind it
     // (2026-11-27). Sharing the front window's input queue for a moment makes the switch allowed.
-    static void TakeFocus(IntPtr me)
+    internal static void TakeFocus(IntPtr me)
     {
         IntPtr fg = GetForegroundWindow(); if (fg == me) return;
         uint fgThread = GetWindowThreadProcessId(fg, IntPtr.Zero), mine = GetCurrentThreadId();
