@@ -110,8 +110,17 @@ try {
     }
   }
 
-  # 2. the build this repo wants
-  $parts = @(Get-ChildItem (Join-Path $repo 'retrofe\patches') -Filter *.patch -File | Sort-Object Name) + @(Get-Item (Join-Path $repo 'retrofe\Build-RetroFE.ps1'))
+  # 2. the build this repo wants. With retrofe\fork.txt (2026-11-27, docs/21) that is one commit of our RetroFE fork;
+  #    without it, the CoinOPS commit plus retrofe\patches as before
+  $forkFile = Join-Path $repo 'retrofe\fork.txt'
+  $fork = $null
+  if (Test-Path $forkFile) {
+    $fork = @{}
+    foreach ($l in Get-Content $forkFile) { if ($l -match '^\s*(repo|commit)\s*=\s*(\S+)') { $fork[$Matches[1]] = $Matches[2] } }
+    if (-not $fork.repo -or $fork.commit -notmatch '^[0-9a-f]{40}$') { Say "retrofe\fork.txt needs repo= and a full 40-character commit= - no build"; return }
+    $parts = @(Get-Item $forkFile) + @(Get-Item (Join-Path $repo 'retrofe\Build-RetroFE.ps1'))
+  }
+  else { $parts = @(Get-ChildItem (Join-Path $repo 'retrofe\patches') -Filter *.patch -File | Sort-Object Name) + @(Get-Item (Join-Path $repo 'retrofe\Build-RetroFE.ps1')) }
   $sha = [Security.Cryptography.SHA1]::Create()
   $all = New-Object IO.MemoryStream
   foreach ($p in $parts) { $b = [Text.Encoding]::UTF8.GetBytes($p.Name + "`n"); $all.Write($b, 0, $b.Length); $c = [IO.File]::ReadAllBytes($p.FullName); $all.Write($c, 0, $c.Length) }
@@ -130,7 +139,7 @@ try {
         Say "retrofe.exe was not build $key - put back (the other exe kept as $(Split-Path $stray -Leaf))"
       }
     }
-    Write-Host "RetroFE is up to date (build $key, $($parts.Count - 1) patches)"; return
+    Write-Host "RetroFE is up to date (build $key, $(if ($fork) { 'fork ' + $fork.commit.Substring(0, 8) } else { "$($parts.Count - 1) patches" }))"; return
   }
 
   # 3. build (not at boot: -DeployOnly only installs a finished build)
@@ -183,6 +192,28 @@ if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue)
     # every cabinet builds its own RetroFE (James, 2026-11-26: no ready-made packages from the NAS)
     if ($missing) { Say "RetroFE build $key needed but this cabinet can't compile yet (missing: $($missing -join ', ')) - run tools\Install-Prerequisites.ps1, or ArcadeMaster.exe --setup with 'Install the programs ArcadeMaster needs' ticked"; return }
     $out = Join-Path $BuildRoot "retrofe-$key"; $blog = Join-Path $BuildRoot "retrofe-$key.build.log"
+    if ($fork) {
+      # our fork: its own clone in <BuildRoot>\src-fork (never a developer's checkout), at exactly the pinned commit
+      if (-not $git) { Say "RetroFE build $key needs git (fork $($fork.commit.Substring(0, 8)))"; return }
+      $fsrc = Join-Path $BuildRoot 'src-fork'
+      $ErrorActionPreference = 'Continue'
+      if (-not (Test-Path (Join-Path $fsrc '.git'))) { & $git clone --quiet --recurse-submodules $fork.repo $fsrc 2>&1 | Out-Null }
+      & $git -C $fsrc fetch --quiet origin 2>&1 | Out-Null
+      & $git -C $fsrc checkout --quiet --detach $fork.commit 2>&1 | Out-Null
+      $at = (& $git -C $fsrc rev-parse HEAD 2>$null)
+      & $git -C $fsrc submodule update --init --recursive --quiet 2>&1 | Out-Null
+      $ErrorActionPreference = 'Stop'
+      if ($at -ne $fork.commit) { Say "RetroFE build $key not made: the fork clone is at '$at', not $($fork.commit) - see $fsrc"; return }
+      Say "building RetroFE $key from fork $($fork.commit.Substring(0, 8)) (installed: $(if ($have) { $have } else { 'unknown' })) - log $blog"
+      $sw = [Diagnostics.Stopwatch]::StartNew()
+      $p = Start-Process $pwsh -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $repo 'retrofe\Build-RetroFE.ps1')`"", '-GstRoot', "`"$GstRoot`"", '-Source', "`"$fsrc`"", '-Work', "`"$(Join-Path $BuildRoot 'src-fork-work')`"", '-Out', "`"$out`"", '-Git', "`"$git`"", '-CMake', "`"$cmake`"") -WindowStyle Hidden -PassThru -RedirectStandardOutput $blog -RedirectStandardError "$blog.err"
+      try { $p.PriorityClass = 'BelowNormal' } catch { }
+      $p.WaitForExit()
+      if ($p.ExitCode -or -not (Test-Path (Join-Path $built 'retrofe.exe'))) { Say "RetroFE build $key FAILED (exit $($p.ExitCode)) after $([int]$sw.Elapsed.TotalMinutes) min - see $blog"; return }
+      Set-Content (Join-Path $built 'am-build.txt') "key=$key`r`nbuilt=$(Get-Date -Format s)`r`ncommit=$(& $git -C $repo rev-parse --short HEAD)`r`nfork=$($fork.commit)`r`nmachine=$env:COMPUTERNAME" -Encoding ascii
+      Say "built RetroFE $key in $([int]$sw.Elapsed.TotalSeconds) s (fork $($fork.commit.Substring(0, 8)))"
+    }
+    else {
     # Build from a FROZEN copy of the patch set, checked against the key. On 2026-11-26 the key was read while a new
     # patch was in the folder and the patches were listed a moment later, when a developer's git stash had taken it out:
     # 16 patches were built and installed under the 17-patch key. The copy is what gets built, and it must hash to $key.
@@ -208,6 +239,7 @@ if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue)
     $logged = @(Select-String -LiteralPath $blog -Pattern '^==> (apply|patch already applied:) (\S+\.patch)' | ForEach-Object { $_.Matches[0].Groups[2].Value } | Sort-Object -Unique)
     if ($logged.Count -ne ($sparts.Count - 1)) { Remove-Item (Join-Path $built 'retrofe.exe') -Force; Say "RetroFE build $key THROWN AWAY: the build log shows $($logged.Count) patch(es), the key has $($sparts.Count - 1) - see $blog"; return }
     Say "built RetroFE $key in $([int]$sw.Elapsed.TotalSeconds) s ($($logged.Count) patches)"
+    }
   }
 
   # 4. deploy (only with RetroFE closed)
