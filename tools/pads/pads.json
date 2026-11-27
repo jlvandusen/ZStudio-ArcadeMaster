@@ -23,7 +23,19 @@
     "L3",
     "R3",
     "PS"
-   ]
+   ],
+   "retropad": {
+    "b": "Cross",
+    "a": "Circle",
+    "y": "Square",
+    "x": "Triangle",
+    "l": "L1",
+    "r": "R1",
+    "l2": "L2",
+    "r2": "R2",
+    "select": "Select",
+    "start": "Start"
+   }
   },
   "ps4": {
    "label": "PlayStation 4 controller",
@@ -49,7 +61,19 @@
     "R3",
     "PS",
     "Touchpad"
-   ]
+   ],
+   "retropad": {
+    "b": "Cross",
+    "a": "Circle",
+    "y": "Square",
+    "x": "Triangle",
+    "l": "L1",
+    "r": "R1",
+    "l2": "L2",
+    "r2": "R2",
+    "select": "Share",
+    "start": "Options"
+   }
   },
   "ps5": {
    "label": "PlayStation 5 controller",
@@ -76,7 +100,19 @@
     "PS",
     "Touchpad",
     "Mute"
-   ]
+   ],
+   "retropad": {
+    "b": "Cross",
+    "a": "Circle",
+    "y": "Square",
+    "x": "Triangle",
+    "l": "L1",
+    "r": "R1",
+    "l2": "L2",
+    "r2": "R2",
+    "select": "Create",
+    "start": "Options"
+   }
   },
   "psx": {
    "label": "PlayStation controller",
@@ -98,7 +134,19 @@
     "Start",
     "L3",
     "R3"
-   ]
+   ],
+   "retropad": {
+    "b": "Cross",
+    "a": "Circle",
+    "y": "Square",
+    "x": "Triangle",
+    "l": "L1",
+    "r": "R1",
+    "l2": "L2",
+    "r2": "R2",
+    "select": "Select",
+    "start": "Start"
+   }
   },
   "xbox": {
    "label": "Xbox controller",
@@ -122,7 +170,19 @@
     "LS",
     "RS",
     "Xbox"
-   ]
+   ],
+   "retropad": {
+    "b": "A",
+    "a": "B",
+    "y": "X",
+    "x": "Y",
+    "l": "LB",
+    "r": "RB",
+    "l2": "LT",
+    "r2": "RT",
+    "select": "View",
+    "start": "Menu"
+   }
   },
   "n64": {
    "label": "Nintendo 64 controller",
@@ -141,7 +201,15 @@
     "C-Down",
     "C-Left",
     "C-Right"
-   ]
+   ],
+   "retropad": {
+    "b": "B",
+    "a": "A",
+    "l": "L",
+    "r": "R",
+    "l2": "Z",
+    "start": "Start"
+   }
   },
   "snes": {
    "label": "SNES-style controller",
@@ -161,7 +229,17 @@
     "R",
     "Select",
     "Start"
-   ]
+   ],
+   "retropad": {
+    "b": "B",
+    "a": "A",
+    "y": "Y",
+    "x": "X",
+    "l": "L",
+    "r": "R",
+    "select": "Select",
+    "start": "Start"
+   }
   },
   "snespro": {
    "label": "SNES-style controller with sticks",
@@ -186,7 +264,19 @@
     "L3",
     "R3",
     "Home"
-   ]
+   ],
+   "retropad": {
+    "b": "B",
+    "a": "A",
+    "y": "Y",
+    "x": "X",
+    "l": "L",
+    "r": "R",
+    "l2": "L2",
+    "r2": "R2",
+    "select": "Select",
+    "start": "Start"
+   }
   },
   "nes": {
    "label": "NES-style controller",
@@ -201,7 +291,13 @@
     "A",
     "Select",
     "Start"
-   ]
+   ],
+   "retropad": {
+    "b": "B",
+    "a": "A",
+    "select": "Select",
+    "start": "Start"
+   }
   },
   "genesis": {
    "label": "Genesis-style controller",
@@ -223,7 +319,19 @@
     "R",
     "Mode",
     "Start"
-   ]
+   ],
+   "retropad": {
+    "y": "A",
+    "b": "B",
+    "a": "C",
+    "l": "X",
+    "x": "Y",
+    "r": "Z",
+    "l2": "L",
+    "r2": "R",
+    "select": "Mode",
+    "start": "Start"
+   }
   },
   "gamecube": {
    "label": "GameCube controller",
@@ -241,7 +349,17 @@
     "L",
     "R",
     "Start"
-   ]
+   ],
+   "retropad": {
+    "b": "A",
+    "y": "B",
+    "a": "X",
+    "x": "Y",
+    "r": "Z",
+    "l2": "L",
+    "r2": "R",
+    "start": "Start"
+   }
   },
   "switch": {
    "label": "Nintendo Switch controller",
@@ -266,7 +384,19 @@
     "RS",
     "Home",
     "Capture"
-   ]
+   ],
+   "retropad": {
+    "b": "B",
+    "a": "A",
+    "y": "Y",
+    "x": "X",
+    "l": "L",
+    "r": "R",
+    "l2": "ZL",
+    "r2": "ZR",
+    "select": "Minus",
+    "start": "Plus"
+   }
   }
  },
  "names": [
