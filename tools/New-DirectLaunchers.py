@@ -104,7 +104,10 @@ def retroarch_cfg(manifest, panel):
              # RetroBat writes its last system's bezel and aspect into retroarch.cfg (an Amiga bezel showed round a SNES
              # game): no overlay, the core's own aspect
              'input_overlay_enable = "false"', 'input_overlay = ""', 'video_aspect_ratio_auto = "true"',
-             'aspect_ratio_index = "22"', 'video_shader_enable = "false"']
+             'aspect_ratio_index = "22"', 'video_shader_enable = "false"',
+             # pads (Xbox, PS3 / PS4 through ScpToolkit / DS4Windows) set themselves up next to the panel's keys:
+             # RetroBat turns this off and writes its own binds at each launch
+             'input_autodetect_enable = "true"', 'input_joypad_driver = "xinput"']
     lines += ['%s = "nul"' % h for h in HOTKEYS if h != "input_exit_emulator"]
     lines.append('input_exit_emulator = "escape"')   # with F12 held; AmPanel's hold-Esc exit is the everyday way out
     for p in (panel.get("players") or []):
@@ -214,15 +217,21 @@ def cemu_profile(exe, panel):
             maps.append((mid, vk(DIRS[1][dname])))
     for dname, mid in CEMU_RSTICK.items():
         maps.append((mid, vk(DIRS[2][dname])))       # player 2's stick turns the camera
-    entries = "".join("\t\t\t<entry>\n\t\t\t\t<mapping>%d</mapping>\n\t\t\t\t<button>%d</button>\n\t\t\t</entry>\n" % m
-                      for m in sorted(maps))
-    xml = ('<?xml version="1.0" encoding="utf-8"?>\n<!-- ArcadeMaster: the panel (tools/New-DirectLaunchers.py) -->\n'
-           "<emulated_controller>\n\t<type>Wii U GamePad</type>\n\t<controller>\n\t\t<api>Keyboard</api>\n"
-           "\t\t<uuid>keyboard</uuid>\n\t\t<display_name>Keyboard</display_name>\n"
-           "\t\t<axis>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</axis>\n"
-           "\t\t<rotation>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</rotation>\n"
-           "\t\t<trigger>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</trigger>\n"
-           "\t\t<mappings>\n" + entries + "\t\t</mappings>\n\t</controller>\n</emulated_controller>\n")
+    def block(api, uuid, name, pairs):
+        entries = "".join("\t\t\t<entry>\n\t\t\t\t<mapping>%d</mapping>\n\t\t\t\t<button>%d</button>\n\t\t\t</entry>\n" % m
+                          for m in sorted(pairs))
+        return ("\t<controller>\n\t\t<api>%s</api>\n\t\t<uuid>%s</uuid>\n\t\t<display_name>%s</display_name>\n"
+                "\t\t<axis>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</axis>\n"
+                "\t\t<rotation>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</rotation>\n"
+                "\t\t<trigger>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</trigger>\n"
+                "\t\t<mappings>\n%s\t\t</mappings>\n\t</controller>\n") % (api, uuid, name, entries)
+    # the first XInput pad (an Xbox pad, or a PS3 / PS4 pad through ScpToolkit / DS4Windows) next to the panel, in
+    # Cemu's own default layout (VPADController::set_default_mapping, Nintendo positions: A = the right face button)
+    xi = [(1, 13), (2, 12), (3, 15), (4, 14), (5, 8), (6, 9), (7, 42), (8, 43), (9, 4), (10, 5), (11, 0), (12, 1),
+          (13, 2), (14, 3), (15, 6), (16, 7), (17, 39), (18, 45), (19, 44), (20, 38), (21, 41), (22, 47), (23, 46), (24, 40)]
+    xml = ('<?xml version="1.0" encoding="utf-8"?>\n<!-- ArcadeMaster: the panel + the first pad (tools/New-DirectLaunchers.py) -->\n'
+           "<emulated_controller>\n\t<type>Wii U GamePad</type>\n" + block("Keyboard", "keyboard", "Keyboard", maps)
+           + block("XInput", "0", "Controller 1", xi) + "</emulated_controller>\n")
     os.makedirs(d, exist_ok=True)
     f = os.path.join(d, "controller0.xml")
     if os.path.exists(f) and not os.path.exists(f + ".am-bak") and "ArcadeMaster" not in open(f, encoding="utf-8", errors="replace").read():
@@ -230,6 +239,55 @@ def cemu_profile(exe, panel):
         shutil.copy2(f, f + ".am-bak")
     open(f, "w", encoding="utf-8").write(xml)
     return f
+
+
+# PCSX2 pad 1 = the panel's keys (RetroBat wrote them) + the first XInput pad (James 2026-11-27: "properly map to use
+# with Xbox and 360 and Sony games"). PCSX2 keeps every binding of a button as its own line.
+PCSX2_XINPUT = {"Up": "DPadUp", "Right": "DPadRight", "Down": "DPadDown", "Left": "DPadLeft", "Triangle": "Y",
+                "Circle": "B", "Cross": "A", "Square": "X", "Select": "Back", "Start": "Start", "L1": "LeftShoulder",
+                "R1": "RightShoulder", "L2": "+LeftTrigger", "R2": "+RightTrigger", "L3": "LeftStick", "R3": "RightStick",
+                "Analog": "Guide", "LUp": "-LeftY", "LRight": "+LeftX", "LDown": "+LeftY", "LLeft": "-LeftX",
+                "RUp": "-RightY", "RRight": "+RightX", "RDown": "+RightY", "RLeft": "-RightX",
+                "LargeMotor": "LargeMotor", "SmallMotor": "SmallMotor"}
+
+
+def pcsx2_pad(exe):
+    ini = os.path.join(os.path.dirname(exe), "inis", "PCSX2.ini")
+    if not os.path.exists(ini):
+        return None
+    lines = open(ini, encoding="utf-8-sig").read().splitlines()
+    if not os.path.exists(ini + ".am-bak"):
+        import shutil
+        shutil.copy2(ini, ini + ".am-bak")
+    out, sec = [], None
+    for l in lines:
+        s = l.strip()
+        if s.startswith("["):
+            if sec == "Pad1":
+                out += ["%s = XInput-0/%s" % kv for kv in PCSX2_XINPUT.items()]
+            sec = s[1:-1]
+        if sec == "Pad1" and "XInput-0/" in l:
+            continue                      # ours, written again below
+        if sec == "InputSources" and re.match(r"^\s*XInput\s*=", l):
+            l = "XInput = true"
+        out.append(l)
+    if sec == "Pad1":
+        out += ["%s = XInput-0/%s" % kv for kv in PCSX2_XINPUT.items()]
+    open(ini, "w", encoding="utf-8").write("\n".join(out) + "\n")
+    return ini
+
+
+def xemu_pad(exe):
+    """Xbox: the pad is player 1 (xemu binds the first pad it sees to an empty port), the panel's keys player 2."""
+    toml = os.path.join(os.path.dirname(exe), "xemu.toml")
+    if not os.path.exists(toml):
+        return None
+    t = open(toml, encoding="utf-8").read()
+    if not os.path.exists(toml + ".am-bak"):
+        open(toml + ".am-bak", "w", encoding="utf-8").write(t)
+    t = re.sub(r"(?ms)^\[input\.bindings\]\n.*?(?=^\[|\Z)", "[input.bindings]\nport2 = 'keyboard'\n\n", t)
+    open(toml, "w", encoding="utf-8").write(t)
+    return toml
 
 
 def hooks(old_conf):
@@ -338,7 +396,11 @@ def main():
                 continue
             w, h = screen
             if sysname == "wiiu" and not a.dry_run:
-                cemu_profile(pick[0], panel)          # the panel's keys, as the controls card shows them
+                cemu_profile(pick[0], panel)          # the panel's keys, as the controls card shows them, + the pad
+            if sysname == "ps2" and not a.dry_run:
+                pcsx2_pad(pick[0])
+            if sysname == "xbox" and not a.dry_run:
+                xemu_pad(pick[0])
             args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{w}", str(w)).replace("{h}", str(h))
             conf = ["executable = %s" % pick[0], "arguments = %s" % args, "currentDirectory = %s" % os.path.dirname(pick[0])]
             how = os.path.basename(pick[0])
