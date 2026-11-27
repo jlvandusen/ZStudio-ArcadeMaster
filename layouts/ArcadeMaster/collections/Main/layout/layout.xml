@@ -71,7 +71,53 @@
       <set duration="2"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
     </onIdle>
   </reloadableImage>
-  <image src="../../../images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" layer="1"/>
+  <!-- ================= HERO ART (James 2026-11-27: "something better than that ugly dial ... awesome graphics and
+       backdrops"). tools/New-MenuHeroArt.py: per entry a sharp themed backdrop, a character and up to three consoles
+       from the cabinet's RELOAD theme. An entry without hero art shows nothing here and keeps the old look. ========== -->
+  <reloadableImage useTextureCache="true" type="am_hero_bg" mode="layout" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".12"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="width" from="2000" to="1960" algorithm="easeOutCubic"/><animate type="height" from="1125" to="1103" algorithm="easeOutCubic"/></set>
+      <set duration="22"><animate type="width" to="2110" algorithm="linear"/><animate type="height" to="1187" algorithm="linear"/><animate type="x" to="1000" algorithm="linear"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+  <image src="../../../images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" alpha=".75" layer="1"/>
+  <!-- the consoles, left: one after another, 5 s each (a maker's line-up), looping while the menu is idle -->
+  <reloadableImage useTextureCache="true" type="am_hero_console1" mode="layout" x="460" y="470" xOrigin="center" yOrigin="center" maxWidth="640" maxHeight="400" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="500" to="470" algorithm="easeOutCubic"/></set>
+      <set duration="3.6"><animate type="y" to="458" algorithm="easeInOutSine"/></set>
+      <set duration=".7"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="10"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" type="am_hero_console2" mode="layout" x="460" y="470" xOrigin="center" yOrigin="center" maxWidth="640" maxHeight="400" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="5"><animate type="nop"/></set>
+      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="500" to="470" algorithm="easeOutCubic"/></set>
+      <set duration="3.6"><animate type="y" to="458" algorithm="easeInOutSine"/></set>
+      <set duration=".7"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+      <set duration="5"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" type="am_hero_console3" mode="layout" x="460" y="470" xOrigin="center" yOrigin="center" maxWidth="640" maxHeight="400" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="10"><animate type="nop"/></set>
+      <set duration=".7"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="500" to="470" algorithm="easeOutCubic"/></set>
+      <set duration="3.6"><animate type="y" to="458" algorithm="easeInOutSine"/></set>
+      <set duration=".7"><animate type="alpha" to="0" algorithm="easeInOutSine"/></set>
+    </onIdle>
+  </reloadableImage>
+  <!-- the character, right: slides in when the entry is chosen -->
+  <reloadableImage useTextureCache="true" type="am_hero_char" mode="layout" x="1480" y="690" xOrigin="center" yOrigin="bottom" maxWidth="760" maxHeight="660" alpha="0" layer="12">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".55"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="x" from="1620" to="1480" algorithm="easeOutBack"/></set>
+    </onMenuIdle>
+  </reloadableImage>
 
   <!-- studio mark, breathing -->
   <image src="../../../images/studio_realz.png" x="40" y="20" width="200" height="200" alpha=".95" layer="18">
