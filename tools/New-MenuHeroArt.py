@@ -103,6 +103,39 @@ TIMELINE = {
                       (2011, "NESICAXLIVE")],
     "Other Systems": [(1979, "INTELLIVISION"), (1982, "VECTREX"), (1982, "COLECOVISION"), (1993, "3DO"), (1999, "WONDERSWAN")],
 }
+# facts that drop in one at a time under the logo strip (James 2026-11-27: "come down and stop then go back up and
+# something else about it comes down"). Plain, well-known facts only.
+FACTS = {
+    "Nintendo": ["NINTENDO STARTED IN 1889 IN KYOTO, MAKING PLAYING CARDS",
+                 "THE NES BROUGHT HOME GAMING BACK AFTER THE 1983 CRASH",
+                 "MARIO FIRST APPEARED IN DONKEY KONG IN 1981"],
+    "Sega": ["SEGA BEGAN AS AN ARCADE COMPANY BEFORE MAKING CONSOLES",
+             "SONIC THE HEDGEHOG ARRIVED IN 1991 ON THE MEGA DRIVE",
+             "THE DREAMCAST WAS SEGA'S LAST HOME CONSOLE"],
+    "Sony": ["THE PLAYSTATION BROUGHT CD GAMES TO MILLIONS IN 1994",
+             "THE PLAYSTATION 2 IS THE BEST-SELLING HOME CONSOLE EVER"],
+    "Microsoft": ["THE FIRST XBOX LAUNCHED IN 2001 WITH HALO",
+                  "XBOX 360 BROUGHT ONLINE PLAY TO THE LIVING ROOM"],
+    "Atari": ["ATARI MADE PONG IN 1972 AND STARTED THE ARCADE BOOM",
+              "THE ATARI 2600 PUT CARTRIDGE GAMES IN MILLIONS OF HOMES"],
+    "NEC": ["THE PC ENGINE WAS SMALLER THAN A VHS TAPE",
+            "THE PC ENGINE CD WAS THE FIRST CD-ROM GAME SYSTEM"],
+    "SNK": ["THE NEO GEO HOME CONSOLE RAN THE SAME GAMES AS THE ARCADE",
+            "KING OF FIGHTERS AND METAL SLUG ARE SNK CLASSICS"],
+    "Computers": ["THE COMMODORE 64 IS THE BEST-SELLING HOME COMPUTER MODEL",
+                  "THE AMIGA WAS FAMOUS FOR ITS GRAPHICS AND SOUND"],
+    "Arcade": ["SPACE INVADERS (1978) STARTED THE GOLDEN AGE OF ARCADES",
+               "STREET FIGHTER II (1991) STARTED THE FIGHTING GAME BOOM",
+               "PAC-MAN WAS MADE TO APPEAL TO EVERYONE, NOT JUST SHOOTER FANS"],
+    "Arcades": ["CAPCOM'S CPS BOARDS RAN STREET FIGHTER II AND FINAL FIGHT",
+                "NEO GEO MVS CABINETS HELD UP TO SIX GAMES AT ONCE"],
+    "Arcade Boards": ["SEGA'S MODEL 3 RAN VIRTUA FIGHTER 3 AND DAYTONA USA 2",
+                      "NAOMI WAS BUILT ON DREAMCAST HARDWARE"],
+    "Other Systems": ["THE VECTREX DREW ITS GAMES WITH VECTOR LINES",
+                      "THE 3DO WAS ONE OF THE FIRST 32-BIT CD CONSOLES"],
+    "Recently Played": ["YOUR LATEST GAMES, NEWEST FIRST", "PICK UP WHERE YOU LEFT OFF"],
+}
+FACT_SLOTS = 6
 COLORS = {"Nintendo": "ff3b3b", "Sega": "2e8bff", "Sony": "9be7ff", "Microsoft": "3ddc84", "Atari": "ff6a00",
           "NEC": "ffb000", "SNK": "2ec8ff", "Computers": "7cf0c8", "Arcade": "ff2fa0", "Arcades": "ff2fa0",
           "Arcade Boards": "ff2fa0", "Other Systems": "9aa3b2", "Recently Played": "ffe259"}
@@ -187,6 +220,21 @@ def logo_strip(retrofe, colls, dst, count=12, height=110):
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     strip.save(dst)
     return True
+
+
+def random_title(manifest, colls):
+    """A real game from the entry's own lists, for the 'TRY:' fact (titles only, no long rom names)."""
+    import json
+    import random
+    try:
+        games = [g for g in json.load(open(os.path.join(manifest, "search-index.json"), encoding="utf-8")) if g.get("c") in colls]
+    except Exception:
+        return None
+    games = [g for g in games if 3 <= len(g.get("t", "")) <= 40 and "(" not in g.get("t", "")] or games
+    if not games:
+        return None
+    g = random.choice(games)
+    return g.get("t", "")
 
 
 def game_counts(manifest):
@@ -323,6 +371,17 @@ def main():
         if n_games:
             stats += "  -  {:,} GAMES".format(n_games)
         neon_text(stats, 54, color, os.path.join(out, "am_hero_stats", entry + ".png"), 1500)
+        # the facts that drop in one at a time: the stats, the biggest system, a game to try, the maker's facts
+        facts = [stats]
+        sized = sorted(((counts.get(c, 0), c) for c in colls), reverse=True)
+        if len(colls) > 1 and sized and sized[0][0]:
+            facts.append("MOST GAMES HERE: %s - %s" % (sized[0][1].replace("(RetroBat)", "").strip().upper(), "{:,}".format(sized[0][0])))
+        try_title = random_title(manifest, colls)
+        if try_title:
+            facts.append("TRY: " + try_title.upper())
+        facts += FACTS.get(entry, [])
+        for i in range(FACT_SLOTS):
+            neon_text(facts[i % len(facts)], 46, color, os.path.join(out, "am_hero_fact%d" % (i + 1), entry + ".png"), 1600)
         if entry in TIMELINE:
             neon_text("   >   ".join("%d %s" % (y, n) for y, n in TIMELINE[entry]), 34, color,
                       os.path.join(out, "am_hero_timeline", entry + ".png"), 1840)
