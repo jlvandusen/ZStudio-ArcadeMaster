@@ -785,3 +785,17 @@ Next steps towards our own G29 library, without G HUB:
   emulator's own force feedback is unchanged.
 - **Not known yet:** whether the crash left the wheel's force feedback in a bad state for the menus afterwards (the
   menu force was weak after a game on RACE1), and whether RACE2 has the same plug-in.
+
+## Menu force feedback was gone after every game (fixed in the frontend, 2026-11-27)
+
+- **What James felt** (RACE1, 2026-11-26): turning the wheel in the menus did not re-centre and had no force, after a
+  game had been played.
+- **Cause:** the frontend takes the wheel back the instant a game ends. At that moment the wheel opens but refuses every
+  effect, because the game that just closed still has it. The frontend kept that useless hold until the next game.
+- **Fix** (frontend fork PR 21): an open that got no effect at all is let go, and the frontend tries again every 5
+  seconds (up to 2 minutes, starting afresh after every game).
+- **Tested on RACE1:** Dirt Devils closed at 15:35:53, every effect refused; at 15:35:58 the wheel was back with
+  centring, damping, ticks and rumble.
+- A correction to the Model 3 section above: RACE2's 2022 build of the plug-in also crashes on exit on RACE1, while
+  RACE2 itself exits clean with it. So on RACE1 it is the plug-in as such; the difference between the rigs is elsewhere
+  (their `SDL2.dll` beside Supermodel differs). RACE1 runs Model 3 without the plug-in.
