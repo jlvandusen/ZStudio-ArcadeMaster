@@ -157,7 +157,7 @@ function Send-Goto([string]$item, [string]$col, [double]$gap = 0.6) {
   if ($col -and $script:gotoTries -lt 2) { Send-Cmd "goto`t$item`t$col" $gap } else { Send-Cmd "goto`t$item`t" $gap; if ($script:lastCmdAt -eq $before) { Send-Cmd "goto`t$item" $gap } }
   if ($script:lastCmdAt -ne $before) { $script:gotoTries++ }
 }$me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idleMs = 9e11; menu = ''; playlist = ''; item = ''; col = ''; kind = ''; by = ''; selSeq = 0
-                  launchSeq = 0; launchMenu = ''; launchItem = ''; launchCol = ''; launchBy = '' }
+                  launchSeq = 0; launchMenu = ''; launchItem = ''; launchCol = ''; launchBy = ''; launchAt = '' }
 $lastHello = [datetime]::MinValue; $lastUser = [datetime]::MinValue; $missItem = ''; $dirty = $true; $lastWrite = [datetime]::MinValue
 $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
@@ -183,7 +183,7 @@ try {
       switch ($p[0]) {
         'hello'  { $me.menu = $p[1]; $me.idleMs = [double]$p[2]; $lastHello = $now; if ([double]$p[2] -lt 2000) { $lastUser = $now } }
         'select' { $me.by = $p[1]; $me.menu = $p[2]; $me.playlist = $p[3]; $me.item = $p[4]; $me.col = $p[5]; $me.kind = $p[6]; $me.selSeq++; $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now } }
-        'launch' { $me.launchBy = $p[1]; $me.launchMenu = $p[2]; $me.launchItem = $p[3]; $me.launchCol = $p[4]; $me.launchSeq++; $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now }; Say "this cabinet starts $($p[3]) ($($p[1]))" }
+        'launch' { $me.launchBy = $p[1]; $me.launchMenu = $p[2]; $me.launchItem = $p[3]; $me.launchCol = $p[4]; $me.launchSeq++; $me.launchAt = (Get-Date).ToString('o'); $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now }; Say "this cabinet starts $($p[3]) ($($p[1]))" }
         'miss'   { $missItem = $p[1] }
       }
     }
@@ -209,7 +209,11 @@ try {
         try { $j = [IO.File]::ReadAllText($f) | ConvertFrom-Json } catch { continue }       # caught half-written: next round
         if (-not $j -or -not $j.host) { continue }
         $old = $peers[$j.host]
-        $launched = $old -and ([int]$j.launchSeq -ne [int]$old.data.launchSeq)             # never on the first look at a file
+        # never on the first look at a file. A new start is a new launch number, another game, or a new start time: a
+        # restarted helper begins its numbers again and lands on one seen before (2026-11-27: the pedestal's Big Red One
+        # came as launch 1 again and the 2P stand-up did nothing; the stand-up's Pokken came as launch 1 twice and the
+        # pedestal did nothing). launchAt, the time of the start, tells even the same game started again apart.
+        $launched = $old -and ([int]$j.launchSeq -ne [int]$old.data.launchSeq -or [string]$j.launchItem -ne [string]$old.data.launchItem -or [string]$j.launchCol -ne [string]$old.data.launchCol -or [string]$j.launchAt -ne [string]$old.data.launchAt)
         $peers[$j.host] = @{ data = $j; seen = $(if (-not $old -or [int]$j.beat -ne [int]$old.data.beat) { $now } else { $old.seen }); launched = $launched }
         # Only GAMES are joined: never an entry of the first menu (EXIT) or of Tools / settings menus - on 2026-11-26
         # RACE1's EXIT presses started "joining EXIT" on RACE2. A newer start replaces one that is still counting or
