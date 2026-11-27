@@ -7,6 +7,8 @@
     split     SPLIT SCREEN   the game playing on the left, the list as a strip down the middle, on the right what the
                              game is and how often it has been played on this cabinet         (layouts\AM-Split)
                                                                                              (layouts\AM-PitWall)
+    cockpit   COCKPIT        you sit in the car: the preview in the windscreen, the games a row of logos under it,
+                             the theme's own speedo, rev counter and wheel on a dash along the bottom (layouts\AM-Cockpit)
   A view changes the game lists only: the main menu, Tools and Settings keep the theme's own look.
 
   -View <name>   puts that view's gamelist.layout.xml in place as the list's own layout
@@ -34,7 +36,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 # view name -> its folder in the repo's layouts, and whether it shows the small tiles
-$views = [ordered]@{ wall = @{ dir = 'AM-GameWall'; tiles = $true; label = 'WALL OF GAMES' }; pitwall = @{ dir = 'AM-PitWall'; tiles = $false; label = 'PIT WALL' }; split = @{ dir = 'AM-Split'; tiles = $false; label = 'SPLIT SCREEN' } }
+$views = [ordered]@{ wall = @{ dir = 'AM-GameWall'; tiles = $true; label = 'WALL OF GAMES' }; pitwall = @{ dir = 'AM-PitWall'; tiles = $false; label = 'PIT WALL' }; split = @{ dir = 'AM-Split'; tiles = $false; label = 'SPLIT SCREEN' }; cockpit = @{ dir = 'AM-Cockpit'; tiles = $false; label = 'COCKPIT' } }
 if ($View -and $View -ne 'default' -and -not $views.Contains($View)) { throw "unknown view '$View' (default, $($views.Keys -join ', '))" }
 $markRx = 'ArcadeMaster game list view: (\w+)|WALL OF GAMES - game list'      # the second form: files written before views had names
 $sc = Join-Path $RetroFE 'settings.conf'
