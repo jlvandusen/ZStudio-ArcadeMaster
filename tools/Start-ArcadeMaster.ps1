@@ -235,6 +235,8 @@ if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
 $amPanel = Join-Path (Split-Path $ManifestDir) 'AmPanel.exe'
 # the Pixelcade marquee: found and handed to AmPanel before it starts (2P stand-up's marquee went quiet once the shim
 # replaced LEDBlinky, 2026-11-26). Changes nothing on a cabinet without one, or where LEDBlinky still gets the events.
+# AmPanel itself follows the repo: rebuilt and installed when src\panel changed (before, only by hand)
+if (Test-Path $amPanel) { try { $o = & (Join-Path $PSScriptRoot 'Update-AmPanel.ps1') -ManifestDir $ManifestDir -Boot 6>&1 | Out-String; if ($o.Trim()) { Write-Log $o.Trim() } } catch { Write-Log "AmPanel update failed: $($_.Exception.Message)" } }
 # AmPanel's own copy of Ultimarc's drivers and LEDBlinky's data (panel-data), so the lights never depend on the LEDBlinky
 # install; only does something on a cabinet whose lights AmPanel drives
 if (Test-Path $amPanel) { try { $o = & (Join-Path $PSScriptRoot 'Set-ButtonLights.ps1') -RetroFE $Root -ManifestDir $ManifestDir -Refresh 6>&1 | Out-String; if ($o.Trim()) { Write-Log $o.Trim() } } catch { Write-Log "panel-data refresh failed: $($_.Exception.Message)" } }
