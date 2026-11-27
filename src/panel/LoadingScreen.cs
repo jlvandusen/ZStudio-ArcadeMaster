@@ -32,7 +32,8 @@ class LoadingScreen : Form
     // programs whose windows are never "the game": the frontend, this panel, the shell, the launchers' own small windows
     static readonly HashSet<string> NotTheGame = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         "retrofe", "AmPanel", "LEDBlinky", "explorer", "TeknoParrotUi", "emulatorLauncher", "cmd", "conhost", "powershell",
-        "WindowsTerminal", "OpenConsole", "pwsh", "RustDesk", "msedge", "chrome",
+        "WindowsTerminal", "OpenConsole", "pwsh", "RustDesk", "msedge", "chrome", "SnippingTool", "ScreenClippingHost",
+        "ScreenSketch", "GameBar", "Taskmgr",
         "wscript", "dwm", "ShellExperienceHost", "SearchHost", "StartMenuExperienceHost", "TextInputHost", "Code", "Claude",
         // TeknoParrot's loaders put up their own windows before the game is ready (Blade Strangers closed it early)
         "OpenParrotLoader", "OpenParrotLoader64", "OpenParrotKonamiLoader", "BudgieLoader", "ElfLdr2", "TeknoParrot", "ParrotLoader", "conhost" };
