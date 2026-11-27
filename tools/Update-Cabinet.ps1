@@ -62,6 +62,14 @@ if ($Install) {
 # --- one run at a time (a lock older than 3 h is left over from a crash)
 $lock = Join-Path $BuildRoot 'update-cabinet.lock'
 New-Item -ItemType Directory -Force $BuildRoot | Out-Null
+# A boot (-DeployOnly) that finds the scheduled run in the middle of COPYING a build waits for it: it used to go straight
+# on and start RetroFE into the half-copied folder (RACE2 2026-11-27 08:40: robocopy 11, old and new files mixed). Only the
+# copy is waited for (deploying.flag, seconds); a build in progress is not - that run will not copy while RetroFE runs.
+$deployFlag = Join-Path $BuildRoot 'deploying.flag'
+if ($DeployOnly -and (Test-Path $deployFlag) -and ((Get-Date) - (Get-Item $deployFlag).LastWriteTime).TotalMinutes -lt 10) {
+  Write-Host 'a RetroFE build is being copied in - waiting for it to finish'
+  $until = (Get-Date).AddMinutes(5); while ((Test-Path $deployFlag) -and (Get-Date) -lt $until) { Start-Sleep -Seconds 2 }
+}
 if ((Test-Path $lock) -and ((Get-Date) - (Get-Item $lock).LastWriteTime).TotalHours -lt 3) { Write-Host "another update is running ($lock)"; return }
 Set-Content $lock $PID -Encoding ascii
 try {
@@ -247,16 +255,25 @@ if (-not $pwsh) { $pwsh = (Get-Command powershell -ErrorAction SilentlyContinue)
   # 4. deploy (only with RetroFE closed)
   if ($running) { Say "RetroFE $key is built; it goes in at the next start (the frontend is open now)"; return }
   $prev = Join-Path (Split-Path $rtDir) 'retrofe.am-prev'
+  Set-Content $deployFlag "$key $(Get-Date -Format s)" -Encoding ascii   # a boot now waits for the copy (see the lock above)
   if (Test-Path $rtDir) {
     if (Test-Path $prev) { Remove-Item $prev -Recurse -Force }
     robocopy $rtDir $prev /E /XF 'retrofe.exe.*' /NFL /NDL /NJH /NJS /NP /R:1 /W:1 | Out-Null
     Copy-Item (Join-Path $rtDir 'retrofe.exe') $prev -ErrorAction SilentlyContinue
   }
   robocopy $built $rtDir /E /NFL /NDL /NJH /NJS /NP /R:2 /W:2 | Out-Null
-  if ($LASTEXITCODE -ge 8) { Say "deploy of RetroFE $key FAILED (robocopy $LASTEXITCODE); previous files are in $prev"; return }
+  if ($LASTEXITCODE -ge 8) {
+    $rc = $LASTEXITCODE
+    # never leave old and new files mixed: put the previous build back while RetroFE is still closed
+    $nowRunning = @(Get-Process retrofe -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($Root, [StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
+    if ((Test-Path $prev) -and -not $nowRunning) { robocopy $prev $rtDir /E /NFL /NDL /NJH /NJS /NP /R:2 /W:2 | Out-Null; Say "deploy of RetroFE $key FAILED (robocopy $rc) - the previous build was put back ($(if ($LASTEXITCODE -ge 8) { "restore robocopy $LASTEXITCODE" } else { 'complete' }))" }
+    else { Say "deploy of RetroFE $key FAILED (robocopy $rc) with RetroFE open - the folder may be mixed; the next start puts the right build in. Previous files: $prev" }
+    return
+  }
   if ((Get-FileHash (Join-Path $built 'retrofe.exe')).Hash -ne (Get-FileHash (Join-Path $rtDir 'retrofe.exe')).Hash) { Say "deploy of RetroFE $key did not take (retrofe.exe differs) - previous files in $prev"; return }
   Say "installed RetroFE $key into $rtDir (was $(if ($have) { $have } else { 'unknown' }); previous files kept in $prev)"
 } finally {
+  Remove-Item $deployFlag -Force -ErrorAction SilentlyContinue
   Remove-Item $lock -Force -ErrorAction SilentlyContinue
   # what this cabinet now runs -> Z:\ArcadeMaster\reports\state\<PC>.json (Compare-Cabinets.ps1). In finally: most runs end
   # early ('up to date', 'pull skipped'), and those must report too
