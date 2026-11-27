@@ -38,7 +38,39 @@ HEROES = {
     "Lightgun": ("auto-lightgun", ["auto-lightgun"]),
     "Other Systems": ("collections", ["3do", "neogeopocketcolor"]),
 }
-DEFAULT_THEME = r"R:\CP78\RetroBat\emulationstation\.emulationstation\themes\es-theme-RELOAD-\art"
+# the character show per entry (James 2026-11-27: "rotate chara ... stop and then wave ... slide off and another char
+# arrives", "maybe 20+ per system or menu item"): RELOAD characters\<key>.png, in this order; missing keys are skipped
+CAST = {
+    "Arcade": ["arcade", "streetfighter", "mame", "capcom", "kof", "metalslug", "namco", "finalfight", "konami", "mk",
+               "taito", "doubledragon", "tmnt", "midway", "cps2", "samuraishodown", "irem", "dataeast", "toaplan", "cave",
+               "fatalfury", "artoffighting", "worldheroes", "technos", "psikyo", "neogeo"],
+    "Arcades": ["arcades", "cps1", "cps2", "cps3", "capcom", "snk", "kof", "metalslug", "namco", "konami", "taito",
+                "midway", "mk", "sega", "irem", "jaleco", "toaplan", "cave", "psikyo", "seibukaihatsu", "gaelco", "kaneko",
+                "nmk", "dataeast", "technos"],
+    "Arcade Boards": ["model3", "model2", "naomi", "naomi2", "atomiswave", "chihiro", "hikaru", "triforce", "teknoparrot",
+                      "taito type x2", "nesicaxlive", "cps3", "zinc", "namco22", "cps2", "cps1", "neogeo", "igs"],
+    "Nintendo": ["nintendo", "mario", "nes", "zelda", "snes", "donkeykong", "n64", "metroid", "gamecube", "pokemon",
+                 "wii", "wiiu", "switch", "gb", "gbc", "gba", "nds", "3ds", "virtualboy", "gameandwatch", "famicom", "sfc",
+                 "fds", "satellaview"],
+    "Sega": ["sega", "sonic", "megadrive", "alexkidd", "mastersystem", "gamegear", "saturn", "dreamcast", "segacd",
+             "sega32x", "sg-1000", "genesis", "model2", "model3", "naomi", "sc-3000"],
+    "Sony": ["psx", "crashbandicoot", "ps2", "metalgear", "ps3", "residentevil", "psp", "finalfantasy", "psvita",
+             "psx-classic", "pspminis"],
+    "Microsoft": ["xbox", "xbox360", "windows", "pc", "msx2", "msx1"],
+    "Atari": ["atari", "atari2600", "atari5200", "atari7800", "atari800", "atarijaguar", "atarilynx", "atarist"],
+    "NEC": ["pcengine", "tg16", "supergrafx", "pce-cd", "tg-cd", "pcfx", "pc88", "pc98"],
+    "SNK": ["snk", "neogeo", "kof", "metalslug", "samuraishodown", "fatalfury", "artoffighting", "worldheroes", "neogeocd",
+            "ngpc", "ngp", "neogeo-classic", "neogeox"],
+    "Computers": ["amiga", "c64", "amiga500", "zxspectrum", "amstradcpc", "amiga1200", "c128", "msx2", "apple2",
+                  "atarist", "bbc", "x68000", "fmtowns", "oric", "ti99", "spectravideo", "thomson", "c16", "zx81"],
+    "Other Systems": ["3do", "vectrex", "intellivision", "colecovision", "odyssey2", "channelf", "wonderswan",
+                      "wonderswancolor", "pokemini", "supervision", "videopac", "pv1000"],
+    "Recently Played": ["auto-lastplayed", "auto-favorites", "mario", "sonic", "streetfighter", "pokemon", "zelda",
+                        "metalslug", "kof", "megaman", "castlevania", "contra", "bomberman", "tmnt", "mk", "crashbandicoot",
+                        "donkeykong", "finalfight", "doubledragon", "dragonball", "metroid", "residentevil"],
+}
+SLOTS = 24
+DEFAULT_THEME =r"R:\CP78\RetroBat\emulationstation\.emulationstation\themes\es-theme-RELOAD-\art"
 
 
 def find(folder, key, exts):
@@ -118,8 +150,12 @@ def main():
         heroes.append(entry)
         if bg:
             made += write_bg(bg, os.path.join(out, "am_hero_bg", entry + ".jpg"), a.force)
-        if ch:
-            made += write_png(ch, os.path.join(out, "am_hero_char", entry + ".png"), 1100, a.force)
+        # the cast: SLOTS characters (fewer repeat, so the show never has a gap)
+        cast = [p for p in (find(chardir, c, (".png",)) for c in CAST.get(entry, [key])) if p]
+        if not cast and ch:
+            cast = [ch]
+        for i in range(SLOTS if cast else 0):
+            made += write_png(cast[i % len(cast)], os.path.join(out, "am_hero_char%d" % (i + 1), entry + ".png"), 900, a.force)
         for i in range(3):   # three slots; fewer consoles repeat, so the fade never shows an empty slot
             if cons:
                 made += write_png(cons[i % len(cons)], os.path.join(out, "am_hero_console%d" % (i + 1), entry + ".png"), 700, a.force)
@@ -129,6 +165,10 @@ def main():
                 os.makedirs(os.path.dirname(sp), exist_ok=True)
                 Image.open(blank).save(sp)
                 made += 1
+    old = os.path.join(out, "am_hero_char")   # the single-character slot of the first version
+    if os.path.isdir(old):
+        import shutil
+        shutil.rmtree(old, ignore_errors=True)
     print("menu heroes: %d entries (%s), %d files written%s" % (len(heroes), ", ".join(heroes), made,
           (", no art for: " + ", ".join(missing)) if missing else ""))
 
