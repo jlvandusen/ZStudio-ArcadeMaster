@@ -251,14 +251,29 @@ def random_title(manifest, colls):
 
 
 def game_counts(manifest):
+    """games per list that are really on this cabinet: games.json (only what was found on disk; James 2026-11-27: the
+    Wii tile said 1529 games for 13), else the search index (every game a list knows, present or not)"""
     import json
-    p = os.path.join(manifest, "search-index.json")
     counts = {}
     try:
-        for g in json.load(open(p, encoding="utf-8")):
-            counts[g.get("c", "")] = counts.get(g.get("c", ""), 0) + 1
+        for g in json.load(open(os.path.join(manifest, "games.json"), encoding="utf-8-sig")).get("games", []):
+            seen = set()
+            for v in (g.get("variants") or {}).values():
+                c = (v or {}).get("retrofeCollection")
+                if c and (v or {}).get("ok") and c not in seen:
+                    seen.add(c)
+                    counts[c] = counts.get(c, 0) + 1
+    except Exception:
+        counts = {}
+    # a list the game list does not know (a RetroBat system on the pedestal) keeps the search index's count
+    index = {}
+    try:
+        for g in json.load(open(os.path.join(manifest, "search-index.json"), encoding="utf-8")):
+            index[g.get("c", "")] = index.get(g.get("c", ""), 0) + 1
     except Exception:
         pass
+    for c, n in index.items():
+        counts.setdefault(c, n)
     return counts
 DEFAULT_THEME =r"R:\CP78\RetroBat\emulationstation\.emulationstation\themes\es-theme-RELOAD-\art"
 

@@ -254,6 +254,7 @@ static class AmPanel
             if (Str(cfg, "MarqueeScreensaver") != null) marquee.Screensaver = Str(cfg, "MarqueeScreensaver").ToLowerInvariant();
             // "PixelcadeDriver": "direct" = AmPanel drives the board over its serial port; the Java listener is stopped
             if (Str(cfg, "MarqueeIntro") != null) marquee.Intro = Str(cfg, "MarqueeIntro").ToLowerInvariant();
+            marquee.RetroFERoot = retroFERoot;   // the frontend's own game art when the Pixelcade folders have none
             if (string.Equals(Str(cfg, "PixelcadeDriver"), "direct", StringComparison.OrdinalIgnoreCase)) { var mq = marquee; mq.DirectWanted = true; new Thread(() => mq.StartDirect()) { IsBackground = true, Name = "pixel-open" }.Start(); }
             // two programs must never drive the same marquee: LEDBlinky stops getting the commands, unless
             // AmPanel.json asks for it with "PassThrough": true (then LEDBlinky's UsePixelcade must be 0)

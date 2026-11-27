@@ -82,6 +82,9 @@ $metaItems = @{}     # sourceCollection -> item -> game (for players/ctrltype/bu
 $skipped = New-Object System.Collections.Generic.List[string]
 foreach ($g in $m.games) {
   if ($g.hidden) { $skipped.Add("$($g.id) - hidden duplicate of $($g.alternativeOf)"); continue }
+  # a CoinOPS build's settings screens are lists too (SETTINGS TITAN "1 Monitor", SETTINGS BEZELS ...): never games
+  # (James 2026-11-27, 2P stand-up: All Games "picks up settings screens here")
+  if ("$($g.id)" -match '^SETTINGS\b' -or @($g.sources | Where-Object { "$($_.collection)" -match '^SETTINGS\b' }).Count) { $skipped.Add("$($g.id) - a settings screen, not a game"); continue }
   if ($g.fit -and $g.fit.level -eq 'unsupported' -and -not $IncludeUnsupported) { $skipped.Add("$($g.id) - not playable on this cabinet: $(($g.fit.notes) -join '; ')"); continue }
   $cat = $g.category; if ($cat -eq 'arcade' -or -not $names.ContainsKey($cat)) { $cat = 'standup' }
   if ($Modes -notcontains $cat) { $skipped.Add("$($g.id) [$cat] - not a mode of this cabinet"); continue }

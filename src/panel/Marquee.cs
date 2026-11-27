@@ -31,6 +31,7 @@ class Marquee
 {
     public string BaseUrl = "http://127.0.0.1:8080";
     public string PixelcadeDir;
+    public string RetroFERoot;   // passed to the direct driver: the frontend's own game art as a fallback
     public string StartText = "Welcome and Game On!", QuitText = "Thanks for Playing", NowPlaying = "Now Playing ~game~";
     public string Color = "random", Speed = "1", Screensaver = "random";
     public bool LocalPlaybackOnQuit = true;
@@ -105,7 +106,7 @@ class Marquee
         string port = PixelDirect.PortFromSettings(PixelcadeDir) ?? "COM7";
         StopListener();
         Thread.Sleep(1500);   // Windows frees the port a moment after the listener is gone
-        var d = new PixelDirect(PixelcadeDir, port, log) { Intro = Intro };
+        var d = new PixelDirect(PixelcadeDir, port, log) { Intro = Intro, RetroFERoot = RetroFERoot };
         if (d.Open()) { direct = d; return; }
         log("marquee: direct driver could not open the board (" + d.LastError + ") - the listener takes over again");
         DirectWanted = false; lastListenerStart = DateTime.MinValue; EnsureListener();
