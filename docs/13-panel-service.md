@@ -278,6 +278,24 @@ and a cabinet without AmPanel installed is left alone. Before this, fixes reache
       - AmPanel.json `"MarqueeIntro"`: `random` (default) or one style. Pipe preview:
         `{"cmd":"marquee","intro":"punch","game":"dkong","system":"mame","title":"Donkey Kong"}`.
 
+17. **Wii Remotes through a DolphinBar (2026-11-27, the 2-player stand-up):** `src/panel/WiiRemotes.cs`.
+    - **Detection:** a Mayflash DolphinBar (USB 057E:0306) shows Windows all 4 slots whether or not a remote is synced.
+      AmPanel asks each slot for a remote's status (Wii report `0x15`). A slot with a remote takes the request; an
+      empty one refuses it ("a device attached to the system is not functioning").
+    - **When:** every 5 s, only while no game runs and Dolphin is closed.
+    - **On a change:**
+      - `<manifest>\wii-remotes.json` (`{"slots":[1]}`) and the status line (`wiiRemotes`);
+      - `tools\Set-DolphinControllers.ps1` runs. With that file, only the live slots become "Real Wii Remote", and the
+        others keep the emulated remote on the panel (Bluetooth-paired remotes take the next free slots). Without it,
+        as before.
+    - **Tested on the stand-up:** a remote with a Nunchuk synced to slot 1 was seen at once; switched off and on again, it
+      was seen going and coming back within 5 s.
+    - The stand-alone probe (status answer: battery, extension, player LEDs) is in `D:\ArcadeMaster\_tools\wiiprobe` on
+      the stand-up.
+    - **Not yet on the stand-up:** Dolphin doesn't follow there yet. The frontend copy's `emulators\Dolphin` is a junction
+      to the live CORE-TYPE R on E: (never written), and the PC has no `tools\wheelmap\targets\DESKTOP-ARCADE.json`. It
+      needs its own Dolphin folder first, as TeknoParrot got.
+
 ## Safety
 
 - Never runs alongside LEDBlinky on the same boards: it checks, and the tray tells you which one owns them.
