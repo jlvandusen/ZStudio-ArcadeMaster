@@ -233,7 +233,12 @@ class SearchIndex
     public static string Fold(string s)
     {
         var sb = new StringBuilder(s.Length);
-        foreach (char ch in s.ToLowerInvariant()) sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        // accents off ("pokken" finds Pokkén Tournament, James 2026-11-27)
+        foreach (char ch in s.ToLowerInvariant().Normalize(NormalizationForm.FormD))
+        {
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch) == System.Globalization.UnicodeCategory.NonSpacingMark) continue;
+            sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        }
         return " " + sb.ToString() + " ";
     }
 
@@ -305,7 +310,8 @@ class SearchIndex
     public static string SystemLabel(string collection)
     {
         string s = (collection ?? "").Replace("(RetroBat)", "").Trim();
-        if (s.StartsWith("AM_TP", StringComparison.OrdinalIgnoreCase)) s = "TeknoParrot";
+        // TeknoParrot is the emulator, the games are arcade games (James 2026-11-27: "should be teknoparrot emulator but arcade")
+        if (s.StartsWith("AM_TP", StringComparison.OrdinalIgnoreCase) || s.StartsWith("TeknoParrot", StringComparison.OrdinalIgnoreCase)) s = "Arcade";
         if (string.Equals(s, "Arcades", StringComparison.OrdinalIgnoreCase) || string.Equals(s, "MAME", StringComparison.OrdinalIgnoreCase) || string.Equals(s, "Final Burn", StringComparison.OrdinalIgnoreCase)) s = "Arcade";
         return s.ToUpperInvariant();
     }
