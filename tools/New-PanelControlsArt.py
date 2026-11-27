@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 12   # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 13   # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -536,8 +536,29 @@ def draw_label(c: Card, cx, cy, s, maxw):
     c.text((cx, cy), fit_label(c, s, maxw, px), font('semi', px), TEXT + (255,), 'mm')
 
 
+# the key each P1 button sends on this cabinet (panel.json from the AmPanel capture), as a short name printed in the
+# button (James 2026-11-27: "show button names"): the panel's buttons carry no print, the card says which is which
+KEY_NAMES = {'LCONTROL': 'CTRL', 'RCONTROL': 'CTRL', 'LALT': 'ALT', 'RALT': 'ALT', 'LSHIFT': 'SHIFT', 'RSHIFT': 'SHIFT',
+             'SPACE': 'SPACE', 'ENTER': 'ENTER', 'TAB': 'TAB', 'BACKSPACE': 'BKSP', 'ESC': 'ESC'}
+
+
+def button_key_names():
+    try:
+        keys = (PANEL.get('players') or [{}])[0].get('keys') or {}
+    except (AttributeError, IndexError):
+        return {}
+    out = {}
+    for k, v in keys.items():
+        m = re.match(r'P1B(\d+)$', k)
+        if m and v:
+            v = str(v).upper()
+            out[int(m.group(1)) - 1] = KEY_NAMES.get(v, v if len(v) <= 5 else v[:5])
+    return out
+
+
 def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None):
     n = rows * cols
+    keyname = button_key_names()
     labels = sig.labels
     rad = (27 if labels else 33) if rows <= 2 else 24
     if cols > 3:
@@ -566,9 +587,20 @@ def draw_buttons(c: Card, x0, y0, sig: Sig, rows, cols, x_max=545, numbers=None)
                 c.g.ellipse(box, fill=col + (255,))
             c.d.ellipse(c.r(cx - rad + 8, cy - rad + 6, cx + rad - 8, cy - 4), fill=(255, 255, 255, 60))
             light = (col[0] * 299 + col[1] * 587 + col[2] * 114) / 1000 > 150
-            c.text((cx, cy + 1), str(i + 1), font('black', 34), (BG if light else TEXT) + (255,), 'mm')
+            ink = (BG if light else TEXT) + (255,)
+            if i in keyname:
+                c.text((cx, cy - rad * 0.22), str(i + 1), font('black', int(rad * 0.95)), ink, 'mm')
+                kn = keyname[i]
+                px = next((p for p in (15, 14, 13, 12, 11, 10) if c.width(kn, font('semi', p)) <= rad * 1.6), 10)
+                c.text((cx, cy + rad * 0.5), kn, font('semi', px), ink, 'mm')
+            else:
+                c.text((cx, cy + 1), str(i + 1), font('black', 34), ink, 'mm')
         else:
             c.d.ellipse(box, fill=CARD2 + (255,), outline=FAINT + (255,), width=3 * S)
+            if i in keyname:   # an unused button still says which key it is, faintly
+                kn = keyname[i]
+                px = next((p for p in (15, 14, 13, 12, 11, 10) if c.width(kn, font('semi', p)) <= rad * 1.6), 10)
+                c.text((cx, cy), kn, font('semi', px), FAINT + (255,), 'mm')
         if lit and i < len(labels) and labels[i]:
             # a label is centred under its button: it may use the room of a neighbour that has no label of its own
             def named(j):

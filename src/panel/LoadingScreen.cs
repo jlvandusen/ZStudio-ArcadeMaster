@@ -104,6 +104,10 @@ class LoadingScreen : Form
             int pid; GetWindowThreadProcessId(h, out pid);
             if (pid == me) return true;
             try { using (var p = Process.GetProcessById(pid)) if (NotTheGame.Contains(p.ProcessName)) return true; } catch { return true; }
+            // MAME's Direct3D helper: an invisible full-screen window it makes again at every switch - taken for a new
+            // game window it set off switch after switch (James 2026-11-27: "something keeps trying to take focus")
+            var title = new System.Text.StringBuilder(64); GetWindowText(h, title, 64);
+            if (title.ToString() == "D3DProxyWindow") return true;
             list.Add(h);
             return true;
         }, IntPtr.Zero);
@@ -134,20 +138,90 @@ class LoadingScreen : Form
     static void BringForward(IntPtr game, Action<string> log)
     {
         IntPtr fg = GetForegroundWindow();
-        if (fg == game) return;
+        if (fg == game) { GiveKeyboard(game, log); return; }
         int fgPid; GetWindowThreadProcessId(fg, out fgPid);
         string fgName = ""; try { using (var p = Process.GetProcessById(fgPid)) fgName = p.ProcessName; } catch { }
         if (fg != IntPtr.Zero && !Intruders.Contains(fgName)) return;
+        bool folder = fgName.Equals("explorer", StringComparison.OrdinalIgnoreCase) && ClassOf(fg) == "CabinetWClass";   // a File Explorer folder window, not the desktop
         int ft = GetWindowThreadProcessId(fg, IntPtr.Zero), me = GetCurrentThreadId();
         AttachThreadInput(me, ft, true);
+        keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);   // an Alt tap: Windows then lets us hand over the foreground
         ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
         AttachThreadInput(me, ft, false);
+        // a desktop program took over a running game (James 2026-11-27: VS Code came in front of MAME; MAME's full-screen
+        // picture then stayed black and took no buttons until Alt+Tab). The program is minimised - never the frontend (it
+        // comes back after the game) or the desktop - and the game gets a real switch: the frontend for a moment, then
+        // the game again, as Alt+Tab does. That redraws a full-screen picture and gives the game the keyboard.
+        if (fg != IntPtr.Zero && !fgName.Equals("retrofe", StringComparison.OrdinalIgnoreCase) && (folder || !fgName.Equals("explorer", StringComparison.OrdinalIgnoreCase)))
+        {
+            ShowWindow(fg, 6 /* SW_MINIMIZE */);
+            Reactivate(game);
+            log("game window was behind " + fgName + " - " + fgName + " minimised, game switched back in (Alt+Tab)");
+        }
+        GiveKeyboard(game, log);
         if (broughtUp.Add(game))
         {
             int pid; GetWindowThreadProcessId(game, out pid);
             string name = "?"; try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { }
             log("game window " + name + " was behind the frontend - brought to the front");
         }
+    }
+
+    // in front is not enough: the game must also have the keyboard (James 2026-11-27: MAME came back in front of VS Code
+    // but took no buttons until it was clicked). Its own thread gives the focus to its window; if Windows still reports
+    // no focus there, one click in the middle of the game window does it, as the player's own click did.
+    [StructLayout(LayoutKind.Sequential)] struct GUITHREADINFO { public int cbSize, flags; public IntPtr active, focus, capture, menuOwner, moveSize, caret; public RECT caretRect; }
+    [DllImport("user32.dll")] static extern bool GetGUIThreadInfo(int thread, ref GUITHREADINFO info);
+    [DllImport("user32.dll")] static extern IntPtr SetFocus(IntPtr h);
+    [DllImport("user32.dll")] static extern IntPtr SetActiveWindow(IntPtr h);
+    [DllImport("user32.dll")] static extern void mouse_event(uint f, int x, int y, uint d, UIntPtr extra);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, System.Text.StringBuilder s, int n);
+    static string ClassOf(IntPtr h) { var b = new System.Text.StringBuilder(64); GetClassName(h, b, 64); return b.ToString(); }
+    static void Reactivate(IntPtr game)
+    {
+        IntPtr away = IntPtr.Zero;
+        foreach (var p in Process.GetProcessesByName("retrofe")) using (p) if (p.MainWindowHandle != IntPtr.Zero) { away = p.MainWindowHandle; break; }
+        if (away != IntPtr.Zero)
+        {
+            keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);
+            SetForegroundWindow(away);
+            System.Threading.Thread.Sleep(500);
+        }
+        // a real Alt+Tab from the frontend lands on the game (the game window is always-on-top, so it is next in the
+        // list): only a real switch made MAME take the buttons again (James 2026-11-27, Alt+Tab by hand: "it worked")
+        keybd_event(0x12, 0, 0, UIntPtr.Zero); System.Threading.Thread.Sleep(60);
+        keybd_event(0x09, 0, 0, UIntPtr.Zero); keybd_event(0x09, 0, 2, UIntPtr.Zero); System.Threading.Thread.Sleep(60);
+        keybd_event(0x12, 0, 2, UIntPtr.Zero);
+        System.Threading.Thread.Sleep(400);
+        if (GetForegroundWindow() != game)
+        {
+            keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);
+            ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
+        }
+    }
+    static readonly HashSet<IntPtr> clicked = new HashSet<IntPtr>();
+    static bool HasKeyboard(int thread)
+    {
+        var gi = new GUITHREADINFO(); gi.cbSize = Marshal.SizeOf(typeof(GUITHREADINFO));
+        return GetGUIThreadInfo(thread, ref gi) && gi.focus != IntPtr.Zero;
+    }
+    static void GiveKeyboard(IntPtr game, Action<string> log)
+    {
+        if (GetForegroundWindow() != game) return;
+        int gt = GetWindowThreadProcessId(game, IntPtr.Zero), me = GetCurrentThreadId();
+        if (HasKeyboard(gt)) return;
+        AttachThreadInput(me, gt, true); SetActiveWindow(game); SetFocus(game); AttachThreadInput(me, gt, false);
+        System.Threading.Thread.Sleep(100);
+        if (HasKeyboard(gt)) { log("game window: keyboard given back"); return; }
+        if (!clicked.Add(game)) return;   // once per game window: a game that never reports a focus is not clicked again and again
+        ClickInto(game);
+        log("game window: had no keyboard - clicked to give it the keyboard");
+    }
+    static void ClickInto(IntPtr game)
+    {
+        RECT r; if (!GetWindowRect(game, out r)) return;
+        SetCursorPos((r.L + r.R) / 2, (r.T + r.B) / 2);
+        mouse_event(2 /* LEFTDOWN */, 0, 0, 0, UIntPtr.Zero); mouse_event(4 /* LEFTUP */, 0, 0, 0, UIntPtr.Zero);
     }
 
     // ---- the game shows only after a window switch (James 2026-11-27: Star Wars Trilogy in Supermodel stayed black
@@ -212,7 +286,7 @@ class LoadingScreen : Form
         try { SetCursorPos(main.X + main.Width / 2, main.Y + main.Height / 2); } catch { }
         var moved = new HashSet<IntPtr>();
         var seen = new Dictionary<IntPtr, long>();
-        var shown = new HashSet<IntPtr>();
+        var shownPids = new HashSet<int>();
         var sw = Stopwatch.StartNew();
         while (sw.ElapsedMilliseconds < 120000 && stillPlaying())
         {
@@ -231,8 +305,11 @@ class LoadingScreen : Form
                         // game's window up and give it the keyboard - every game, every emulator
                         BringForward(h, log);
                         if (!seen.ContainsKey(h)) seen[h] = sw.ElapsedMilliseconds;
-                        else if (!shown.Contains(h) && sw.ElapsedMilliseconds - seen[h] > 3000 && r.R - r.L >= main.Width * 0.9 && r.B - r.T >= main.Height * 0.9)
-                        { shown.Add(h); ShowGame(h, log); }
+                        else if (sw.ElapsedMilliseconds - seen[h] > 3000 && r.R - r.L >= main.Width * 0.9 && r.B - r.T >= main.Height * 0.9)
+                        {
+                            int gpid; GetWindowThreadProcessId(h, out gpid);
+                            if (shownPids.Add(gpid)) ShowGame(h, log);   // once per game, whatever windows it makes
+                        }
                         continue;
                     }
                     // same place on the main screen, same size (a borderless full-screen game stays full screen)
