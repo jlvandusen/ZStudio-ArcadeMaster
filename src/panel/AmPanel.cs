@@ -62,6 +62,8 @@ static class AmPanel
     static bool reactive = true;
     static string attractAnimation = "chase";   // step 6: AmPanel.json "AttractAnimation": chase | breathe
     static Marquee marquee;               // AmPanel.json "Marquee": "pixelcade" = AmPanel drives the Pixelcade LED marquee, not LEDBlinky
+    static PadKeys padKeys;               // wheel / stick buttons that type keys in games - G HUB's key mappings (PadKeys.cs); "PadKeys": "off"
+    static bool padKeysOff;
     static NotifyIcon tray;
     static volatile bool quitting;
 
@@ -195,6 +197,7 @@ static class AmPanel
         // AmPanel.json "LoadingScreen": "off" - no LOADING screen over a starting game (James 2026-11-26 on DESKTOP-RACE2:
         // Batman went windowed; anything on top of an exclusive-fullscreen game while it starts is a risk)
         loadingOff = string.Equals(Str(cfg, "LoadingScreen"), "off", StringComparison.OrdinalIgnoreCase);
+        padKeysOff = string.Equals(Str(cfg, "PadKeys"), "off", StringComparison.OrdinalIgnoreCase);
         if (manifestDir == null)
         {
             // the launcher's config (ArcadeMaster.config.json) next to this exe or one folder up
@@ -866,6 +869,7 @@ static class AmPanel
                         new[] { Path.Combine(manifestDir, "exit-rules.json"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "exit-rules.json") }, Log);
                 } catch (Exception e) { Log("exit guard: not started - " + e.Message); }
         }
+        if (!padKeysOff) try { padKeys = new PadKeys(manifestDir, new[] { "retrofe" }, Log); } catch (Exception e) { Log("pad keys: not started - " + e.Message); }
         tray = new NotifyIcon { Icon = SystemIcons.Application, Visible = true, Text = TrayText() };
         if (toolsDir != null && retroFERoot != null)
         {
