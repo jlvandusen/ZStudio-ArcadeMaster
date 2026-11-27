@@ -2,4 +2,4 @@
 # RetroFE fork; while this file exists, retrofe\patches\ is history only. Move the commit here (by PR) to ship a
 # frontend change to every cabinet.
 repo=https://github.com/jlvandusen/ZStudio-retrofe.git
-commit=f62225fb839d7f55f151b1e8f64353db7c969797
+commit=a268f531414e369219a041ba554dbde3b4dac015

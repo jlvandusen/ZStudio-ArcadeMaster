@@ -96,7 +96,18 @@ switch ($Tool) {
     Run 'Update-GpuDriver.ps1' @('-Cache', $gf) | Out-Null
     $gd = Get-Content $gf -Raw | ConvertFrom-Json
     Emit @{ type = 'tiles'; tiles = @(@($gd.cards) | ForEach-Object { @{ label = ($_.card -replace '^(NVIDIA|AMD)\s+', '').ToUpper(); value = "$($_.installed)"; suffix = $(if ($_.newer) { " -> $($_.latest)" } else { ' NEWEST' }); icon = 'display' } }) }
-    if (@($gd.cards | Where-Object { $_.newer }).Count) { Run 'Update-GpuDriver.ps1' @('-Install') | Out-Null; Write-Host 'Restart the PC to finish the driver update.' -ForegroundColor Yellow }
+    if (@($gd.cards | Where-Object { $_.newer }).Count) {
+      # the install runs detached (outside this panel's job, which ends when the panel closes) and moves the frontend out
+      # of the way: Windows shows its admin prompt in front only for the program in front, and the prompt waited unseen
+      # behind the frontend and this panel (James 2026-11-27). This panel closes so the prompt can be answered.
+      $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $t 'Start-GpuDriverInstall.ps1')`" -ManifestDir `"$ManifestDir`""
+      $ok = $false
+      try { $r = ([wmiclass]'Win32_Process').Create($cmd, $t, $null); $ok = $r.ReturnValue -eq 0 } catch { }
+      if (-not $ok) { Start-Process powershell.exe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', (Join-Path $t 'Start-GpuDriverInstall.ps1'), '-ManifestDir', $ManifestDir) }
+      Write-Host 'The driver install is starting: the menu steps aside. Answer Windows'' admin prompt with YES (if it does not show, click the flashing shield on the taskbar). The screen may go black for a moment; the menu comes back when it is done. Restart the PC afterwards.' -ForegroundColor Yellow
+      Start-Sleep -Seconds 4
+      Emit @{ type = 'close'; why = 'driver install started - Windows'' admin prompt must be seen' }
+    }
     else { Write-Host 'The newest driver is already installed.' -ForegroundColor Green }
   }
   'MenuButtons' {

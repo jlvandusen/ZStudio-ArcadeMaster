@@ -19,7 +19,7 @@
   <image src="images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" layer="2"/>
 
   <!-- top band: marquee-style logo -->
-  <reloadableImage type="logo" x="960" y="175" xOrigin="center" yOrigin="center" width="1100" maxHeight="300" alpha="0" layer="5">
+  <reloadableImage type="logo" x="960" y="240" xOrigin="center" yOrigin="center" width="1100" maxHeight="220" alpha="0" layer="5">
     <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>
     <onMenuIdle>
       <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" from="980" to="1100" algorithm="easeOutCubic"/></set>
@@ -28,16 +28,35 @@
     </onMenuIdle>
   </reloadableImage>
 
-  <!-- middle band: header -->
-  <reloadableText type="title" menuScrollReload="true" x="960" y="430" xOrigin="center" yOrigin="center" fontSize="72" loadFontSize="72" fontColor="ffffff" layer="6"/>
-  <text value="PLAYERS" x="300" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText type="numberPlayers" menuScrollReload="true" x="300" y="600" xOrigin="center" yOrigin="center" fontSize="58" loadFontSize="58" fontColor="2ec8ff" layer="6"/>
-  <text value="CONTROLS" x="760" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText type="ctrlType" menuScrollReload="true" x="760" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ff2fa0" layer="6"/>
-  <text value="YEAR" x="1180" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText type="year" menuScrollReload="true" x="1180" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ffb000" layer="6"/>
-  <text value="MAKER" x="1600" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText type="manufacturer" menuScrollReload="true" x="1600" y="600" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="ffffff" layer="6"/>
+  <!-- middle band: two touch panels (docs/22). INFO (shown first) = the header; BOX ART = the game's cover, large.
+       Builds without touch panels ignore panel= and touchAction=, so they show INFO and the cover together, as before plus the cover -->
+  <reloadableText panel="info" type="title" menuScrollReload="true" x="960" y="430" xOrigin="center" yOrigin="center" fontSize="72" loadFontSize="72" fontColor="ffffff" layer="6"/>
+  <text panel="info" value="PLAYERS" x="300" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="numberPlayers" menuScrollReload="true" x="300" y="600" xOrigin="center" yOrigin="center" fontSize="58" loadFontSize="58" fontColor="2ec8ff" layer="6"/>
+  <text panel="info" value="CONTROLS" x="760" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="ctrlType" menuScrollReload="true" x="760" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ff2fa0" layer="6"/>
+  <text panel="info" value="YEAR" x="1180" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="year" menuScrollReload="true" x="1180" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ffb000" layer="6"/>
+  <text panel="info" value="MAKER" x="1600" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="manufacturer" menuScrollReload="true" x="1600" y="600" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="ffffff" layer="6"/>
+  <reloadableImage panel="boxart" type="cover" x="960" y="520" xOrigin="center" yOrigin="center" maxWidth="1200" maxHeight="380" layer="6">
+    <onPanelEnter><set duration=".25"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set></onPanelEnter>
+  </reloadableImage>
+
+  <!-- nav row (top left): BACK, filter left / right, and where you are (am_breadcrumb) -->
+  <image src="images/touch_hit.png" touchAction="back" x="20" y="20" width="210" height="110" layer="8"/>
+  <text value="&lt; BACK" x="125" y="75" xOrigin="center" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="ff2fa0" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="prevPlaylist" x="240" y="20" width="110" height="110" layer="8"/>
+  <text value="&lt;" x="295" y="75" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="2ec8ff" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="nextPlaylist" x="360" y="20" width="110" height="110" layer="8"/>
+  <text value="&gt;" x="415" y="75" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="2ec8ff" layer="8"/>
+  <reloadableText type="am_breadcrumb" x="490" y="75" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="e6e9f0" layer="8"/>
+
+  <!-- the panel tabs: a column on the right, below AmPanel's SEARCH button (layout x 1598-1872, y 36-126) -->
+  <image src="images/touch_hit.png" touchAction="panel:info"   x="1600" y="150" width="290" height="100" layer="8"/>
+  <text value="INFO"     x="1745" y="200" xOrigin="center" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="2ec8ff" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="panel:boxart" x="1600" y="260" width="290" height="100" layer="8"/>
+  <text value="BOX ART"  x="1745" y="310" xOrigin="center" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="ff2fa0" layer="8"/>
 
   <!-- bottom band: touch buttons (row 3 of 3) -->
   <image src="images/ui_touchbar.png" x="0" y="720" width="1920" height="360" layer="7">

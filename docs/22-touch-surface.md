@@ -37,7 +37,17 @@ Any layout component becomes a button with `touchAction="<action>"`.
    - It only works while the menu stands still, and it ends attract mode.
    - Log: `[Touch] list: jump 1 on screen 0`.
    - Still to do: flicks scrolling the list with momentum.
-3. **Companion panels.** One touch layout holds several panels: details, controls card, video, search, filters,
+3. **Panels and breadcrumbs (done, ZStudio-retrofe PR 13).**
+   - `panel="<name>"` puts a component in a panel of its screen, and `touchAction="panel:<name>"` switches to it.
+     `onPanelEnter` plays on the panel coming in.
+   - The touch screen has INFO and BOX ART tabs, in a column on the right below AmPanel's SEARCH button
+     (layout x 1598-1872, y 36-126). Keep touch buttons out of that corner.
+   - `reloadableText type="am_breadcrumb"` shows the path: `MAIN  >  NINTENDO 3DS  >  ALL GAMES`.
+   - The main screen has the breadcrumb beside the filter bar, plus `< BACK` and `< > FILTERS` hints. The touch
+     screen has a BACK / < / > row with the breadcrumb.
+   - Use plain ASCII on screen: the theme fonts have no arrow glyphs.
+
+   Still to do: more panels. One touch layout holds several panels: details, controls card, video, search, filters,
    favourites and settings. A tab row switches between them (`touchAction="panel:controls"`, with
    `onPanelEnter` / `onPanelExit` events), and the panels follow the selected game. AmPanel's search and chooser
    windows move in here.

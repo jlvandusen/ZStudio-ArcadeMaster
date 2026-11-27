@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Per-game controls cards: when a game is highlighted, the game list shows the cabinet's controller with every
   control the game uses lit up and numbered, and a legend of what each one does IN THAT GAME.
@@ -94,12 +94,15 @@ function Read-Supermodel {
   foreach ($r in @($tg.supermodel)) {
     if (-not (Test-Path -LiteralPath $r.ini)) { continue }
     $rows = @(); $in = $false
+    $wheelJoy = $null; $st = Select-String -LiteralPath $r.ini -Pattern '^\s*InputSteering\s*=\s*"?JOY(\d+)_' | Select-Object -First 1; if ($st) { $wheelJoy = $st.Matches[0].Groups[1].Value }
     foreach ($l in Get-Content -LiteralPath $r.ini) {
-      if ($l -match '^\s*\[(.+)\]') { $in = $Matches[1] -eq 'Global'; continue }
+      if ($l -match '^\s*\[(.+?)\]') { $in = $Matches[1].Trim() -eq 'Global'; continue }   # Supermodel writes "[ Global ]", with spaces
       if (-not $in -or $l -notmatch '^\s*(Input\w+)\s*=\s*"?([^"]*)"?') { continue }
       $k = $Matches[1]; $v = $Matches[2]; if (-not $smMap.Contains($k)) { continue }
       $phys = $null
-      if ($v -match 'JOY\d+_BUTTON(\d+)') { $phys = Get-PhysicalFromButton ([int]$Matches[1] - 1) }
+      # a control on another controller than the one that steers (the handbrake lever is its own USB device)
+      if ($v -match 'JOY(\d+)_(?:BUTTON(\d+))?' -and $wheelJoy -and $Matches[1] -ne $wheelJoy) { $phys = if ($Matches[2]) { "Controller $($Matches[1]) button $($Matches[2])" } else { 'Handbrake' } }
+      elseif ($v -match 'JOY\d+_BUTTON(\d+)') { $phys = Get-PhysicalFromButton ([int]$Matches[1] - 1) }
       elseif ($v -match 'JOY\d+_POV\d+_(\w+)') { $phys = 'D-pad ' + $Matches[1].ToLower() }
       elseif ($v -match 'JOY\d+_XAXIS') { $phys = 'Steering' } elseif ($v -match 'JOY\d+_YAXIS') { $phys = 'Gas pedal' } elseif ($v -match 'JOY\d+_RZAXIS') { $phys = 'Brake pedal' } elseif ($v -match 'JOY\d+_SLIDER') { $phys = 'Clutch pedal' }
       if ($phys) { $rows += @{ action = $smMap[$k]; physical = $phys } }
@@ -178,6 +181,45 @@ function Read-TemplateGame([string]$item, [string]$kind) {
   }
   return $rows
 }
+# ---------------- PC games: the game's own wheel mapping file, where it has one
+# Codemasters games (DiRT 3 / 4 / Showdown, GRID 2019 ...) ship an action map per wheel: <game>\...\actionmap(s)\lg_g29.xml.
+# Two formats: old  <Action actionName="Gear Up"><Axis axisName="di_button_4">   new  <group name="gear"><action name="up"><axis name="di_button_4"/>
+# Only the driving actions are shown (menu / replay / spectator actions are left out). di_button_N counts from 0.
+$pcWant = [ordered]@{ steer = 'Steer'; accelerate = 'Accelerate'; brake = 'Brake'; clutch = 'Clutch'; handbrake = 'Handbrake'; gearup = 'Shift up'; geardown = 'Shift down'; sequentialup = 'Shift up'; sequentialdown = 'Shift down'
+  gear1 = 'Gear 1'; gear2 = 'Gear 2'; gear3 = 'Gear 3'; gear4 = 'Gear 4'; gear5 = 'Gear 5'; gear6 = 'Gear 6'; gearreverse = 'Reverse'; hpattern1 = 'Gear 1'; hpattern2 = 'Gear 2'; hpattern3 = 'Gear 3'; hpattern4 = 'Gear 4'; hpattern5 = 'Gear 5'; hpattern6 = 'Gear 6'; hpatternreverse = 'Reverse'
+  changeview = 'Change view'; lookback = 'Look back'; headlights = 'Headlights'; horn = 'Horn'; wipers = 'Wipers'; pause = 'Pause'; resetvehicle = 'Reset car'; instantreplay = 'Replay'; flashback = 'Flashback' }
+function Get-DiPhysical([string]$axis) {
+  if ($axis -match '^di_button_(\d+)$') { return Get-PhysicalFromButton ([int]$Matches[1]) }
+  if ($axis -match '^di_dpad_\d+_(\w+)$') { return 'D-pad ' + $Matches[1].ToLower() }
+  switch -Regex ($axis) { '^di_x_axis$' { return 'Steering' } '^di_y_axis$' { return 'Gas pedal' } '^di_z_axis_rotation$' { return 'Brake pedal' } '^di_slider_\d$' { return 'Clutch pedal' } }
+  return $null
+}
+function Read-PcGame([string]$src, [string]$item) {
+  $root = Join-Path $RetroFE "collections\$src\roms\$item"
+  if (-not (Test-Path -LiteralPath $root)) { return $null }
+  $map = Get-ChildItem -LiteralPath $root -Recurse -Depth 4 -Filter 'lg_g29.xml' -File -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (-not $map) { return $null }
+  $x = $null; try { $x = [xml](Get-Content -LiteralPath $map.FullName -Raw) } catch { return $null }
+  $found = [ordered]@{}
+  foreach ($a in $x.SelectNodes('//Action | //action')) {
+    $name = if ($a.HasAttribute('actionName')) { $a.GetAttribute('actionName') } else { $a.GetAttribute('name') }
+    # new format: the group the action sits in is part of its meaning (gear / sequential / up)
+    $path = @(); $p = $a.ParentNode; while ($p -and $p.LocalName -eq 'group') { $gn = $p.GetAttribute('name'); if ($gn -notin 'driving', 'gear') { $path = , $gn + $path } elseif ($gn -eq 'gear' -and -not $path) { $path = , 'gear' + $path }; $p = $p.ParentNode }
+    $key = ((($path + $name) -join '') -replace '[^A-Za-z0-9]', '').ToLower() -replace '^steer(left|right)$', 'steer'
+    if (-not $pcWant.Contains($key) -or $found.Contains($pcWant[$key])) { continue }
+    foreach ($ax in $a.SelectNodes('Axis | axis')) {
+      $an = if ($ax.HasAttribute('axisName')) { $ax.GetAttribute('axisName') } else { $ax.GetAttribute('name') }
+      $phys = Get-DiPhysical $an; if ($phys) { $found[$pcWant[$key]] = $phys; break }
+    }
+  }
+  if (-not $found.Count) { return $null }
+  # in the card's usual order: steer, pedals, shifting, then the rest
+  $rows = @(); foreach ($label in ($pcWant.Values | Select-Object -Unique)) { if ($found.Contains($label)) { $rows += @{ action = $label; physical = $found[$label] } } }
+  return $rows
+}
+# a PC game with no mapping file to read: the wheel and pedals the cabinet has, as the game picks them up by itself
+# (steering and pedals are the wheel's fixed axes; the buttons are set in the game's own controls menu)
+function Get-DetectedControls { @(@{ action = 'Steer'; physical = 'Steering' }, @{ action = 'Accelerate'; physical = 'Gas pedal' }, @{ action = 'Brake'; physical = 'Brake pedal' }, @{ action = 'Clutch'; physical = 'Clutch pedal' }) }
 # ---------------- drawing
 # Three layers, so RetroFE can bring the wheel to life (retrofe patch 0007, liveSteer / liveButton / liveAxis):
 #   am_controls        1100x300 card: the real pedals + shifter, and the legend (what every control does in this game)
@@ -319,7 +361,7 @@ function Get-Title([string]$item) { $k = Get-Norm $item; if ($titles.ContainsKey
 
 # ---------------- which games: every item of the merged mode collections (Racing / Flight ...) and their sources
 $cols = if ($Collections) { $Collections } else { @('Racing', 'Flight', 'Lightgun', 'Arcade') }
-$done = 0; $skipped = @(); $made = New-Object Collections.Generic.List[string]
+$done = 0; $plain = 0; $skipped = @(); $made = New-Object Collections.Generic.List[string]
 foreach ($top in $cols) {
   $dir = Join-Path $RetroFE "collections\$top"; if (-not (Test-Path $dir)) { continue }
   foreach ($sub in Get-ChildItem $dir -Filter *.sub -File) {
@@ -332,6 +374,7 @@ foreach ($top in $cols) {
       elseif ($src -eq 'MAME') { $rows = Read-Mame $item }
       elseif ($src -match 'Gamecube|Nintendo Wii\b|Nintendo Wii\$|Triforce') { $rows = Read-TemplateGame $item 'dolphin' }
       elseif ($src -match 'Wii U') { $rows = Read-TemplateGame $item 'cemu' }
+      elseif ($src -in 'PC Games', 'AM_PC') { $rows = Read-PcGame $src $item; if (-not $rows) { $rows = Get-DetectedControls; $plain++ } }
       if (-not $rows) { $skipped += "$src/$item"; continue }
       $out = Join-Path $RetroFE "collections\$src\medium_artwork\am_controls\$item.png"
       New-Card (Get-Title $item) $rows $out; $made.Add($out); $done++
@@ -339,7 +382,7 @@ foreach ($top in $cols) {
   }
 }
 New-GlowSet (Join-Path $RetroFE 'layouts\ArcadeMaster\images\controls')
-Write-Host "controls cards: $done made; no live mapping found for $($skipped.Count) (PC games use their own in-game control menus)"
+Write-Host "controls cards: $done made ($plain PC games without a mapping file show the wheel and pedals only); no mapping found for $($skipped.Count): $($skipped -join ', ')"
 if ($Preview -and $made.Count) {
   $pick = @($made | Get-Random -Count ([Math]::Min(6, $made.Count)))
   $sheet = New-Object Drawing.Bitmap 1100, (310 * $pick.Count); $g = [Drawing.Graphics]::FromImage($sheet); $g.Clear([Drawing.Color]::FromArgb(40, 40, 46)); $y = 0
