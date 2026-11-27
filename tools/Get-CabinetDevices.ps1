@@ -28,7 +28,10 @@ else {
 }
 
 # known lightgun / trackball vendors (USB VID[:PID])
-$gunIds = @{ '16C0:0F38' = 'Sinden'; '16C0:0F39' = 'Sinden'; '16C0:0F01' = 'Sinden'; '16C0:0F02' = 'Sinden'; '2341:8042' = 'Gun4IR'; '2341:8043' = 'Gun4IR'; '2341:8044' = 'Gun4IR'; '2341:8045' = 'Gun4IR'; 'D209:16' = 'Ultimarc AimTrak' }
+# every light gun ArcadeMaster knows: tools/light-guns.json (shared with AmPanel's Guns.cs) - usb id or prefix -> kind
+$gunIds = @{}
+try { foreach ($g in (Get-Content (Join-Path $PSScriptRoot 'light-guns.json') -Raw | ConvertFrom-Json).guns) { $gunIds[$g.usb.ToUpper()] = $g.kind } } catch { }
+if (-not $gunIds.Count) { $gunIds = @{ '16C0:0F38' = 'Sinden'; '16C0:0F39' = 'Sinden'; '16C0:0F01' = 'Sinden'; '16C0:0F02' = 'Sinden'; '2341:8042' = 'GUN4IR'; '2341:8043' = 'GUN4IR'; '2341:8044' = 'GUN4IR'; '2341:8045' = 'GUN4IR'; 'D209:16' = 'Ultimarc AimTrak' } }
 $trackballVids = @{ 'D209' = 'Ultimarc (U-Trak/SpinTrak)'; '1241' = 'X-Arcade/Belkin' }
 
 $devices = New-Object System.Collections.Generic.List[object]

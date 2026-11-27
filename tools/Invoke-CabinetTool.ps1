@@ -170,6 +170,14 @@ switch ($Tool) {
   'PanelTest' {
     # the control panel's counterpart of Wheel Setup: every control pressed shows up with its panel name and the key /
     # joystick input it sends (Watch-Inputs.ps1, read-only). Saved to manifest\input-capture.txt for mapping work.
+    # AmPanel's guided capture first (Capture.cs: it knows which device sent each press and writes panel.json); the
+    # key-code logger below only when AmPanel is not running
+    try {
+      $pc = New-Object IO.Pipes.NamedPipeClientStream('.', 'ArcadeMaster.Panel', 'InOut'); $pc.Connect(1500)
+      $pw = New-Object IO.StreamWriter($pc); $pw.AutoFlush = $true; $pw.WriteLine('{"cmd":"capture"}')
+      $rep = (New-Object IO.StreamReader($pc)).ReadLine(); $pc.Dispose()
+      if ($rep -match '"ok":true') { Banner 'PANEL TEST - opened on the cabinet screen (AmPanel)'; return }
+    } catch { }
     Banner 'PANEL TEST - press every button, move every stick, spin the dial (30 s)'
     $env:AM_VISUAL = $(if ($visual) { '1' } else { '' })
     Run 'Watch-Inputs.ps1' @('-Seconds', '30', '-Panel', (Join-Path $ManifestDir 'panel.json'), '-Out', (Join-Path $ManifestDir 'input-capture.txt')) | Out-Null

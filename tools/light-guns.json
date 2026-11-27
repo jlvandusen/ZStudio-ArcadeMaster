@@ -1,0 +1,35 @@
+{
+  "_comment": "Every light gun ArcadeMaster recognises, in ONE place: AmPanel (Guns.cs, the Panel Test) and tools/Get-CabinetDevices.ps1 both read this file (Build-AmPanel.ps1 copies it next to AmPanel.exe). usb = VID:PID, or a VID:PID prefix ('D209:16'). names = regular expressions on the name Windows gives a USB device, for guns without a fixed id (Retro Shooter, Blamcon: their makers publish none, Blamcon lets the owner pick one). not = ids that look like a gun but are not (Sinden's camera). Sources (2026-11-27): Sinden - frieds-retrogaming-kit v0.4.0, batocera-linux issue 10795, MiSTerSindenDriver PR 31; GUN4IR - the-sz.com USB ID database (2341:8042 / 8043 'GUN4IR Pro Micro P1 / P2'), IntegrumRetro.ini (8046 / 8047, AE 8037 / 8038); OpenFIRE - RetroBat emulatorlauncher PR 1475, batocera-emulationstation PR 2297 (F143:0001-0004 = P1-P4); GunCon 2 / 3 - MiSTer forum, beardypig GunCon 3 write-up.",
+  "guns": [
+    { "usb": "D209:16", "kind": "Ultimarc AimTrak", "note": "D209:1601-1608 = AimTrak id 1-8" },
+    { "usb": "16C0:0F01", "kind": "Sinden", "player": 1 },
+    { "usb": "16C0:0F02", "kind": "Sinden", "player": 2 },
+    { "usb": "16C0:0F38", "kind": "Sinden (recoil)" },
+    { "usb": "16C0:0F39", "kind": "Sinden (recoil)" },
+    { "usb": "2341:8042", "kind": "GUN4IR", "player": 1 },
+    { "usb": "2341:8043", "kind": "GUN4IR", "player": 2 },
+    { "usb": "2341:8044", "kind": "GUN4IR" },
+    { "usb": "2341:8045", "kind": "GUN4IR" },
+    { "usb": "2341:8046", "kind": "GUN4IR", "player": 1 },
+    { "usb": "2341:8047", "kind": "GUN4IR", "player": 2 },
+    { "usb": "2341:8037", "kind": "AE Lightgun (GUN4IR family)", "player": 1 },
+    { "usb": "2341:8038", "kind": "AE Lightgun (GUN4IR family)", "player": 2 },
+    { "usb": "F143:0001", "kind": "OpenFIRE", "player": 1 },
+    { "usb": "F143:0002", "kind": "OpenFIRE", "player": 2 },
+    { "usb": "F143:0003", "kind": "OpenFIRE", "player": 3 },
+    { "usb": "F143:0004", "kind": "OpenFIRE", "player": 4 },
+    { "usb": "0B9A:016A", "kind": "Namco GunCon 2" },
+    { "usb": "0B9A:0800", "kind": "Namco GunCon 3" }
+  ],
+  "names": [
+    { "match": "(?i)retro ?shooter|\\bRS3\\b|reaper", "kind": "Retro Shooter" },
+    { "match": "(?i)blamcon", "kind": "Blamcon" },
+    { "match": "(?i)gun4ir", "kind": "GUN4IR" },
+    { "match": "(?i)open ?fire", "kind": "OpenFIRE" },
+    { "match": "(?i)sinden", "kind": "Sinden" },
+    { "match": "(?i)aimtrak", "kind": "Ultimarc AimTrak" },
+    { "match": "(?i)guncon", "kind": "Namco GunCon" },
+    { "match": "(?i)light ?gun", "kind": "light gun" }
+  ],
+  "not": [ "16C0:0F37" ]
+}
