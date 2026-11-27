@@ -134,6 +134,7 @@ foreach ($srcCol in @($metaItems.Keys)) {
       $src = [string]$t.Value
       if (-not $src -or [IO.Path]::GetFileNameWithoutExtension($src) -eq $item -or -not (Test-Path -LiteralPath $src)) { continue }
       if ($src -notlike (Join-Path $cols "$srcCol\medium_artwork\*")) { continue }   # only art from the same collection
+      if ($t.Name -match '^am_controls|^am_hint$') { continue }   # controls cards are drawn per game: never borrowed
       $dst = Join-Path $cols ("$srcCol\medium_artwork\$($t.Name)\$item" + [IO.Path]::GetExtension($src).ToLower())
       if (Test-Path -LiteralPath $dst) { continue }
       if (@(Get-ChildItem (Split-Path $dst) -Filter "$item.*" -File -ErrorAction SilentlyContinue).Count) { continue }   # has its own art in another format
@@ -219,7 +220,7 @@ if (Test-Path $aliasFile) {
     $dstArt = Join-Path $cols "$dstCol\medium_artwork"; $srcArt = Join-Path $cols "$srcCol\medium_artwork"
     if (-not (Test-Path -LiteralPath (Join-Path $cols $dstCol)) -or -not (Test-Path -LiteralPath $srcArt)) { continue }
     foreach ($typeDir in Get-ChildItem -LiteralPath $srcArt -Directory) {
-      if ($typeDir.Name -match '^(am_)?story$') { continue }
+      if ($typeDir.Name -match '^(am_)?story$|^am_controls|^am_hint$') { continue }   # controls cards are drawn per game: never borrowed
       $src = Get-ChildItem -LiteralPath $typeDir.FullName -Filter "$srcItem.*" -File -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -eq $srcItem } | Select-Object -First 1
       if (-not $src) { continue }
       $dir = Join-Path $dstArt $typeDir.Name

@@ -288,8 +288,11 @@ function New-WheelPicture($used, [string]$path) {
     }
     if ($used.Contains('Steering')) { Draw-Num $g 150 14 11 $used['Steering'] }   # on the blue stripe at the top of the rim
   }
-  $g.Dispose(); New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null; $bmp.Save($path, [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+  $g.Dispose(); New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null; Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue; $bmp.Save($path, [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
 }
+# A card is saved as a new file (the old one is removed first): a game that borrowed another game's art may hold its card
+# as a hard link to that game's, and saving into it rewrote every linked game's card (five TeknoParrot games all showed
+# Sega Rally 3's, 2026-11-27).
 function New-Card([string]$title, $rows, [string]$path) {
   $W = 1100; $H = 300; $used = Get-UsedMap $rows
   $bmp = New-Object Drawing.Bitmap $W, $H; $g = [Drawing.Graphics]::FromImage($bmp); [AmDraw]::Hq($g); $g.Clear([Drawing.Color]::Transparent)
@@ -331,7 +334,7 @@ function New-Card([string]$title, $rows, [string]$path) {
     [AmDraw]::Text($g, $it.action, $af, [AmPal]::Text, (New-Object Drawing.RectangleF ($cx + 32), $cy, ($colW - 36), 20), 'Near', 'Center')
     [AmDraw]::Text($g, (Get-Friendly $it.physical), $pf, $it.u.color, (New-Object Drawing.RectangleF ($cx + 32), ($cy + 19), ($colW - 36), 16), 'Near', 'Center')
   }
-  $g.Dispose(); New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null; $bmp.Save($path, [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+  $g.Dispose(); New-Item -ItemType Directory -Force (Split-Path $path) | Out-Null; Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue; $bmp.Save($path, [Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
   New-WheelPicture $used ($path -replace '\\am_controls\\', '\am_controls_wheel\')
 }
 # glow pictures (same for every game): one per G29 button / D-pad direction (300x300, turn with the wheel) + pedals
