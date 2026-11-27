@@ -1,0 +1,26 @@
+{
+  "schema": "wheelmap.targets/1",
+  "description": "DESKTOP-ARCADE (2P stand-up): ONLY the frontend copy's own folders on D: (real copies, not junctions to the live CORE-TYPE R on E:). Cemu, RetroArch and the other emulators in the copy are still junctions to E: and are left out on purpose - give a folder its own copy first (as TeknoParrot, Dolphin and MAME have) before listing it here.",
+  "teknoparrot": [
+    {
+      "name": "CORE-am-TeknoParrot",
+      "root": "D:\\ArcadeMaster\\frontend\\CORE-am\\emulators\\Teknoparrot"
+    },
+    {
+      "name": "CORE-am-TeknoParrot-Subscribed",
+      "root": "D:\\ArcadeMaster\\frontend\\CORE-am\\emulators\\Teknoparrot_Subscribed"
+    }
+  ],
+  "dolphin": [
+    {
+      "name": "Dolphin",
+      "user": "D:\\ArcadeMaster\\frontend\\CORE-am\\emulators\\Dolphin\\User",
+      "axisStyle": "fullaxis"
+    }
+  ],
+  "mame": [
+    {
+      "root": "D:\\ArcadeMaster\\frontend\\CORE-am\\emulators\\Mame"
+    }
+  ]
+}
