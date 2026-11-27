@@ -469,12 +469,21 @@ $why = { param($mod, $code)
     '^(ntdll|KERNELBASE|ucrtbase|USER32)\.dll$' { "inside the program itself ($mod, code 0x$code)"; break }
     default { "in $mod (code 0x$code)" }
   } }
-$crash = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'Application Error'; Id = 1000; StartTime = (Get-Date).AddHours(-$CrashHours) } -ErrorAction SilentlyContinue |
-  ForEach-Object { $p = $_.Properties; $exe = ([string]$p[0].Value).ToLower(); if ($names.ContainsKey($exe)) { [pscustomobject]@{ who = $names[$exe]; when = $_.TimeCreated; why = (& $why ([string]$p[3].Value) ([string]$p[6].Value)) } } })
+# Known, harmless: Supermodel with the force feedback plug-in (its own opengl32.dll beside Supermodel.exe) ends with an
+# access violation AFTER the game has closed - on every exit, on RACE1 and RACE2 alike (measured 2026-11-27, plug-in
+# log shows a clean detach). Counted and said, but not a warning. Without the plug-in a Supermodel crash is a real one.
+$ffbExit = $false
+foreach ($lc in Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter *.conf -File -ErrorAction SilentlyContinue) {
+  $m = Select-String -LiteralPath $lc.FullName -Pattern '^\s*executable\s*=\s*(.+Supermodel\.exe)\s*$' | Select-Object -First 1
+  if ($m) { $sx = $m.Matches[0].Groups[1].Value.Trim().Trim('"'); if (-not [IO.Path]::IsPathRooted($sx)) { $sx = Join-Path $RetroFE $sx }; if (Test-Path -LiteralPath (Join-Path (Split-Path $sx) 'opengl32.dll')) { $ffbExit = $true } }
+}$crash = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'Application Error'; Id = 1000; StartTime = (Get-Date).AddHours(-$CrashHours) } -ErrorAction SilentlyContinue |
+  ForEach-Object { $p = $_.Properties; $exe = ([string]$p[0].Value).ToLower(); if ($names.ContainsKey($exe)) { [pscustomobject]@{ who = $names[$exe]; when = $_.TimeCreated; why = (& $why ([string]$p[3].Value) ([string]$p[6].Value)); known = ($exe -eq 'supermodel.exe' -and $ffbExit) } } })
 if (-not $crash.Count) { Add-Result 'crashes' $checks.crashes 'OK' "no game, emulator or frontend crash in the last $CrashHours h ($($names.Count) programs watched)" }
 else {
   $lines = foreach ($grp in $crash | Group-Object who) { $last = $grp.Group | Sort-Object when | Select-Object -Last 1; "{0} crashed {1}x, last {2:HH:mm} {3}" -f $grp.Name, $grp.Count, $last.when, $last.why }
-  Add-Result 'crashes' $checks.crashes 'WARN' ($lines -join '; ')
+  # all of them the known one: said, but not an alarm
+  if (-not @($crash | Where-Object { -not $_.known }).Count) { Add-Result 'crashes' $checks.crashes 'OK' ("known and harmless: Sega Model 3 closes with an error after every game while its force feedback plug-in is on ({0}x in the last {1} h); play is not affected" -f $crash.Count, $CrashHours) }
+  else { Add-Result 'crashes' $checks.crashes 'WARN' ($lines -join '; ') }
 }
 # wheel force feedback driver: Windows lists force feedback for a wheel through a maker's driver (registry OEMForceFeedback
 # CLSID). Uninstalling Logitech G HUB removes that driver but leaves the entry (DESKTOP-RACE1, 2026-11-26): the wheel
