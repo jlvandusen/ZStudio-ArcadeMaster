@@ -156,6 +156,8 @@ class CaptureForm : Form
     static string DeviceLabel(string usb, string kind)
     {
         if (usb == null) return kind;
+        string gun = Guns.Kind(usb, null);   // every light gun ArcadeMaster knows (tools/light-guns.json)
+        if (gun != null) return gun;
         if (usb == "D209:0440") return "Ultimarc Mini-PAC";
         if (usb.StartsWith("D209:04")) return "Ultimarc I-PAC";
         if (usb.StartsWith("D209:16")) return "Ultimarc AimTrak " + (usb == "D209:1601" ? "1" : usb == "D209:1602" ? "2" : usb.Substring(5));
