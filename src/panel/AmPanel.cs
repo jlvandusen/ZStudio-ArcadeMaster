@@ -301,6 +301,7 @@ static class AmPanel
     static SearchIndex searchIndex;
     static SearchButton searchButton;
     static SearchScreen searchScreen;
+    static Action pendingPanelSearch;   // Game Options may start after the search
     static void StartSearch()
     {
         try
@@ -325,7 +326,18 @@ static class AmPanel
                         searchScreen.Show();
                     });
                 };
-            if (!touchScreen) { Log("search: " + searchIndex.Games.Count + " games indexed, F3 opens it (one screen: no SEARCH button)"); return; }
+            if (!touchScreen)
+            {
+                // one screen: Game Options (TAB) gets a SEARCH entry, worked with the stick and buttons 1 / 2
+                Action panelSearch = delegate {
+                    if (searchScreen != null && !searchScreen.IsDisposed) return;
+                    searchScreen = new SearchScreen(searchIndex, gameLink, th, retroFERoot, true, true);
+                    searchScreen.FormClosed += delegate { searchScreen = null; };
+                    searchScreen.Show();
+                };
+                if (gameOptions != null) gameOptions.OpenSearch = panelSearch; else pendingPanelSearch = panelSearch;
+                Log("search: " + searchIndex.Games.Count + " games indexed, F3 or TAB > SEARCH opens it (one screen: no SEARCH button)"); return;
+            }
             searchButton = new SearchButton(th);
             Action openSearch = delegate {
                 if (searchScreen != null && !searchScreen.IsDisposed) return;
@@ -956,7 +968,7 @@ static class AmPanel
         if (!gameOptionsKey.Equals("none", StringComparison.OrdinalIgnoreCase) && retroFERoot != null)
             try
             {
-                gameOptions = new GameOptions(retroFERoot, manifestDir, gameOptionsKey, Log) { Ui = ui };
+                gameOptions = new GameOptions(retroFERoot, manifestDir, gameOptionsKey, Log) { Ui = ui, OpenSearch = pendingPanelSearch };
                 gameOptions.Selected = delegate { lock (Gate) return State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : null; };
                 gameOptions.SelectedSystem = delegate { lock (Gate) return State.ContainsKey("emulator") && State["emulator"] != null ? Convert.ToString(State["emulator"]) : null; };
             }

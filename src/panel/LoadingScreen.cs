@@ -123,6 +123,11 @@ class LoadingScreen : Form
     [DllImport("user32.dll")] static extern int GetWindowThreadProcessId(IntPtr h, IntPtr pid);
     [DllImport("kernel32.dll")] static extern int GetCurrentThreadId();
     static readonly HashSet<IntPtr> broughtUp = new HashSet<IntPtr>();
+    // programs that may never sit in front of a running game (James 2026-11-27: "Mame keeps falling behind" VS Code -
+    // "Need to always keep emulator infront"). A game's own launcher or dialog is never on this list, so it is left alone.
+    static readonly HashSet<string> Intruders = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        "retrofe", "explorer", "Code", "Code - Insiders", "WindowsTerminal", "OpenConsole", "conhost", "cmd", "powershell", "pwsh",
+        "msedge", "chrome", "firefox", "Teams", "ms-teams", "Discord", "Slack", "Spotify", "OneDrive", "notepad", "devenv", "Taskmgr" };
 
     // the game's window in front with the keyboard - only when the frontend (or no program) has the foreground, so a
     // game's own launcher / dialog the player is using is never pushed aside
@@ -132,7 +137,7 @@ class LoadingScreen : Form
         if (fg == game) return;
         int fgPid; GetWindowThreadProcessId(fg, out fgPid);
         string fgName = ""; try { using (var p = Process.GetProcessById(fgPid)) fgName = p.ProcessName; } catch { }
-        if (fg != IntPtr.Zero && !fgName.Equals("retrofe", StringComparison.OrdinalIgnoreCase) && !fgName.Equals("explorer", StringComparison.OrdinalIgnoreCase)) return;
+        if (fg != IntPtr.Zero && !Intruders.Contains(fgName)) return;
         int ft = GetWindowThreadProcessId(fg, IntPtr.Zero), me = GetCurrentThreadId();
         AttachThreadInput(me, ft, true);
         ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
@@ -241,6 +246,14 @@ class LoadingScreen : Form
             }
             catch { }
             System.Threading.Thread.Sleep(400);
+        }
+        // after the first two minutes: for the whole game, the game's window is put back in front whenever one of the
+        // programs above takes the foreground
+        var game = new List<IntPtr>(seen.Keys);
+        while (game.Count > 0 && stillPlaying())
+        {
+            try { foreach (var h in game) if (IsWindowVisible(h) && !IsIconic(h)) { BringForward(h, log); break; } } catch { }
+            System.Threading.Thread.Sleep(1000);
         }
     }
 
