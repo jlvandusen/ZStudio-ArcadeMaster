@@ -36,7 +36,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\RetroFEPaths.ps1')
-$git = (Get-Command git -ErrorAction SilentlyContinue).Source; if (-not $git -and (Test-Path 'C:\Program Files\Git\cmd\git.exe')) { $git = 'C:\Program Files\Git\cmd\git.exe' }
+$git = (Get-Command git -ErrorAction SilentlyContinue).Source
+# git installed per user (the pedestal: %LOCALAPPDATA%\Programs\Git) is not on PATH in every shell
+if (-not $git) { $git = @('C:\Program Files\Git\cmd\git.exe', "$env:LOCALAPPDATA\Programs\Git\cmd\git.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1 }
 New-Item -ItemType Directory -Force $ManifestDir | Out-Null
 $log = Join-Path $ManifestDir 'update-cabinet.log'
 function Say([string]$m) { $l = "[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m; Write-Host $l; Add-Content $log $l -Encoding UTF8 }
