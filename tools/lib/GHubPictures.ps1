@@ -51,5 +51,40 @@ function Get-AmGHubPictures([string]$Model = 'g29') {
   } catch { }
   if ($old) { return $old }
   if (Test-Path (Join-Path $cache $front)) { return $cache }
+  # no full picture set for this model (G HUB downloads it only for a wheel that has been plugged in): its 500 px
+  # thumbnail, which G HUB carries for every Logitech wheel, from this PC or the share
+  $thumb = Get-AmGHubWheelThumb $Model
+  if ($thumb) { New-Item -ItemType Directory -Force $cache | Out-Null; Copy-Item $thumb (Join-Path $cache $front) -Force; return $cache }
+  $null
+}
+
+# Every Logitech wheel, base, rim, pedal set and shifter G HUB has a thumbnail of (G HUB carries them all, not only the
+# connected wheel) -> PNG in Z:\ArcadeMaster\media\ghub-wheels\<name>.png, so any cabinet can show any wheel
+# (James 2026-11-27: "we need all the wheels avail"). Converted once; returns how many are on the share.
+$AmWheelThumbPattern = '^(g2[5-9]|g92\d(_.*)?|pro_(wheel_base|base_.*|racing_pedals)|rs50_.*|rs_.*)$'   # wheels only, not G9xx mice / headsets
+function Export-AmGHubWheelThumbs {
+  $share = 'Z:\ArcadeMaster\media\ghub-wheels'
+  $src = Get-ChildItem 'C:\ProgramData\LGHUB\depots\*\core_assets\thumbnails' -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+  $ff = Get-AmFfmpeg
+  if ($src -and $ff -and (Test-Path 'Z:\ArcadeMaster')) {
+    New-Item -ItemType Directory -Force $share | Out-Null
+    foreach ($w in Get-ChildItem $src.FullName -Filter *.webp -File | Where-Object { $_.BaseName -match $AmWheelThumbPattern }) {
+      $png = Join-Path $share ($w.BaseName + '.png')
+      if (Test-Path $png) { continue }
+      $eap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+      & $ff -hide_banner -loglevel error -y -i $w.FullName $png 2>$null | Out-Null
+      $ErrorActionPreference = $eap
+    }
+  }
+  @(Get-ChildItem $share -Filter *.png -ErrorAction SilentlyContinue).Count
+}
+
+# one wheel's thumbnail as PNG: from the share, else converted from this PC's G HUB. 'g923' also finds g923_pc.
+function Get-AmGHubWheelThumb([string]$Model) {
+  foreach ($n in @($Model, "${Model}_pc")) {
+    $p = Join-Path 'Z:\ArcadeMaster\media\ghub-wheels' "$n.png"
+    if (Test-Path $p) { return $p }
+  }
+  if ((Export-AmGHubWheelThumbs) -gt 0) { foreach ($n in @($Model, "${Model}_pc")) { $p = Join-Path 'Z:\ArcadeMaster\media\ghub-wheels' "$n.png"; if (Test-Path $p) { return $p } } }
   $null
 }
