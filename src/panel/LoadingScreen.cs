@@ -32,6 +32,7 @@ class LoadingScreen : Form
     // programs whose windows are never "the game": the frontend, this panel, the shell, the launchers' own small windows
     static readonly HashSet<string> NotTheGame = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         "retrofe", "AmPanel", "LEDBlinky", "explorer", "TeknoParrotUi", "emulatorLauncher", "cmd", "conhost", "powershell",
+        "WindowsTerminal", "OpenConsole", "pwsh", "RustDesk", "msedge", "chrome",
         "wscript", "dwm", "ShellExperienceHost", "SearchHost", "StartMenuExperienceHost", "TextInputHost", "Code", "Claude",
         // TeknoParrot's loaders put up their own windows before the game is ready (Blade Strangers closed it early)
         "OpenParrotLoader", "OpenParrotLoader64", "OpenParrotKonamiLoader", "BudgieLoader", "ElfLdr2", "TeknoParrot", "ParrotLoader", "conhost" };
@@ -143,11 +144,49 @@ class LoadingScreen : Form
         }
     }
 
+    // ---- the game shows only after a window switch (James 2026-11-27: Star Wars Trilogy in Supermodel stayed black
+    // in full screen although it was the foreground window; Alt+Tab showed it). 3 s after a game's window is up on the
+    // main screen, the frontend's own windows there are minimised and the game is activated again, as Alt+Tab does.
+    // The frontend comes back at game stop (RestoreFrontend).
+    [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
+    static readonly List<IntPtr> minimisedFrontend = new List<IntPtr>();
+    static void ShowGame(IntPtr game, Action<string> log)
+    {
+        var main = Screen.PrimaryScreen.Bounds;
+        EnumWindows(delegate (IntPtr h, IntPtr l) {
+            if (!IsWindowVisible(h) || IsIconic(h)) return true;
+            int pid; GetWindowThreadProcessId(h, out pid);
+            try { using (var p = Process.GetProcessById(pid)) if (!p.ProcessName.Equals("retrofe", StringComparison.OrdinalIgnoreCase)) return true; } catch { return true; }
+            RECT r; if (!GetWindowRect(h, out r)) return true;
+            if (!Screen.FromRectangle(new Rectangle(r.L, r.T, Math.Max(1, r.R - r.L), Math.Max(1, r.B - r.T))).Primary) return true;
+            ShowWindow(h, 6 /* SW_MINIMIZE */);
+            lock (minimisedFrontend) minimisedFrontend.Add(h);
+            return true;
+        }, IntPtr.Zero);
+        System.Threading.Thread.Sleep(300);
+        keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);   // an Alt tap lets us hand over the foreground
+        ShowWindow(game, 9 /* SW_RESTORE */); BringWindowToTop(game); SetForegroundWindow(game);
+        int gp; GetWindowThreadProcessId(game, out gp);
+        string name = "?"; try { using (var p = Process.GetProcessById(gp)) name = p.ProcessName; } catch { }
+        log("game window " + name + " shown: frontend minimised, game activated");
+    }
+
+    // back in the menus: the frontend windows minimised for the game come back
+    public static void RestoreFrontend()
+    {
+        List<IntPtr> list;
+        lock (minimisedFrontend) { list = new List<IntPtr>(minimisedFrontend); minimisedFrontend.Clear(); }
+        foreach (var h in list) ShowWindow(h, 9 /* SW_RESTORE */);
+    }
+
     public static void KeepGameOnMainScreen(HashSet<IntPtr> baseline, Func<bool> stillPlaying, Action<string> log)
     {
         var main = Screen.PrimaryScreen.Bounds;
         try { SetCursorPos(main.X + main.Width / 2, main.Y + main.Height / 2); } catch { }
         var moved = new HashSet<IntPtr>();
+        var seen = new Dictionary<IntPtr, long>();
+        var shown = new HashSet<IntPtr>();
         var sw = Stopwatch.StartNew();
         while (sw.ElapsedMilliseconds < 120000 && stillPlaying())
         {
@@ -165,6 +204,9 @@ class LoadingScreen : Form
                         // screens and took no input): while the frontend or nothing else holds the foreground, bring the
                         // game's window up and give it the keyboard - every game, every emulator
                         BringForward(h, log);
+                        if (!seen.ContainsKey(h)) seen[h] = sw.ElapsedMilliseconds;
+                        else if (!shown.Contains(h) && sw.ElapsedMilliseconds - seen[h] > 3000 && r.R - r.L >= main.Width * 0.9 && r.B - r.T >= main.Height * 0.9)
+                        { shown.Add(h); ShowGame(h, log); }
                         continue;
                     }
                     // same place on the main screen, same size (a borderless full-screen game stays full screen)

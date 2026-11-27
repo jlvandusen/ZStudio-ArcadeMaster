@@ -554,6 +554,7 @@ static class AmPanel
             else if (what == "game stop" || what == "frontend start" || what == "frontend quit")
             {
                 CloseLoading();
+                LoadingScreen.RestoreFrontend();
                 if (what == "game stop" && healGame != null) { RepairRoms(healGame, healCollection, healEmulator, (DateTime.Now - healStarted).TotalSeconds); healGame = null; }
             }
             State["lastEvent"] = what;
