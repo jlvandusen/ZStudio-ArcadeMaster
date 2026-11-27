@@ -38,6 +38,18 @@ out about my company". James sends it himself; no session contacts anyone outsid
       discover everything and emulators etc set it up and configure"). Discover (read-only), report and choose, set up
       (asked, logged, safe to re-run), prove it (one test launch per system, self-heal), then keep discovering at boot.
       Never deletes or moves the user's files without a yes; never downloads ROMs, BIOS files or art.
+- Progress 2026-11-27 (ARCADE-PEDESTAL):
+  - `tools/Invoke-FirstRun.ps1` chains discovery, lists, direct launchers and panel keys, links, content and lights,
+    then the check. It is a dry run by default.
+  - AmPanel tray > **Set up this PC...** runs it: a check first, then "Set it up" after a yes.
+  - Every standalone emulator gets the panel's keys (`Set-EmulatorPanelKeys.py`): PCSX2, xemu, Xenia, Dolphin GC,
+    PPSSPP, Citra, Yuzu and Cemu.
+  - 34 RetroArch consoles have bezels. Xenia's first-run disclaimer is pre-acknowledged.
+  - **Still open:**
+    - lists for PCs without RetroBat, from discovery.json;
+    - Wii remote mapping;
+    - a release package with prebuilt binaries (needs James's yes);
+    - the clean-PC dry run.
 - [ ] **First run links, then offers to move** (James 2026-11-27: "when it does a discovery of a new system first run
       it can then find all the stuff and do the same thing to each thus not effecting another frontend etc.. or give the
       user option to move it all if wanted"). After discovery, `tools/Move-OffRetroBat.py` (link mode) puts a folder
