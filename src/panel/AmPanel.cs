@@ -1019,6 +1019,14 @@ static class AmPanel
             }
             catch (Exception e) { Log("devices: listener not started - " + e.Message); }
         }
+        // the frontend watchdog (FrontendWatchdog.cs): a RetroFE that stops answering in the menus is restarted, with a
+        // graphics driver reset when the elevated task is installed
+        var watchdog = new System.Windows.Forms.Timer { Interval = 5000 };
+        watchdog.Tick += delegate {
+            bool playing; lock (Gate) playing = State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"];
+            FrontendWatchdog.Tick(playing, AppDomain.CurrentDomain.BaseDirectory, Log);
+        };
+        watchdog.Start();
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
