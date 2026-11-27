@@ -118,3 +118,21 @@ Recommendation: do 1 and 2 first, since that's direct reuse; then route A for Bi
 - The updater copies the repo's `layouts\ArcadeMaster` into the frontend only while the frontend is closed. While
   designing, edit the files under the frontend's own `layouts` folder, then copy what you keep back into the repo.
 - Measured on RACE1 (GTX 1650, 1080p): a changed text in `layout.xml` was on screen 0.4 s after it was noticed.
+## Game list views (2026-11-27)
+
+The default game list (one game at a time, big video) stays the default. Four more views of the same lists can be
+chosen in Cabinet Settings > MENUS > GAME LIST VIEW, or with `tools\Set-GameListView.ps1 -View <name>`:
+
+| View | What you see | Folder |
+|---|---|---|
+| `wall` | fifteen picture tiles, the chosen game playing in the middle | `layouts\AM-GameWall` |
+| `pitwall` | the preview fills the screen, the list is a timing tower down the left | `layouts\AM-PitWall` |
+| `split` | the game on the left, the list down the middle, what it is and how often it was played here on the right | `layouts\AM-Split` |
+| `cockpit` | the preview in the windscreen, a row of logos, the speedo, rev counter and wheel on a dash | `layouts\AM-Cockpit` |
+
+A view changes the game lists only; the main menu, Tools and Settings keep the theme's look. `-View default` takes it
+away again. With the frontend open the page is rebuilt at once.
+
+**A logo in a white box with grey squares.** Some logos were saved from a picture site's preview, with the
+"see-through" squares painted in. `python tools\Repair-CheckerLogos.py --retrofe <frontend>` lists them; add `--apply`
+to take the squares out. The original is kept in `medium_artwork\logo_before_squares`.
