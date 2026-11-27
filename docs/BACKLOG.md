@@ -44,6 +44,16 @@ The loop works like this (James, 2026-11-25):
       - Star Wars starts with the EVENT button (panel B2), not Start.
       - Ideas: RetroFE `minimizeOnFocusLoss` / `unloadSDL`, `-ss=2` supersampling at 1080, borderless instead of
         exclusive full screen.
+- [ ] **[PEDESTAL, docs/21 phase 7] Panel reference data is downloaded, not copied from LEDBlinky** (James
+      2026-11-27: "It should download reference data etc?"). Today panel-data is a copy of the LEDBlinky install
+      (PR 234), so a cabinet without LEDBlinky, or a community install, gets nothing. Setup fetches it and refreshes
+      it, and falls back to the LEDBlinky copy when that exists:
+      - Ultimarc PacDrive / UltraStik drivers: downloaded from Ultimarc, never bundled;
+      - each game's controls: controls.dat, plus MAME -listxml for players and buttons;
+      - colours: our New-LedColorsAuto.py;
+      - stick maps: New-StickMaps.py;
+      - animations: AmPanel's built-in ones, with `.lwax` files only when LEDBlinky is installed.
+      Pedestal check done 2026-11-27: panel-data works (game lights, attract, 2 UltraStiks).
 - [x] Self-heal for incomplete ROM sets (tools/Repair-GameRoms.py, run by AmPanel after every game) - PR #236.
 
 ## 2a. James 2026-11-25: full settings like the race cabinet, and our own LED engine
