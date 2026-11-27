@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'RestartPC', 'ShutdownPC', 'EmulatorUpdates', 'MenuButtons', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'RestartPC', 'ShutdownPC', 'EmulatorUpdates', 'MenuButtons', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'MenuMusic', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
@@ -457,6 +457,15 @@ switch ($Tool) {
       Emit @{ type = 'images'; title = "THEME: $($chosen -replace '^CO-','')$(if ($mode) { " - kept for $mode mode" })"; files = @($pv | Where-Object { $_ }) }
       Write-Host "layout = $chosen"
     } else { Write-Host 'no change' }
+  }  'MenuMusic' {
+    # James 2026-11-27: "Music too rave music etc or choices in the panel menu": each press moves to the next style
+    # (off -> rave -> synthwave -> 80s -> computer -> mix -> off); -Choice <style> picks one directly
+    $style = if ($Choice) { $Choice } else { 'next' }
+    $out = & (Join-Path $PSScriptRoot 'Set-MenuMusic.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -Style $style 6>&1 | Out-String
+    $line = ($out -split "`r?`n" | Where-Object { $_ -match 'menu music' } | Select-Object -Last 1)
+    Banner ($line.Trim().ToUpper())
+    $on = $line -notmatch ': OFF'
+    Emit @{ type = 'toggle'; label = 'MENU MUSIC'; icon = 'music'; on = $on; detail = $(if ($on) { ($line -replace '^.*menu music:\s*', '') + ' - press again for the next style' } else { 'Press again for RAVE, then SYNTHWAVE, 80s, COMPUTER, MIX' }) }
   }  'TogglePerfLog' {
     $on = [int]("0" + (Get-Setting 'perfLog')) -gt 0
     Set-Setting 'perfLog' $(if ($on) { '0' } else { '10' })
