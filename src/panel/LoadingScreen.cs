@@ -157,7 +157,18 @@ class LoadingScreen : Form
         EnumWindows(delegate (IntPtr h, IntPtr l) {
             if (!IsWindowVisible(h) || IsIconic(h)) return true;
             int pid; GetWindowThreadProcessId(h, out pid);
-            try { using (var p = Process.GetProcessById(pid)) if (!p.ProcessName.Equals("retrofe", StringComparison.OrdinalIgnoreCase)) return true; } catch { return true; }
+            string pn = ""; try { using (var p = Process.GetProcessById(pid)) pn = p.ProcessName; } catch { return true; }
+            // an emulator's console (Supermodel is a console program): on Windows 11 it opens in Windows Terminal, which
+            // the launcher cannot hide, and that black window covered the game (James 2026-11-27)
+            if (pn.Equals("WindowsTerminal", StringComparison.OrdinalIgnoreCase) || pn.Equals("OpenConsole", StringComparison.OrdinalIgnoreCase))
+            {
+                var t = new System.Text.StringBuilder(512); GetWindowText(h, t, 512);
+                string title = t.ToString();
+                if (title.IndexOf(@"\emulators\", StringComparison.OrdinalIgnoreCase) >= 0 || title.IndexOf("RetroBat", StringComparison.OrdinalIgnoreCase) >= 0)
+                { ShowWindow(h, 6 /* SW_MINIMIZE */); log("emulator console '" + title + "' minimised"); }
+                return true;
+            }
+            if (!pn.Equals("retrofe", StringComparison.OrdinalIgnoreCase)) return true;
             RECT r; if (!GetWindowRect(h, out r)) return true;
             if (!Screen.FromRectangle(new Rectangle(r.L, r.T, Math.Max(1, r.R - r.L), Math.Max(1, r.B - r.T))).Primary) return true;
             ShowWindow(h, 6 /* SW_MINIMIZE */);
