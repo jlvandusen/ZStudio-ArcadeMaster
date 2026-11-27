@@ -34,7 +34,38 @@ CORES = {
     "vectrex": ["vecx"], "3do": ["opera"], "virtualboy": ["mednafen_vb"], "saturn": ["mednafen_saturn", "kronos", "yabasanshiro"],
     # RetroBat's own names for the same systems
     "lynx": ["handy"], "sg1000": ["genesis_plus_gx"], "neogeo": ["fbneo"], "amiga": ["puae"], "msx": ["bluemsx"],
+    "fbneo": ["fbneo"], "dreamcast": ["flycast"], "naomi": ["flycast"], "atomiswave": ["flycast"],
 }
+# steps 2-3: standalone emulators. system -> [(emulator in discovery.json, exe file name, arguments)], first one found
+# wins (the one inside the RetroBat this frontend uses first). {rom} = the game file, {name} = its name without the
+# extension, {w} {h} = the main screen's size. Each emulator's own command-line options for a full-screen batch start.
+STANDALONE = {
+    "model2": [("m2emulator", "emulator_multicpu.exe", '"{name}"'), ("m2emulator", "EMULATOR.EXE", '"{name}"')],
+    "model3": [("supermodel", "supermodel.exe", '-res={w},{h} -fullscreen -wide-screen "{rom}"')],
+    "gamecube": [("dolphin", "Dolphin.exe", '-b -C Dolphin.Display.Fullscreen=True -e "{rom}"')],
+    "wii": [("dolphin", "Dolphin.exe", '-b -C Dolphin.Display.Fullscreen=True -e "{rom}"')],
+    "ps2": [("pcsx2", "pcsx2-qt.exe", '-batch -fullscreen -nogui "{rom}"'), ("pcsx2", "pcsx2-qtx64.exe", '-batch -fullscreen -nogui "{rom}"')],
+    "psp": [("ppsspp", "PPSSPPWindows64.exe", '--fullscreen "{rom}"')],
+    "wiiu": [("cemu", "Cemu.exe", '-f -g "{rom}"')],
+    "switch": [("yuzu", "yuzu.exe", '-f -g "{rom}"'), ("yuzu", "suyu.exe", '-f -g "{rom}"'), ("ryujinx", "Ryujinx.exe", '--fullscreen "{rom}"')],
+    "xbox": [("xemu", "xemu.exe", '-full-screen -dvd_path "{rom}"')],
+    "xbox360": [("xenia", "xenia_canary.exe", '--fullscreen "{rom}"'), ("xenia", "xenia.exe", '--fullscreen "{rom}"')],
+    "dreamcast": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
+    "naomi": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
+    "atomiswave": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
+    "3ds": [("citra", "azahar.exe", '-f "{rom}"'), ("citra", "citra-qt.exe", '-f "{rom}"'), ("citra", "lime3ds-gui.exe", '-f "{rom}"')],
+}
+
+
+def screen_size():
+    import ctypes
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+        return ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1)
+    except Exception:
+        return 1920, 1080
+
+
 # RetroBat's "bottom row" panel layout: retropad button -> panel button (1-8, START, COIN)
 PAD = {"b": "B1", "a": "B2", "r": "B3", "r2": "B4", "y": "B5", "x": "B6", "l": "B7", "l2": "B8", "start": "START", "select": "COIN"}
 # panel.json key names -> RetroArch key names
@@ -158,14 +189,29 @@ def main():
         sysname = m.group(1).lower()
         if only and sysname not in only:
             continue
-        core = next((x for x in CORES.get(sysname, []) if x in ra["cores"]), None)
-        if not core:
-            skipped.append(sysname)
-            continue
         name = "AM_DL_" + m.group(1)
-        conf = ["executable = %s" % ra["exe"],
-                'arguments = --appendconfig "%s" -L "%s" "%%ITEM_FILEPATH%%"' % (cfg, os.path.join(radir, "cores", core + "_libretro.dll")),
-                "currentDirectory = %s" % radir]
+        core = next((x for x in CORES.get(sysname, []) if x in ra["cores"]), None)
+        if core:
+            conf = ["executable = %s" % ra["exe"],
+                    'arguments = --appendconfig "%s" -L "%s" "%%ITEM_FILEPATH%%"' % (cfg, os.path.join(radir, "cores", core + "_libretro.dll")),
+                    "currentDirectory = %s" % radir]
+            how = core
+        else:
+            # a standalone emulator (steps 2-3)
+            pick = None
+            for emu, exe_name, args in STANDALONE.get(sysname, []):
+                cands = [e for e in disc.get("emulators", []) if e["emulator"] == emu and os.path.basename(e["exe"]).lower() == exe_name.lower()]
+                cands.sort(key=lambda e: 0 if home and e["exe"].lower().startswith(home + "\\") else 1)
+                if cands:
+                    pick = (cands[0]["exe"], args)
+                    break
+            if not pick:
+                skipped.append(sysname)
+                continue
+            w, h = screen_size()
+            args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{w}", str(w)).replace("{h}", str(h))
+            conf = ["executable = %s" % pick[0], "arguments = %s" % args, "currentDirectory = %s" % os.path.dirname(pick[0])]
+            how = os.path.basename(pick[0])
         conf += hooks(os.path.join(launchers, "AM_RB_%s.conf" % m.group(1)))
         if not a.dry_run:
             open(os.path.join(launchers, name + ".conf"), "w", encoding="latin-1").write("\n".join(conf) + "\n")
@@ -173,7 +219,7 @@ def main():
             t = re.sub(r"^# was AM_RB_\S+ \(direct launcher\)\r?\n", "", t, flags=re.M)
             t = "# was AM_RB_%s (direct launcher)\n" % m.group(1) + t
             open(sc, "w", encoding="latin-1").write(t)
-        done.append("%s=%s" % (c, core))
+        done.append("%s=%s" % (c, how))
     print("direct launchers (RetroArch %s): %d collections%s" % (ra.get("version", ""), len(done), " (dry run)" if a.dry_run else ""))
     for d in done:
         print("  " + d)
