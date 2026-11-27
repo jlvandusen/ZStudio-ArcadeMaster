@@ -65,6 +65,36 @@ if ($col -and (Test-Path $mt) -and (Test-Path (Join-Path $RetroFE "collections\$
   if ($menu -contains $col -and $menu[0] -ne $col) { Set-Content $mt (@($col) + @($menu | Where-Object { $_ -ne $col })) -Encoding ascii; $actions += "main menu opens on $col" }
 }
 
+# the frontend's settings for this kind of cabinet (docs/21 phase 3): catalog\frontend-settings\common.conf, then one
+# file per part of the type (racing+flight -> racing.conf, flight.conf), written to <RetroFE>\settings8.conf. RetroFE
+# reads settings1-15.conf on top of settings.conf. A key the cabinet's own settings files set is left out, so a choice
+# made on the cabinet (Cabinet Settings, a test) always wins over the type's default. cabinetTypeEffective tells the
+# frontend and its layouts what this cabinet is today.
+$profDir = Join-Path (Split-Path $PSScriptRoot) 'catalog\frontend-settings'
+if (Test-Path $profDir) {
+  $p8 = Join-Path $RetroFE 'settings8.conf'; $mark = '# made at every start by tools\Set-CabinetMode.ps1'
+  $ours = -not (Test-Path $p8) -or ([IO.File]::ReadAllText($p8)).StartsWith($mark)
+  # the cabinet's own keys: settings.conf and any other numbered settings file (CoinOPS builds ship settings5.conf ...)
+  $own = @{}
+  foreach ($f in @(Get-ChildItem $RetroFE -File -Filter 'settings*.conf' | Where-Object { $_.Name -match '^settings\d*\.conf$' -and $_.Name -ne 'settings8.conf' })) {
+    foreach ($l in (Get-Content $f.FullName -ErrorAction SilentlyContinue)) { if ($l -match '^\s*([^#=\s][^=]*?)\s*=') { $own[$Matches[1].Trim().ToLower()] = $true } }
+  }
+  $prof = [ordered]@{}; $from = @()
+  foreach ($part in @('common') + @($eff.id -split '\+')) {
+    $f = Join-Path $profDir "$part.conf"; if (-not (Test-Path $f)) { continue }; $from += "$part.conf"
+    foreach ($l in (Get-Content $f)) { if ($l -match '^\s*([^#=\s][^=]*?)\s*=\s*(.*)$') { $prof[$Matches[1].Trim()] = $Matches[2].Trim() } }
+  }
+  $prof['cabinetTypeEffective'] = $eff.id
+  $out = @("$mark from catalog\frontend-settings ($($from -join ', ')) for a $($eff.id) cabinet.",
+    '# Do not edit here: change the catalog file (every cabinet of the type), or set the key in settings.conf (this cabinet only).')
+  $skipped = @()
+  foreach ($k in $prof.Keys) { if ($own.ContainsKey($k.ToLower()) -and $k -ne 'cabinetTypeEffective') { $skipped += $k; continue }; $out += "$k = $($prof[$k])" }
+  $old = if (Test-Path $p8) { [IO.File]::ReadAllText($p8) } else { '' }
+  $new = ($out -join "`r`n") + "`r`n"
+  if (-not $ours) { $actions += "WARNING: $p8 is not ours (a CoinOPS file?) - left alone, no type settings applied" }
+  elseif ($new -ne $old) { [IO.File]::WriteAllText($p8, $new, (New-Object Text.UTF8Encoding $false)); $actions += "frontend settings for $($eff.id): settings8.conf from $($from -join ', ')$(if ($skipped) { " (this cabinet's own: $($skipped -join ', '))" })" }
+}
+
 $state = [ordered]@{ at = (Get-Date).ToString('s'); configured = $eff.configured; effective = $eff.id; switched = $eff.switched; reason = $eff.reason; followHardware = $follow; theme = (Get-Setting 'layout'); actions = $actions }
 $state | ConvertTo-Json | Set-Content (Join-Path $ManifestDir 'cabinet-mode.json') -Encoding UTF8
 Write-Host ("cabinet mode: {0}{1} - {2}" -f $eff.id, $(if ($eff.switched) { " (configured: $($eff.configured))" } else { '' }), $eff.reason)

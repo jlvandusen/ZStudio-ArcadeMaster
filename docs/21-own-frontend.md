@@ -41,12 +41,32 @@ the host. Here the frontend itself becomes ours.
      - **The loading card is the theme's own launch screen (2026-11-27).** On `onGameEnter` the ArcadeMaster layout fades
        to black and shows the game's fan art, logo and controls card until the hand-off minimises the frontend. With
        `gameHandOff = true`, AmPanel's own loading card steps aside too, so the two never draw over each other.
+     - **The game stays in front (2026-11-27, fork PR 18):** a desktop program that comes in front of a running game
+       (VS Code, a terminal, a browser) is minimised and the game switched back in, for the whole game; never Task
+       Manager or RustDesk. The same PR stopped the frontend's wait loop freezing for the rest of a game: it called
+       ShowWindow / BringWindowToTop on a game window that never answers (Arctic Thunder). Only calls that do not wait
+       for the other program are used now (ShowWindowAsync, SWP_ASYNCWINDOWPOS, InternalGetWindowText).
+     - **The launch screen stays until the game has loaded (fork PR 19, PR 313):** Arctic Thunder takes 25 s to open
+       its window (the game itself: one core busy, no disk reads). The launch screen no longer fades after 3 s, and
+       TeknoParrot's "Game Running" window is minimised (its dialogs are left alone).
      - Left: consoles started hidden from the start. A launcher's own child consoles (RetroBat's emulatorLauncher starting
        Supermodel) aren't ours to start, so those stay "minimised when seen".
 3. **Cabinet profile at start.**
    - The frontend reads the detected cabinet type and capabilities.
    - Controls, the touch layout and the tools follow from it.
    - One settings tree with per-type overrides.
+   - **Started (RACE2, 2026-11-27): one settings tree with per-type defaults.**
+     - `catalog/frontend-settings/common.conf`, then one file per cabinet type (`racing.conf`, `standup.conf` ...).
+       At every start `tools/Set-CabinetMode.ps1` writes them, for the type it has just worked out, into
+       `<frontend>\settings8.conf`. RetroFE reads settings1-15.conf on top of settings.conf; `-dump` showed it.
+     - A key the cabinet's own settings files already set is left out, so a choice made on one cabinet wins over the
+       type's default. A `settings8.conf` that is not ours (a CoinOPS build's) is never overwritten.
+     - `cabinetTypeEffective = <type>` is always written: the frontend and its layouts can tell what kind of cabinet
+       they are on (racing, racing+flight ...).
+     - Today: `common.conf` has `textureUploadBudgetMs = 8`; the type files are empty, waiting for the first default
+       every cabinet of that type should get. `gameHandOff` stays per cabinet until the frontend's hand-off has
+       AmPanel's MAME keyboard fixes (2P stand-up).
+     - Next: controls and the touch layout from the type (the frontend reads `cabinetTypeEffective`).
 4. **Theme engine with no ceiling.**
    - Scenes made of any number of layers (video, image, text, list, shader, particles) with timelines and easing.
    - Data binding to any game or system field, and hot reload while designing.
