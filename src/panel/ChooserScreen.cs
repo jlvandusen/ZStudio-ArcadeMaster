@@ -98,6 +98,11 @@ class ControllerChooser : Form
     // the highlight, a touch or press on either one picks for both. The copy never takes the keyboard focus.
     public ControllerChooser Peer;
     public bool Passive;
+    // the same screen as a menu (Game Options): its own question and pick word; back, Tab and the time-out close it
+    // without a pick (Picked stays null); no "best fit" tag, the current choice is tagged NOW
+    public string Question = "WHICH CONTROLLER WILL YOU USE?";
+    public string PickWord = "PLAY";
+    public bool Menu;
     protected override bool ShowWithoutActivation { get { return Passive; } }
     void Select(int i) { if (i == sel) return; sel = i; if (Peer != null) Peer.sel = i; Play(th.MoveSound); }
 
@@ -123,10 +128,10 @@ class ControllerChooser : Form
             if (Math.Abs(sel - glide) > 0.01f) restSince = now;
             float want = now - restSince > 280 ? 1f : 0f;
             hintA += (want - hintA) * Math.Min(1f, dt / (want > hintA ? 160f : 50f));
-            leftMs -= dt; if (leftMs <= 0) Done();
+            leftMs -= dt; if (leftMs <= 0) { if (Menu) Cancel(); else Done(); }
             Invalidate();
         };
-        Shown += delegate { if (!Passive) { Activate(); BringToFront(); Focus(); } frame.Start(); };
+        Shown += delegate { if (!Passive) { TakeFocus(Handle); Activate(); BringToFront(); Focus(); } frame.Start(); };
         FormClosed += delegate { frame.Stop(); if (bg != null) bg.Dispose(); };
     }
 
@@ -134,6 +139,8 @@ class ControllerChooser : Form
     {
         leftMs = Math.Max(leftMs, 4000); totalMs = Math.Max(totalMs, leftMs);   // someone is here: never time out under their hand
         int was = sel;
+        // a menu: Esc, Backspace, Left Alt (panel button 2 = back) and Tab (the key that opened it) close it
+        if (Menu && (e.KeyCode == Keys.Escape || e.KeyCode == Keys.Back || e.KeyCode == Keys.Tab || e.KeyCode == Keys.Menu || e.KeyCode == Keys.LMenu || e.Alt && e.KeyCode != Keys.ControlKey)) { e.Handled = true; Cancel(); return; }
         switch (e.KeyCode)
         {
             case Keys.Left: case Keys.Up: case Keys.NumPad4: case Keys.D: sel = (sel + choices.Count - 1) % choices.Count; break;
@@ -152,6 +159,32 @@ class ControllerChooser : Form
         frame.Stop(); Invalidate(); Update();
         if (Peer != null && Peer.Picked == null) { Peer.Picked = Picked; Peer.sel = sel; Peer.frame.Stop(); Peer.Invalidate(); Peer.Update(); }
         System.Threading.Thread.Sleep(160);   // the pick flashes before the game takes over
+        if (Peer != null && !Peer.IsDisposed) Peer.Close();
+        Close();
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr pid);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool AttachThreadInput(uint a, uint b, bool attach);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);
+    // Windows lets a program take the keyboard from the window in front only if it is allowed to. Opened by AmPanel itself
+    // (Game Options on TAB) it was not: the menu showed, but the stick and Esc still went to the frontend behind it
+    // (2026-11-27). Sharing the front window's input queue for a moment makes the switch allowed.
+    static void TakeFocus(IntPtr me)
+    {
+        IntPtr fg = GetForegroundWindow(); if (fg == me) return;
+        uint fgThread = GetWindowThreadProcessId(fg, IntPtr.Zero), mine = GetCurrentThreadId();
+        bool attached = fgThread != 0 && fgThread != mine && AttachThreadInput(mine, fgThread, true);
+        try { BringWindowToTop(me); SetForegroundWindow(me); }
+        finally { if (attached) AttachThreadInput(mine, fgThread, false); }
+    }
+
+    void Cancel()
+    {
+        if (Picked != null) return;
+        frame.Stop();
         if (Peer != null && !Peer.IsDisposed) Peer.Close();
         Close();
     }
@@ -190,7 +223,7 @@ class ControllerChooser : Form
 
         // the question, letter-spaced, in the theme's warm accent
         using (var f = new Font(th.Family, Height * 0.032f, FontStyle.Bold, GraphicsUnit.Pixel))
-            Centered(g, Spaced("WHICH CONTROLLER WILL YOU USE?"), f, th.Warm, Height * 0.33f, true);   // room for the floating PLAY button
+            Centered(g, Spaced(Question), f, th.Warm, Height * 0.33f, true);   // room for the floating PLAY button
 
         // tiles
         for (int i = 0; i < choices.Count; i++) DrawTile(g, i, t);
@@ -278,13 +311,13 @@ class ControllerChooser : Form
         }
         string id = Convert.ToString(choices[i]["id"]);
         var icon = new RectangleF(r.X + r.Width * 0.3f, r.Y + r.Height * 0.1f - lift * 4, r.Width * 0.4f, r.Height * 0.48f);
-        DrawIcon(g, id, icon, on ? Color.White : Color.FromArgb(200, 215, 225, 240), on ? th.Accent : th.Dim, t);
+        DrawIcon(g, choices[i].ContainsKey("icon") ? Convert.ToString(choices[i]["icon"]) : id, icon, on ? Color.White : Color.FromArgb(200, 215, 225, 240), on ? th.Accent : th.Dim, t);
         using (var f = new Font(th.Family, Math.Max(14, r.Height * 0.085f), FontStyle.Bold, GraphicsUnit.Pixel))
         using (var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
         using (var br = new SolidBrush(on ? Color.White : Color.FromArgb(210, 225, 230, 240)))
             g.DrawString(Convert.ToString(choices[i]["label"]), f, br, new RectangleF(r.X + 12, r.Y + r.Height * 0.62f, r.Width - 24, r.Height * 0.2f), fmt);
         // a small tag: best fit / last time
-        string tag = id == last ? "LAST TIME" : i == 0 ? "BEST FIT" : null;
+        string tag = Menu ? (id == last ? "NOW" : null) : id == last ? "LAST TIME" : i == 0 ? "BEST FIT" : null;
         if (tag != null)
             using (var f = new Font(th.Family, Math.Max(11, r.Height * 0.052f), FontStyle.Bold, GraphicsUnit.Pixel))
             {
@@ -398,7 +431,7 @@ class ControllerChooser : Form
         float bob = (float)Math.Sin(t * 3.2) * Height * 0.004f, rise = (1 - hintA) * Height * 0.012f;
         using (var f = new Font(th.Family, Height * 0.024f, FontStyle.Bold, GraphicsUnit.Pixel))
         {
-            float btn = f.Height * 1.3f, tw = g.MeasureString("PLAY", f).Width;
+            float btn = f.Height * 1.3f, tw = g.MeasureString(PickWord, f).Width;
             float pw = btn + 14 + tw + 26, ph = btn + 12, px = r.X + (r.Width - pw) / 2, py = r.Y - ph - Height * 0.022f + bob + rise;
             var pill = new RectangleF(px, py, pw, ph);
             using (var glow = new SolidBrush(Color.FromArgb(a / 5, th.Warm))) using (var gp = Round(new RectangleF(px - 5, py - 5, pw + 10, ph + 10), (int)(ph / 2) + 5)) g.FillPath(glow, gp);
@@ -413,7 +446,7 @@ class ControllerChooser : Form
             using (var bf = new Font(th.Family, btn * 0.5f, FontStyle.Bold, GraphicsUnit.Pixel)) using (var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
             using (var ink = new SolidBrush(Color.FromArgb(a, 0, 0, 0))) g.DrawString("1", bf, ink, new RectangleF(bx, by, btn, btn), fmt);
             using (var tb = new SolidBrush(Color.FromArgb(a, 255, 255, 255))) using (var fmt = new StringFormat { LineAlignment = StringAlignment.Center })
-                g.DrawString("PLAY", f, tb, new RectangleF(bx + btn + 12, py, tw + 10, ph), fmt);
+                g.DrawString(PickWord, f, tb, new RectangleF(bx + btn + 12, py, tw + 10, ph), fmt);
         }
         // stick arrows either side, nudging outwards
         float s = Height * 0.022f, nudge = (float)(0.5 + 0.5 * Math.Sin(t * 4.0)) * s * 0.4f, cy = r.Y + r.Height / 2f;
@@ -428,7 +461,7 @@ class ControllerChooser : Form
     {
         using (var f = new Font(th.Family, Height * 0.022f, FontStyle.Bold, GraphicsUnit.Pixel))
         {
-            string a = "STICK  TO CHOOSE", b = "PLAY", c = string.Format("  -  {0}", Math.Max(0, (leftMs + 999) / 1000));
+            string a = "STICK  TO CHOOSE", b = PickWord, c = string.Format("  -  {0}", Math.Max(0, (leftMs + 999) / 1000));
             float wa = g.MeasureString(a, f).Width, wb = g.MeasureString(b, f).Width, wc = g.MeasureString(c, f).Width, btn = f.Height * 1.25f;
             float total = wa + 40 + btn + 10 + wb + wc, x = (Width - total) / 2;
             using (var dim = new SolidBrush(Color.FromArgb(210, th.Dim))) g.DrawString(a, f, dim, x, y);

@@ -46,10 +46,18 @@ class Marquee
     DateTime lastListenerStart = DateTime.MinValue;
     bool inAttract;
 
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] static extern IntPtr FindWindow(string cls, string title);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+    // pixelweb opens a console window titled "Pixelcade Listener" (its log). On a cabinet it sat on the game screen
+    // (2P stand-up, 2026-11-27): hidden whenever it shows up. The log still goes to <Pixelcade>\pixelweb.log.
+    static void HideListenerWindow() { try { IntPtr w = FindWindow(null, "Pixelcade Listener"); if (w != IntPtr.Zero) ShowWindow(w, 0); } catch { } }
+
     public Marquee(Action<string> log)
     {
         this.log = log ?? delegate { };
         new Thread(Worker) { IsBackground = true, Name = "marquee" }.Start();
+        // the listener may start after AmPanel (Startup shortcut) or be restarted: look for its window for a while
+        new Thread(() => { for (int i = 0; i < 120; i++) { HideListenerWindow(); Thread.Sleep(1000); } }) { IsBackground = true, Name = "marquee-hide" }.Start();
     }
 
     // LEDBlinky's [Pixelcade] section: the texts and colour this cabinet already uses
@@ -192,6 +200,7 @@ class Marquee
             using (var resp = (HttpWebResponse)req.GetResponse())
             using (var rd = new StreamReader(resp.GetResponseStream())) body = rd.ReadToEnd();
             LastSent = path; Sent++;
+            HideListenerWindow();
             // a path pixelweb does not know is answered with its web page, not an error
             if (body.TrimStart().StartsWith("<!DOCTYPE", StringComparison.OrdinalIgnoreCase)) log("marquee: this Pixelcade listener does not know " + path);
             LastAnswer = body.Length > 300 ? body.Substring(0, 300) : body;
@@ -222,7 +231,7 @@ class Marquee
             Process.Start(new ProcessStartInfo(exe) { WorkingDirectory = PixelcadeDir, UseShellExecute = false, CreateNoWindow = true });
             log("marquee: Pixelcade listener was not running - started " + exe);
             // it takes a few seconds to find the panel: wait for /v2/info to answer with the device, not the web page
-            for (int i = 0; i < 30; i++) { Thread.Sleep(500); if (Probe()) { Thread.Sleep(1000); return true; } }
+            for (int i = 0; i < 30; i++) { Thread.Sleep(500); HideListenerWindow(); if (Probe()) { Thread.Sleep(1000); HideListenerWindow(); return true; } }
         }
         catch (Exception e) { log("marquee: could not start the Pixelcade listener - " + e.Message); }
         return false;

@@ -215,6 +215,28 @@ and a cabinet without AmPanel installed is left alone. Before this, fixes reache
     The health check no longer "repairs" a `LEDBlinkyDirectory` that points at the shim: that quietly gave the events back
     to LEDBlinky.
 
+14. **Game Options. Done (2026-11-27, the 2-player stand-up):** `src/panel/GameOptions.cs`. **TAB** on the selected
+    game, while the frontend is in front and no game runs, opens a menu for that game. It uses the "which controller?"
+    screen, in menu mode: stick to move, button 1 to pick, button 2 / Esc / TAB to close, closes itself after 30 s.
+    - **Emulator:** the launchers that can run this game, each named with its real version (`mame.exe -version`,
+      cached in `<manifest>\emulator-versions.json`). A launcher counts when it is the same emulator family as the
+      collection's own launcher, takes the same arguments, and its program exists (CORE's `MAME251` points at a
+      missing folder, so it is left out). The choice is RetroFE's own per-game launcher file,
+      `collections\<collection>\launchers\<item>.conf`.
+    - **Map buttons:** MAME keeps a game's own buttons from its in-game menu (TAB > Input (this Machine), saved in
+      `cfg\<game>.cfg`). The menu says so. TeknoParrot, Dolphin and Cemu: their own window opens, in front of the frontend.
+    - **Back to default:** the launcher file as it was before Game Options changed it (CORE's own choices, e.g. mrdo ->
+      MAME64196, come back). Every change is recorded in `<manifest>\game-options.json`.
+    - The frontend names the item's launcher, not its collection ("arcade pc rh" for Friction). `games.json` ids
+      (`<collection>:<item>`) give the real collection.
+    - The screen takes the keyboard from the frontend by sharing its input queue for a moment. Without that, Windows
+      kept the keys on the frontend, and the stick moved the list behind the menu.
+    - AmPanel.json `"GameOptionsKey"`: `"Tab"` (default), any key name, or `"none"`. docs/21: a module that moves into the
+      frontend later.
+15. **Pixelcade listener window:** pixelweb opens a console window titled "Pixelcade Listener". AmPanel hides it
+    whenever it shows up (its log stays in `<Pixelcade>\pixelweb.log`). Next: AmPanel drives the board itself (COM7)
+    and pixelweb retires.
+
 ## Safety
 
 - Never runs alongside LEDBlinky on the same boards: it checks, and the tray tells you which one owns them.
