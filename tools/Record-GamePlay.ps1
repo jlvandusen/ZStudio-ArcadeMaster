@@ -72,6 +72,33 @@ Save-Json ([ordered]@{ updated = $now.ToString('s'); games = $pt }) $ptFile
 Remove-Item $cur -ErrorAction SilentlyContinue
 Write-PlayLog ("end {0}: {1} s (total {2} plays, {3} min)" -f $key, $secs, $e.plays, [int]($e.seconds / 60))
 
+# ------------------------------------------------------------------ end: self-heal incomplete ROM sets
+# docs/21 phase 2: with the frontend doing the game hand-off (settings.conf "gameHandOff = true") the frontend's own end
+# hook runs Repair-GameRoms.py, and AmPanel leaves it alone. Detached: the hook (and the menu coming back) never waits on
+# it. The emulator is the game's launcher: its per-game override (collections\<c>\launchers\<item>.conf, Game Options)
+# or the collection's launcher.
+try {
+  $scf = Join-Path $RetroFE 'settings.conf'
+  $handOff = (Test-Path $scf) -and (Select-String -LiteralPath $scf -Pattern '^\s*gameHandOff\s*=\s*(true|yes|1)\s*$' -Quiet)
+  $repair = Join-Path $PSScriptRoot 'Repair-GameRoms.py'
+  if ($handOff -and $Collection -and (Test-Path $repair)) {
+    $emu = ''
+    $perItem = Join-Path $RetroFE "collections\$Collection\launchers\$Item.conf"
+    if (Test-Path -LiteralPath $perItem) { $emu = "$(Get-Content -LiteralPath $perItem -TotalCount 1)".Trim() }
+    if (-not $emu) { $cs = Join-Path $RetroFE "collections\$Collection\settings.conf"; $m = if (Test-Path -LiteralPath $cs) { Select-String -LiteralPath $cs -Pattern '^\s*launcher\s*=\s*(\S.*?)\s*$' | Select-Object -Last 1 }; if ($m) { $emu = $m.Matches[0].Groups[1].Value } }
+    # RetroFE placeholders in a launcher setting ("launcher = %ITEM_COLLECTION_NAME%" in TeknoParrot's collection)
+    $emu = $emu.Replace('%ITEM_COLLECTION_NAME%', $Collection).Replace('%COLLECTION_NAME%', $Collection).Replace('%ITEM_NAME%', $Item)
+    . (Join-Path $PSScriptRoot 'lib\AmPython.ps1')
+    $py = Find-AmPython
+    if ($py) {
+      $a = @("`"$repair`"", '--retrofe', "`"$RetroFE`"", '--manifest', "`"$ManifestDir`"", '--item', "`"$Item`"", '--collection', "`"$Collection`"", '--emulator', "`"$emu`"", '--ran', "$secs")
+      $log = Join-Path $playDir 'rom-repair-last.txt'
+      Start-Process $py -ArgumentList $a -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError "$log.err" | Out-Null
+      Write-PlayLog "roms: self-heal check started for $key ($emu, ran $secs s)"
+    }
+  }
+} catch { Write-PlayLog "roms: $($_.Exception.Message)" }
+
 # ------------------------------------------------------------------ Most played playlists
 # every collection that lists games from .sub files (Racing, Flight, Lightgun, Arcade ...) gets the games it holds
 try {
