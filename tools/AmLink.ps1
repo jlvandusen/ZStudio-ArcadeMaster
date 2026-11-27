@@ -156,14 +156,19 @@ function Send-Goto([string]$item, [string]$col, [double]$gap = 0.6) {
   $before = $script:lastCmdAt
   if ($col -and $script:gotoTries -lt 2) { Send-Cmd "goto`t$item`t$col" $gap } else { Send-Cmd "goto`t$item`t" $gap; if ($script:lastCmdAt -eq $before) { Send-Cmd "goto`t$item" $gap } }
   if ($script:lastCmdAt -ne $before) { $script:gotoTries++ }
-}$me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idleMs = 9e11; menu = ''; playlist = ''; item = ''; col = ''; kind = ''; by = ''; selSeq = 0
+}
+$me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idleMs = 9e11; menu = ''; playlist = ''; item = ''; col = ''; kind = ''; by = ''; selSeq = 0; title = ''
                   launchSeq = 0; launchMenu = ''; launchItem = ''; launchCol = ''; launchBy = ''; launchAt = '' }
 $lastHello = [datetime]::MinValue; $lastUser = [datetime]::MinValue; $missItem = ''; $dirty = $true; $lastWrite = [datetime]::MinValue
 $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
 $noFollow = 'Tools', 'SETTINGS', 'Controller'      # menus that are not game lists: never followed into, nothing in them is joined
-$linkShown = $false   # the "cabinets are linked" card is up (attract): @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
-$rejoinSec = $IdleSec; try { $am = Select-String -LiteralPath (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*attractModeTime\s*=\s*(\d+)' | Select-Object -Last 1; if ($am -and [int]$am.Matches[0].Groups[1].Value -gt $rejoinSec) { $rejoinSec = [int]$am.Matches[0].Groups[1].Value } } catch { }
+$linkShown = $false   # the "cabinets are linked" card is up (attract)
+$missSaid = ''; $noteUntil = $null   # the "not on this cabinet" note: said once per game, taken down after a few seconds: @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
+# attractModeTime as RetroFE sees it: settings.conf, then settings1-15.conf on top (the cabinet type's defaults are in
+# settings8.conf, docs/21 phase 3)
+$amFiles = @(Join-Path $RetroFE 'settings.conf') + @(1..15 | ForEach-Object { Join-Path $RetroFE "settings$_.conf" } | Where-Object { Test-Path -LiteralPath $_ })
+$rejoinSec = $IdleSec; try { $am = Select-String -LiteralPath $amFiles -Pattern '^\s*attractModeTime\s*=\s*(\d+)' | Select-Object -Last 1; if ($am -and [int]$am.Matches[0].Groups[1].Value -gt $rejoinSec) { $rejoinSec = [int]$am.Matches[0].Groups[1].Value } } catch { }
 Say "cabinet link started: $HostName ($type), share $Share, follows again after $rejoinSec s without a press here (attract mode), countdown $CountdownSec s"
 $startedAt = Get-Date; $lastParentCheck = Get-Date; $lastSelfCheck = Get-Date; $selfStamp = (Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc; $restartSelf = $false; $selfArgs = @($PSBoundParameters.GetEnumerator() | ForEach-Object { "-$($_.Key)"; if ($_.Value -isnot [switch]) { '"' + [string]$_.Value + '"' } })
 
@@ -173,7 +178,9 @@ try {
     if ($RunSeconds -and ($now - $startedAt).TotalSeconds -ge $RunSeconds) { break }
     if ($ParentPid -and ($now - $lastParentCheck).TotalSeconds -ge 5) { $lastParentCheck = $now; if (-not (Get-Process -Id $ParentPid -ErrorAction SilentlyContinue)) { break } }
     # a newer AmLink.ps1 arrived (the 15-minute pull): start it and step aside, so a fix needs no reboot
-    if (-not $count -and ($now - $lastSelfCheck).TotalSeconds -ge 30) { $lastSelfCheck = $now; try { if ((Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc -ne $selfStamp) { $restartSelf = $true; break } } catch { } }
+    # (a half-saved or broken file must not take the link down: RACE1, 2026-11-27, the helper restarted into a broken edit
+    # and stayed off - so the new file is parsed first)
+    if (-not $count -and ($now - $lastSelfCheck).TotalSeconds -ge 30) { $lastSelfCheck = $now; try { $st = (Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc; if ($st -ne $selfStamp) { $pe = $null; [void][Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$null, [ref]$pe); if ($pe -and $pe.Count) { $selfStamp = $st; Say "a newer AmLink.ps1 is here but it has $($pe.Count) syntax error(s) - keeping the running helper" } else { $restartSelf = $true; break } } } catch { } }
 
     # 1. what RetroFE says
     while ($rx.Available -gt 0) {
@@ -182,7 +189,7 @@ try {
       $p = [Text.Encoding]::UTF8.GetString($raw) -split "`t"
       switch ($p[0]) {
         'hello'  { $me.menu = $p[1]; $me.idleMs = [double]$p[2]; $lastHello = $now; if ([double]$p[2] -lt 2000) { $lastUser = $now } }
-        'select' { $me.by = $p[1]; $me.menu = $p[2]; $me.playlist = $p[3]; $me.item = $p[4]; $me.col = $p[5]; $me.kind = $p[6]; $me.selSeq++; $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now } }
+        'select' { $me.by = $p[1]; $me.menu = $p[2]; $me.playlist = $p[3]; $me.item = $p[4]; $me.col = $p[5]; $me.kind = $p[6]; $me.title = (Get-Title ([string]$p[5]) ([string]$p[4])); $me.selSeq++; $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now } }
         'launch' { $me.launchBy = $p[1]; $me.launchMenu = $p[2]; $me.launchItem = $p[3]; $me.launchCol = $p[4]; $me.launchSeq++; $me.launchAt = (Get-Date).ToString('o'); $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now }; Say "this cabinet starts $($p[3]) ($($p[1]))" }
         'miss'   { $missItem = $p[1] }
       }
@@ -266,7 +273,12 @@ try {
       }
       if ($lead -and $lead.item -and ($noFollow -notcontains [string]$lead.menu)) {       # somebody in Tools is doing maintenance: stay put
         if ($me.menu -ne $lead.menu) { if ($me.menu -eq $top) { if ($me.item -ne $lead.menu) { Send-Cmd "goto`t$($lead.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
-        elseif ($me.item -ne $lead.item) { Send-Goto $lead.item $lead.col 0.25 }
+        elseif ($me.item -ne $lead.item) {
+          Send-Goto $lead.item $lead.col 0.25
+          # every way of going there was tried: the other cabinet's game is not on this one. Say so once, briefly
+          # (two real cabinets, 2026-11-27: RACE2 just stood still when RACE1 picked a game it does not have).
+          if ($gotoTries -ge 6 -and $missSaid -ne "$($lead.item)|$($lead.host)") { $missSaid = "$($lead.item)|$($lead.host)"; $noteUntil = $now.AddSeconds(3.5); Show-Card "$(Get-Cab ([string]$lead.host)) picked" $(if ($lead.title) { [string]$lead.title } else { Get-Title ([string]$lead.col) ([string]$lead.item) }) 'not on this cabinet' -AtTop; Say "$($lead.host) picked $($lead.item): not on this cabinet" }
+        }
       }
       # 5b. nobody anywhere (attract mode): each cabinet rolls its own games, but for $ShowLinkSec seconds every
       #     $ShowLinkEverySec they show the SAME game and a card says they are linked (James 2026-11-27: "in attract they
@@ -289,6 +301,7 @@ try {
       else { $attractSaid = $false }
     }
     if ($linkShown -and -not $count -and ($userHere -or -not $alive -or $ShowLinkEverySec -le 0 -or ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() % $ShowLinkEverySec) -ge $ShowLinkSec)) { Hide-Card; $linkShown = $false }
+    if ($noteUntil -and $now -ge $noteUntil) { if (-not $count -and -not $linkShown) { Hide-Card }; $noteUntil = $null }
     [Windows.Forms.Application]::DoEvents()
     Start-Sleep -Milliseconds 50
   }

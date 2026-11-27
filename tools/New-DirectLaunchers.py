@@ -35,6 +35,7 @@ CORES = {
     # RetroBat's own names for the same systems
     "lynx": ["handy"], "sg1000": ["genesis_plus_gx"], "neogeo": ["fbneo"], "amiga": ["puae"], "msx": ["bluemsx"],
     "fbneo": ["fbneo"], "dreamcast": ["flycast"], "naomi": ["flycast"], "atomiswave": ["flycast"],
+    "atari5200": ["a5200", "atari800"], "atari800": ["atari800"], "neogeocd": ["neocd"],
 }
 # steps 2-3: standalone emulators. system -> [(emulator in discovery.json, exe file name, arguments)], first one found
 # wins (the one inside the RetroBat this frontend uses first). {rom} = the game file, {name} = its name without the
@@ -53,6 +54,7 @@ STANDALONE = {
     "dreamcast": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
     "naomi": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
     "atomiswave": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
+    "jaguarcd": [("bigpemu", "BigPEmu.exe", '"{rom}"')],
     "3ds": [("citra", "azahar.exe", '-f "{rom}"'), ("citra", "citra-qt.exe", '-f "{rom}"'), ("citra", "lime3ds-gui.exe", '-f "{rom}"')],
 }
 
@@ -66,8 +68,13 @@ def screen_size():
         return 1920, 1080
 
 
-# RetroBat's "bottom row" panel layout: retropad button -> panel button (1-8, START, COIN)
-PAD = {"b": "B1", "a": "B2", "r": "B3", "r2": "B4", "y": "B5", "x": "B6", "l": "B7", "l2": "B8", "start": "START", "select": "COIN"}
+# RetroBat's "bottom row" panel layout: retropad button -> panel button (1-8, START, COIN); shared with the controls
+# cards and the button lights
+from system_buttons import PAD
+
+# bezels (James 2026-11-27: "Snes needs bezels"): RetroBat's decoration sets, a png per system and a .info that says
+# where the game's picture goes. Not for arcade lists (vertical games would sit in a sideways frame).
+NO_BEZEL = {"fbneo", "naomi", "atomiswave", "mame", "neogeo"}
 # panel.json key names -> RetroArch key names
 KEYNAME = {"LCONTROL": "ctrl", "RCONTROL": "rctrl", "LALT": "alt", "RALT": "ralt", "LSHIFT": "shift", "RSHIFT": "rshift",
            "SPACE": "space", "BACKSLASH": "backslash", "SLASH": "slash", "ENTER": "enter", "TAB": "tab"}
@@ -99,7 +106,10 @@ def retroarch_cfg(manifest, panel):
              # RetroBat writes its last system's bezel and aspect into retroarch.cfg (an Amiga bezel showed round a SNES
              # game): no overlay, the core's own aspect
              'input_overlay_enable = "false"', 'input_overlay = ""', 'video_aspect_ratio_auto = "true"',
-             'aspect_ratio_index = "22"', 'video_shader_enable = "false"']
+             'aspect_ratio_index = "22"', 'video_shader_enable = "false"',
+             # pads (Xbox, PS3 / PS4 through ScpToolkit / DS4Windows) set themselves up next to the panel's keys:
+             # RetroBat turns this off and writes its own binds at each launch
+             'input_autodetect_enable = "true"', 'input_joypad_driver = "xinput"']
     lines += ['%s = "nul"' % h for h in HOTKEYS if h != "input_exit_emulator"]
     lines.append('input_exit_emulator = "escape"')   # with F12 held; AmPanel's hold-Esc exit is the everyday way out
     for p in (panel.get("players") or []):
@@ -117,6 +127,171 @@ def retroarch_cfg(manifest, panel):
     return p
 
 
+def read_info(path):
+    """A decoration's .info: JSON, or the name of another .info to use (RetroBat: "default_4_3.info", "../x.info")."""
+    for _ in range(4):
+        if not os.path.exists(path):
+            return None
+        t = open(path, encoding="utf-8-sig", errors="replace").read().strip()
+        if t.startswith("{"):
+            try:
+                return json.loads(t)
+            except ValueError:
+                return None
+        path = os.path.normpath(os.path.join(os.path.dirname(path), t))
+    return None
+
+
+def bezel_cfg(manifest, deco, sysname, screen):
+    """<manifest>\\emulators\\bezels\\<system>.cfg (the overlay) and retroarch-am-<system>.cfg (appended after
+    retroarch-am.cfg: overlay on, the picture in the bezel's window). None when the set has no bezel for it."""
+    if not deco or sysname in NO_BEZEL:
+        return None
+    png = os.path.join(deco, sysname + ".png")
+    info = read_info(os.path.join(deco, sysname + ".info")) or read_info(os.path.join(deco, "default_4_3.info"))
+    if not os.path.exists(png) or not info:
+        return None
+    try:
+        iw, ih = float(info["width"]), float(info["height"])
+        l, r, t, b = (float(info.get(k, 0)) for k in ("left", "right", "top", "bottom"))
+    except (KeyError, ValueError, TypeError):
+        return None
+    sw, sh = screen
+    x, y = round(l * sw / iw), round(t * sh / ih)
+    w, h = round(sw - (l + r) * sw / iw), round(sh - (t + b) * sh / ih)
+    bdir = os.path.join(manifest, "emulators", "bezels")
+    os.makedirs(bdir, exist_ok=True)
+    ov = os.path.join(bdir, sysname + ".cfg")
+    open(ov, "w", encoding="utf-8").write(
+        "overlays = 1\n" 'overlay0_overlay = "%s"\n' "overlay0_full_screen = true\n" "overlay0_normalized = true\n"
+        "overlay0_descs = 0\n" % png)
+    lines = ['# ArcadeMaster: the %s bezel (tools/New-DirectLaunchers.py) - do not edit' % sysname,
+             'input_overlay_enable = "true"', 'input_overlay = "%s"' % ov, 'input_overlay_opacity = "1.000000"',
+             'input_overlay_scale = "1.000000"', 'input_overlay_scale_landscape = "1.000000"',
+             'input_overlay_auto_scale = "false"', 'input_overlay_enable_autopreferred = "false"',
+             'input_overlay_show_mouse_cursor = "false"', 'input_overlay_hide_in_menu = "true"',
+             'video_aspect_ratio_auto = "false"', 'aspect_ratio_index = "23"', 'video_scale_integer = "false"',
+             'custom_viewport_x = "%d"' % x, 'custom_viewport_y = "%d"' % y,
+             'custom_viewport_width = "%d"' % w, 'custom_viewport_height = "%d"' % h]
+    p = os.path.join(manifest, "emulators", "retroarch-am-%s.cfg" % sysname)
+    open(p, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    return p
+
+
+# Cemu (Wii U GamePad) button ids, from Cemu's VPADController
+CEMU_IDS = {"a": 1, "b": 2, "x": 3, "y": 4, "l": 5, "r": 6, "l2": 7, "r2": 8, "start": 9, "select": 10}
+CEMU_DIRS = {"up": (11, 17), "down": (12, 18), "left": (13, 19), "right": (14, 20)}   # d-pad and left stick
+CEMU_RSTICK = {"up": 21, "down": 22, "left": 23, "right": 24}
+# panel.json key names -> Windows virtual-key codes (Cemu stores those; it tells left and right Ctrl / Alt / Shift apart)
+VK = {"LCONTROL": 162, "RCONTROL": 163, "LALT": 164, "RALT": 165, "LSHIFT": 160, "RSHIFT": 161, "SPACE": 32,
+      "ENTER": 13, "TAB": 9, "BACKSLASH": 220, "SLASH": 191, "UP": 38, "DOWN": 40, "LEFT": 37, "RIGHT": 39}
+
+
+def vk(k):
+    k = (k or "").upper()
+    if k in VK:
+        return VK[k]
+    if len(k) == 1 and k.isalnum():
+        return ord(k)
+    if re.match(r"^F([1-9]|1[0-2])$", k):
+        return 111 + int(k[1:])
+    return None
+
+
+def cemu_profile(exe, panel):
+    """Cemu's player 1 controller (controllerProfiles\\controller0.xml) from the panel: RetroBat left its own keyboard
+    default there (X, Z, Q, S, Page Up ...), so only two panel buttons did anything in a Wii U game. The layout is
+    the controls card's (system_buttons.NATIVE["wiiu"]). The old file is kept once as controller0.xml.am-bak."""
+    base = os.path.dirname(exe)
+    d = os.path.join(base, "portable") if os.path.isdir(os.path.join(base, "portable")) else os.path.join(os.environ.get("APPDATA", ""), "Cemu")
+    d = os.path.join(d, "controllerProfiles")
+    p1 = next((p for p in (panel.get("players") or []) if p.get("position") == "P1"), None)
+    if not p1:
+        return None
+    keys = p1.get("keys") or {}
+    maps = []
+    for pad, mid in CEMU_IDS.items():
+        code = vk(keys.get("P1" + PAD[pad]))
+        if code:
+            maps.append((mid, code))
+    for dname, ids in CEMU_DIRS.items():
+        for mid in ids:
+            maps.append((mid, vk(DIRS[1][dname])))
+    for dname, mid in CEMU_RSTICK.items():
+        maps.append((mid, vk(DIRS[2][dname])))       # player 2's stick turns the camera
+    def block(api, uuid, name, pairs):
+        entries = "".join("\t\t\t<entry>\n\t\t\t\t<mapping>%d</mapping>\n\t\t\t\t<button>%d</button>\n\t\t\t</entry>\n" % m
+                          for m in sorted(pairs))
+        return ("\t<controller>\n\t\t<api>%s</api>\n\t\t<uuid>%s</uuid>\n\t\t<display_name>%s</display_name>\n"
+                "\t\t<axis>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</axis>\n"
+                "\t\t<rotation>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</rotation>\n"
+                "\t\t<trigger>\n\t\t\t<deadzone>0.25</deadzone>\n\t\t\t<range>1</range>\n\t\t</trigger>\n"
+                "\t\t<mappings>\n%s\t\t</mappings>\n\t</controller>\n") % (api, uuid, name, entries)
+    # the first XInput pad (an Xbox pad, or a PS3 / PS4 pad through ScpToolkit / DS4Windows) next to the panel, in
+    # Cemu's own default layout (VPADController::set_default_mapping, Nintendo positions: A = the right face button)
+    xi = [(1, 13), (2, 12), (3, 15), (4, 14), (5, 8), (6, 9), (7, 42), (8, 43), (9, 4), (10, 5), (11, 0), (12, 1),
+          (13, 2), (14, 3), (15, 6), (16, 7), (17, 39), (18, 45), (19, 44), (20, 38), (21, 41), (22, 47), (23, 46), (24, 40)]
+    xml = ('<?xml version="1.0" encoding="utf-8"?>\n<!-- ArcadeMaster: the panel + the first pad (tools/New-DirectLaunchers.py) -->\n'
+           "<emulated_controller>\n\t<type>Wii U GamePad</type>\n" + block("Keyboard", "keyboard", "Keyboard", maps)
+           + block("XInput", "0", "Controller 1", xi) + "</emulated_controller>\n")
+    os.makedirs(d, exist_ok=True)
+    f = os.path.join(d, "controller0.xml")
+    if os.path.exists(f) and not os.path.exists(f + ".am-bak") and "ArcadeMaster" not in open(f, encoding="utf-8", errors="replace").read():
+        import shutil
+        shutil.copy2(f, f + ".am-bak")
+    open(f, "w", encoding="utf-8").write(xml)
+    return f
+
+
+# PCSX2 pad 1 = the panel's keys (RetroBat wrote them) + the first XInput pad (James 2026-11-27: "properly map to use
+# with Xbox and 360 and Sony games"). PCSX2 keeps every binding of a button as its own line.
+PCSX2_XINPUT = {"Up": "DPadUp", "Right": "DPadRight", "Down": "DPadDown", "Left": "DPadLeft", "Triangle": "Y",
+                "Circle": "B", "Cross": "A", "Square": "X", "Select": "Back", "Start": "Start", "L1": "LeftShoulder",
+                "R1": "RightShoulder", "L2": "+LeftTrigger", "R2": "+RightTrigger", "L3": "LeftStick", "R3": "RightStick",
+                "Analog": "Guide", "LUp": "-LeftY", "LRight": "+LeftX", "LDown": "+LeftY", "LLeft": "-LeftX",
+                "RUp": "-RightY", "RRight": "+RightX", "RDown": "+RightY", "RLeft": "-RightX",
+                "LargeMotor": "LargeMotor", "SmallMotor": "SmallMotor"}
+
+
+def pcsx2_pad(exe):
+    ini = os.path.join(os.path.dirname(exe), "inis", "PCSX2.ini")
+    if not os.path.exists(ini):
+        return None
+    lines = open(ini, encoding="utf-8-sig").read().splitlines()
+    if not os.path.exists(ini + ".am-bak"):
+        import shutil
+        shutil.copy2(ini, ini + ".am-bak")
+    out, sec = [], None
+    for l in lines:
+        s = l.strip()
+        if s.startswith("["):
+            if sec == "Pad1":
+                out += ["%s = XInput-0/%s" % kv for kv in PCSX2_XINPUT.items()]
+            sec = s[1:-1]
+        if sec == "Pad1" and "XInput-0/" in l:
+            continue                      # ours, written again below
+        if sec == "InputSources" and re.match(r"^\s*XInput\s*=", l):
+            l = "XInput = true"
+        out.append(l)
+    if sec == "Pad1":
+        out += ["%s = XInput-0/%s" % kv for kv in PCSX2_XINPUT.items()]
+    open(ini, "w", encoding="utf-8").write("\n".join(out) + "\n")
+    return ini
+
+
+def xemu_pad(exe):
+    """Xbox: the pad is player 1 (xemu binds the first pad it sees to an empty port), the panel's keys player 2."""
+    toml = os.path.join(os.path.dirname(exe), "xemu.toml")
+    if not os.path.exists(toml):
+        return None
+    t = open(toml, encoding="utf-8").read()
+    if not os.path.exists(toml + ".am-bak"):
+        open(toml + ".am-bak", "w", encoding="utf-8").write(t)
+    t = re.sub(r"(?ms)^\[input\.bindings\]\n.*?(?=^\[|\Z)", "[input.bindings]\nport2 = 'keyboard'\n\n", t)
+    open(toml, "w", encoding="utf-8").write(t)
+    return toml
+
+
 def hooks(old_conf):
     if not os.path.exists(old_conf):
         return []
@@ -130,7 +305,9 @@ def main():
     ap.add_argument("--systems", default="")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--revert", action="store_true")
+    ap.add_argument("--bezels", default="default_unglazed", help="RetroBat decoration set, or none")
     a = ap.parse_args()
+    a.manifest = os.path.normpath(a.manifest)
     only = {s.strip().lower() for s in a.systems.split(",") if s.strip()}
     cols = os.path.join(a.retrofe, "collections")
     launchers = os.path.join(a.retrofe, "launchers.windows")
@@ -177,6 +354,15 @@ def main():
         pass
     cfg = retroarch_cfg(a.manifest, panel) if not a.dry_run else os.path.join(a.manifest, "emulators", "retroarch-am.cfg")
     radir = os.path.dirname(ra["exe"])
+    # the bezel set: RetroBat's decorations next to the RetroArch in use (system\decorations\<set>\systems)
+    deco = None
+    if a.bezels != "none":
+        for root in ([home] if home else []) + [os.path.dirname(os.path.dirname(radir))]:
+            d = os.path.join(root, "system", "decorations", a.bezels, "systems")
+            if os.path.isdir(d):
+                deco = d
+                break
+    screen = screen_size()
     done, skipped = [], []
     for c in sorted(os.listdir(cols)):
         sc = os.path.join(cols, c, "settings.conf")
@@ -192,10 +378,12 @@ def main():
         name = "AM_DL_" + m.group(1)
         core = next((x for x in CORES.get(sysname, []) if x in ra["cores"]), None)
         if core:
+            bz = bezel_cfg(a.manifest, deco, sysname, screen) if not a.dry_run else None
+            append = cfg + ("|" + bz if bz else "")
             conf = ["executable = %s" % ra["exe"],
-                    'arguments = --appendconfig "%s" -L "%s" "%%ITEM_FILEPATH%%"' % (cfg, os.path.join(radir, "cores", core + "_libretro.dll")),
+                    'arguments = --appendconfig "%s" -L "%s" "%%ITEM_FILEPATH%%"' % (append, os.path.join(radir, "cores", core + "_libretro.dll")),
                     "currentDirectory = %s" % radir]
-            how = core
+            how = core + (" +bezel" if bz else "")
         else:
             # a standalone emulator (steps 2-3)
             pick = None
@@ -208,7 +396,13 @@ def main():
             if not pick:
                 skipped.append(sysname)
                 continue
-            w, h = screen_size()
+            w, h = screen
+            if sysname == "wiiu" and not a.dry_run:
+                cemu_profile(pick[0], panel)          # the panel's keys, as the controls card shows them, + the pad
+            if sysname == "ps2" and not a.dry_run:
+                pcsx2_pad(pick[0])
+            if sysname == "xbox" and not a.dry_run:
+                xemu_pad(pick[0])
             args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{w}", str(w)).replace("{h}", str(h))
             conf = ["executable = %s" % pick[0], "arguments = %s" % args, "currentDirectory = %s" % os.path.dirname(pick[0])]
             how = os.path.basename(pick[0])

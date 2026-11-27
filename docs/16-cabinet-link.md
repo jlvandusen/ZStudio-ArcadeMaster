@@ -82,7 +82,7 @@ own PC, through a named pipe). "Is that cabinet there?" is judged by its counter
   A game this cabinet does not have: "not on this cabinet".
 - Everything this cabinet does because of the link is published as `remote`; only `user` actions are followed, so two
   cabinets cannot chase each other.
-- Log: `manifestmlink.log`.
+- Log: `manifest\amlink.log`.
 
 **Tested on RACE1 (2026-11-26) against a script acting as a second racing rig (a `DESKTOP-FAKE.json` peer file)**
 - From the main menu it followed into Tools and Racing and onto each selected game (Daytona 3 single / linked by
@@ -132,3 +132,55 @@ whether a hand is on the rim), only on an idle cabinet, and released the moment 
   it follows nobody for the frontend's `attractModeTime` (90 s on the racing rigs); `-IdleSec` is only the floor. The
   join countdown follows the same rule. The cabinet where somebody is browsing still leads the idle ones. Tested on
   RACE1: 45 s after a press it stayed put while a stand-in cabinet browsed; at 100 s it followed.
+
+## 2026-11-27: first test on two real cabinets (RACE1 + RACE2)
+
+- **Browsing in step works.** RACE1 scrolled five games about 2 s apart; RACE2 followed four within 1.5 s each (Arctic
+  Thunder, Auto Modellista, Ballistics, Batman - RACE2's screen grabs show the right card and title). The fifth, Battle
+  Gear 4 Tuned, is not on RACE2: it stayed on Batman and went back to rolling its own games.
+- **The rejoin rule works.** After one press on RACE2's own controls it ignored RACE1 (26 s later) and followed again
+  later (103 s after the press). RACE2's wait in that test was 30 s, not RACE1's 90: its attract mode was set to start
+  after 20 s. James then chose 90 s on both racing rigs (PR 320: `catalog/frontend-settings/racing.conf`).
+- **Model 3 on RACE1 checked after RACE2's Dirt Devils report** (its Supermodel.ini had every control on the handbrake
+  lever's number): RACE1 has 23 controls on the wheel (JOY1) and only the handbrake on the lever (JOY2); Start is
+  Options, Coin is Share.
+- **A game the follower does not have** now shows a card at the top for a few seconds: "RACE1 picked / <title> / not on
+  this cabinet". The title travels with the selection, because a cabinet without the game cannot look it up.
+- **A broken helper file no longer takes the link down.** The helper restarts itself when its script changes; it now
+  parses the new file first and keeps running when the file has syntax errors (RACE1's link went off twice that way
+  while this was being written).
+
+## Part 5: linked games - Model 3 first (2026-11-27)
+
+James ran Dirt Devils on both racing rigs through the link: both started, but "they don't seem to see each other". Each
+rig ran its own copy; Supermodel's net board was off on both (`Network = 0`), and RACE2's `AddressOut` was its own
+address, left over from the DRIVE copy.
+
+- `tools\Set-SupermodelLink.ps1 -Peer <other cabinet>` switches the net board on towards the other rig (`-Off` back to
+  single play). Dry run unless `-Apply`. The rig whose name sorts first listens on 1970 and sends to 1971, the other
+  the other way round. The other rig is looked up by name at every run, because both get their address from the
+  router (DHCP): RACE1 192.168.1.3, RACE2 192.168.1.4 today.
+- Both rigs run the same Supermodel build (the DRIVE copy's, 2022-03-31). Keep it that way: an update goes on both.
+- Still to do, with James at the cabinets:
+  1. One rig with the net board on, the game played alone: does it start and play normally? If yes, the boot turns
+     the net board on whenever the twin is in `catalog\cabinet-link.json`; if not, it goes on only for a joined start.
+  2. The first networked start raises the Windows firewall prompt for Supermodel on each rig; James allows it
+     (an administrator's change).
+  3. Each linked game is set to 2-machine link play in its own test menu, with the cabinet number (1 = RACE1, 2 = RACE2).
+- **Works: RACE1 and RACE2 raced each other in Dirt Devils (James, 2026-11-27: "It works!").** What it takes:
+  1. `Set-SupermodelLink -Peer <twin> -Apply` on both rigs (Start-ArcadeMaster now does it at every start, from
+     `model3Pairs` in `catalog\cabinet-link.json`). Supermodel reads the file only when it starts, so a game already
+     running keeps its old settings until it is started again.
+  2. Once per game, in its own test menu (Test = the G29's **+**, Service = **-**, or keypad +/-): RACE1 = MASTER,
+     RACE2 = SLAVE. Both on MASTER gives a duplicate-master warning. The game keeps it in its NVRAM and restarts itself.
+  3. Each Supermodel listens on its port and keeps trying to connect out to the other's; when both directions are
+     up the games leave CHECKING NETWORK. Start order does not matter.
+  4. **Never test the ports by hand (Test-NetConnection, telnet) while a game runs.** A Supermodel accepts exactly one
+     connection on its port; a probe used RACE2's up, its partner could then never get in, and both games sat on
+     CHECKING NETWORK until RACE2's game was started again.
+  Timeline of the working start (RACE2's side): 14:03:23 Supermodel starts and listens on 1971; 14:03:30 RACE1
+  connects in; 14:03:38 RACE2 connects out to RACE1:1970.
+- A game played alone with the net board on starts and plays normally (RACE2, Dirt Devils, RACE1 not listening), so
+  the net board can stay on. Windows Firewall is off on both rigs, so no prompt came up.
+- Not linked yet: Daytona (Model 2), TeknoParrot games. Each emulator has its own network settings; Model 3 is the
+  first because Supermodel has them in one file.

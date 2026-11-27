@@ -760,3 +760,13 @@ Next steps towards our own G29 library, without G HUB:
   on, and when a Logitech wheel is plugged in without G HUB.
 - **James's two G HUB mappings** (default desktop profile): button 24 (red dial press) types Enter, button 25 (PS)
   types Esc. Hold PS / Esc for 5 seconds to leave any game.
+
+## Model 3: steering that is not on the wheel (2026-11-27)
+
+- A copied drive can bring a `Supermodel.ini` written for another PC's controller order. RACE2's had every control on
+  JOY2, which on RACE2 is the handbrake lever: Start did nothing in Dirt Devils, and nothing warned about it.
+- `tools\Repair-EmulatorDevices.ps1` (runs at every start and on plug / unplug) now checks it. When `InputSteering` names a
+  controller that is not plugged in, or one that cannot be a wheel (no buttons, or fewer than two axes), and exactly one
+  plugged-in controller can be (3+ axes and 10+ buttons), the two controller numbers are swapped in the whole file. The
+  old file is kept beside it as `Supermodel.ini.wheel-<time>.bak`.
+- Steering on a second real controller (a pad, a second wheel) is somebody's choice and is left alone.

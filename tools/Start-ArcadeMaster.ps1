@@ -298,6 +298,18 @@ try {
     }
   }
 } catch { Write-Log "cabinet link failed to start: $($_.Exception.Message)" }
+# Model 3 linked play (docs/16 part 5): two cabinets named as a pair in catalog\cabinet-link.json ("model3Pairs") keep
+# Supermodel's network link on towards each other. Set at every start, because the other cabinet is looked up by name
+# and its address comes from the router. Playing alone with the link on is fine (RACE2, 2026-11-27), so it stays on.
+# The cabinet link's own switch decides: with linkEvents off, the Model 3 link is left as it is. When the twin cannot be
+# found on the network, nothing is changed and the last address stays.
+try {
+  if (-not $PrepOnly -and $lk -and $lkLine -and $lkLine.Matches[0].Groups[1].Value -match '^(yes|true|1)$' -and (Test-Path (Join-Path $Root 'emulators\Supermodel\Config\Supermodel.ini'))) {
+    $m3 = @($lk.model3Pairs | Where-Object { @($_) -contains $env:COMPUTERNAME } | Select-Object -First 1)
+    $m3Peer = @($m3 | ForEach-Object { $_ } | Where-Object { $_ -and $_ -ne $env:COMPUTERNAME }) | Select-Object -First 1
+    if ($m3Peer) { $m3Out = & (Join-Path $PSScriptRoot 'Set-SupermodelLink.ps1') -RetroFE $Root -Peer $m3Peer -Apply 6>&1 | Out-String; Write-Log ('Model 3 link: ' + (($m3Out.Trim() -split "`r?`n") -join '; ')) }
+  }
+} catch { Write-Log "Model 3 link not set: $($_.Exception.Message)" }
 $deckOn = [bool](Read-AmUi $ManifestDir).streamDeck   # Tools > Cabinet Settings > Stream Deck
 if (-not $deckOn -and (Test-Path $deck)) { Write-Log 'Stream Deck controller off (Cabinet Settings)' }
 if ($deckOn -and $pyw -and (Test-Path $deck)) {

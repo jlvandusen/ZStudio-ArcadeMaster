@@ -12,6 +12,7 @@ which AmPanel uses when Colors.ini has no entry for a game:
 import argparse
 import json
 import os
+import re
 import sqlite3
 
 # the on-screen controls card's button colours (New-PanelControlsArt.py BTN_COLORS: magenta, cyan, amber, green,
@@ -76,6 +77,43 @@ def from_controls(players, buttons):
         for b in range(1, max(0, min(buttons, 8)) + 1):
             out["P%dB%d" % (p, b)] = PALETTE[b - 1]
     return out
+
+
+def system_lights(retrofe, out):
+    """"@<collection>": the buttons a console's games use, for every game in that list (James 2026-11-27, Wii U: "light
+    up the buttons that are active and color them"). Only for direct launchers whose keys we write ourselves
+    (tools/New-DirectLaunchers.py): RetroArch (players 1-4 from panel.json) and Cemu (player 1). The colours are the
+    controls card's chips (system_buttons.CHIP), so the panel shows what the card says."""
+    from system_buttons import NATIVE, PAD, led_rgb
+    cols = os.path.join(retrofe, "collections")
+    launchers = os.path.join(retrofe, "launchers.windows")
+    n = 0
+    for c in (os.listdir(cols) if os.path.isdir(cols) else []):
+        sc = os.path.join(cols, c, "settings.conf")
+        if not os.path.exists(sc):
+            continue
+        m = re.search(r"^\s*launcher\s*=\s*AM_DL_(\S+)", open(sc, encoding="latin-1").read(), re.M)
+        if not m or m.group(1).lower() not in NATIVE:
+            continue
+        lc = os.path.join(launchers, "AM_DL_%s.conf" % m.group(1))
+        exe = ""
+        if os.path.exists(lc):
+            e = re.search(r"^executable\s*=\s*(.+)$", open(lc, encoding="latin-1").read(), re.M)
+            exe = os.path.basename(e.group(1).strip()).lower() if e else ""
+        if exe == "retroarch.exe":
+            players = (1, 2)              # the panel's 4p keys are all mapped; light the two main seats
+        elif exe == "cemu.exe":
+            players = (1,)
+        else:
+            continue                      # a standalone whose keys we don't write yet: no promise on the panel
+        lights = {}
+        for p in players:
+            for pad in NATIVE[m.group(1).lower()]:
+                btn = PAD[pad]
+                lights["P%d%s" % (p, btn)] = led_rgb(btn)
+        out["@" + c] = lights
+        n += 1
+    return n
 
 
 def main():
@@ -182,6 +220,8 @@ def main():
                 if f.lower().endswith(".bat"):
                     out[os.path.splitext(f)[0]] = ui
     out["__chooser"] = {"P1B1": PALETTE[2], "P1START": WHITE}
+    n_sys = system_lights(a.retrofe, out)
+    print("system lights: %d console lists light their own buttons" % n_sys)
     path = os.path.join(a.manifest, "led-colors-auto.json")
     with open(path + ".tmp", "w", encoding="utf-8") as f:
         json.dump(out, f, separators=(",", ":"))

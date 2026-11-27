@@ -13,48 +13,12 @@ The system is found from its collection's launcher (AM_RB_<retrobat system>). RE
 import argparse
 import os
 import re
+import shutil
 
 from PIL import Image, ImageDraw, ImageFilter
 
-# RetroBat's keyboard layout for the panel (es_input.cfg, 2026-11-26 "bottom row"): retropad button -> panel button
-PANEL = [("b", "B1"), ("a", "B2"), ("r", "B3"), ("r2", "B4"), ("y", "B5"), ("x", "B6"), ("l", "B7"), ("l2", "B8"),
-         ("start", "START"), ("select", "COIN")]
-# retropad -> the console's own button names, only where the RetroBat default is well known
-NATIVE = {
-    "nes": {"b": "B", "a": "A", "start": "START", "select": "SELECT"},
-    "famicom": {"b": "B", "a": "A", "start": "START", "select": "SELECT"},
-    "snes": {"b": "B", "a": "A", "y": "Y", "x": "X", "l": "L", "r": "R", "start": "START", "select": "SELECT"},
-    "gb": {"b": "B", "a": "A", "start": "START", "select": "SELECT"},
-    "gbc": {"b": "B", "a": "A", "start": "START", "select": "SELECT"},
-    "gba": {"b": "B", "a": "A", "l": "L", "r": "R", "start": "START", "select": "SELECT"},
-    "nds": {"b": "B", "a": "A", "y": "Y", "x": "X", "l": "L", "r": "R", "start": "START", "select": "SELECT"},
-    "3ds": {"b": "B", "a": "A", "y": "Y", "x": "X", "l": "L", "r": "R", "start": "START", "select": "SELECT"},
-    "megadrive": {"y": "A", "b": "B", "a": "C", "l": "X", "x": "Y", "r": "Z", "start": "START", "select": "MODE"},
-    "sega32x": {"y": "A", "b": "B", "a": "C", "l": "X", "x": "Y", "r": "Z", "start": "START"},
-    "segacd": {"y": "A", "b": "B", "a": "C", "l": "X", "x": "Y", "r": "Z", "start": "START"},
-    "saturn": {"y": "A", "b": "B", "a": "C", "l": "X", "x": "Y", "r": "Z", "l2": "L", "r2": "R", "start": "START"},
-    "mastersystem": {"b": "1", "a": "2", "start": "PAUSE"},
-    "gamegear": {"b": "1", "a": "2", "start": "START"},
-    "sg-1000": {"b": "1", "a": "2", "start": "PAUSE"},
-    "pcengine": {"b": "II", "a": "I", "start": "RUN", "select": "SELECT"},
-    "pcenginecd": {"b": "II", "a": "I", "start": "RUN", "select": "SELECT"},
-    "neogeo": {"b": "A", "a": "B", "y": "C", "x": "D", "start": "START", "select": "COIN"},
-    "neogeocd": {"b": "A", "a": "B", "y": "C", "x": "D", "start": "START", "select": "SELECT"},
-    "psx": {"b": "CROSS", "a": "CIRCLE", "y": "SQUARE", "x": "TRIANGLE", "l": "L1", "r": "R1", "l2": "L2", "r2": "R2",
-            "start": "START", "select": "SELECT"},
-    "ps2": {"b": "CROSS", "a": "CIRCLE", "y": "SQUARE", "x": "TRIANGLE", "l": "L1", "r": "R1", "l2": "L2", "r2": "R2",
-            "start": "START", "select": "SELECT"},
-    "psp": {"b": "CROSS", "a": "CIRCLE", "y": "SQUARE", "x": "TRIANGLE", "l": "L", "r": "R", "start": "START", "select": "SELECT"},
-    "dreamcast": {"b": "A", "a": "B", "y": "X", "x": "Y", "l2": "L", "r2": "R", "start": "START"},
-    "atari2600": {"b": "FIRE", "start": "RESET", "select": "SELECT"},
-    "c64": {"b": "FIRE", "start": "RUN/STOP"},
-    "amiga500": {"b": "FIRE", "a": "FIRE 2"},
-}
-# a modern pad, for systems without a sure table: the button by its place
-GENERIC = {"b": "BOTTOM", "a": "RIGHT", "y": "LEFT", "x": "TOP", "l": "L", "r": "R", "l2": "L2", "r2": "R2",
-           "start": "START", "select": "SELECT"}
-CHIP = {"B1": "ff3b3b", "B2": "ffb000", "B3": "2ec8ff", "B4": "3ddc84", "B5": "ff2fa0", "B6": "7b5cff", "B7": "9be7ff",
-        "B8": "ffe259", "START": "ffffff", "COIN": "ffe259"}
+from system_buttons import CHIP, GENERIC, NATIVE, PANEL   # one table with the emulator configs and the lights
+
 DEFAULT_THEME = r"R:\CP78\RetroBat\emulationstation\.emulationstation\themes\es-theme-RELOAD-\art"
 
 
@@ -98,7 +62,8 @@ NAME_KEY = {
 def system_key(retrofe, coll):
     sc = os.path.join(retrofe, "collections", coll, "settings.conf")
     if os.path.exists(sc):
-        m = re.search(r"^\s*launcher\s*=\s*AM_RB_(\S+)", open(sc, encoding="latin-1").read(), re.M)
+        # RetroBat's launcher or our direct one (New-DirectLaunchers.py: AM_DL_<same system>)
+        m = re.search(r"^\s*launcher\s*=\s*AM_(?:RB|DL)_(\S+)", open(sc, encoding="latin-1").read(), re.M)
         if m:
             return m.group(1).lower()
     return NAME_KEY.get(coll.lower())
@@ -162,7 +127,7 @@ def main():
     cols = os.path.join(a.retrofe, "collections")
     menu = os.path.join(cols, "Main", "menu.txt")
     makers = [l.strip() for l in open(menu, encoding="utf-8", errors="replace")] if os.path.exists(menu) else []
-    done, sure = 0, 0
+    done, sure, lists = 0, 0, 0
     for maker in makers:
         mt = os.path.join(cols, maker, "menu.txt")
         if not maker or not os.path.exists(mt):
@@ -182,13 +147,21 @@ def main():
                 card(title, ctrl if os.path.exists(ctrl) else None, key, dst)
                 done += 1
                 sure += key in NATIVE
+            # the system's own game list shows the same card for every game (RetroFE's "default" fallback in
+            # <collection>\medium_artwork\am_controls), not the bare panel dial (James 2026-11-27, Wii U: "missing
+            # joystick graphics"). A game's own card, where one exists, still wins.
+            gdef = os.path.join(cols, coll, "medium_artwork", "am_controls", "default.png")
+            if os.path.exists(dst) and os.path.isdir(os.path.join(cols, coll)) and (a.force or not os.path.exists(gdef)):
+                os.makedirs(os.path.dirname(gdef), exist_ok=True)
+                shutil.copy2(dst, gdef)
+                lists += 1
             bg = os.path.join(theme, "background fanart", key + ".jpg") if theme else ""
             if not os.path.exists(bg):
                 bg = os.path.join(own, "fanart.jpg")
             bdst = os.path.join(art, "am_backdrop", coll + ".jpg")
             if os.path.exists(bg) and (a.force or not os.path.exists(bdst)):
                 backdrop(bg, bdst)
-    print("system cards: %d written (%d with the console's own button names)" % (done, sure))
+    print("system cards: %d written (%d with the console's own button names), %d game lists show theirs" % (done, sure, lists))
 
 
 if __name__ == "__main__":
