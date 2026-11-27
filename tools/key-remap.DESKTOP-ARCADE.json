@@ -1,0 +1,7 @@
+{
+  "_comment": "DESKTOP-ARCADE (2P stand-up): keys AmPanel turns into other keys while a given program is in front (src/panel/KeyRemap.cs). The foot pedals send F13 / F14 / F15 (tools/Set-FootSwitch.ps1) so they never clash with the panel; the PS3 Time Crisis games (RPCS3, started through the old frontend's AutoHotkey programs) still wait for A (cover, held) and C (duck), so only there the pedals become A and C. 'process' is a pattern on the program's name.",
+  "rules": [
+    { "process": "^(rpcs3|Time Crisis.*|AutoHotkey.*)$", "from": "F13", "to": "A" },
+    { "process": "^(rpcs3|Time Crisis.*|AutoHotkey.*)$", "from": "F15", "to": "C" }
+  ]
+}
