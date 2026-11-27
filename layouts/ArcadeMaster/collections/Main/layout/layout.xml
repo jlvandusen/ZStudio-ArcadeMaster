@@ -477,9 +477,71 @@
   <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_strip" mode="layout" x="1920" y="75" yOrigin="center" alpha=".85" layer="11">
     <onIdle><set duration="50"><animate type="x" from="1920" to="-4900" algorithm="linear"/></set></onIdle>
   </reloadableImage>
-  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_stats" mode="layout" x="960" y="185" xOrigin="center" yOrigin="center" alpha="0" layer="13">
-    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".45"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/><animate type="y" from="160" to="185" algorithm="easeOutBack"/></set></onMenuIdle>
+  <!-- facts under the logo strip (James 2026-11-27: "come down and stop then go back up and something else about it comes
+       down"): 6 slots, one at a time - drops in, holds 4.5 s, rises out, the next comes down -->
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_fact1" mode="layout" x="960" y="-80" xOrigin="center" yOrigin="center" alpha="0" layer="13">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/><animate type="y" to="-80"/></set></onMenuScroll>
+    <onIdle>
+      <set duration=".5"><animate type="y" from="-80" to="190" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="4.5"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" to="-80" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".6"><animate type="nop"/></set>
+      <set duration="30.5"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_fact2" mode="layout" x="960" y="-80" xOrigin="center" yOrigin="center" alpha="0" layer="13">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/><animate type="y" to="-80"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="6.1"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" from="-80" to="190" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="4.5"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" to="-80" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".6"><animate type="nop"/></set>
+      <set duration="24.4"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_fact3" mode="layout" x="960" y="-80" xOrigin="center" yOrigin="center" alpha="0" layer="13">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/><animate type="y" to="-80"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="12.2"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" from="-80" to="190" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="4.5"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" to="-80" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".6"><animate type="nop"/></set>
+      <set duration="18.3"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_fact4" mode="layout" x="960" y="-80" xOrigin="center" yOrigin="center" alpha="0" layer="13">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/><animate type="y" to="-80"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="18.3"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" from="-80" to="190" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="4.5"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" to="-80" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".6"><animate type="nop"/></set>
+      <set duration="12.2"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_fact5" mode="layout" x="960" y="-80" xOrigin="center" yOrigin="center" alpha="0" layer="13">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/><animate type="y" to="-80"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="24.4"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" from="-80" to="190" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="4.5"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" to="-80" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".6"><animate type="nop"/></set>
+      <set duration="6.1"><animate type="nop"/></set>
+    </onIdle>
+  </reloadableImage>
+  <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_fact6" mode="layout" x="960" y="-80" xOrigin="center" yOrigin="center" alpha="0" layer="13">
+    <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/><animate type="y" to="-80"/></set></onMenuScroll>
+    <onIdle>
+      <set duration="30.5"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" from="-80" to="190" algorithm="easeOutBack"/><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>
+      <set duration="4.5"><animate type="nop"/></set>
+      <set duration=".5"><animate type="y" to="-80" algorithm="easeInBack"/><animate type="alpha" to="0" algorithm="easeInCubic"/></set>
+      <set duration=".6"><animate type="nop"/></set>
+    </onIdle>
   </reloadableImage>
   <reloadableImage useTextureCache="true" menuScrollReload="true" type="am_hero_timeline" mode="layout" x="960" y="1040" xOrigin="center" yOrigin="center" alpha="0" layer="13">
     <onMenuScroll><set duration=".1"><animate type="alpha" to="0"/></set></onMenuScroll>
