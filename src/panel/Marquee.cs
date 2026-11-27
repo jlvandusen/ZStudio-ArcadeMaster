@@ -97,6 +97,7 @@ class Marquee
     // set before StartDirect runs: until the board is open, events wait for it (dropped, the next one shows) instead of
     // going to the listener - one did, found no listener, and started it again (2026-11-27)
     public volatile bool DirectWanted;
+    public string Intro = "random";   // AmPanel.json "MarqueeIntro": random | sweep | punch | drop | warp | doors
     public string Driver { get { return direct != null ? "direct (" + direct.Board + ")" : "listener"; } }
     public void StartDirect()
     {
@@ -104,7 +105,7 @@ class Marquee
         string port = PixelDirect.PortFromSettings(PixelcadeDir) ?? "COM7";
         StopListener();
         Thread.Sleep(1500);   // Windows frees the port a moment after the listener is gone
-        var d = new PixelDirect(PixelcadeDir, port, log);
+        var d = new PixelDirect(PixelcadeDir, port, log) { Intro = Intro };
         if (d.Open()) { direct = d; return; }
         log("marquee: direct driver could not open the board (" + d.LastError + ") - the listener takes over again");
         DirectWanted = false; lastListenerStart = DateTime.MinValue; EnsureListener();
@@ -157,7 +158,7 @@ class Marquee
         if (string.IsNullOrEmpty(game)) return;
         string np = (NowPlaying ?? "").Replace("~game~", title ?? game).Replace("~system~", system ?? "");
         np = System.Text.RegularExpressions.Regex.Replace(np, "~[a-z0-9]+~", "").Trim();   // ~hiscoretop3~ etc.: not yet
-        if (direct != null) { direct.GameStart(system, game, np, System.Drawing.Color.Lime); return; }
+        if (direct != null) { direct.GameStart(system, game, title ?? game, System.Drawing.Color.Lime); return; }
         Send(StopAttract(), "/arcade/stream/black/dummy?l=0&event=GameStart", Text(np, 1, "GameStart", "green", game, system),
              Stream(game, system, 99999, game, "GameStart"));
     }
@@ -176,6 +177,14 @@ class Marquee
         if (direct != null) { if (!string.IsNullOrEmpty(selected)) direct.Game(system, selected, null, true); return; }
         string stop = StopAttract();
         if (!string.IsNullOrEmpty(selected)) Send(stop, Stream(selected, system, 0, null, "FEScroll")); else Send(stop);
+    }
+    // one intro on purpose (tests, Tools): {"cmd":"marquee","intro":"punch","game":"dkong","system":"mame","title":"Donkey Kong"}
+    public bool PreviewIntro(string style, string game, string system, string title)
+    {
+        if (direct == null || string.IsNullOrEmpty(game)) return false;
+        string keep = direct.Intro; direct.Intro = style;
+        try { direct.GameStart(system, game, title ?? game, System.Drawing.Color.Lime); } finally { direct.Intro = keep; }
+        return true;
     }
     public void ShowText(string text, string color) { if (direct != null) { direct.Text(text, ToColor(PickColor(color))); return; } Send(StopAttract(), Text(text, 1, null, color, null, null)); }
 
