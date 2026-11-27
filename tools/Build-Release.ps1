@@ -76,6 +76,7 @@ New-Item -ItemType Directory -Force (Join-Path $stage 'manifest') | Out-Null
 
 Copy-Item (Join-Path $repo 'release\Install.ps1') $stage
 Copy-Item (Join-Path $repo 'LICENSE') $stage
+"$Version $commit" | Set-Content (Join-Path $stage 'version.txt') -Encoding ASCII   # tools/Update-Release.ps1 compares against it
 @"
 ArcadeMaster $Version (commit $commit) - an arcade cabinet frontend for Windows
 =========================================================================

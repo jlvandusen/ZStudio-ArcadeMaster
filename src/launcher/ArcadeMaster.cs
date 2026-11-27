@@ -25,6 +25,7 @@ namespace ArcadeMaster
         public string RetroFERoot = @"D:\ArcadeMaster\frontend\DRIVE-coinops";
         public string ManifestDir = @"D:\ArcadeMaster\manifest";
         public bool AutoUpdate = true;
+        public bool ReleaseUpdate = true;        // a release install (no git): tools\Update-Release.ps1 at every start
         public bool CheckOnly = false;           // tell, but do not pull
         public string CabinetType = "auto";
         public bool FollowHardware = true;
@@ -208,6 +209,16 @@ namespace ArcadeMaster
                 if (u.Error != null) say("update check: " + u.Error);
                 else if (c.CheckOnly || dry) say(u.Behind > 0 ? "update available: " + u.Behind + " new commit(s) on GitHub (" + u.Local + " -> " + u.Remote + ")" : "up to date (" + u.Local + ")");
                 else say(Updater.Apply(c, u, say));
+            }
+            // a RELEASE install (no git): the newest GitHub release - engine, tools, themes, AmPanel - before the frontend
+            // starts (tools\Update-Release.ps1; the user's lists and settings are kept; James 2026-11-27)
+            var relUpd = Path.Combine(c.RepoPath, @"tools\Update-Release.ps1");
+            if (c.ReleaseUpdate && !Directory.Exists(Path.Combine(c.RepoPath, ".git")) && File.Exists(relUpd) && !a.Contains("--no-update"))
+            {
+                string root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+                string ra = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"" + relUpd + "\" -Root \"" + root + "\" -ManifestDir \"" + c.ManifestDir + "\"" + (c.CheckOnly || dry ? " -Check" : "");
+                int urc = Run.Exec(Run.PowerShell, ra, root, null);
+                say("release update check done (exit " + urc + ", see release-update.log)");
             }
             var start = Path.Combine(c.RepoPath, @"tools\Start-ArcadeMaster.ps1");
             if (!File.Exists(start)) { say("missing " + start + " - run ArcadeMaster.exe --setup"); if (splash != null) splash.Fail("ArcadeMaster is not set up yet - run ArcadeMaster.exe --setup"); return 2; }
