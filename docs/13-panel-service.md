@@ -256,6 +256,27 @@ and a cabinet without AmPanel installed is left alone. Before this, fixes reache
       a random animation for the screensaver, Thanks for Playing). A newer event replaces what is playing; a one-time
       text goes back to the last held picture.
     - **Only 128x32** (the Adafruit kind) so far. Other Pixelcade sizes keep the listener.
+    - **Game start: an intro, then the game's marquee** (James: "show a neat animation for loading and the game
+      name", then "make other types of intros ... easier bigger fonts ... the logo after and then animations is
+      awesome"):
+      - nine intros, picked at random:
+        - `sweep`: a CRT power-on line, then a light sweep reveals the title over a loading bar;
+        - `punch`: the title flies in huge and lands with a shake;
+        - `drop`: the letters fall and bounce;
+        - `warp`: a starfield, then the title from the centre;
+        - `doors`: neon doors slide open;
+        - `slot`: each letter spins and stops;
+        - `explode`: pixels fly in and assemble the title;
+        - `neon`: the sign flickers on;
+        - `type`: a typewriter with a cursor.
+      - Every intro ends the same way: a white flash that cross-fades into the game's marquee, which then plays (GIF)
+        for the whole game.
+      - The title is the game's real name, shortened for the LEDs (no "(USA)", "(World 4 Players)", or subtitle after
+        " - " / ": " when long). It's drawn as big as fits, on one line or two, in the heaviest font the PC has
+        (Impact, Arial Black, Arial), cyan to magenta.
+      - About 2.6 s (80 + 24 frames at 25 ms). Drawn in under 0.4 s before it plays.
+      - AmPanel.json `"MarqueeIntro"`: `random` (default) or one style. Pipe preview:
+        `{"cmd":"marquee","intro":"punch","game":"dkong","system":"mame","title":"Donkey Kong"}`.
 
 ## Safety
 

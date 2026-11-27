@@ -250,6 +250,7 @@ static class AmPanel
             if (Str(cfg, "MarqueeSpeed") != null) marquee.Speed = Str(cfg, "MarqueeSpeed");
             if (Str(cfg, "MarqueeScreensaver") != null) marquee.Screensaver = Str(cfg, "MarqueeScreensaver").ToLowerInvariant();
             // "PixelcadeDriver": "direct" = AmPanel drives the board over its serial port; the Java listener is stopped
+            if (Str(cfg, "MarqueeIntro") != null) marquee.Intro = Str(cfg, "MarqueeIntro").ToLowerInvariant();
             if (string.Equals(Str(cfg, "PixelcadeDriver"), "direct", StringComparison.OrdinalIgnoreCase)) { var mq = marquee; mq.DirectWanted = true; new Thread(() => mq.StartDirect()) { IsBackground = true, Name = "pixel-open" }.Start(); }
             // two programs must never drive the same marquee: LEDBlinky stops getting the commands, unless
             // AmPanel.json asks for it with "PassThrough": true (then LEDBlinky's UsePixelcade must be 0)
@@ -705,7 +706,8 @@ static class AmPanel
                 if (marquee == null) { rep["ok"] = false; rep["error"] = "the marquee is off (AmPanel.json \"Marquee\": \"pixelcade\")"; }
                 else
                 {
-                    if (req.ContainsKey("path")) { rep["sent"] = marquee.Get(Convert.ToString(req["path"])); rep["answer"] = marquee.LastAnswer; }
+                    if (req.ContainsKey("intro")) rep["shown"] = marquee.PreviewIntro(Convert.ToString(req["intro"]), req.ContainsKey("game") ? Convert.ToString(req["game"]) : null, req.ContainsKey("system") ? Convert.ToString(req["system"]) : null, req.ContainsKey("title") ? Convert.ToString(req["title"]) : null);
+                    else if (req.ContainsKey("path")) { rep["sent"] = marquee.Get(Convert.ToString(req["path"])); rep["answer"] = marquee.LastAnswer; }
                     else if (req.ContainsKey("text")) marquee.ShowText(Convert.ToString(req["text"]), req.ContainsKey("color") ? Convert.ToString(req["color"]) : null);
                     else if (req.ContainsKey("game")) marquee.Selected(Convert.ToString(req["game"]), req.ContainsKey("system") ? Convert.ToString(req["system"]) : null);
                     rep["marquee"] = marquee.Status(); rep["ok"] = true;
