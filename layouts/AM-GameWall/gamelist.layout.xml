@@ -1,0 +1,111 @@
+<!--
+  WALL OF GAMES - game list (c) The Real Z Studios. James, 2026-11-27: "yes build wall of games next".
+  Fifteen games on screen as picture tiles (medium_artwork/am_tile, tools/New-GameTiles.py) with their logos; the chosen
+  game sits in the middle, larger, and plays its preview. UP / DOWN move through the games, LEFT / RIGHT the filters.
+  The list is one line of games wrapped into three rows: each row has a hidden place off screen at both ends, so a
+  game that leaves one row slides out of sight before it comes in on the next.
+  When you stop on a game its controls card comes up over the bottom row.
+  Fast: tiles are small JPEGs (about 12 KB), one video with one fixed size, nothing full-screen but the backdrop.
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+  <sound type="select"    src="../../../sounds/select.wav"/>
+  <sound type="highlight" src="../../../sounds/highlight.wav"/>
+  <sound type="load"      src="../../../sounds/load.wav"/>
+
+  <!-- the chosen game's own backdrop behind the wall, dimmed -->
+  <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".5"><animate type="alpha" to=".45" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="../../../images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".5" layer="2"/>
+
+  <!-- the wall: picture tiles -->
+  <menu type="custom" menuIndex="0" imageType="am_tile" scrollTime=".16" scrollAcceleration=".03" orientation="vertical">
+    <itemDefaults x="960" y="500" xOrigin="center" yOrigin="center" width="336" height="189" alpha="0" layer="4" fontColor="ffffff" fontSize="28" loadFontSize="28"/>
+    <item xOffset="-1250" yOffset="-250" width="336" height="189" alpha="0"/>
+    <item xOffset="-716" yOffset="-250" width="336" height="189" alpha=".82"/>
+    <item xOffset="-358" yOffset="-250" width="336" height="189" alpha=".82"/>
+    <item xOffset="0" yOffset="-250" width="336" height="189" alpha=".82"/>
+    <item xOffset="358" yOffset="-250" width="336" height="189" alpha=".82"/>
+    <item xOffset="716" yOffset="-250" width="336" height="189" alpha=".82"/>
+    <item xOffset="1250" yOffset="-250" width="336" height="189" alpha="0"/>
+    <item xOffset="-1250" yOffset="0" width="336" height="189" alpha="0"/>
+    <item xOffset="-716" yOffset="0" width="336" height="189" alpha=".82"/>
+    <item xOffset="-358" yOffset="0" width="336" height="189" alpha=".82"/>
+    <item selected="true" xOffset="0" yOffset="0" width="520" height="292" alpha="1" layer="7"/>
+    <item xOffset="358" yOffset="0" width="336" height="189" alpha=".82"/>
+    <item xOffset="716" yOffset="0" width="336" height="189" alpha=".82"/>
+    <item xOffset="1250" yOffset="0" width="336" height="189" alpha="0"/>
+    <item xOffset="-1250" yOffset="250" width="336" height="189" alpha="0"/>
+    <item xOffset="-716" yOffset="250" width="336" height="189" alpha=".82"/>
+    <item xOffset="-358" yOffset="250" width="336" height="189" alpha=".82"/>
+    <item xOffset="0" yOffset="250" width="336" height="189" alpha=".82"/>
+    <item xOffset="358" yOffset="250" width="336" height="189" alpha=".82"/>
+    <item xOffset="716" yOffset="250" width="336" height="189" alpha=".82"/>
+    <item xOffset="1250" yOffset="250" width="336" height="189" alpha="0"/>
+  </menu>
+  <!-- the same games' logos, on the tiles -->
+  <menu type="custom" menuIndex="0" imageType="logo" scrollTime=".16" scrollAcceleration=".03" orientation="vertical">
+    <itemDefaults x="960" y="500" xOrigin="center" yOrigin="center" width="270" maxHeight="76" alpha="0" layer="10" fontColor="ffffff" fontSize="30" loadFontSize="30"/>
+    <item xOffset="-1250" yOffset="-198" width="270" maxHeight="76" alpha="0"/>
+    <item xOffset="-716" yOffset="-198" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="-358" yOffset="-198" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="0" yOffset="-198" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="358" yOffset="-198" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="716" yOffset="-198" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="1250" yOffset="-198" width="270" maxHeight="76" alpha="0"/>
+    <item xOffset="-1250" yOffset="52" width="270" maxHeight="76" alpha="0"/>
+    <item xOffset="-716" yOffset="52" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="-358" yOffset="52" width="270" maxHeight="76" alpha=".95"/>
+    <item selected="true" xOffset="0" yOffset="92" width="400" maxHeight="104" alpha="1" layer="12"/>
+    <item xOffset="358" yOffset="52" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="716" yOffset="52" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="1250" yOffset="52" width="270" maxHeight="76" alpha="0"/>
+    <item xOffset="-1250" yOffset="302" width="270" maxHeight="76" alpha="0"/>
+    <item xOffset="-716" yOffset="302" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="-358" yOffset="302" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="0" yOffset="302" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="358" yOffset="302" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="716" yOffset="302" width="270" maxHeight="76" alpha=".95"/>
+    <item xOffset="1250" yOffset="302" width="270" maxHeight="76" alpha="0"/>
+  </menu>
+
+  <!-- the chosen game plays in its tile -->
+  <reloadableVideo type="am_video" imageType="am_tile" x="960" y="500" xOrigin="center" yOrigin="center" width="520" maxHeight="292" alpha="0" layer="8">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+  </reloadableVideo>
+  <image src="../../../images/ui_video_frame.png" x="960" y="500" xOrigin="center" yOrigin="center" width="556" height="328" alpha="1" layer="9"/>
+
+  <!-- filter box, where you are, how to move: the same as the default theme -->
+  <reloadableImage type="playlist" mode="commonlayout" x="400" y="34" xOrigin="center" yOrigin="center" width="600" height="58" alpha="1" layer="11">
+    <onPlaylistEnter><set duration=".08"><animate type="width" to="660"/><animate type="height" to="64"/></set><set duration=".25"><animate type="width" to="600" algorithm="easeOutCubic"/><animate type="height" to="58" algorithm="easeOutCubic"/></set></onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="400" y="82" xOrigin="center" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <reloadableText type="am_breadcrumb" x="740" y="34" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alpha=".95" layer="11"/>
+  <text value="&lt; BACK" x="110" y="82" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="ff2fa0" alpha=".9" layer="11"/>
+  <text value="&lt; &gt;  FILTERS" x="560" y="82" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="2ec8ff" alpha=".9" layer="11"/>
+
+  <!-- the chosen game in words, along the bottom -->
+  <reloadableText type="title" menuScrollReload="true" x="80" y="1040" xOrigin="left" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="ffffff" alpha="1" layer="13"/>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="1700" y="1040" xOrigin="right" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="2ec8ff" alpha="1" layer="13"/>
+  <reloadableText type="year" menuScrollReload="true" x="1840" y="1040" xOrigin="right" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="ffb000" alpha="1" layer="13"/>
+
+  <!-- stop on a game: its controls card comes up over the bottom row -->
+  <reloadableImage type="am_controls" x="960" y="872" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="14">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="2.2"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="am_controls_wheel" x="570" y="872" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="14" liveDevice="wheel" liveSteer="450">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="2.2"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+</layout>
