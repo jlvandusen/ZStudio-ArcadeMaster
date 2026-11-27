@@ -103,7 +103,7 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
   - **P2:** stick R / F / D / G; B1-B6 = A, S, Q, W, I, K; Start 2, Coin 6. Also the Mini-PAC. Both players match the standard I-PAC layout.
   - **Trackball:** the Mini-PAC's own mouse channel (D209:0440), X + Y.
   - **Spinner:** a separate Ultimarc device, **D209:15A2** (X only).
-  - **Tron stick:** the trigger is **button 13 on the Xinmotek controller (16C0:05E1)**. The top button sends **J on the Mini-PAC** (P2 button 7 on the I-PAC layout). So the Tron stick is NOT on the Mini-PAC's P1 inputs, as first assumed.
+  - **Tron stick:** the trigger is **button 13 on the Xinmotek controller (16C0:05E1)**. It has **no top button** (James). The Mini-PAC input marked **A2** (it sends **J**) is used as its second button. So the Tron stick is NOT on the Mini-PAC's P1 inputs, as first assumed.
     - **Its base is turned 90 degrees** (James). The Panel Test's "TRON STICK: PUSH UP / DOWN / LEFT / RIGHT" steps captured what each push really sends on the Xinmotek: up sends X+ (right), right sends Y+ (down), down sends X- (left), left sends Y- (up).
     - Saved in `panel.json` `tronStick.directions`. A game's mapping (Tron, Discs of Tron) must turn these back.
   - **Guns:** each trigger = left mouse button, from **AimTrak 1 (D209:1601)** and **AimTrak 2 (D209:1602)**.

@@ -59,7 +59,8 @@ class CaptureForm : Form
     readonly Dictionary<IntPtr, int[]> moved = new Dictionary<IntPtr, int[]>();   // per mouse: |dx|, |dy| this step
     readonly Timer poll = new Timer { Interval = 15 };
     readonly Stopwatch stepClock = Stopwatch.StartNew();
-    readonly int[] joyButtons = new int[16]; readonly int[,] joyAxes = new int[16, 2]; readonly bool[] joyArmed = new bool[16];
+    readonly int[] joyButtons = new int[16]; readonly int[,] joyAxes = new int[16, 2]; readonly bool[] joyArmed = new bool[16]; readonly int[] joyCentredAt = new int[16];
+    int lastTakeAt = -100000;   // nothing is taken for 400 ms after a take: a bounce or a rebound never fills the next step
     int at; string flash, flashDevice; long flashAt = -9999;
     int rawCount;   // WM_INPUT messages seen (in the "skipped" log lines: 0 means nothing reached the capture)
     public bool Saved;
@@ -79,7 +80,7 @@ class CaptureForm : Form
         steps.Add(new Step("TRACKBALL", "ROLL THE TRACKBALL", "move"));
         steps.Add(new Step("SPINNER", "TURN THE SPINNER", "move"));
         steps.Add(new Step("TRON_TRIGGER", "TRON STICK: TRIGGER", "key"));
-        steps.Add(new Step("TRON_TOP", "TRON STICK: TOP BUTTON", "key"));
+        steps.Add(new Step("TRON_TOP", "TRON STICK: TOP BUTTON (OR WAIT IF IT HAS NONE)", "key"));   // the 2P stand-up's has none
         // the stick's real directions: a stick can be mounted turned (the 2P stand-up's Tron stick base is 90 degrees to
         // the left - pushing up reports left, 2026-11-27). Push the way the PLAYER means; what it sends is recorded.
         foreach (var d in new[] { "UP", "DOWN", "LEFT", "RIGHT" }) steps.Add(new Step("TRON_" + d, "TRON STICK: PUSH " + d, "key"));
@@ -222,8 +223,11 @@ class CaptureForm : Form
         for (int b = 0; b < 32; b++) if ((newly & (1 << b)) != 0) { Take("joystick " + (id + 1) + " button " + (b + 1), "JOY" + (id + 1) + "_BUTTON" + (b + 1), label, usb, "key"); return; }
         // a direction counts once, and only after the stick was back in the centre: one push on the 2P stand-up's Tron stick
         // filled two steps (left, then its spring-back past the centre as right, 2026-11-27)
+        // ... and "back in the centre" means resting there 250 ms: passing through it on the spring-back is not enough
         bool centred = Math.Abs(j.X - 32767) < 8000 && Math.Abs(j.Y - 32767) < 8000;
-        if (centred) joyArmed[id] = true;
+        if (!centred) joyCentredAt[id] = 0;
+        else if (joyCentredAt[id] == 0) joyCentredAt[id] = Environment.TickCount;
+        else if (Environment.TickCount - joyCentredAt[id] > 250) joyArmed[id] = true;
         foreach (var ax in new[] { 0, 1 })
         {
             int v = ax == 0 ? j.X : j.Y, rest = joyAxes[id, ax];
@@ -237,6 +241,7 @@ class CaptureForm : Form
     {
         flash = what; flashDevice = device; flashAt = Environment.TickCount;
         if (at >= steps.Count) return;
+        if (Environment.TickCount - lastTakeAt < 400) return;
         var s = steps[at];
         if (s.Kind == "move" && kind != "move") return;            // the trackball step waits for movement
         if (s.Kind == "key" && kind == "move") return;             // a key step ignores a mouse sliding
@@ -244,6 +249,7 @@ class CaptureForm : Form
         if (used.Contains(sig)) { flash = what + "  (ALREADY TAKEN)"; return; }
         used.Add(sig);
         hits.Add(new Hit { Step = s.Id, Input = what, Key = key, Device = device, Usb = usb });
+        lastTakeAt = Environment.TickCount;
         log("capture: " + s.Id + " = " + what + " from " + device);
         Next(s.Id);
     }
