@@ -218,6 +218,13 @@ if ((Test-Path $jtk) -and -not (Get-Process JoyToKey -ErrorAction SilentlyContin
 # self-healing: check (and conservatively repair) the install before every boot
 try { $h = Invoke-Tool 'Repair-ArcadeHealth.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir); Write-Log ((($h -split "`r?`n") | Where-Object { $_ -match 'FIXED|WARN|health:' } | ForEach-Object { $_.Trim() }) -join ' | ') } catch { Write-Log "health check failed: $($_.Exception.Message)" }
 
+# every cabinet gets the same generated content (game stories, missing art, tiles, system stories, search index):
+# in the background, low priority, at most once a day - RACE2 had no stories because only RACE1 ever ran the tool
+try {
+  $cc = Join-Path $PSScriptRoot 'Update-CabinetContent.ps1'
+  if (Test-Path $cc) { Start-Process powershell -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', "`"$cc`"", '-RetroFE', "`"$Root`"", '-ManifestDir', "`"$ManifestDir`"") -WindowStyle Hidden | Out-Null }
+} catch { Write-Log "content refresh not started: $($_.Exception.Message)" }
+
 Write-Log ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', '))
 if ($PrepOnly) { foreach ($x in $bgArt) { [void]$x.p.WaitForExit(60000); Write-Host ("{0} (background) exit {1}" -f $x.name, $x.p.ExitCode) }; Write-Host ('boot prep {0:N1}s: {1}' -f $bootClock.Elapsed.TotalSeconds, ($script:timings -join ', ')); return }
 
