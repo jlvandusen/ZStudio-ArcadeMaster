@@ -163,6 +163,16 @@ One "BUTTON LIGHTS & OUTPUTS" screen (Tools, and the tray window on a desktop), 
 10. Trigger -> activity rules (global / system / game): lamps -> LEDs, recoil -> gun, motors -> rumble / FFB.
 11. The assignment screen (Buttons / Colours / Triggers tabs above).
 12. Cut-over: AmPanel is the default; LEDBlinky.exe and the Ultimarc utilities are no longer started.
+    **First part done (2026-11-26):** AmPanel no longer needs the LEDBlinky install at run time. Set-ButtonLights copies
+    the following into `<ArcadeMaster>\panel-data` and points AmPanel.json `LEDBlinkyDir` there:
+    - Ultimarc's `PacDrive32.dll` and `UltraStik32.dll`
+    - LEDBlinky's `Colors.ini`, `Color-RGB.ini`, `LEDBlinkyInputMap.xml` and `Settings.ini` (`[Pixelcade]`)
+    - `lwa\` and `jdr\UltraStik\`
+
+    It only copies (when a file is missing or newer at the source) and never deletes. `Set-ButtonLights -Refresh` runs at every
+    boot, keeps the copy current while LEDBlinky is still installed, and moves cabinets that switched over earlier onto it.
+    Switching back to LEDBlinky still uses the real folder (button-lights.json). Still open: ArcadeMaster as the default
+    engine, and the encoder / AimTrak tools.
 13. Pixelcade LED marquee. **Done (2026-11-26, the 2-player stand-up):** `src/panel/Marquee.cs`. AmPanel.json
     `"Marquee": "pixelcade"` turns it on; without it nothing changes (LEDBlinky keeps the marquee). AmPanel then
     sends the Pixelcade listener (pixelweb, port 8080) the same requests LEDBlinky sent on that cabinet:

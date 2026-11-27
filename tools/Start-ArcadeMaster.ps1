@@ -235,6 +235,9 @@ if ($pyw -and (Test-Path $deck) -and -not (Test-Path $deckOk) -and $deckRetry) {
 $amPanel = Join-Path (Split-Path $ManifestDir) 'AmPanel.exe'
 # the Pixelcade marquee: found and handed to AmPanel before it starts (2P stand-up's marquee went quiet once the shim
 # replaced LEDBlinky, 2026-11-26). Changes nothing on a cabinet without one, or where LEDBlinky still gets the events.
+# AmPanel's own copy of Ultimarc's drivers and LEDBlinky's data (panel-data), so the lights never depend on the LEDBlinky
+# install; only does something on a cabinet whose lights AmPanel drives
+if (Test-Path $amPanel) { try { $o = & (Join-Path $PSScriptRoot 'Set-ButtonLights.ps1') -RetroFE $Root -ManifestDir $ManifestDir -Refresh 6>&1 | Out-String; if ($o.Trim()) { Write-Log $o.Trim() } } catch { Write-Log "panel-data refresh failed: $($_.Exception.Message)" } }
 if (Test-Path $amPanel) { try { $o = & (Join-Path $PSScriptRoot 'Set-Marquee.ps1') -RetroFE $Root -ManifestDir $ManifestDir 6>&1 | Out-String; if ($o -match '^marquee:') { Write-Log $o.Trim() } } catch { Write-Log "marquee check failed: $($_.Exception.Message)" } }
 if (Test-Path $amPanel) { try { Start-Process $amPanel -ArgumentList '1' -WorkingDirectory (Split-Path $amPanel); Write-Log 'AmPanel started (tray)' } catch { Write-Log "AmPanel failed to start: $($_.Exception.Message)" } }
 # hold-to-exit (James 2026-11-26): PS on a wheel, Back + Start on a pad, held 5 s, leaves any game the frontend started
