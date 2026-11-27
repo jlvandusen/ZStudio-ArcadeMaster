@@ -29,6 +29,13 @@ $ErrorActionPreference = 'Stop'
 $log = Join-Path $ManifestDir 'release-update.log'
 function Say([string]$m) { Write-Host $m; try { Add-Content $log ("[{0:yyyy-MM-dd HH:mm:ss}] {1}" -f (Get-Date), $m) -Encoding UTF8 } catch { } }
 if (Test-Path (Join-Path $Root 'repo\.git')) { Say 'a git install updates through git (ArcadeMaster.exe), not releases'; return }
+# Windows PowerShell 5.1's Remove-Item -Recurse can follow a folder link (junction) and delete what it points to: the
+# themes link their main-menu art to ArcadeMaster's (New-MenuHeroArt.py). Links go first, one by one, without following.
+function Remove-Safely([string]$p) {
+  if (-not (Test-Path -LiteralPath $p)) { return }
+  Get-ChildItem -LiteralPath $p -Recurse -Force -Attributes ReparsePoint -ErrorAction SilentlyContinue | Sort-Object { $_.FullName.Length } -Descending | ForEach-Object { [IO.Directory]::Delete($_.FullName, $false) }
+  Remove-Item -LiteralPath $p -Recurse -Force
+}
 $verFile = Join-Path $Root 'version.txt'
 $have = if (Test-Path $verFile) { ((Get-Content $verFile -TotalCount 1) -split '\s+')[0] } else { '0' }
 
@@ -41,7 +48,7 @@ if ($Zip) {
   $want = ((Get-Content "$Zip.sha256" -Raw) -split '\s+')[0].Trim().ToLower()
   if ((VersionKey $new) -le (VersionKey $have)) { Say "up to date ($have; the file is $new)"; return }
   if ($Check) { Say "update available from file: $have -> $new"; return }
-  if (Test-Path $work) { Remove-Item $work -Recurse -Force }
+  if (Test-Path $work) { Remove-Safely $work }
   New-Item -ItemType Directory -Force $work | Out-Null
   $zipFile = $Zip
 }
@@ -60,7 +67,7 @@ else {
   if ((VersionKey $new) -le (VersionKey $have)) { Say "up to date ($have)"; return }
   if ($Check) { Say "update available: $have -> $new ($($rel.html_url)); it installs the next time ArcadeMaster starts"; return }
   # 2. download
-  if (Test-Path $work) { Remove-Item $work -Recurse -Force }
+  if (Test-Path $work) { Remove-Safely $work }
   New-Item -ItemType Directory -Force $work | Out-Null
   $zipFile = Join-Path $work $zipAsset.name
   Say "downloading $($zipAsset.name) ($([math]::Round($zipAsset.size / 1MB)) MB) ..."
@@ -70,7 +77,7 @@ else {
 }
 if (Get-Process retrofe -ErrorAction SilentlyContinue) { Say 'the frontend is open - the update installs at the next start'; return }
 $got = (Get-FileHash $zipFile -Algorithm SHA256).Hash.ToLower()
-if ($got -ne $want) { Say "checksum mismatch ($got vs $want) - update not installed"; Remove-Item $work -Recurse -Force; return }
+if ($got -ne $want) { Say "checksum mismatch ($got vs $want) - update not installed"; Remove-Safely $work; return }
 Expand-Archive $zipFile (Join-Path $work 'new')
 $src = Join-Path $work 'new\ArcadeMaster'
 if (-not (Test-Path (Join-Path $src 'repo\tools'))) { Say 'the zip is not an ArcadeMaster release - update not installed'; return }
@@ -104,10 +111,10 @@ try {
 }
 catch {
   Say "update failed ($($_.Exception.Message)) - putting the previous version back"
-  foreach ($d in $done) { if (Test-Path $d.dst) { Remove-Item $d.dst -Recurse -Force }; if (Test-Path $d.keep) { Move-Item $d.keep $d.dst } }
+  foreach ($d in $done) { if (Test-Path $d.dst) { Remove-Safely $d.dst }; if (Test-Path $d.keep) { Move-Item $d.keep $d.dst } }
   return
 }
 # 4. the art drawn from this PC's games: due at once with the new tools
 Remove-Item (Join-Path $ManifestDir 'content-refresh.stamp') -ErrorAction SilentlyContinue
-Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
+try { Remove-Safely $work } catch { }
 Say "updated $have -> $new (engine, tools, themes, AmPanel; your lists and settings kept); the art is redrawn at this start"
