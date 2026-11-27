@@ -132,7 +132,19 @@ the thread pool to drain (`ThreadPool::wait()` in RetroFE.cpp) before the menu d
 **Expect:** no hitch on entering a list; earlier first picture at boot. **Check:** the hitch log on list entry; time
 from launch to the first frame in the log.
 
-### 6. A video pool instead of a new player per video (medium)
+### 6. A video pool instead of a new player per video - measured, not needed (2026-11-27, RACE2)
+**Measured** with build 5b33760397 on the GTX 1060. Racing was opened through the link (`show Racing`), then 60 Down
+presses landed on 30 games (AmPanel `pipe 9` events), then the same with `videoEnable = false`:
+- **Scrolling:** 0 hitches and worst frame 17.2 ms with videos, 0 hitches and 17.4 ms without.
+- **CPU:** RetroFE used ~69 % of one core with videos and ~34 % without, the decoding itself.
+
+The game screen's preview is a stand-alone `reloadableVideo` (`listId -1`), so each game builds a new player and the
+old one stops on the main thread, outside upstream's list `VideoPool`. That costs no frames, so a pool would save CPU,
+not smoothness. Not built.
+**The hitch that is left is entering a list:** 145 / 152 ms in `logic` (state 23) with and without videos, the same
+either way. That is item 5, and it is bigger on RACE2 than RACE1's 84 ms. It is the next speed item.
+The original note:
+**Was:** A video pool instead of a new player per video (medium)
 **Now:** every video makes a new GStreamer `playbin` (demuxer, decoder, queues, converters and two app sinks)
 and tears it down when you move on. Scrolling through videos builds and destroys these all the time.
 **Do:** keep 2-3 players and swap only the file (`uri` change at READY state); start the next item's video paused
