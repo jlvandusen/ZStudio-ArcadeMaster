@@ -71,6 +71,8 @@ $e.plays = [int]$e.plays + 1; $e.seconds = [int]$e.seconds + $secs; $e.last = $n
 Save-Json ([ordered]@{ updated = $now.ToString('s'); games = $pt }) $ptFile
 Remove-Item $cur -ErrorAction SilentlyContinue
 Write-PlayLog ("end {0}: {1} s (total {2} plays, {3} min)" -f $key, $secs, $e.plays, [int]($e.seconds / 60))
+# the "played here" line the themes show for this game (tools\New-GameStats.ps1), fresh after every play
+try { & (Join-Path $PSScriptRoot 'New-GameStats.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -Only $key } catch { Write-PlayLog "played-here line not written: $($_.Exception.Message)" }
 
 # ------------------------------------------------------------------ end: self-heal incomplete ROM sets
 # docs/21 phase 2: with the frontend doing the game hand-off (settings.conf "gameHandOff = true") the frontend's own end

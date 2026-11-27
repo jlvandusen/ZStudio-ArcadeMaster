@@ -95,7 +95,7 @@ $S.story = @{ group = 'MENUS'; label = 'GAME STORY PANEL'; detail = 'After 8 s o
   get = { [bool](Read-AmUi $ManifestDir).story }
   set = { param($on) 'layout updated' + (SetUi 'story' $on) } }
 # how the game lists look (tools\Set-GameListView.ps1): the default, or one of the views built from the theme mock-ups
-$S.gameListView = @{ group = 'MENUS'; label = 'GAME LIST VIEW'; detail = 'DEFAULT: one game at a time. WALL: fifteen picture tiles, the chosen game playing in the middle. PITWALL: the preview fills the screen, the list is a tower on the left'; kind = 'cycle'; presets = @('default', 'wall', 'pitwall'); default = 'default'
+$S.gameListView = @{ group = 'MENUS'; label = 'GAME LIST VIEW'; detail = 'DEFAULT: one game at a time. WALL: fifteen picture tiles, the chosen game playing in the middle. PITWALL: the preview fills the screen, the list is a tower on the left. SPLIT: the game on the left, what it is and how often it was played here on the right'; kind = 'cycle'; presets = @('default', 'wall', 'pitwall', 'split'); default = 'default'
   get = { "$(& (Join-Path $t 'Set-GameListView.ps1') -RetroFE $RetroFE -Current)".Trim() }
   show = { param($v) "$v".ToUpper() }
   set = { param($v) $o = & (Join-Path $t 'Set-GameListView.ps1') -RetroFE $RetroFE -View $v 6>&1 | Out-String; (($o.Trim() -split "`r?`n") | Select-Object -Last 1) } }
