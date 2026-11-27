@@ -540,13 +540,14 @@
     <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
   </image>
   <!-- launch screen: the game's own art full screen (dimmed, slow push-in), its logo, and how to play it on this
-       cabinet (the controls card) while the game loads -->
+       cabinet (the controls card) while the game loads. It stays up until the game's own picture covers it: Arctic
+       Thunder takes 25 s to open its window, and the screen was black but for TeknoParrot's small status window (RACE2,
+       2026-11-27). onGameExit clears it. -->
   <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="19">
     <onGameEnter>
       <set duration=".55"><animate type="nop"/></set>
       <set duration=".45"><animate type="alpha" to=".55" algorithm="easeOutCubic"/><animate type="width" to="1960"/><animate type="height" to="1103"/></set>
       <set duration="1.6"><animate type="width" to="2060" algorithm="easeInOutSine"/><animate type="height" to="1159" algorithm="easeInOutSine"/></set>
-      <set duration=".3"><animate type="alpha" to="0"/></set>
     </onGameEnter>
     <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onGameExit>
   </reloadableImage>
@@ -554,7 +555,6 @@
     <onGameEnter>
       <set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="900" algorithm="easeOutCubic"/></set>
       <set duration="2.2"><animate type="nop"/></set>
-      <set duration=".3"><animate type="alpha" to="0"/><animate type="width" to="1800"/></set>
     </onGameEnter>
     <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="600"/></set></onGameExit>
   </reloadableImage>
@@ -563,7 +563,6 @@
       <set duration=".8"><animate type="nop"/></set>
       <set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" from="880" to="840" algorithm="easeOutCubic"/></set>
       <set duration="1.4"><animate type="nop"/></set>
-      <set duration=".3"><animate type="alpha" to="0"/></set>
     </onGameEnter>
     <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
   </reloadableImage>
@@ -572,7 +571,6 @@
       <set duration=".8"><animate type="nop"/></set>
       <set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" from="880" to="840" algorithm="easeOutCubic"/></set>
       <set duration="1.4"><animate type="nop"/></set>
-      <set duration=".3"><animate type="alpha" to="0"/></set>
     </onGameEnter>
     <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
   </reloadableImage>
