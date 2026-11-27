@@ -38,7 +38,11 @@ the host. Here the frontend itself becomes ours.
      - **Self-heal after each game moved (2026-11-27):** with `gameHandOff = true`, the frontend's own end hook
        (`Record-GamePlay.ps1`) starts `Repair-GameRoms.py`, detached and with the game's launcher as the emulator, and
        AmPanel leaves it alone.
-     - Still to move in: the loading card, and consoles started hidden from the start.
+     - **The loading card is the theme's own launch screen (2026-11-27).** On `onGameEnter` the ArcadeMaster layout fades
+       to black and shows the game's fan art, logo and controls card until the hand-off minimises the frontend. With
+       `gameHandOff = true`, AmPanel's own loading card steps aside too, so the two never draw over each other.
+     - Left: consoles started hidden from the start. A launcher's own child consoles (RetroBat's emulatorLauncher starting
+       Supermodel) aren't ours to start, so those stay "minimised when seen".
 3. **Cabinet profile at start.**
    - The frontend reads the detected cabinet type and capabilities.
    - Controls, the touch layout and the tools follow from it.
