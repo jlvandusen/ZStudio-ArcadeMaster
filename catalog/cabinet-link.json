@@ -1,6 +1,6 @@
 {
   "_comment": "Cabinet link (docs/16): similar cabinets browse in unison and start the same game after a countdown. 'enabled' = the cabinets that have it on: Start-ArcadeMaster adds 'linkEvents = yes' to their settings.conf once (a cabinet that already has a linkEvents line - e.g. switched off in Cabinet Settings - keeps its own choice) and starts tools/AmLink.ps1. idleSec: a cabinet follows only after nobody has used it for this long. countdownSec: the 'joining in ...' time before the same game starts.",
-  "enabled": ["DESKTOP-RACE1", "DESKTOP-RACE2"],
+  "enabled": ["DESKTOP-RACE1", "DESKTOP-RACE2", "ARCADE-PEDESTAL", "DESKTOP-ARCADE"],
   "idleSec": 30,
   "countdownSec": 5
 }
