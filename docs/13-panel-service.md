@@ -292,9 +292,11 @@ and a cabinet without AmPanel installed is left alone. Before this, fixes reache
       was seen going and coming back within 5 s.
     - The stand-alone probe (status answer: battery, extension, player LEDs) is in `D:\ArcadeMaster\_tools\wiiprobe` on
       the stand-up.
-    - **Not yet on the stand-up:** Dolphin doesn't follow there yet. The frontend copy's `emulators\Dolphin` is a junction
-      to the live CORE-TYPE R on E: (never written), and the PC has no `tools\wheelmap\targets\DESKTOP-ARCADE.json`. It
-      needs its own Dolphin folder first, as TeknoParrot got.
+    - **Dolphin on the stand-up:** the frontend copy's `emulators\Dolphin` is now its own folder (260 MB), not a junction
+      to the live CORE-TYPE R on E:. `tools\wheelmap\targets\DESKTOP-ARCADE.json` lists only the copy's real folders
+      (TeknoParrot x2, Dolphin, MAME); the junctions to E: are left out on purpose.
+      - With the remote in slot 1, Set-DolphinControllers set **Wiimote1 = Real (Source 2)** and left 2-4 emulated
+        (Source 1), with continuous scanning on. E:'s Dolphin was not touched.
 
 ## Safety
 
