@@ -45,6 +45,12 @@
     <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>
   </reloadableImage>
   <reloadableText type="collectionIndexSize" menuScrollReload="true" x="380" y="92" xOrigin="center" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <reloadableText type="am_breadcrumb" x="720" y="46" yOrigin="center" fontSize="28" loadFontSize="28" fontColor="e6e9f0" alpha=".95" layer="11"/>
+  <text value="&lt; BACK" x="88" y="97" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="ff2fa0" alpha=".9" layer="11"/>
+  <text value="&lt; &gt;  FILTERS" x="672" y="97" xOrigin="right" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="2ec8ff" alpha=".9" layer="11"/>
+  <image src="images/touch_hit.png" touchAction="prevPlaylist" x="80" y="17" width="110" height="58" layer="12"/>
+  <image src="images/touch_hit.png" touchAction="nextPlaylist" x="570" y="17" width="110" height="58" layer="12"/>
+  <image src="images/touch_hit.png" touchAction="back" x="80" y="79" width="130" height="40" layer="12"/>
   <image src="images/wall_video_frame.png" x="1330" y="365" xOrigin="center" yOrigin="center" width="1100" height="645" alpha="1" layer="5"/>
   <reloadableVideo type="am_video" imageType="logo" x="1330" y="365" xOrigin="center" yOrigin="center" width="1040" maxHeight="585" alpha="0" layer="6">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
@@ -100,4 +106,16 @@
     <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="1"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="0"/></set></onGameEnter>
     <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
   </reloadableImage>
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="19">
+    <onMenuExit><set duration=".12"><animate type="alpha" to=".7"/></set></onMenuExit>
+    <onExit><set duration=".12"><animate type="alpha" to=".7"/></set></onExit>
+    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>
+    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>
+  </image>
+  <text value="LOADING - PLEASE WAIT" x="960" y="540" xOrigin="center" yOrigin="center" fontSize="64" loadFontSize="64" fontColor="ffe259" alpha="0" layer="19">
+    <onMenuExit><set duration=".12"><animate type="alpha" to="1"/></set></onMenuExit>
+    <onExit><set duration=".12"><animate type="alpha" to="1"/></set></onExit>
+    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>
+    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>
+  </text>
 </layout>

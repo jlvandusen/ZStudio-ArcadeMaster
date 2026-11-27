@@ -1,43 +1,88 @@
 <!--
-  AM-Marquee - SECOND SCREEN (RetroFE monitor 1), game lists: the game's marquee (type="marquee") lit in
-  the theme's frame, its logo under it, and ArcadeMaster's touch bar in row 3 of 3
-  (BACK | PREV | START | NEXT | RANDOM, controls.conf touch1Column<n>of5Row3of3). Art: tools/New-ArcadeThemes.py
+  ArcadeMaster - SECOND SCREEN (RetroFE monitor 1): pedestal / marquee touchscreen, game lists.
+  Three bands that match the touch grid (controls.conf: touch1Column<n>of5Row3of3):
+    top    : the selected game's logo over its own fanart (marquee banner)
+    middle : title + players / controls / year / maker header
+    bottom : touch bar  BACK | PREV | START | NEXT | RANDOM   (row 3 of 3, columns 1..5 of 5)
   Enable with settings.conf: numScreens = 2, screenNum1 = <display index>, fullscreen1 = yes
 -->
 <layout monitor="1" width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff">
-  <image src="images/marq_bg.jpg" x="0" y="0" width="1920" height="1080" alpha="1" layer="0"/>
-  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+  <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
     <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.6" algorithm="easeOutCubic"/></set></onMenuIdle>
-    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onMenuIdle>
+      <set duration=".4"><animate type="alpha" from="0" to=".75" algorithm="easeOutCubic"/></set>
+      <set duration="16"><animate type="width" to="2080" algorithm="easeInOutSine"/><animate type="height" to="1170" algorithm="easeInOutSine"/></set>
+      <set duration="16"><animate type="width" to="1920" algorithm="easeInOutSine"/><animate type="height" to="1080" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="fanart" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
-    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".45"><animate type="alpha" to="0.6" algorithm="easeOutCubic"/></set></onMenuIdle>
-    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
-  </reloadableImage>
-  <image src="images/marq_m2_frame.png" x="960" y="268" xOrigin="center" yOrigin="center" width="1660" height="530" alpha="1" layer="4"/>
-  <reloadableImage type="marquee" x="960" y="268" xOrigin="center" yOrigin="center" width="1600" maxHeight="488" alpha="0" layer="3">
+  <image src="images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" layer="2"/>
+
+  <!-- top band: marquee-style logo -->
+  <reloadableImage panel="info" type="logo" x="900" y="330" xOrigin="center" yOrigin="center" width="1400" maxHeight="360" alpha="0" layer="5">
     <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="2.4"><animate type="alpha" to=".86" algorithm="easeInOutSine"/></set><set duration="2.4"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set></onMenuIdle>
+    <onMenuIdle>
+      <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" from="1250" to="1400" algorithm="easeOutCubic"/></set>
+      <set duration="2"><animate type="width" to="1440" algorithm="easeInOutSine"/></set>
+      <set duration="2"><animate type="width" to="1400" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
   </reloadableImage>
-  <reloadableImage type="logo" x="960" y="610" xOrigin="center" yOrigin="center" width="560" maxHeight="140" alpha="0" layer="5">
-    <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>
-    <onMenuIdle><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+
+  <!-- middle band: two touch panels (docs/22). INFO (shown first) = the header; BOX ART = the game's cover, large.
+       Builds without touch panels ignore panel= and touchAction=, so they show INFO and the cover together, as before plus the cover -->
+  <reloadableText panel="info" type="title" menuScrollReload="true" x="900" y="560" xOrigin="center" yOrigin="center" fontSize="60" loadFontSize="60" fontColor="ffffff" layer="6"/>
+  <text panel="info" value="PLAYERS" x="300" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="numberPlayers" menuScrollReload="true" x="300" y="672" xOrigin="center" yOrigin="center" fontSize="58" loadFontSize="58" fontColor="2ec8ff" layer="6"/>
+  <text panel="info" value="CONTROLS" x="760" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="ctrlType" menuScrollReload="true" x="760" y="672" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ff2fa0" layer="6"/>
+  <text panel="info" value="YEAR" x="1180" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="year" menuScrollReload="true" x="1180" y="672" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ffb000" layer="6"/>
+  <text panel="info" value="MAKER" x="1600" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="manufacturer" menuScrollReload="true" x="1600" y="672" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="ffffff" layer="6"/>
+  <reloadableImage panel="boxart" type="cover" x="900" y="420" xOrigin="center" yOrigin="center" maxWidth="1300" maxHeight="560" layer="6">
+    <onPanelEnter><set duration=".25"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set></onPanelEnter>
   </reloadableImage>
-  <reloadableText type="title" menuScrollReload="true" x="960" y="698" xOrigin="center" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="c9ced8" alpha="0" layer="5">
+
+  <!-- nav row (top left): BACK, filter left / right, and where you are (am_breadcrumb) -->
+  <image src="images/touch_hit.png" touchAction="back" x="20" y="20" width="210" height="110" layer="8"/>
+  <text value="&lt; BACK" x="125" y="75" xOrigin="center" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="ff2fa0" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="prevPlaylist" x="240" y="20" width="110" height="110" layer="8"/>
+  <text value="&lt;" x="295" y="75" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="2ec8ff" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="nextPlaylist" x="360" y="20" width="110" height="110" layer="8"/>
+  <text value="&gt;" x="415" y="75" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="2ec8ff" layer="8"/>
+  <reloadableText type="am_breadcrumb" x="490" y="75" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="e6e9f0" layer="8"/>
+
+  <!-- SEARCH (top right): the theme's own button - the frontend asks AmPanel to open its search screen (am:search) -->
+  <image src="images/touch_hit.png" touchAction="am:search" x="1600" y="30" width="290" height="110" layer="9"/>
+  <text value="SEARCH" x="1745" y="85" xOrigin="center" yOrigin="center" fontSize="46" loadFontSize="46" fontColor="ffb000" layer="9"/>
+
+  <!-- the panel tabs: a column on the right, below SEARCH -->
+  <image src="images/touch_hit.png" touchAction="panel:info"   x="1600" y="150" width="290" height="100" layer="8"/>
+  <text value="INFO"     x="1745" y="200" xOrigin="center" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="2ec8ff" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="panel:boxart" x="1600" y="260" width="290" height="100" layer="8"/>
+  <text value="BOX ART"  x="1745" y="310" xOrigin="center" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="ff2fa0" layer="8"/>
+
+  <!-- bottom band: touch buttons (row 3 of 3) -->
+  <image src="images/ui_touchbar.png" x="0" y="720" width="1920" height="360" layer="7">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to=".8"/></set></onMenuScroll>
     <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
-    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
-    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
-  </reloadableText>
-  <image src="images/ui_touchbar.png" x="0" y="720" width="1920" height="360" alpha="1" layer="7"/>
-  <image src="images/studio_realz.png" x="1760" y="20" width="110" height="110" alpha=".85" layer="8"/>
-  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">
-    <onGameEnter><set duration=".2"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to="1"/></set></onGameEnter>
-    <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
   </image>
-  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="700" maxHeight="360" alpha="0" layer="19">
-    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="1"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="0"/></set></onGameEnter>
-    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
+  <!-- touch buttons (docs/22): one transparent button over each cell of the bar. Builds with touchAction fire the action;
+       older builds ignore the attribute and keep using the controls.conf region taps for the same cells -->
+  <image src="images/touch_hit.png" touchAction="back"   x="0"    y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="up"     x="384"  y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="select" x="768"  y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="down"   x="1152" y="720" width="384" height="360" layer="8"/>
+  <image src="images/touch_hit.png" touchAction="random" x="1536" y="720" width="384" height="360" layer="8"/>
+  <image src="images/studio_realz.png" x="1880" y="380" xOrigin="right" width="90" height="90" alpha=".85" layer="8"/>
+
+  <!-- launch: flash + logo punch -->
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="9">
+    <onGameEnter><set duration=".5"><animate type="alpha" to=".85"/></set></onGameEnter>
+    <onGameExit><set duration=".5"><animate type="alpha" to="0"/></set></onGameExit>
+  </image>
+  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="900" maxHeight="500" alpha="0" layer="10">
+    <onGameEnter><set duration=".4"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" from="700" to="1300" algorithm="easeOutCubic"/></set></onGameEnter>
+    <onGameExit><set duration=".2"><animate type="alpha" to="0"/></set></onGameExit>
   </reloadableImage>
 </layout>
