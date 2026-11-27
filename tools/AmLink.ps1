@@ -121,6 +121,30 @@ function Send-Cmd([string]$c, [double]$minGapSec = 0.6) {
   $b = [Text.Encoding]::UTF8.GetBytes($c); [void]$tx.Send($b, $b.Length, '127.0.0.1', $CommandPort)
   $script:lastCmd = $c; $script:lastCmdAt = $now
 }
+# Does this cabinet have the game at all? A list by that name, or a game by that name in any list (the search index,
+# <manifest>\search-index.json, read once). Names are compared without version / update tags: the pedestal's "Donkey
+# Kong Country - Tropical Freeze (USA) (v16)" is "Donkey Kong Country - Tropical Freeze (USA)" on the 2P stand-up.
+# Returns the name to look for here, or '' when the game is not on this cabinet. No index: the name as it came.
+$haveNames = $null
+function Get-LooseName([string]$n) { (($n.ToLower() -replace '\((v\s?[\d.]+|rev\s?[\w.]+|dlc|update|unl)\)', '') -replace '\s+', ' ').Trim() }
+function Find-HereGame([string]$item, [string]$col) {
+  if ($col -and (Test-Path -LiteralPath (Join-Path $RetroFE "collections\$col"))) { return $item }
+  if ($null -eq $script:haveNames) {
+    $script:haveNames = @{}
+    $ix = Join-Path (Split-Path (Split-Path $RetroFE)) 'manifest\search-index.json'
+    if (-not (Test-Path -LiteralPath $ix)) { $ix = 'D:\ArcadeMaster\manifest\search-index.json' }
+    if (Test-Path -LiteralPath $ix) {
+      foreach ($m in [regex]::Matches([IO.File]::ReadAllText($ix), '"n":"((?:[^"\\]|\\.)*)"')) {
+        $n = [regex]::Unescape($m.Groups[1].Value); $k = Get-LooseName $n
+        if (-not $script:haveNames.ContainsKey($k)) { $script:haveNames[$k] = $n }
+      }
+    } else { $script:haveNames['*'] = '*' }
+  }
+  if ($script:haveNames.ContainsKey('*')) { return $item }
+  $k = Get-LooseName $item
+  if ($script:haveNames.ContainsKey($k)) { return $script:haveNames[$k] }
+  return ''
+}
 # Go to the same game here. The other cabinet names the game AND the list it took it from (TeknoParrot,
 # AM_TP_Emulators_TeknoParrot ...); the same game can sit in a differently named list on this cabinet (RACE2 stopped
 # following RACE1 after one game, 2026-11-27). So: twice with the list name, then by the game's name alone; after six
@@ -134,7 +158,7 @@ function Send-Goto([string]$item, [string]$col, [double]$gap = 0.6) {
   if ($script:lastCmdAt -ne $before) { $script:gotoTries++ }
 }
 $me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idleMs = 9e11; menu = ''; playlist = ''; item = ''; col = ''; kind = ''; by = ''; selSeq = 0; title = ''
-                  launchSeq = 0; launchMenu = ''; launchItem = ''; launchCol = ''; launchBy = '' }
+                  launchSeq = 0; launchMenu = ''; launchItem = ''; launchCol = ''; launchBy = ''; launchAt = '' }
 $lastHello = [datetime]::MinValue; $lastUser = [datetime]::MinValue; $missItem = ''; $dirty = $true; $lastWrite = [datetime]::MinValue
 $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
@@ -166,7 +190,7 @@ try {
       switch ($p[0]) {
         'hello'  { $me.menu = $p[1]; $me.idleMs = [double]$p[2]; $lastHello = $now; if ([double]$p[2] -lt 2000) { $lastUser = $now } }
         'select' { $me.by = $p[1]; $me.menu = $p[2]; $me.playlist = $p[3]; $me.item = $p[4]; $me.col = $p[5]; $me.kind = $p[6]; $me.title = (Get-Title ([string]$p[5]) ([string]$p[4])); $me.selSeq++; $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now } }
-        'launch' { $me.launchBy = $p[1]; $me.launchMenu = $p[2]; $me.launchItem = $p[3]; $me.launchCol = $p[4]; $me.launchSeq++; $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now }; Say "this cabinet starts $($p[3]) ($($p[1]))" }
+        'launch' { $me.launchBy = $p[1]; $me.launchMenu = $p[2]; $me.launchItem = $p[3]; $me.launchCol = $p[4]; $me.launchSeq++; $me.launchAt = (Get-Date).ToString('o'); $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now }; Say "this cabinet starts $($p[3]) ($($p[1]))" }
         'miss'   { $missItem = $p[1] }
       }
     }
@@ -192,7 +216,11 @@ try {
         try { $j = [IO.File]::ReadAllText($f) | ConvertFrom-Json } catch { continue }       # caught half-written: next round
         if (-not $j -or -not $j.host) { continue }
         $old = $peers[$j.host]
-        $launched = $old -and ([int]$j.launchSeq -ne [int]$old.data.launchSeq)             # never on the first look at a file
+        # never on the first look at a file. A new start is a new launch number, another game, or a new start time: a
+        # restarted helper begins its numbers again and lands on one seen before (2026-11-27: the pedestal's Big Red One
+        # came as launch 1 again and the 2P stand-up did nothing; the stand-up's Pokken came as launch 1 twice and the
+        # pedestal did nothing). launchAt, the time of the start, tells even the same game started again apart.
+        $launched = $old -and ([int]$j.launchSeq -ne [int]$old.data.launchSeq -or [string]$j.launchItem -ne [string]$old.data.launchItem -or [string]$j.launchCol -ne [string]$old.data.launchCol -or [string]$j.launchAt -ne [string]$old.data.launchAt)
         $peers[$j.host] = @{ data = $j; seen = $(if (-not $old -or [int]$j.beat -ne [int]$old.data.beat) { $now } else { $old.seen }); launched = $launched }
         # Only GAMES are joined: never an entry of the first menu (EXIT) or of Tools / settings menus - on 2026-11-26
         # RACE1's EXIT presses started "joining EXIT" on RACE2. A newer start replaces one that is still counting or
@@ -200,7 +228,16 @@ try {
         $joinable = $j.launchMenu -and ($noFollow -notcontains [string]$j.launchMenu) -and ([string]$j.launchMenu -ne $top)
         if ($launched -and $joinable -and $j.launchBy -eq 'user' -and $j.type -eq $type -and $alive -and -not $userHere -and (-not $count -or $count.phase -eq 'note' -or $count.item -ne [string]$j.launchItem)) {
           $count = @{ from = $j.host; menu = [string]$j.launchMenu; item = [string]$j.launchItem; col = [string]$j.launchCol; title = (Get-Title ([string]$j.launchCol) ([string]$j.launchItem)); until = $now.AddSeconds($CountdownSec); phase = 'count'; started = $now }
-          $missItem = ''; Say "$($j.host) started $($j.launchItem): countdown"
+          $missItem = ''
+          # a system this cabinet does not have at all is not followed: no countdown, no search through the menus
+          # (James 2026-11-27: the pedestal started Call of Duty 2 - Big Red One on the Xbox, the 2P stand-up has no
+          # Xbox and moved through its menus for 15 s)
+          $here = Find-HereGame $count.item $count.col
+          if ($here -and $here -ne $count.item) { Say "$($count.item) is $here on this cabinet"; $count.item = $here }
+          if (-not $here) {
+            Say "$($j.host) started $($j.launchItem) ($($count.col)): not on this cabinet - staying here"
+            Show-Card "$(Get-Cab $count.from) is playing $($count.title)" 'NOT ON THIS CABINET' ''; $count.phase = 'note'; $count.until = $now.AddSeconds(4)
+          } else { Say "$($j.host) started $($j.launchItem): countdown" }
         }
       }
     }
