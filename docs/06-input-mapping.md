@@ -770,3 +770,18 @@ Next steps towards our own G29 library, without G HUB:
   plugged-in controller can be (3+ axes and 10+ buttons), the two controller numbers are swapped in the whole file. The
   old file is kept beside it as `Supermodel.ini.wheel-<time>.bak`.
 - Steering on a second real controller (a pad, a second wheel) is somebody's choice and is left alone.
+
+## Model 3: the emulator crashed every time a game was closed (RACE1, 2026-11-27)
+
+- **What showed it:** System Health's "Games that crashed" said the Model 3 emulator had crashed 9 times in one afternoon,
+  always in Windows' `dinput8.dll`. The times matched the moments James left Dirt Devils: it crashed on every exit.
+- **Cause:** `emulators\Supermodel\opengl32.dll`, the add-on force feedback plug-in that came with the drive (FFB Arcade
+  Plugin, 2024). Supermodel already drives the wheel itself (`ForceFeedback = 1`, DirectInput), and the plug-in gets
+  nothing from the emulator here (no `Outputs` line), so it only held the wheel a second time and fell over when both
+  let go.
+- **Tested on RACE1** (Dirt Devils, started and closed three ways): as it was - crash; plug-in off, emulator force
+  feedback on - clean exit; plug-in on, emulator force feedback off - crash. So the plug-in, not the emulator.
+- **Fix on RACE1:** the plug-in file is renamed to `opengl32.dll.am-off-exit-crash` (rename it back to undo). The
+  emulator's own force feedback is unchanged.
+- **Not known yet:** whether the crash left the wheel's force feedback in a bad state for the menus afterwards (the
+  menu force was weak after a game on RACE1), and whether RACE2 has the same plug-in.
