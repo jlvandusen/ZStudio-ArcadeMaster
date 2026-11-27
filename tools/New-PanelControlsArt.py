@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 13   # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 15   # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -92,10 +92,11 @@ TWIN_FIXED = {'cclimber': ('Left Arm', 'Right Arm', False), 'cclimberj': ('Left 
 
 
 class Sig:
-    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels', 'emu', 'leds', 'roles')
+    __slots__ = ('players', 'alt', 'stick', 'buttons', 'extras', 'labels', 'emu', 'leds', 'roles', 'pedals')
 
     def __init__(self, players=0, alt=False, stick=None, buttons=0, extras=(), labels=(), emu=''):
         self.emu = emu
+        self.pedals = ()    # light-gun games: what each of the cabinet's pedals does (left, middle, right), '' = unused
         self.roles = ()     # two-stick games: (left does, right does, left is, right is) - "LEFT TREAD" on "FLIGHT STICK 1"
         self.leds = ()      # the game's real button colours (LEDBlinky Colors.ini): (stick, b1, b2 ...) as RGB or None
         ex0 = set(extras)
@@ -133,6 +134,8 @@ class Sig:
             k += '-C' + hashlib.sha1(repr(self.leds).encode()).hexdigest()[:8]
         if self.roles:
             k += '-R' + hashlib.sha1('|'.join(self.roles).encode()).hexdigest()[:8]
+        if self.pedals:
+            k += '-P' + hashlib.sha1('|'.join(self.pedals).encode()).hexdigest()[:8]
         return k
 
     def with_emu(self, emu: str, leds=()) -> 'Sig':
@@ -290,8 +293,11 @@ def sig_from_games_json(c: dict) -> Sig:
     labels = c.get('labels') or c.get('functions') or c.get('buttonNames') or ()
     if isinstance(labels, dict):
         labels = [labels[k] for k in sorted(labels, key=lambda x: to_int(x))]
-    return Sig(to_int(c.get('players'), 1), False, stick, min(to_int(c.get('buttons')), 9), extras,
-               [str(x) for x in labels][:9])
+    sig = Sig(to_int(c.get('players'), 1), False, stick, min(to_int(c.get('buttons')), 9), extras,
+              [str(x) for x in labels][:9])
+    if c.get('pedals'):
+        sig.pedals = tuple(str(x or '') for x in c['pedals'])[:3]
+    return sig
 
 
 def sig_from_meta(players, ctrltype, buttons, joyways) -> Sig | None:
@@ -636,11 +642,15 @@ def draw_icon(c: Card, kind, cx, cy, col, size=24):
         else:
             d.line(c.r(cx, cy, cx + (s - 7) * 0.6, cy - (s - 7) * 0.8), fill=BG + (255,), width=4 * S)
     elif kind == 'lightgun':
-        poly = [(cx - s, cy - s * .55), (cx + s, cy - s * .55), (cx + s, cy - s * .05), (cx - s * .2, cy - s * .05),
-                (cx - s * .35, cy + s), (cx - s * .95, cy + s), (cx - s * .7, cy - s * .05), (cx - s, cy - s * .05)]
+        # a pistol pointing right: long barrel with a sight, the grip slanting down at the back, a trigger guard
+        poly = [(cx - s * .95, cy - s * .62), (cx - s * .7, cy - s * .62), (cx - s * .66, cy - s * .75), (cx - s * .5, cy - s * .75),
+                (cx - s * .46, cy - s * .62), (cx + s, cy - s * .62), (cx + s, cy - s * .18), (cx - s * .2, cy - s * .18),
+                (cx - s * .38, cy + s * .95), (cx - s * .92, cy + s * .95), (cx - s * .72, cy - s * .18), (cx - s * .95, cy - s * .18)]
         pts = [(x * S, y * S) for x, y in poly]
         d.polygon(pts, fill=rgba)
         g.polygon(pts, fill=rgba)
+        d.arc(c.r(cx - s * .42, cy - s * .45, cx + s * .12, cy + s * .42), 0, 180, fill=rgba, width=4 * S)   # trigger guard
+        d.line(c.r(cx - s * .2, cy - s * .18, cx - s * .14, cy + s * .14), fill=rgba, width=4 * S)          # trigger
     elif kind == 'wheel':
         d.ellipse(c.r(cx - s, cy - s, cx + s, cy + s), outline=rgba, width=5 * S)
         d.ellipse(c.r(cx - 6, cy - 6, cx + 6, cy + 6), fill=rgba)
@@ -750,6 +760,26 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
         c.text((394, 216), f'NEXT TO THE {d["name"].upper()}', font('semi', 19), DIM + (255,), 'mm')
         if sig.buttons > nb:
             c.text((394, 246), f'BUTTONS {nb + 1}+ ON THE PANEL', font('semi', 19), AMBER + (255,), 'mm')
+    elif 'lightgun' in sig.extras and not sig.stick:
+        # a light-gun game (James 2026-11-27: "for light gun games would be cool to show them as the controller"): the
+        # gun and what its buttons do, then the cabinet's pedals, the ones this game uses lit with what they do
+        c.d.ellipse(c.r(40, 56, 196, 212), fill=CARD + (255,), outline=GREEN + (160,), width=3 * S)
+        draw_icon(c, 'lightgun', 118, 134, GREEN, 50)
+        c.text((118, 236), PANEL.get('lightgun', {}).get('name', 'LIGHT GUN').upper(), font('black', 22), GREEN + (255,), 'mm',
+               glow=GREEN + (80,))
+        names = list(sig.labels) or (['SHOOT'] if not sig.buttons else [])
+        for i, lab in enumerate(names[:3]):
+            what = ('TRIGGER', 'SIDE BUTTON', 'BUTTON 3')[i]
+            y = 74 + i * 44
+            c.text((222, y), what, font('semi', 18), DIM + (255,), 'lm')
+            c.text((222, y + 20), fit_label(c, lab.upper(), 300, 24), font('black', 24), TEXT + (255,), 'lm')
+        if sig.pedals:
+            for i in range(3):
+                lab = sig.pedals[i] if i < len(sig.pedals) else ''
+                cx = 262 + i * 98
+                col = AMBER if lab else FAINT
+                draw_icon(c, 'pedal', cx, 214, col, 22)
+                c.text((cx, 254), fit_label(c, (lab or '-').upper(), 92, 17), font('semi', 17), (TEXT if lab else DIM) + (255,), 'mm')
     else:
         if not sig.stick and sig.extras:          # gun / wheel / keypad: the game's own control takes the stick's place
             c.d.ellipse(c.r(50, 80, 222, 252), fill=CARD + (255,), outline=FAINT + (255,), width=2 * S)
@@ -830,6 +860,8 @@ def render_card(sig: Sig, rows: int, cols: int) -> Image.Image:
         hint = 'JOYSTICK + BUTTONS' if sig.stick else ('BUTTONS ONLY' if sig.buttons else '')
         if not sig.stick and sig.extras:
             hint = HOW_TO.get(sig.extras[0], '')
+            if sig.pedals and any(sig.pedals):
+                hint = 'AIM + PULL  -  STEP ON THE PEDALS'
         if dev == 'trackball':
             hint = f'ROLL THE {PANEL["trackball"]["name"].upper()}'
         elif dev == 'spinner':
