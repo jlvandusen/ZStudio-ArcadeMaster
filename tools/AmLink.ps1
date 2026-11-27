@@ -125,7 +125,7 @@ function Send-Cmd([string]$c, [double]$minGapSec = 0.6) {
 # <manifest>\search-index.json, read once). Names are compared without version / update tags: the pedestal's "Donkey
 # Kong Country - Tropical Freeze (USA) (v16)" is "Donkey Kong Country - Tropical Freeze (USA)" on the 2P stand-up.
 # Returns the name to look for here, or '' when the game is not on this cabinet. No index: the name as it came.
-$haveNames = $null
+$haveNames = $null; $haveLists = @{}
 function Get-LooseName([string]$n) { (($n.ToLower() -replace '\((v\s?[\d.]+|rev\s?[\w.]+|dlc|update|unl)\)', '') -replace '\s+', ' ').Trim() }
 function Find-HereGame([string]$item, [string]$col) {
   if ($col -and (Test-Path -LiteralPath (Join-Path $RetroFE "collections\$col"))) { return $item }
@@ -134,9 +134,10 @@ function Find-HereGame([string]$item, [string]$col) {
     $ix = Join-Path (Split-Path (Split-Path $RetroFE)) 'manifest\search-index.json'
     if (-not (Test-Path -LiteralPath $ix)) { $ix = 'D:\ArcadeMaster\manifest\search-index.json' }
     if (Test-Path -LiteralPath $ix) {
-      foreach ($m in [regex]::Matches([IO.File]::ReadAllText($ix), '"n":"((?:[^"\\]|\\.)*)"')) {
+      $t0 = [IO.File]::ReadAllText($ix)
+      foreach ($m in [regex]::Matches($t0, '"n":"((?:[^"\\]|\\.)*)"')) {
         $n = [regex]::Unescape($m.Groups[1].Value); $k = Get-LooseName $n
-        if (-not $script:haveNames.ContainsKey($k)) { $script:haveNames[$k] = $n }
+        if (-not $script:haveNames.ContainsKey($k)) { $script:haveNames[$k] = $n; $cm = [regex]::Match($t0.Substring($m.Index, [Math]::Min(600, $t0.Length - $m.Index)), '"c":"((?:[^"\\]|\\.)*)"'); if ($cm.Success) { $script:haveLists[$k] = [regex]::Unescape($cm.Groups[1].Value) } }
       }
     } else { $script:haveNames['*'] = '*' }
   }
@@ -145,11 +146,20 @@ function Find-HereGame([string]$item, [string]$col) {
   if ($script:haveNames.ContainsKey($k)) { return $script:haveNames[$k] }
   return ''
 }
-# Go to the same game here. The other cabinet names the game AND the list it took it from (TeknoParrot,
+# The same game in a differently named list: the 2P stand-up starts Pokken from "Arcade PC", the pedestal has it in
+# "TeknoParrot"; Phantasy Star IV sits in "Megadrive - Genesis" here (James's link test, 2026-11-27 14:11: "first pick
+# followed, later ones not"). Returns @{ item; list } for this cabinet from the search index, or $null.
+function Find-HereList([string]$item) {
+  if (-not $item) { return $null }
+  [void](Find-HereGame $item '')                      # fills the index
+  $k = Get-LooseName $item
+  if ($script:haveLists.ContainsKey($k)) { return @{ item = $script:haveNames[$k]; list = $script:haveLists[$k] } }
+  return $null
+}# Go to the same game here. The other cabinet names the game AND the list it took it from (TeknoParrot,
 # AM_TP_Emulators_TeknoParrot ...); the same game can sit in a differently named list on this cabinet (RACE2 stopped
 # following RACE1 after one game, 2026-11-27). So: twice with the list name, then by the game's name alone; after six
 # tries the game is not here and this cabinet stays where it is until the other one moves on.
-$gotoKey = ''; $gotoTries = 0
+$gotoKey = ''; $gotoTries = 0; $altFor = ''; $altTries = 0
 function Send-Goto([string]$item, [string]$col, [double]$gap = 0.6) {
   $k = "$item|$col"; if ($k -ne $script:gotoKey) { $script:gotoKey = $k; $script:gotoTries = 0 }
   if ($script:gotoTries -ge 6) { return }
@@ -272,7 +282,20 @@ try {
         if (-not $lead -or [double]$d.idleMs -lt [double]$lead.idleMs) { $lead = $d }
       }
       if ($lead -and $lead.item -and ($noFollow -notcontains [string]$lead.menu)) {       # somebody in Tools is doing maintenance: stay put
-        if ($me.menu -ne $lead.menu) { if ($me.menu -eq $top) { if ($me.item -ne $lead.menu) { Send-Cmd "goto`t$($lead.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
+        # the other cabinet is in a list this one does not have, or the game was not found in the list of that name:
+        # open the list the game is in HERE and go to it there
+        $alt = $null
+        if (($me.menu -ne $lead.menu -and -not (Test-Path -LiteralPath (Join-Path $RetroFE "collections\$($lead.menu)"))) -or ($me.menu -eq $lead.menu -and $me.item -ne $lead.item -and $gotoTries -ge 6) -or ($altFor -eq "$($lead.item)|$($lead.host)")) {
+          $alt = Find-HereList ([string]$lead.item)
+          if ($alt -and ($noFollow -contains $alt.list)) { $alt = $null }
+        }
+        if ($alt) {
+          if ($altFor -ne "$($lead.item)|$($lead.host)") { $altTries = 0 }; $altFor = "$($lead.item)|$($lead.host)"
+          if ($me.item -eq $alt.item) { }                                         # there
+          elseif ($me.menu -ne $alt.list -and $altTries -lt 4) { $bc = $lastCmdAt; Send-Cmd "show`t$($alt.list)" 1.5; if ($lastCmdAt -ne $bc) { $altTries++; if ($altTries -eq 1) { Say "$($lead.host) picked $($lead.item) in '$($lead.menu)': here it is in '$($alt.list)'" } } }
+          elseif ($me.menu -eq $alt.list) { Send-Cmd "goto`t$($alt.item)" 0.4 }
+        }
+        elseif ($me.menu -ne $lead.menu) { $altFor = ''; $altTries = 0; if ($me.menu -eq $top) { if ($me.item -ne $lead.menu) { Send-Cmd "goto`t$($lead.menu)" } else { Send-Cmd 'open' 1.2 } } else { Send-Cmd 'back' 1.2 } }
         elseif ($me.item -ne $lead.item) {
           Send-Goto $lead.item $lead.col 0.25
           # every way of going there was tried: the other cabinet's game is not on this one. Say so once, briefly
