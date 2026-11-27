@@ -531,8 +531,26 @@ $did = @(); $log = Join-Path $RetroFE 'log.txt'
 if ((Test-Path $log) -and (Get-Item $log).Length -gt 20MB -and $fix) { Move-Item $log "$log.$(Get-Date -f yyyyMMdd-HHmmss).old" -Force; $did += 'log.txt rotated' }
 foreach ($old in Get-ChildItem $RetroFE -Filter '*.old' -File | Sort-Object LastWriteTime -Descending | Select-Object -Skip 3) { if ($fix) { Remove-Item $old.FullName -Force } }
 $crash = @(Get-ChildItem $RetroFE -Directory -Filter 'crash-*' | Sort-Object Name -Descending)
+# real crashes (a minidump, or the crash handler's FATAL CRASH line) go to the NAS once, before the local cap below drops
+# them: Z:\ArcadeMaster\reports\crashes\<PC>\<folder> (docs/14 item 9). A folder from a killed or closed RetroFE has
+# neither and stays local. sent.txt marks a folder as copied.
+$crashShare = Join-Path 'Z:\ArcadeMaster\reports\crashes' $env:COMPUTERNAME; $sent = 0
+foreach ($c in $crash) {
+  if (Test-Path (Join-Path $c.FullName 'sent.txt')) { continue }
+  $real = (Test-Path (Join-Path $c.FullName 'retrofe_crash.dmp')) -or (Select-String -LiteralPath (Join-Path $c.FullName 'log.txt') -Pattern 'FATAL CRASH' -Quiet -ErrorAction SilentlyContinue)
+  if (-not $real -or -not $fix) { continue }
+  try {
+    $dst = Join-Path $crashShare $c.Name; New-Item -ItemType Directory -Force $dst | Out-Null
+    Copy-Item (Join-Path $c.FullName '*') $dst -Force
+    Set-Content (Join-Path $c.FullName 'sent.txt') "$dst`r`n$(Get-Date -Format s)" -Encoding ascii; $sent++
+  } catch { break }                                    # NAS away: next time
+}
+if ($sent) { $did += "$sent crash report(s) sent to $crashShare" }
+# the hitch log (perfLog, patch 0014) in one line: how many frames went over 33 ms in this log, and the worst
+$hitches = @(if (Test-Path $log) { Select-String -LiteralPath $log -Pattern 'hitch (\d+) ms' -ErrorAction SilentlyContinue | ForEach-Object { [int]$_.Matches[0].Groups[1].Value } })
+$hitchNote = if ($hitches.Count) { "; $($hitches.Count) hitch(es) in log.txt, worst $(($hitches | Measure-Object -Maximum).Maximum) ms" } else { '' }
 if ($crash.Count -gt 10 -and $fix) { $crash | Select-Object -Skip 10 | Remove-Item -Recurse -Force; $did += "pruned $($crash.Count - 10) old crash folder(s)" }
-if ($did) { Add-Result 'logs' $checks.logs 'FIXED' ($did -join '; ') } else { Add-Result 'logs' $checks.logs 'OK' "$($crash.Count) crash folder(s) kept" }
+if ($did) { Add-Result 'logs' $checks.logs 'FIXED' (($did -join '; ') + $hitchNote) } else { Add-Result 'logs' $checks.logs 'OK' "$($crash.Count) crash folder(s) kept$hitchNote" }
 
 # disk
 Emit @{ type = 'step'; id = 'disk'; label = $checks.disk; status = 'run' }

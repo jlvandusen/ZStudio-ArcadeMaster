@@ -331,7 +331,12 @@ while ($true) {
   # milliseconds + -Force: after a settings restore the retry is immediate, and two crashes in the same second used to
   # collide on the folder name - that error stopped the watchdog itself
   $keep = Join-Path $Root ("crash-{0:yyyyMMdd-HHmmss-fff}" -f $now); New-Item -ItemType Directory -Force $keep | Out-Null
-  foreach ($f in 'log.txt', 'retrofe_crash.dmp') { $src = Join-Path $Root $f; if (Test-Path $src) { Copy-Item $src $keep } }
+  Copy-Item (Join-Path $Root 'log.txt') $keep -ErrorAction SilentlyContinue
+  # the minidump only when THIS run wrote it, and moved (not copied): an old retrofe_crash.dmp was copied into every later
+  # crash folder, so a killed or hung RetroFE looked like the old crash again (RACE2, 2026-11-26)
+  $dmp = Join-Path $Root 'retrofe_crash.dmp'
+  if ((Test-Path $dmp) -and (Get-Item $dmp).LastWriteTime -ge $startedAt.AddSeconds(-5)) { Move-Item $dmp $keep -Force -ErrorAction SilentlyContinue }
+  $stamp = Join-Path (Split-Path $exe) 'am-build.txt'; if (Test-Path $stamp) { Copy-Item $stamp $keep -ErrorAction SilentlyContinue }   # which build crashed
   Write-Log "RetroFE crashed (exit $code) - evidence in $keep"
   # crash loop: put the last-known-good configs back once and try again before giving up
   if ($recent.Count -ge 3 -and -not $lkgRestored) {
