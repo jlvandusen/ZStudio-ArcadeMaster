@@ -63,6 +63,17 @@ $crlf = { param($files) foreach ($f in $files) { if ([IO.File]::ReadAllText($f.F
 $pt = @(Get-ChildItem (Join-Path $repo 'retrofe\patches') -Filter *.patch -File -ErrorAction SilentlyContinue)
 Report 'patches' @(& $crlf $pt) "$($pt.Count) patches use LF"
 
+# retrofe\fork.txt (docs/21): Update-Cabinet builds nothing unless it names a repo and a FULL 40-character commit
+# (2026-11-27: a short id was merged and every cabinet would have stopped updating)
+$forkTxt = Join-Path $repo 'retrofe\fork.txt'
+if (Test-Path $forkTxt) {
+  $ft = Get-Content $forkTxt
+  $bad = @()
+  if (-not ($ft | Where-Object { $_ -match '^\s*repo\s*=\s*\S+' })) { $bad += 'retrofe\fork.txt has no repo= line' }
+  if (-not ($ft | Where-Object { $_ -match '^\s*commit\s*=\s*[0-9a-f]{40}\s*$' })) { $bad += 'retrofe\fork.txt needs commit= with the full 40-character commit id (git rev-parse <id>)' }
+  Report 'fork' $bad 'retrofe\fork.txt pins a full commit'
+}
+
 $hooks = @(Get-ChildItem (Join-Path $repo 'tools\git-hooks') -File -ErrorAction SilentlyContinue)
 $bad = @(& $crlf $hooks)
 $git = (Get-Command git -ErrorAction SilentlyContinue).Source; if (-not $git -and (Test-Path 'C:\Program Files\Git\cmd\git.exe')) { $git = 'C:\Program Files\Git\cmd\git.exe' }
