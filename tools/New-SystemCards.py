@@ -86,7 +86,12 @@ def card(title, controller, key, dst):
         c = c.resize((max(1, round(c.width * k)), max(1, round(c.height * k))), Image.LANCZOS)
         im.alpha_composite(c, (x0 + (330 * S - c.width) // 2, (H * S - c.height) // 2))
         x0 += 360 * S
-    d.text((x0, 26 * S), "HOW TO PLAY  " + title.upper(), font=font(30 * S), fill=(255, 255, 255, 255))
+    # the title shrinks to fit ("SUPER NINTENDO ENTERTAINMENT SYSTEM" was cut off at 30 px)
+    head = "HOW TO PLAY  " + title.upper()
+    size = 30
+    while size > 16 and d.textlength(head, font=font(size * S)) > W * S - x0 - 30 * S:
+        size -= 1
+    d.text((x0, (26 + (30 - size) // 2) * S), head, font=font(size * S), fill=(255, 255, 255, 255))
     names = NATIVE.get(key)
     rows = [(panel, (names or GENERIC).get(pad)) for pad, panel in PANEL]
     rows = [(p, n) for p, n in rows if n]

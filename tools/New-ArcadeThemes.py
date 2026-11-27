@@ -45,6 +45,7 @@ import datetime as dt
 import json
 import math
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -258,14 +259,53 @@ def x_text(kind, x, y, size, color, layer, origin='center', alpha=1):
             f'    {HIDE_ON_SCROLL}\n    {HIDE_ON_EXIT}\n  </reloadableText>\n')
 
 
-def x_playlist(x, y, w, h, layer, ix, iy, isize=24, icolor='9aa3b2', iorigin='center'):
+def x_playlist(x, y, w, h, layer, ix, iy, isize=24, icolor='9aa3b2', iorigin='center', crumb=None, hints='below'):
     """the active playlist banner (LEFT / RIGHT switch it) + 'position / count' in the list"""
     return (f'  <reloadableImage type="playlist" mode="commonlayout" x="{x}" y="{y}" xOrigin="center" yOrigin="center" width="{w}" height="{h}" alpha="1" layer="{layer}">\n'
             f'    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set>'
             f'<set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>\n'
             f'  </reloadableImage>\n'
             f'  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="{ix}" y="{iy}" xOrigin="{iorigin}" yOrigin="center" '
-            f'fontSize="{isize}" loadFontSize="{isize}" fontColor="{icolor}" alpha=".9" layer="{layer}"/>\n')
+            f'fontSize="{isize}" loadFontSize="{isize}" fontColor="{icolor}" alpha=".9" layer="{layer}"/>\n'
+            + x_nav(x, y, w, h, layer, ix, iorigin, crumb, hints))
+
+
+def x_nav(x, y, w, h, layer, ix, iorigin, crumb=None, hints='below'):
+    """ArcadeMaster's nav header (2026-11-27, James: "show breadcrumbs ... and nav buttons to move back and forth"), placed
+    round this theme's filter bar: where you are (MAIN > NINTENDO > ALL GAMES), the BACK / FILTERS hints under the bar,
+    and touch zones on the bar's arrows and on BACK."""
+    left, right, top, bottom = x - w // 2, x + w // 2, y - h // 2, y + h // 2
+    # the breadcrumb right of the bar (past a counter that sits there), or top left when the bar is on the right half
+    cx = (ix + 170 if iorigin == 'left' and ix > right else right + 40) if right < 1300 else 40
+    cy = y if right < 1300 else 34
+    cs = 28
+    if crumb:                                  # the theme's own place, where the default would cover its art
+        cx, cy, cs = crumb
+    if hints == 'left':
+        # no room under the bar (Box Art: the video frame starts there): BACK sits left of the bar, the bar's own arrows
+        # are the filter hint
+        hint = (f'  <text value="&lt; BACK" x="{left - 16}" y="{y}" xOrigin="right" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="ff2fa0" alpha=".9" layer="{layer}"/>\n'
+                f'  <image src="images/touch_hit.png" touchAction="back" x="{left - 130}" y="{top}" width="120" height="{h}" layer="{layer + 1}"/>\n')
+    else:
+        hint = (f'  <text value="&lt; BACK" x="{left + 8}" y="{bottom + 22}" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="ff2fa0" alpha=".9" layer="{layer}"/>\n'
+                f'  <text value="&lt; &gt;  FILTERS" x="{right - 8}" y="{bottom + 22}" xOrigin="right" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="2ec8ff" alpha=".9" layer="{layer}"/>\n'
+                f'  <image src="images/touch_hit.png" touchAction="back" x="{left}" y="{bottom + 4}" width="130" height="40" layer="{layer + 1}"/>\n')
+    return (f'  <reloadableText type="am_breadcrumb" x="{cx}" y="{cy}" yOrigin="center" fontSize="{cs}" loadFontSize="{cs}" fontColor="e6e9f0" alpha=".95" layer="{layer}"/>\n'
+            + hint +
+            f'  <image src="images/touch_hit.png" touchAction="prevPlaylist" x="{left}" y="{top}" width="110" height="{h}" layer="{layer + 1}"/>\n'
+            f'  <image src="images/touch_hit.png" touchAction="nextPlaylist" x="{right - 110}" y="{top}" width="110" height="{h}" layer="{layer + 1}"/>\n')
+
+
+def x_loading(prefix=''):
+    """the LOADING - PLEASE WAIT card from the moment a choice is made (James 2026-11-27: "delays with a please wait ... to
+    not press into games by accident"); same as ArcadeMaster's am-loading-card"""
+    ev = ('    <onMenuExit><set duration=".12"><animate type="alpha" to="{a}"/></set></onMenuExit>\n'
+          '    <onExit><set duration=".12"><animate type="alpha" to="{a}"/></set></onExit>\n'
+          '    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>\n'
+          '    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>\n')
+    return (f'  <image src="{prefix}images/black.png" x="0" y="0" width="{W}" height="{H}" alpha="0" layer="19">\n' + ev.format(a='.7') + '  </image>\n'
+            f'  <text value="LOADING - PLEASE WAIT" x="{W // 2}" y="{H // 2}" xOrigin="center" yOrigin="center" fontSize="64" loadFontSize="64" '
+            f'fontColor="ffe259" alpha="0" layer="19">\n' + ev.format(a='1') + '  </text>\n')
 
 
 def x_launch(prefix=''):
@@ -276,7 +316,8 @@ def x_launch(prefix=''):
             f'  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="700" maxHeight="360" alpha="0" layer="19">\n'
             f'    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set>'
             f'<set duration="1"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="0"/></set></onGameEnter>\n'
-            f'    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>\n  </reloadableImage>\n')
+            f'    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>\n  </reloadableImage>\n'
+            + x_loading(prefix))
 
 
 def x_head(comment, monitor=None, min_show=True):
@@ -590,7 +631,7 @@ class Marquee(Theme):
                 + x_image('images/marq_deck.png', 960, 928, 1180, 310, 8)
                 + x_controls(960, 928, 1100, 300, 9)
                 # left side panel: playlist + list
-                + x_playlist(205, 52, 380, 37, 11, 205, 92, 22)
+                + x_playlist(205, 52, 380, 37, 11, 205, 92, 22, crumb=(1500, 16, 17))
                 + f'  <image src="images/marq_sel.png" x="{self.LX}" y="{self.LY}" xOrigin="center" yOrigin="center" width="380" height="124" alpha="1" layer="9">\n'
                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to=".4"/></set></onMenuScroll>\n'
                   '    <onMenuIdle><set duration=".15"><animate type="alpha" to="1"/></set></onMenuIdle>\n  </image>\n'
@@ -711,7 +752,7 @@ class Wheel(Theme):
                   '    <onMenuIdle><set duration="1.2"><animate type="alpha" to=".5" algorithm="easeInOutSine"/></set>'
                   '<set duration="1.2"><animate type="alpha" to=".9" algorithm="easeInOutSine"/></set></onMenuIdle>\n  </image>\n'
                 + menu
-                + x_playlist(330, 38, 560, 54, 11, 640, 38, 24, iorigin='left')
+                + x_playlist(330, 38, 560, 54, 11, 640, 38, 24, iorigin='left', crumb=(640, 86, 20))
                 + x_text('title', 1180, 38, 32, 'ffffff', 11, 'right')
                 + x_image('images/whl_video_frame.png', 640, 420, 1180, 690, 5)
                 + x_video(640, 420, 1120, 630, 6)
@@ -804,7 +845,7 @@ class Poster(Theme):
                 + x_image('images/pst_rail.png', 0, 990, W, 16, 4, origin=False)
                 + menu
                 + x_text('title', self.PX, 1040, 30, 'ffffff', 12)
-                + x_playlist(1500, 38, 600, 58, 11, 1500, 548, 22)
+                + x_playlist(1500, 38, 600, 58, 11, 1500, 548, 22, hints='left')
                 + '  <reloadableImage type="logo" x="565" y="170" xOrigin="center" yOrigin="center" width="500" maxHeight="150" alpha="0" layer="6">\n'
                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="x" to="535"/></set></onMenuScroll>\n'
                   '    <onMenuIdle><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="x" to="565" algorithm="easeOutCubic"/></set></onMenuIdle>\n'
@@ -1081,6 +1122,20 @@ def write(path: Path, text: str):
     ET.parse(path)                                   # every layout must be well-formed XML
 
 
+def copy_named_files(xml: Path, src_root: Path, dst_root: Path):
+    """every file a layout names (src="images/..", font="fonts/..", sound="sounds/..") that is in the source layout,
+    copied to the same place in the theme. Paths in a RetroFE layout are relative to the layout folder; per-game media
+    (reloadableImage types) are not files and are skipped."""
+    text = xml.read_text(encoding='utf-8')
+    for m in re.finditer(r'(?:src|font|sound)="([^"]+\.(?:png|jpg|jpeg|gif|ttf|otf|wav|mp3|ogg))"', text, re.I):
+        rel = m.group(1).replace('\\', '/')
+        s = src_root / rel
+        if s.is_file():
+            d = dst_root / rel
+            d.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(s, d)
+
+
 def build(theme: Theme, root: Path):
     out = root / theme.folder
     img = out / 'images'
@@ -1103,6 +1158,16 @@ def build(theme: Theme, root: Path):
     shutil.copytree(SRC / 'sounds', out / 'sounds', dirs_exist_ok=True)
     shutil.copytree(SRC / 'fonts', out / 'fonts', dirs_exist_ok=True)
     shutil.copytree(SRC / 'collections' / 'Main' / 'medium_artwork' / 'logo', out / 'collections' / 'Main' / 'medium_artwork' / 'logo', dirs_exist_ok=True)
+    # the parts every theme shares with ArcadeMaster (James 2026-11-27, "all themes delivered"): the touch screen (SEARCH,
+    # breadcrumbs, panels, list touch) and the hero main menu - copied with every picture / font they name
+    for rel in ('layout - 1.xml', 'collections/Main/layout/layout.xml', 'collections/Main/layout/layout - 1.xml'):
+        dst = out / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(SRC / rel, dst)
+        copy_named_files(SRC / rel, SRC, out)
+    for f in ('touch_hit.png', 'black.png'):
+        if (SRC / 'images' / f).exists():
+            shutil.copy2(SRC / 'images' / f, img / f)
     meta = {'name': theme.folder, 'label': theme.label, 'about': theme.about, 'idea': theme.idea, 'keys': theme.keys,
             'madeBy': 'tools/New-ArcadeThemes.py', 'resolution': f'{W}x{H}', 'monitors': 2}
     (out / MARKER).write_text(json.dumps(meta, indent=2) + '\n', encoding='utf-8', newline='\n')
