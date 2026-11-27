@@ -107,3 +107,14 @@ BigBox themes are WPF / XAML, which RetroFE can't run.
 | **B. Port a BigBox theme's look into RetroFE** | Pull the theme's backgrounds, fonts and colour palette (Themes\<name>\Images, Fonts, XAML colour resources) into an ArcadeMaster skin. The layout structure (wheel / list / grid) is rebuilt per theme family, because XAML views don't translate one-to-one. | medium per theme family |
 
 Recommendation: do 1 and 2 first, since that's direct reuse; then route A for BigBox, which is quick. Port individual favourites with route B where the look is worth it.
+
+## Designing a theme with the frontend open (2026-11-27, docs/21 phase 4)
+
+- Add `layoutHotReload = yes` to the frontend's `settings.conf` and start it. From then on, saving any `.xml`, `.png`,
+  `.jpg`, `.txt` or `.conf` under the active layout's folder (`<frontend>\layouts\<layout>`) rebuilds the open page
+  within about a second. The selected game, the filter and the scroll position stay.
+- Leave it off on a cabinet in normal use: it is a look at the layout folder once a second, only worth it while designing.
+- Without the setting, the cabinet link's `reload` command does the same once (a UDP text `reload` to 127.0.0.1:47802).
+- The updater copies the repo's `layouts\ArcadeMaster` into the frontend only while the frontend is closed. While
+  designing, edit the files under the frontend's own `layouts` folder, then copy what you keep back into the repo.
+- Measured on RACE1 (GTX 1650, 1080p): a changed text in `layout.xml` was on screen 0.4 s after it was noticed.
