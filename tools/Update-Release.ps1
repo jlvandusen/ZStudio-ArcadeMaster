@@ -95,7 +95,7 @@ try {
     Move-Item $from $dst
     $done += @{ dst = $dst; keep = $keep }
   }
-  foreach ($f in 'AmPanel.exe', 'panel-rules.json', 'light-guns.json', 'exit-rules.json', 'ArcadeMaster.ico', 'README.txt', 'LICENSE', 'Install.ps1') {
+  foreach ($f in 'AmPanel.exe', 'panel-rules.json', 'light-guns.json', 'exit-rules.json', 'ArcadeMaster.ico', 'README.txt', 'LICENSE', 'Install.ps1', 'USER-GUIDE.md') {
     if (Test-Path (Join-Path $src $f)) { Copy-Item (Join-Path $src $f) (Join-Path $Root $f) -Force }
   }
   if (Test-Path (Join-Path $src 'ampanel-shim\LEDBlinky.exe')) { New-Item -ItemType Directory -Force (Join-Path $Root 'ampanel-shim') | Out-Null; Copy-Item (Join-Path $src 'ampanel-shim\LEDBlinky.exe') (Join-Path $Root 'ampanel-shim\LEDBlinky.exe') -Force }
