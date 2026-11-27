@@ -56,6 +56,9 @@
 
   <!-- the dash: the default theme's own instrument cluster, moved into place -->
   <image src="../../../images/am-views/cockpit_dash.png" x="0" y="730" width="1920" height="350" alpha="1" layer="8"/>
+  <!-- plain dials under the cabinet's own: a list without gauge pictures (a cabinet with no wheel) still has a dash -->
+  <image src="../../../images/racing_speedo_face.png" x="300" y="900" xOrigin="center" yOrigin="center" width="280" height="280" alpha=".9" layer="9"/>
+  <image src="../../../images/racing_tacho_face.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" alpha=".9" layer="9"/>
   <reloadableText type="title" menuScrollReload="true" x="960" y="1058" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alpha="1" layer="13"/>
   <reloadableText type="manufacturer" menuScrollReload="true" x="60" y="1052" xOrigin="left" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="2ec8ff" alpha="1" layer="13"/>
   <reloadableText type="year" menuScrollReload="true" x="1860" y="1052" xOrigin="right" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="ffb000" alpha="1" layer="13"/>

@@ -73,17 +73,17 @@
   <reloadableImage type="logo" x="1500" y="200" xOrigin="center" yOrigin="center" width="700" maxHeight="220" alpha="0" layer="9"><onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll><onMenuIdle><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle><onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit></reloadableImage>
   <image src="../../../images/am-views/split_panel.png" x="1500" y="545" xOrigin="center" yOrigin="center" width="760" height="400" alpha="1" layer="7"/>
   <text value="MAKER" x="1150" y="372" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
-  <reloadableText type="manufacturer" menuScrollReload="true" x="1150" y="398" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="1150" y="418" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
   <text value="YEAR" x="1560" y="372" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
-  <reloadableText type="year" menuScrollReload="true" x="1560" y="398" fontSize="32" loadFontSize="32" fontColor="ffb000" alpha="1" layer="10"/>
+  <reloadableText type="year" menuScrollReload="true" x="1560" y="418" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffb000" alpha="1" layer="10"/>
   <text value="PLAYERS" x="1150" y="462" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
-  <reloadableText type="numberPlayers" menuScrollReload="true" x="1150" y="488" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
+  <reloadableText type="numberPlayers" menuScrollReload="true" x="1150" y="508" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
   <text value="KIND OF GAME" x="1560" y="462" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
-  <reloadableText type="genre" menuScrollReload="true" x="1560" y="488" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
+  <reloadableText type="genre" menuScrollReload="true" x="1560" y="508" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
   <text value="ON THIS CABINET" x="1150" y="556" fontSize="20" loadFontSize="20" fontColor="2ec8ff" layer="10"/>
   <reloadableScrollingText type="am_stats" menuScrollReload="true" x="1150" y="586" width="700" height="130" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="1" startPosition="0" startTime="3600" endTime="5" alpha="1" layer="10"/>
   <!-- its story, scrolling slowly -->
-  <reloadableScrollingText type="am_story" menuScrollReload="true" x="1130" y="780" width="740" height="260" fontSize="26" loadFontSize="26" fontColor="cfd4de" alignment="left" direction="vertical" scrollingSpeed="12" startPosition="0" startTime="6" endTime="4" alpha="0" layer="10">
+  <reloadableScrollingText type="am_story" menuScrollReload="true" x="1130" y="790" width="740" height="250" fontSize="26" loadFontSize="26" fontColor="cfd4de" alignment="left" direction="vertical" scrollingSpeed="12" startPosition="0" startTime="14" endTime="4" alpha="0" layer="10">
     <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
     <onMenuIdle><set duration="1.2"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
     <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
