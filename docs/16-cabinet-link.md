@@ -132,3 +132,16 @@ whether a hand is on the rim), only on an idle cabinet, and released the moment 
   it follows nobody for the frontend's `attractModeTime` (90 s on the racing rigs); `-IdleSec` is only the floor. The
   join countdown follows the same rule. The cabinet where somebody is browsing still leads the idle ones. Tested on
   RACE1: 45 s after a press it stayed put while a stand-in cabinet browsed; at 100 s it followed.
+
+## 2026-11-27: first test on two real cabinets (RACE1 + RACE2)
+
+- **Browsing in step works.** RACE1 scrolled five games about 2 s apart; RACE2 followed four within 1.5 s each (Arctic
+  Thunder, Auto Modellista, Ballistics, Batman - RACE2's screen grabs show the right card and title). The fifth, Battle
+  Gear 4 Tuned, is not on RACE2: it stayed on Batman and went back to rolling its own games.
+- **The rejoin rule works.** After one press on RACE2's own controls it ignored RACE1 (26 s later) and followed again
+  once its 90 s were over (103 s later).
+- **A game the follower does not have** now shows a card at the top for a few seconds: "RACE1 picked / <title> / not on
+  this cabinet". The title travels with the selection, because a cabinet without the game cannot look it up.
+- **A broken helper file no longer takes the link down.** The helper restarts itself when its script changes; it now
+  parses the new file first and keeps running when the file has syntax errors (RACE1's link went off twice that way
+  while this was being written).
