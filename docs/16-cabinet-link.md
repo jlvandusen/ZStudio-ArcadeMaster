@@ -139,7 +139,11 @@ whether a hand is on the rim), only on an idle cabinet, and released the moment 
   Thunder, Auto Modellista, Ballistics, Batman - RACE2's screen grabs show the right card and title). The fifth, Battle
   Gear 4 Tuned, is not on RACE2: it stayed on Batman and went back to rolling its own games.
 - **The rejoin rule works.** After one press on RACE2's own controls it ignored RACE1 (26 s later) and followed again
-  once its 90 s were over (103 s later).
+  later (103 s after the press). RACE2's wait in that test was 30 s, not RACE1's 90: its attract mode was set to start
+  after 20 s. James then chose 90 s on both racing rigs (PR 320: `catalog/frontend-settings/racing.conf`).
+- **Model 3 on RACE1 checked after RACE2's Dirt Devils report** (its Supermodel.ini had every control on the handbrake
+  lever's number): RACE1 has 23 controls on the wheel (JOY1) and only the handbrake on the lever (JOY2); Start is
+  Options, Coin is Share.
 - **A game the follower does not have** now shows a card at the top for a few seconds: "RACE1 picked / <title> / not on
   this cabinet". The title travels with the selection, because a cabinet without the game cannot look it up.
 - **A broken helper file no longer takes the link down.** The helper restarts itself when its script changes; it now
