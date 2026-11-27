@@ -184,6 +184,20 @@ One "BUTTON LIGHTS & OUTPUTS" screen (Tools, and the tray window on a desktop), 
     The pipe takes `{"cmd":"marquee","text":"INSERT COIN","color":"yellow"}`, `{"cmd":"marquee","game":"pacman",
     "system":"mame"}` and `{"cmd":"marquee","path":"/v2/info"}`. The status shows sent / failed counts.
     Not yet: LEDBlinky's `~hiscoretop3~` (high scores on the marquee) is left out of the "Now Playing" text.
+    **Turned on by itself (2026-11-26, `tools\Set-Marquee.ps1`):** the 2P stand-up's marquee went quiet after the
+    cut-over. The shim takes LEDBlinky's place, so LEDBlinky's own Pixelcade link (`UsePixelcade=1`) never got an event, and
+    nothing had written `"Marquee": "pixelcade"`. Now boot (Start-ArcadeMaster), the switch to the ArcadeMaster engine
+    (Set-ButtonLights) and **Cabinet Settings > LED MARQUEE (PIXELCADE)** run Set-Marquee. It finds Pixelcade in this order:
+    - AmPanel.json `PixelcadeDir`
+    - LEDBlinky's `[Pixelcade] PixelcadeFolder`
+    - a running listener
+    - `<drive>:\Pixelcade` or `%USERPROFILE%\pixelcade`
+    - anything answering on port 8080
+
+    It then writes `Marquee` and `PixelcadeDir` (plus `LEDBlinkyDir` for the texts) and restarts AmPanel. It does nothing
+    while LEDBlinky still gets the events, and it respects `"Marquee": "off"` (the settings switch).
+    The health check no longer "repairs" a `LEDBlinkyDirectory` that points at the shim: that quietly gave the events back
+    to LEDBlinky.
 
 ## Safety
 

@@ -63,6 +63,8 @@ if ($Engine -eq 'ArcadeMaster') {
     New-Item -ItemType Directory -Force $shim | Out-Null
     Copy-Item $amExe (Join-Path $shim 'LEDBlinky.exe') -Force
     Set-Conf 'LEDBlinkyDirectory' $shim
+    # LEDBlinky no longer gets the events, so its Pixelcade link goes quiet: AmPanel takes the marquee when there is one
+    & (Join-Path $PSScriptRoot 'Set-Marquee.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -NoRestart 6>&1 | Out-Null
     Stop-ByPath 'AmPanel' $amExe; Start-Sleep -Milliseconds 500; Start-AmPanelDetached
     Write-Host "button lights: none on this cabinet - AmPanel gets the frontend's game events through $shim (Esc ends any game)"
     return
@@ -74,6 +76,7 @@ if ($Engine -eq 'ArcadeMaster') {
   $cfg['Lights'] = 'own'; $cfg['LEDBlinkyDir'] = $real
   $cfg | ConvertTo-Json | Set-Content $cfgFile -Encoding ascii
   Set-Conf 'LEDBlinkyDirectory' $shim
+  & (Join-Path $PSScriptRoot 'Set-Marquee.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -NoRestart 6>&1 | Out-Null   # the marquee too
   Stop-ByPath 'LEDBlinky' (Join-Path $real 'LEDBlinky.exe')
   Stop-ByPath 'AmPanel' $amExe
   Start-Sleep -Milliseconds 500
