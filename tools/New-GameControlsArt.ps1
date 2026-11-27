@@ -375,6 +375,7 @@ foreach ($top in $cols) {
       elseif ($src -eq 'Sega Model 2') { $rows = Read-Model2 $item }
       elseif ($src -eq 'Sega Model 3') { $rows = Read-Supermodel }
       elseif ($src -eq 'MAME') { $rows = Read-Mame $item }
+      elseif ($src -match 'Wii U') { $rows = Read-TemplateGame $item 'cemu' }   # before the Wii test below: 'Nintendo Wii U' also matches 'Nintendo Wii\b', so Mario Kart 8 never reached its own reader
       elseif ($src -match 'Gamecube|Nintendo Wii\b|Nintendo Wii\$|Triforce') { $rows = Read-TemplateGame $item 'dolphin' }
       elseif ($src -match 'Wii U') { $rows = Read-TemplateGame $item 'cemu' }
       elseif ($src -in 'PC Games', 'AM_PC') { $rows = Read-PcGame $src $item; if (-not $rows) { $rows = Get-DetectedControls; $plain++ } }
