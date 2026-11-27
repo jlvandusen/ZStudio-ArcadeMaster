@@ -19,27 +19,27 @@
   <image src="images/fx_scrim_main.png" x="0" y="0" width="1920" height="1080" layer="2"/>
 
   <!-- top band: marquee-style logo -->
-  <reloadableImage type="logo" x="960" y="240" xOrigin="center" yOrigin="center" width="1100" maxHeight="220" alpha="0" layer="5">
+  <reloadableImage panel="info" type="logo" x="900" y="330" xOrigin="center" yOrigin="center" width="1400" maxHeight="360" alpha="0" layer="5">
     <onMenuScroll><set duration=".06"><animate type="alpha" to=".25"/></set></onMenuScroll>
     <onMenuIdle>
-      <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" from="980" to="1100" algorithm="easeOutCubic"/></set>
-      <set duration="2"><animate type="width" to="1140" algorithm="easeInOutSine"/></set>
-      <set duration="2"><animate type="width" to="1100" algorithm="easeInOutSine"/></set>
+      <set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" from="1250" to="1400" algorithm="easeOutCubic"/></set>
+      <set duration="2"><animate type="width" to="1440" algorithm="easeInOutSine"/></set>
+      <set duration="2"><animate type="width" to="1400" algorithm="easeInOutSine"/></set>
     </onMenuIdle>
   </reloadableImage>
 
   <!-- middle band: two touch panels (docs/22). INFO (shown first) = the header; BOX ART = the game's cover, large.
        Builds without touch panels ignore panel= and touchAction=, so they show INFO and the cover together, as before plus the cover -->
-  <reloadableText panel="info" type="title" menuScrollReload="true" x="960" y="430" xOrigin="center" yOrigin="center" fontSize="72" loadFontSize="72" fontColor="ffffff" layer="6"/>
-  <text panel="info" value="PLAYERS" x="300" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText panel="info" type="numberPlayers" menuScrollReload="true" x="300" y="600" xOrigin="center" yOrigin="center" fontSize="58" loadFontSize="58" fontColor="2ec8ff" layer="6"/>
-  <text panel="info" value="CONTROLS" x="760" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText panel="info" type="ctrlType" menuScrollReload="true" x="760" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ff2fa0" layer="6"/>
-  <text panel="info" value="YEAR" x="1180" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText panel="info" type="year" menuScrollReload="true" x="1180" y="600" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ffb000" layer="6"/>
-  <text panel="info" value="MAKER" x="1600" y="545" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
-  <reloadableText panel="info" type="manufacturer" menuScrollReload="true" x="1600" y="600" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="ffffff" layer="6"/>
-  <reloadableImage panel="boxart" type="cover" x="960" y="520" xOrigin="center" yOrigin="center" maxWidth="1200" maxHeight="380" layer="6">
+  <reloadableText panel="info" type="title" menuScrollReload="true" x="900" y="560" xOrigin="center" yOrigin="center" fontSize="60" loadFontSize="60" fontColor="ffffff" layer="6"/>
+  <text panel="info" value="PLAYERS" x="300" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="numberPlayers" menuScrollReload="true" x="300" y="672" xOrigin="center" yOrigin="center" fontSize="58" loadFontSize="58" fontColor="2ec8ff" layer="6"/>
+  <text panel="info" value="CONTROLS" x="760" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="ctrlType" menuScrollReload="true" x="760" y="672" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ff2fa0" layer="6"/>
+  <text panel="info" value="YEAR" x="1180" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="year" menuScrollReload="true" x="1180" y="672" xOrigin="center" yOrigin="center" fontSize="50" loadFontSize="50" fontColor="ffb000" layer="6"/>
+  <text panel="info" value="MAKER" x="1600" y="625" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="8d95a3" layer="6"/>
+  <reloadableText panel="info" type="manufacturer" menuScrollReload="true" x="1600" y="672" xOrigin="center" yOrigin="center" fontSize="44" loadFontSize="44" fontColor="ffffff" layer="6"/>
+  <reloadableImage panel="boxart" type="cover" x="900" y="420" xOrigin="center" yOrigin="center" maxWidth="1300" maxHeight="560" layer="6">
     <onPanelEnter><set duration=".25"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set></onPanelEnter>
   </reloadableImage>
 

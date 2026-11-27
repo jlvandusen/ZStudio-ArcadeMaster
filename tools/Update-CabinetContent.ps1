@@ -39,6 +39,7 @@ try {
     @('system stories', 'New-SystemStories.py', @('--retrofe', $RetroFE)),
     @('menu logos', 'New-MenuLogos.py', @('--retrofe', $RetroFE)),
     @('menu hero art', 'New-MenuHeroArt.py', @('--retrofe', $RetroFE)),
+    @('system cards', 'New-SystemCards.py', @('--retrofe', $RetroFE)),
     @('search index', 'New-SearchIndex.py', @('--retrofe', $RetroFE, '--manifest', $ManifestDir))
   )
   foreach ($s in $steps) {
