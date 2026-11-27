@@ -334,6 +334,13 @@ def main():
     except Exception:
         pass
     ra = [e for e in disc.get("emulators", []) if e["emulator"] == "retroarch" and e.get("cores")]
+    # ArcadeMaster's own emulators folder first (tools/Move-OffRetroBat.py links / moves them there), then the
+    # RetroBat this frontend came from
+    own = os.path.join(os.path.dirname(a.manifest), "emulators").lower() + "\\"
+
+    def pref(exe):
+        x = exe.lower()
+        return 0 if x.startswith(own) else 1 if home and x.startswith(home + "\\") else 2
     # the RetroArch of the RetroBat this frontend already uses (its BIOS folder and settings), else the one with most cores
     home = None
     for f in sorted(os.listdir(launchers)) if os.path.isdir(launchers) else []:
@@ -342,7 +349,7 @@ def main():
             if m:
                 home = m.group(1).strip().lower()
                 break
-    ra.sort(key=lambda e: (0 if home and e["exe"].lower().startswith(home + "\\") else 1, -len(e["cores"])))
+    ra.sort(key=lambda e: (pref(e["exe"]), -len(e["cores"])))
     if not ra:
         print("direct launchers: no RetroArch with cores found (run tools/Find-Emulators.py first)")
         return
@@ -357,8 +364,10 @@ def main():
     # the bezel set: RetroBat's decorations next to the RetroArch in use (system\decorations\<set>\systems)
     deco = None
     if a.bezels != "none":
-        for root in ([home] if home else []) + [os.path.dirname(os.path.dirname(radir))]:
-            d = os.path.join(root, "system", "decorations", a.bezels, "systems")
+        # ArcadeMaster's own decorations folder first (tools/Move-OffRetroBat.py), then RetroBat's
+        for d in [os.path.join(os.path.dirname(a.manifest), "decorations", a.bezels, "systems")] + [
+                os.path.join(root, "system", "decorations", a.bezels, "systems")
+                for root in ([home] if home else []) + [os.path.dirname(os.path.dirname(radir))]]:
             if os.path.isdir(d):
                 deco = d
                 break
@@ -422,7 +431,7 @@ def main():
             pick = None
             for emu, exe_name, args in STANDALONE.get(sysname, []):
                 cands = [e for e in disc.get("emulators", []) if e["emulator"] == emu and os.path.basename(e["exe"]).lower() == exe_name.lower()]
-                cands.sort(key=lambda e: 0 if home and e["exe"].lower().startswith(home + "\\") else 1)
+                cands.sort(key=lambda e: pref(e["exe"]))
                 if cands:
                     pick = (cands[0]["exe"], args)
                     break
