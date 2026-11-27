@@ -11,6 +11,7 @@
     GStreamer 1.24.13      the MSVC runtime + devel MSIs from gstreamer.freedesktop.org, UNPACKED (msiexec /a, nothing
                            installed into Windows) into <ToolsRoot>\gstreamer; the downloads are deleted afterwards.
     ffmpeg                 winget Gyan.FFmpeg (the menu preview clips, New-PreviewMedia.py)
+  -Runtime (a release install, Install.ps1): only Python + Pillow and ffmpeg - RetroFE comes prebuilt in the release.
   -Check only reports. AM_SYSTEM_DRYRUN=1 reports what it would install, like the other system tools (docs/08).
   Every line it prints starts with ok / installed / missing / would install / FAILED, so the launcher's log reads well.
 .EXAMPLE
@@ -19,7 +20,8 @@
 #>
 param(
   [string]$ToolsRoot = 'D:\ArcadeMaster\_tools',
-  [switch]$Check
+  [switch]$Check,
+  [switch]$Runtime        # a release install: only what the tools need to RUN (Python + Pillow, ffmpeg) - no compiler, no git
 )
 $ErrorActionPreference = 'Continue'
 $dry = $Check -or $env:AM_SYSTEM_DRYRUN -eq '1'
@@ -54,6 +56,7 @@ function Invoke-Winget([string]$id, [string]$what, [string[]]$extra) {
   $script:failed++; return $false
 }
 
+if (-not $Runtime) {
 # --- Git
 $git = Find-Exe 'git' @('C:\Program Files\Git\cmd\git.exe', (Join-Path $env:LOCALAPPDATA 'Programs\Git\cmd\git.exe'))
 if ($git) { Write-Host "ok         Git ($git)" } else { [void](Invoke-Winget 'Git.Git' 'Git' @()) }
@@ -65,6 +68,8 @@ if ($gh) { Write-Host "ok         GitHub CLI ($gh)" } else { [void](Invoke-Winge
 # --- PowerShell 7
 $pwsh = Find-Exe 'pwsh' @('C:\Program Files\PowerShell\7\pwsh.exe')
 if ($pwsh) { Write-Host "ok         PowerShell 7 ($pwsh)" } else { [void](Invoke-Winget 'Microsoft.PowerShell' 'PowerShell 7' @()) }
+
+}   # -Runtime: no git, gh, pwsh 7
 
 # --- Python 3.12 + Pillow
 $py = Find-Exe 'python' @('C:\Program Files\Python312\python.exe', (Join-Path $env:LOCALAPPDATA 'Programs\Python\Python312\python.exe'))
@@ -82,6 +87,7 @@ if ($py) {
   }
 }
 
+if (-not $Runtime) {
 # --- Visual Studio 2022 Build Tools with C++ (any edition with the MSVC x64 tools counts)
 $vswhere = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
 $vs = if (Test-Path $vswhere) { & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null | Select-Object -First 1 } else { $null }
@@ -111,6 +117,8 @@ else {
   if ($ok -and (Test-Path ([IO.Path]::Combine($gstKit, 'include')))) { Write-Host "installed  GStreamer $gstVer kit ($gstKit)"; Remove-Item $dl -Recurse -Force -ErrorAction SilentlyContinue }
   else { if ($ok) { Write-Host "FAILED     GStreamer: unpacked, but $gstKit\include is missing" }; $failed++ }
 }
+
+}   # -Runtime: a release ships RetroFE built - no compiler, no GStreamer kit
 
 # --- ffmpeg (winget puts it under its Packages folder and a link in WinGet\Links)
 $ffPkg = Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages') -Directory -Filter 'Gyan.FFmpeg*' -ErrorAction SilentlyContinue | ForEach-Object { Get-ChildItem $_.FullName -Recurse -Filter ffmpeg.exe -ErrorAction SilentlyContinue } | Select-Object -First 1
