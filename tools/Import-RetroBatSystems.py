@@ -272,6 +272,11 @@ def safe(s):
     return re.sub(r'[<>:"/\\|?*]', "", s).strip()
 
 
+# systems ArcadeMaster runs from its own list, never as a RetroBat copy: TeknoParrot is the frontend's own install and
+# list (2026-11-27: "TeknoParrot (RetroBat)" held no working game the own list lacked)
+OWN_SYSTEMS = {"teknoparrot"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--retrofe", required=True)
@@ -338,6 +343,8 @@ def main():
                        "uses": {"emulator": choice[0], "core": choice[1]} if choice else None})
         if wanted is not None and s["name"] not in wanted:
             continue
+        if s["name"] in OWN_SYSTEMS:
+            continue                      # ArcadeMaster's own list has these (no RetroBat duplicate)
         if not games or not choice:
             if wanted is not None:
                 print("  skip %-12s %s" % (s["name"], "no games" if not games else "no installed emulator"))

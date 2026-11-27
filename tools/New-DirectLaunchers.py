@@ -376,6 +376,39 @@ def main():
         if only and sysname not in only:
             continue
         name = "AM_DL_" + m.group(1)
+        if sysname == "ports":
+            # each port is its own RetroArch core (<item>.libretro -> cores\<item>_libretro.dll), started with no game
+            # file - except a port whose core reads data from a folder of the same name (XRick: xrick\data.zip).
+            # RetroFE picks the launcher per item from collections\Ports\launchers\<item>.conf.
+            lp = re.search(r"^\s*list\.path\s*=\s*(.+?)\s*$", t, re.M)
+            pdir = lp.group(1) if lp else ""
+            items = sorted(f[:-len(".libretro")] for f in (os.listdir(pdir) if os.path.isdir(pdir) else []) if f.endswith(".libretro"))
+            made = []
+            for it in items:
+                dll = os.path.join(radir, "cores", it + "_libretro.dll")
+                if not os.path.exists(dll):
+                    continue
+                data = next((os.path.join(pdir, it, d) for d in ("data.zip", "data") if os.path.exists(os.path.join(pdir, it, d))), None)
+                pconf = ["executable = %s" % ra["exe"],
+                         'arguments = --appendconfig "%s" -L "%s"%s' % (cfg, dll, ' "%s"' % data if data else ""),
+                         "currentDirectory = %s" % radir] + hooks(os.path.join(launchers, "AM_RB_%s.conf" % m.group(1)))
+                if not a.dry_run:
+                    open(os.path.join(launchers, "%s_%s.conf" % (name, it)), "w", encoding="latin-1").write("\n".join(pconf) + "\n")
+                    os.makedirs(os.path.join(cols, c, "launchers"), exist_ok=True)
+                    open(os.path.join(cols, c, "launchers", it + ".conf"), "w", encoding="latin-1").write("%s_%s\n" % (name, it))
+                made.append(it)
+            if not made:
+                skipped.append(sysname)
+                continue
+            if not a.dry_run:
+                # the list's own launcher: the first port (an item without its own file still starts something real)
+                first = open(os.path.join(launchers, "%s_%s.conf" % (name, made[0])), encoding="latin-1").read()
+                open(os.path.join(launchers, name + ".conf"), "w", encoding="latin-1").write(first)
+                t = re.sub(r"^\s*launcher\s*=.*$", "launcher = %s" % name, t, flags=re.M)
+                t = re.sub(r"^# was AM_RB_\S+ \(direct launcher\)\r?\n", "", t, flags=re.M)
+                open(sc, "w", encoding="latin-1").write("# was AM_RB_%s (direct launcher)\n" % m.group(1) + t)
+            done.append("%s=%d ports (%s)" % (c, len(made), ", ".join(made)))
+            continue
         core = next((x for x in CORES.get(sysname, []) if x in ra["cores"]), None)
         if core:
             bz = bezel_cfg(a.manifest, deco, sysname, screen) if not a.dry_run else None
