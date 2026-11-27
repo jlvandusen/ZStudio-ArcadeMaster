@@ -34,10 +34,12 @@ $stamp = Join-Path $ManifestDir 'racing_wheel_real.src'
 $list = @(); if (Test-Path $Catalog) { $list = @((Get-Content $Catalog -Raw | ConvertFrom-Json).wheels) }
 
 # ---------------------------------------------------------------- picture sources
+. (Join-Path $PSScriptRoot 'lib\GHubPictures.ps1')
 function Get-GHubPicture([string]$token) {
   if (-not $token) { return $null }
-  Get-ChildItem 'C:\ProgramData\LGHUB\depots' -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending |
-    ForEach-Object { Get-ChildItem (Join-Path $_.FullName $token) -Filter '*wheel*front*.png' -File -ErrorAction SilentlyContinue } | Select-Object -First 1
+  # older G HUB: <model>\<model>_wheel_front.png; newer G HUB: <model>\images\wheel_front.webp, converted to PNG once
+  $dir = Get-AmGHubPictures $token
+  if ($dir) { Get-ChildItem $dir -Filter '*wheel*front*.png' -File -ErrorAction SilentlyContinue | Select-Object -First 1 }
 }
 function Get-CachedPicture($entry) {
   if (-not $entry -or -not $entry.image) { return $null }
