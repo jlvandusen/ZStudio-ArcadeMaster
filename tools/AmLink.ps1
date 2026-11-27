@@ -139,7 +139,8 @@ $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
 $noFollow = 'Tools', 'SETTINGS', 'Controller'      # menus that are not game lists: never followed into, nothing in them is joined
 $linkShown = $false   # the "cabinets are linked" card is up (attract): @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
-Say "cabinet link started: $HostName ($type), share $Share, idle $IdleSec s, countdown $CountdownSec s"
+$rejoinSec = $IdleSec; try { $am = Select-String -LiteralPath (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*attractModeTime\s*=\s*(\d+)' | Select-Object -Last 1; if ($am -and [int]$am.Matches[0].Groups[1].Value -gt $rejoinSec) { $rejoinSec = [int]$am.Matches[0].Groups[1].Value } } catch { }
+Say "cabinet link started: $HostName ($type), share $Share, follows again after $rejoinSec s without a press here (attract mode), countdown $CountdownSec s"
 $startedAt = Get-Date; $lastParentCheck = Get-Date; $lastSelfCheck = Get-Date; $selfStamp = (Get-Item -LiteralPath $PSCommandPath).LastWriteTimeUtc; $restartSelf = $false; $selfArgs = @($PSBoundParameters.GetEnumerator() | ForEach-Object { "-$($_.Key)"; if ($_.Value -isnot [switch]) { '"' + [string]$_.Value + '"' } })
 
 try {
@@ -164,7 +165,10 @@ try {
     }
     $alive = ($now - $lastHello).TotalSeconds -lt 3          # a menu is on screen (no hello while a game runs)
     if ($alive -ne $me.alive) { $me.alive = $alive; $dirty = $true }
-    $userHere = ($now - $lastUser).TotalSeconds -lt $IdleSec
+    # Somebody used THIS cabinet's own controls: it stops following and only joins in again once it is back in attract
+    # mode, i.e. idle for the frontend's attractModeTime (James 2026-11-27: "if someone else moves it on the other cab it
+    # should break sync till it's in attract mode"). -IdleSec is the floor when attract mode is off or shorter.
+    $userHere = ($now - $lastUser).TotalSeconds -lt $rejoinSec
 
     # 2. tell the others (on every change, and once a second so they see this cabinet is there)
     if ($dirty -or ($now - $lastWrite).TotalSeconds -ge 1) {
