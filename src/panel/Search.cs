@@ -23,6 +23,10 @@ using System.Windows.Forms;
 class GameLink
 {
     public const int EventsPort = 47801, CommandsPort = 47802;
+    // The cabinet link helper (tools\AmLink.ps1) needs the events port too, and only one program can have it. So AmPanel
+    // also listens on RelayPort: the helper passes every event on to it, and "release" there makes AmPanel let go of
+    // EventsPort (the helper asks when it starts after AmPanel). With no helper AmPanel keeps EventsPort as before.
+    public const int RelayPort = 47803;
     public string Menu { get; private set; }          // the menu (collection) RetroFE has open
     public string Selected { get; private set; }
     public string SelectedCollection { get; private set; }   // the selected game's own collection (a merged list's items keep theirs)
@@ -30,31 +34,32 @@ class GameLink
     public DateTime LastHello { get; private set; }
     public bool Running { get; private set; }
     public event Action<string> Request;   // "search", ... from the frontend's theme buttons
-    UdpClient rx;
+    UdpClient rx, rxRelay;
+    volatile bool released;
     readonly Action<string> log;
 
     public GameLink(Action<string> log) { this.log = log; }
 
     public bool Start()
     {
-        try
-        {
-            rx = new UdpClient(new IPEndPoint(IPAddress.Loopback, EventsPort));
-            Running = true;
-            new Thread(Loop) { IsBackground = true, Name = "game link" }.Start();
-            return true;
-        }
-        catch (Exception e) { log("search: cabinet link port " + EventsPort + " is taken (" + e.Message + ") - search works, jumping does not"); return false; }
+        Running = true; bool any = false;
+        try { rxRelay = new UdpClient(new IPEndPoint(IPAddress.Loopback, RelayPort)); any = true; var c = rxRelay; new Thread(() => Loop(c, true)) { IsBackground = true, Name = "game link relay" }.Start(); }
+        catch (Exception e) { log("search: relay port " + RelayPort + " is taken (" + e.Message + ")"); }
+        try { rx = new UdpClient(new IPEndPoint(IPAddress.Loopback, EventsPort)); any = true; var c = rx; new Thread(() => Loop(c, false)) { IsBackground = true, Name = "game link" }.Start(); }
+        catch (Exception e) { log("search: cabinet link port " + EventsPort + " is taken (" + e.Message + ") - events come through the cabinet link helper (port " + RelayPort + ")"); }
+        if (!any) { Running = false; log("search: no port to hear the frontend on - search works, jumping does not"); }
+        return any;
     }
 
-    void Loop()
+    void Loop(UdpClient sock, bool relay)
     {
         var from = new IPEndPoint(IPAddress.Any, 0);
         while (Running)
         {
             try
             {
-                string line = Encoding.UTF8.GetString(rx.Receive(ref from));
+                string line = Encoding.UTF8.GetString(sock.Receive(ref from));
+                if (relay && line == "release") { if (!released) { released = true; log("search: the cabinet link helper takes port " + EventsPort + "; events now come through it"); try { if (rx != null) rx.Close(); } catch { } } continue; }
                 var p = line.Split('\t');
                 if (p.Length >= 2 && p[0] == "hello") { Menu = p[1]; LastHello = DateTime.Now; }
                 else if (p.Length >= 5 && p[0] == "select") { Menu = p[2]; Selected = p[4]; SelectedCollection = p.Length >= 6 && p[5] != "" ? p[5] : p[2]; }
@@ -62,7 +67,7 @@ class GameLink
                 // a theme button asked AmPanel for something (touchAction="am:search" -> "request\tsearch", docs/22)
                 else if (p.Length >= 2 && p[0] == "request" && Request != null) Request(p[1]);
             }
-            catch { if (!Running) return; Thread.Sleep(200); }
+            catch { if (!Running || (!relay && released)) return; Thread.Sleep(200); }
         }
     }
 
@@ -82,7 +87,7 @@ class GameLink
         catch (Exception e) { log("search: goto failed: " + e.Message); }
     }
 
-    public void Stop() { Running = false; try { rx.Close(); } catch { } }
+    public void Stop() { Running = false; try { if (rx != null) rx.Close(); } catch { } try { if (rxRelay != null) rxRelay.Close(); } catch { } }
 }
 
 // RetroFE reads the panel only through its main window ("RetroFE 0"). A tap on the touch screen activated "RetroFE 1"

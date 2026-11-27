@@ -25,6 +25,7 @@ param(
   [int]$CountdownSec = 5,
   [int]$ShowLinkEverySec = 120,               # attract: every this many seconds the linked cabinets show the same game and say so (0 = off)
   [int]$ShowLinkSec = 14,                     # ... for this long
+  [int]$RelayPort = 47803,                    # every frontend event is passed on to AmPanel here
   [int]$AttractEnterSec = 60,                 # idle this long on the main menu: go into the cabinet's game list (0 = off)
   [int]$EventPort = 47801,
   [int]$CommandPort = 47802,
@@ -103,7 +104,14 @@ function Get-Title([string]$col, [string]$item) {
 function Get-Cab([string]$h) { $h -replace '^(DESKTOP|ARCADE)-', '' }
 
 # ---- RetroFE on this PC
-$rx = New-Object Net.Sockets.UdpClient (New-Object Net.IPEndPoint ([Net.IPAddress]::Loopback, $EventPort))
+# AmPanel (search, theme buttons) listens to the same events and only one program can have the port. The helper takes it:
+# if AmPanel got there first it is asked to let go ("release" on its relay port), and every event is passed on to it.
+$rx = $null
+foreach ($try in 1..8) {
+  try { $rx = New-Object Net.Sockets.UdpClient (New-Object Net.IPEndPoint ([Net.IPAddress]::Loopback, $EventPort)); break }
+  catch { $rx = $null; try { $u = New-Object Net.Sockets.UdpClient; $rb = [Text.Encoding]::UTF8.GetBytes('release'); [void]$u.Send($rb, $rb.Length, '127.0.0.1', $RelayPort); $u.Close() } catch { }; Start-Sleep -Milliseconds 600 }
+}
+if (-not $rx) { Say "cabinet link: port $EventPort is taken by another program - not started"; $mutex.ReleaseMutex(); return }
 $tx = New-Object Net.Sockets.UdpClient
 $lastCmd = ''; $lastCmdAt = [datetime]::MinValue
 function Send-Cmd([string]$c, [double]$minGapSec = 0.6) {
@@ -145,7 +153,8 @@ try {
     # 1. what RetroFE says
     while ($rx.Available -gt 0) {
       $ep = New-Object Net.IPEndPoint ([Net.IPAddress]::Any, 0)
-      $p = [Text.Encoding]::UTF8.GetString($rx.Receive([ref]$ep)) -split "`t"
+      $raw = $rx.Receive([ref]$ep); try { [void]$tx.Send($raw, $raw.Length, '127.0.0.1', $RelayPort) } catch { }   # pass it on to AmPanel
+      $p = [Text.Encoding]::UTF8.GetString($raw) -split "`t"
       switch ($p[0]) {
         'hello'  { $me.menu = $p[1]; $me.idleMs = [double]$p[2]; $lastHello = $now; if ([double]$p[2] -lt 2000) { $lastUser = $now } }
         'select' { $me.by = $p[1]; $me.menu = $p[2]; $me.playlist = $p[3]; $me.item = $p[4]; $me.col = $p[5]; $me.kind = $p[6]; $me.selSeq++; $dirty = $true; if ($p[1] -eq 'user') { $lastUser = $now } }
