@@ -701,3 +701,47 @@ Two more things the app does, found in the same session:
 `Set-GHub.ps1 -Off` now refuses on a cabinet with a G29 unless `-Force` is given. The pad keys stay for other wheels and
 sticks, and step aside while G HUB runs. Next step if we still want G HUB off: capture what G HUB sends the wheel at start
 (USB capture) and have AmPanel send the same.
+
+### What the G29 sends on the wire (USB capture, 2026-11-27, RACE2)
+USBPcap 1.5.4.0 (installed on RACE2; driver active after a reboot) recorded the wheel below Logitech's drivers. The
+captures and `parse.py` are in `Z:\ArcadeMaster\reports\usb-captures\DESKTOP-RACE2-g29-20261127\`.
+
+**Full mode (USB ID C24F), interrupt IN endpoint 0x81, 12-byte report.** James pressed each button in a known order:
+
+| Control | Byte | Bit |
+|---|---|---|
+| D-pad | 0 | low 4 bits (8 = centred) |
+| Cross | 0 | 0x10 |
+| Share | 1 | 0x10 |
+| Options | 1 | 0x20 |
+| Dial one click right | 3 | 0x02 (a short pulse) |
+| Dial one click left | 3 | 0x04 (a short pulse) |
+| Insert (dial press) | 3 | 0x08 |
+| PS | 3 | 0x10 |
+
+Bytes 4-5 are the steering, which ramps through the start-up sweep.
+
+What this shows:
+- **The wheel sends PS and Insert itself, with or without G HUB.** Windows never sees them while G HUB's app is closed,
+  so **Logitech's filter driver hides them** and passes them only to G HUB. The data is there; the way to it is below
+  Logitech's filter.
+- **Without G HUB's app a re-plugged wheel stays in basic mode (C294).** Unplugged at 08:25:20, back as C294 at 08:25:23
+  and still C294 afterwards. Windows read no button reports from it in that mode.
+- **G HUB's app switches it to full mode within seconds of starting.** The old device left and a new one (C24F) arrived
+  about 4 s after the start. The switch command itself fell before the recording reached the wheel, so it is still to
+  be captured: replug with the recorder running, then start G HUB.
+- **The mode survives a PC reboot.** The wheel has its own power, so after the 08:19 reboot it came back as C24F
+  directly. Only cutting its USB or power returns it to C294.
+
+- **PS4 mode (switch on PS4, USB ID C260) is a plain HID device on the wire.** It has one HID interface, a 160-byte report
+  descriptor and 64-byte interrupt endpoints (0x84 in, 0x03 out), the same style as a PlayStation controller. G HUB's
+  installer binds it to G HUB's own USB driver (`LGHUBWinUSB`), so with the app closed nothing reads it: no reports,
+  and no game controller in Windows. With Windows' own HID driver on it instead, it would be a normal controller with
+  every button and no Logitech software. Force feedback would then be ours to drive (PS4-mode output reports), because
+  games' DirectInput force feedback would not reach it. That is a project, not a setting.
+
+Next steps towards our own G29 library, without G HUB:
+1. Capture G HUB's mode-switch command. Linux's driver uses `f8 09 05 01 01 00 00` for the G29, to be confirmed.
+2. Send it from AmPanel when a C294 appears.
+3. Read PS and Insert from below Logitech's filter. Either take the filter off the wheel's driver stack, after checking
+   force feedback still works, or read the report another way.
