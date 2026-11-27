@@ -22,7 +22,8 @@
     "rpcs3":       { "exe": ["rpcs3.exe"], "systems": ["ps3"] },
     "mednafen":    { "exe": ["mednafen.exe"], "systems": ["saturn", "pcfx", "virtualboy"] },
     "ares":        { "exe": ["ares.exe"], "systems": ["n64", "snes", "megadrive"] },
-    "melonds":     { "exe": ["melonDS.exe"], "systems": ["nds"] }
+    "melonds":     { "exe": ["melonDS.exe"], "systems": ["nds"] },
+    "bigpemu":     { "exe": ["BigPEmu.exe"], "systems": ["jaguar", "jaguarcd"] }
   },
   "romFolders": {
     "_comment": "folder names that mean a system (RetroBat / EmulationStation / LaunchBox style)",

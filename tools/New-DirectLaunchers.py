@@ -35,6 +35,7 @@ CORES = {
     # RetroBat's own names for the same systems
     "lynx": ["handy"], "sg1000": ["genesis_plus_gx"], "neogeo": ["fbneo"], "amiga": ["puae"], "msx": ["bluemsx"],
     "fbneo": ["fbneo"], "dreamcast": ["flycast"], "naomi": ["flycast"], "atomiswave": ["flycast"],
+    "atari5200": ["a5200", "atari800"], "atari800": ["atari800"], "neogeocd": ["neocd"],
 }
 # steps 2-3: standalone emulators. system -> [(emulator in discovery.json, exe file name, arguments)], first one found
 # wins (the one inside the RetroBat this frontend uses first). {rom} = the game file, {name} = its name without the
@@ -53,6 +54,7 @@ STANDALONE = {
     "dreamcast": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
     "naomi": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
     "atomiswave": [("flycast", "flycast.exe", '-config window:fullscreen=yes "{rom}"')],
+    "jaguarcd": [("bigpemu", "BigPEmu.exe", '"{rom}"')],
     "3ds": [("citra", "azahar.exe", '-f "{rom}"'), ("citra", "citra-qt.exe", '-f "{rom}"'), ("citra", "lime3ds-gui.exe", '-f "{rom}"')],
 }
 
