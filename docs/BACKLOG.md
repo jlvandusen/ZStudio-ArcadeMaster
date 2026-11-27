@@ -34,6 +34,17 @@ out about my company". James sends it himself; no session contacts anyone outsid
 - [ ] **Demo kit:** the installer, a one-page "what it does", and a showcase checklist: hero main menu, the touch
       screen (panels, search, list touch), the attract light show, the loading card, menu music, the cabinet link.
 - [ ] A clean-PC dry run (a spare PC or VM) before anything is sent.
+- [ ] **First run: AmPanel meets a new PC** (James 2026-11-27: "introduce the ampanel to a new environment and have it
+      discover everything and emulators etc set it up and configure"). Discover (read-only), report and choose, set up
+      (asked, logged, safe to re-run), prove it (one test launch per system, self-heal), then keep discovering at boot.
+      Never deletes or moves the user's files without a yes; never downloads ROMs, BIOS files or art.
+- [ ] **No RetroBat requirement** (James 2026-11-27: "not require retrobat and use their default emulators, retrobat is
+      just a frontend not the emulator"). An emulator catalog of our own (tools/emulators/*.json: exe names, version,
+      command line per system, config files to write). Direct launchers per system; we write each emulator's config
+      (panel mapping, full screen, exits) so nothing rewrites it. RetroBat's emulators folder is just one place to find
+      exes. Order: RetroArch + cores; MAME / Supermodel / TeknoParrot; Dolphin, PCSX2, PPSSPP, Cemu, Ryujinx, xemu,
+      xenia, Flycast, DuckStation; the rest as needed (RetroBat's launcher only as a fallback until a system moves).
+      Controls cards then use each emulator's exact button order. First step: the read-only discovery and its report.
 
 ## 1b. James 2026-11-27: "a good start shippable version" - next: more themes
 Shippable baseline (2026-11-27): our own frontend build (fork, retrofe/fork.txt), touch buttons / list / panels /
