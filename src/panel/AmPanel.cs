@@ -54,6 +54,7 @@ static class AmPanel
     static string speech = "off";         // AmPanel.json "Speech": off | start
     static ExitGuard exitGuard;           // Esc ends any game (AmPanel.json "ExitKey": "ESC" | "none", "ExitGraceMs")
     static string exitKey = "ESC";
+    static GunMenus gunMenus;             // a light gun's trigger, buttons and d-pad work the menus (GunMenus.cs)
     static WiiRemotes wii;                // which DolphinBar slots have a Wii Remote; Dolphin's slots follow (WiiRemotes.cs)
     static GameOptions gameOptions;       // TAB on the selected game: emulator version, map buttons (AmPanel.json "GameOptionsKey")
     static string gameOptionsKey = "Tab";
@@ -966,6 +967,12 @@ static class AmPanel
             wii.Changed = delegate { lock (Gate) State["wiiRemotes"] = wii.Live.Length == 0 ? "none synced (" + wii.Slots + " DolphinBar slots)" : "slot " + wii.Live; SaveState(); };
         }
         catch (Exception e) { Log("wii: not started - " + e.Message); }
+        try
+        {
+            gunMenus = new GunMenus(Log);   // on the tray thread: raw input arrives through its message loop
+            gunMenus.GameRunning = delegate { lock (Gate) return State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"]; };
+        }
+        catch (Exception e) { Log("guns: menus not started - " + e.Message); }
         if (!gameOptionsKey.Equals("none", StringComparison.OrdinalIgnoreCase) && retroFERoot != null)
             try
             {

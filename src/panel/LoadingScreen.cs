@@ -322,6 +322,10 @@ class LoadingScreen : Form
                 }
             }
             catch { }
+            // a full-screen game minimises itself when anything takes the screen for a moment (James 2026-11-27: Alpha
+            // Mission II went to the taskbar and the desktop showed). The list above skips minimised windows, so a game
+            // window already seen is brought back here.
+            try { foreach (var h in new List<IntPtr>(seen.Keys)) if (IsIconic(h) && IsWindowVisible(h)) { BringForward(h, log); if (!IsIconic(h)) log("game window was minimised - restored"); } } catch { }
             System.Threading.Thread.Sleep(400);
         }
         // after the first two minutes: for the whole game, the game's window is put back in front whenever one of the
@@ -329,7 +333,7 @@ class LoadingScreen : Form
         var game = new List<IntPtr>(seen.Keys);
         while (game.Count > 0 && stillPlaying())
         {
-            try { foreach (var h in game) if (IsWindowVisible(h) && !IsIconic(h)) { BringForward(h, log); break; } } catch { }
+            try { foreach (var h in game) if (IsWindowVisible(h)) { BringForward(h, log); break; } } catch { }   // minimised too: brought back
             System.Threading.Thread.Sleep(1000);
         }
     }
