@@ -379,6 +379,33 @@ static class AmPanel
             catch { }
         });
     }
+    // self-heal (2026-11-26): after a game ends, tools\Repair-GameRoms.py reads the emulator's log (Supermodel) or verifies
+    // a MAME set that closed within 20 s, and swaps in a complete copy of the set from another build on the drive
+    static string healGame, healCollection, healEmulator;
+    static DateTime healStarted;
+    static void RepairRoms(string item, string collection, string emulator, double ran)
+    {
+        if (toolsDir == null || retroFERoot == null || string.IsNullOrEmpty(collection)) return;
+        string script = Path.Combine(toolsDir, "Repair-GameRoms.py");
+        if (!File.Exists(script)) return;
+        string py = Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA") ?? "", @"Programs\Python\Python312\python.exe");
+        if (!File.Exists(py)) py = "python";
+        string args = "\"" + script + "\" --retrofe \"" + retroFERoot + "\" --manifest \"" + manifestDir + "\" --item \"" + item +
+                      "\" --collection \"" + collection + "\" --emulator \"" + (emulator ?? "") + "\" --ran " + ((int)ran).ToString();
+        System.Threading.ThreadPool.QueueUserWorkItem(delegate {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo(py, args) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+                using (var p = System.Diagnostics.Process.Start(psi))
+                {
+                    string o = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+                    p.WaitForExit(600000);
+                    Log(o.Trim().Length > 0 ? o.Trim() : "roms: " + item + " checked");
+                }
+            }
+            catch (Exception e) { Log("roms: repair failed for " + item + " - " + e.Message); }
+        });
+    }
     static void CloseLoading()
     {
         System.Threading.Interlocked.Increment(ref loadingSeq);
@@ -518,8 +545,14 @@ static class AmPanel
                     string rc = gameLink.SelectedCollection ?? gameLink.Menu, ri = c;
                     System.Threading.ThreadPool.QueueUserWorkItem(delegate { RecentlyPlayed.Record(retroFERoot, manifestDir, rc, ri, Log); });
                 }
+                healGame = c; healEmulator = Convert.ToString(State.ContainsKey("emulator") ? State["emulator"] : "");
+                healCollection = gameLink != null ? (gameLink.SelectedCollection ?? gameLink.Menu) : null; healStarted = DateTime.Now;
             }
-            else if (what == "game stop" || what == "frontend start" || what == "frontend quit") CloseLoading();
+            else if (what == "game stop" || what == "frontend start" || what == "frontend quit")
+            {
+                CloseLoading();
+                if (what == "game stop" && healGame != null) { RepairRoms(healGame, healCollection, healEmulator, (DateTime.Now - healStarted).TotalSeconds); healGame = null; }
+            }
             State["lastEvent"] = what;
             State["lastArgs"] = string.Join(" ", a);
             State["lastEventAt"] = DateTime.Now.ToString("s");
