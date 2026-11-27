@@ -201,6 +201,10 @@ function Invoke-WMGenSupermodel($Prof, $Targets, $Manifest) {
             if (-not $found) { $lines.Insert($gEnd, "$($kv.Key)=$($kv.Value)"); $gEnd++ }
         }
         $wheel = Get-WMPrimaryDevice $Prof
+        # the template's extra [ Global ] lines (steering lock ...): {wheel} = the wheel's JOY number here
+        if ($tpl.settings) { foreach ($sk in @($tpl.settings.Keys)) { $key = $sk -replace '\{wheel\}', "$($wheel.enumIndex)"; $line = "$key = $($tpl.settings[$sk])"; $found = $false
+            for ($i = $gStart; $i -lt $gEnd; $i++) { if ($lines[$i] -match ('^\s*' + [regex]::Escape($key) + '\s*=')) { $lines[$i] = $line; $found = $true; break } }
+            if (-not $found) { $lines.Insert($gEnd, $line); $gEnd++ }; $set += $line } }
         $note = "JOY$($wheel.enumIndex) = $($wheel.productName) (DirectInput enumeration order on this machine; the previous file used JOY2 for the wheel). pedalStyle=$($tpl.pedalStyle)"
         Add-WMStaged $Manifest $t.ini (($lines -join "`r`n")) 'supermodel' $note
         [void]$rep.Add([pscustomobject]@{ ini = $t.ini; set = ($set -join '; ') })
