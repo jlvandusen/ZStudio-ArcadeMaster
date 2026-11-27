@@ -1,0 +1,3262 @@
+{
+ "_help": "Hand-held controllers the cabinets can name. Written by tools/pads/Update-PadCatalog.py from the public SDL controller list - do not edit by hand, change the rules in that script. A pad is found by USB id (pads), else by a piece of the name Windows reports (names; the longest match wins). family: the shape and button names (families). A pad switched to \"X-input\" mode shows up as an Xbox 360 controller: Windows cannot tell it apart, so 8BitDo pads are best left in D-input mode (hold START + B to turn on).",
+ "families": {
+  "ps3": {
+   "label": "PlayStation 3 controller",
+   "like": [
+    "ps3",
+    "psx",
+    "ps2"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "Cross",
+    "Circle",
+    "Square",
+    "Triangle",
+    "L1",
+    "R1",
+    "L2",
+    "R2",
+    "Select",
+    "Start",
+    "L3",
+    "R3",
+    "PS"
+   ]
+  },
+  "ps4": {
+   "label": "PlayStation 4 controller",
+   "like": [
+    "ps4",
+    "ps3",
+    "psx",
+    "ps2"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "Cross",
+    "Circle",
+    "Square",
+    "Triangle",
+    "L1",
+    "R1",
+    "L2",
+    "R2",
+    "Share",
+    "Options",
+    "L3",
+    "R3",
+    "PS",
+    "Touchpad"
+   ]
+  },
+  "ps5": {
+   "label": "PlayStation 5 controller",
+   "like": [
+    "ps4",
+    "ps3",
+    "psx",
+    "ps2"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "Cross",
+    "Circle",
+    "Square",
+    "Triangle",
+    "L1",
+    "R1",
+    "L2",
+    "R2",
+    "Create",
+    "Options",
+    "L3",
+    "R3",
+    "PS",
+    "Touchpad",
+    "Mute"
+   ]
+  },
+  "psx": {
+   "label": "PlayStation controller",
+   "like": [
+    "psx",
+    "ps2"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "Cross",
+    "Circle",
+    "Square",
+    "Triangle",
+    "L1",
+    "R1",
+    "L2",
+    "R2",
+    "Select",
+    "Start",
+    "L3",
+    "R3"
+   ]
+  },
+  "xbox": {
+   "label": "Xbox controller",
+   "like": [
+    "xbox",
+    "xbox360",
+    "pc"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "A",
+    "B",
+    "X",
+    "Y",
+    "LB",
+    "RB",
+    "LT",
+    "RT",
+    "View",
+    "Menu",
+    "LS",
+    "RS",
+    "Xbox"
+   ]
+  },
+  "n64": {
+   "label": "Nintendo 64 controller",
+   "like": [
+    "n64"
+   ],
+   "sticks": 1,
+   "buttons": [
+    "A",
+    "B",
+    "Z",
+    "L",
+    "R",
+    "Start",
+    "C-Up",
+    "C-Down",
+    "C-Left",
+    "C-Right"
+   ]
+  },
+  "snes": {
+   "label": "SNES-style controller",
+   "like": [
+    "snes",
+    "sfc",
+    "gba",
+    "nes"
+   ],
+   "sticks": 0,
+   "buttons": [
+    "B",
+    "A",
+    "Y",
+    "X",
+    "L",
+    "R",
+    "Select",
+    "Start"
+   ]
+  },
+  "snespro": {
+   "label": "SNES-style controller with sticks",
+   "like": [
+    "snes",
+    "psx",
+    "gba",
+    "nes"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "B",
+    "A",
+    "Y",
+    "X",
+    "L",
+    "R",
+    "L2",
+    "R2",
+    "Select",
+    "Start",
+    "L3",
+    "R3",
+    "Home"
+   ]
+  },
+  "nes": {
+   "label": "NES-style controller",
+   "like": [
+    "nes",
+    "gb",
+    "gbc"
+   ],
+   "sticks": 0,
+   "buttons": [
+    "B",
+    "A",
+    "Select",
+    "Start"
+   ]
+  },
+  "genesis": {
+   "label": "Genesis-style controller",
+   "like": [
+    "megadrive",
+    "genesis",
+    "saturn",
+    "mastersystem"
+   ],
+   "sticks": 0,
+   "buttons": [
+    "A",
+    "B",
+    "C",
+    "X",
+    "Y",
+    "Z",
+    "L",
+    "R",
+    "Mode",
+    "Start"
+   ]
+  },
+  "gamecube": {
+   "label": "GameCube controller",
+   "like": [
+    "gamecube",
+    "wii"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "A",
+    "B",
+    "X",
+    "Y",
+    "Z",
+    "L",
+    "R",
+    "Start"
+   ]
+  },
+  "switch": {
+   "label": "Nintendo Switch controller",
+   "like": [
+    "switch",
+    "wiiu",
+    "wii"
+   ],
+   "sticks": 2,
+   "buttons": [
+    "B",
+    "A",
+    "Y",
+    "X",
+    "L",
+    "R",
+    "ZL",
+    "ZR",
+    "Minus",
+    "Plus",
+    "LS",
+    "RS",
+    "Home",
+    "Capture"
+   ]
+  }
+ },
+ "names": [
+  {
+   "match": [
+    "8BitDo M30",
+    "M30 gamepad"
+   ],
+   "family": "genesis"
+  },
+  {
+   "match": [
+    "8BitDo SN30 Pro",
+    "8BitDo SF30 Pro",
+    "8BitDo Pro 2",
+    "8BitDo Pro 3",
+    "8BitDo Ultimate"
+   ],
+   "family": "snespro"
+  },
+  {
+   "match": [
+    "8BitDo SN30",
+    "8BitDo SF30",
+    "8BitDo SNES30",
+    "8BitDo SFC30"
+   ],
+   "family": "snes"
+  },
+  {
+   "match": [
+    "8BitDo N30",
+    "8BitDo NES30"
+   ],
+   "family": "nes"
+  },
+  {
+   "match": [
+    "8BitDo 64",
+    "N64 Controller",
+    "Nintendo 64"
+   ],
+   "family": "n64"
+  },
+  {
+   "match": [
+    "DUALSHOCK 4",
+    "Wireless Controller"
+   ],
+   "family": "ps4",
+   "note": "Windows calls a PS4 pad just \"Wireless Controller\""
+  },
+  {
+   "match": [
+    "DualSense"
+   ],
+   "family": "ps5"
+  },
+  {
+   "match": [
+    "PLAYSTATION(R)3",
+    "DS3",
+    "Sixaxis"
+   ],
+   "family": "ps3"
+  },
+  {
+   "match": [
+    "Retro-Bit",
+    "Retrobit"
+   ],
+   "family": "genesis",
+   "note": "most Retro-Bit USB pads on the cabinets are the Sega ones; the USB id decides when it is known"
+  }
+ ],
+ "pads": [
+  {
+   "usb": "0079:0002",
+   "model": "King PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0079:0011",
+   "model": "Retrolink SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "0079:0122",
+   "model": "GuliKit KingKong2 Pro Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0079:0126",
+   "model": "SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "0079:1804",
+   "model": "Super Famicom Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "0079:181A",
+   "model": "Venom PS4 Arcade Joystick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0079:181B",
+   "model": "Venom PS4 Arcade Joystick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0079:181C",
+   "model": "GuliKit KingKong2 Pro Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0079:1824",
+   "model": "Mega Drive Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "0079:1843",
+   "model": "Mayflash GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0079:1844",
+   "model": "Mayflash GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0079:1845",
+   "model": "NEXiLUX GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0079:1846",
+   "model": "GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0079:1847",
+   "model": "GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0079:1879",
+   "model": "Mayflash N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "0079:18AE",
+   "model": "Mega Drive Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "0079:954E",
+   "model": "Hyperkin N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "0314:1809",
+   "model": "SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "044F:B323",
+   "model": "Thrustmaster Dual Trigger PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "044F:D003",
+   "model": "Thrustmaster Run N Drive PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "044F:D008",
+   "model": "Thrustmaster Run N Drive PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "044F:D009",
+   "model": "Thrustmaster Run N Drive PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "045E:0202",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0285",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0287",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0289",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:028E",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0291",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02A1",
+   "model": "Xbox 360 Receiver",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02D1",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02DD",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02E0",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02E3",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02EA",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02FD",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:02FF",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0719",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B00",
+   "model": "Microsoft Xbox One Elite 2",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B05",
+   "model": "Xbox Elite Controller Series 2",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B0A",
+   "model": "Xbox Adaptive Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B0C",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B12",
+   "model": "Microsoft Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B13",
+   "model": "Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B20",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "045E:0B22",
+   "model": "Xbox One Elite 2 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "04B4:010A",
+   "model": "Sega Saturn Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "04D8:E686",
+   "model": "Sega Multi Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "04D9:0002",
+   "model": "TwinShock PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "04D9:0F16",
+   "model": "Sony PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "0500:9B28",
+   "model": "Sega Saturn Adapter",
+   "family": "genesis"
+  },
+  {
+   "usb": "054C:0268",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "054C:05C4",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "054C:09CC",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "054C:0BA0",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "054C:0CDA",
+   "model": "Sony PlayStation Classic Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "054C:0CE6",
+   "model": "PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "054C:0DF2",
+   "model": "PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "054C:0E5F",
+   "model": "PS5 Access Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "056E:2005",
+   "model": "Elecom P301U PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "057E:0337",
+   "model": "GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "057E:2006",
+   "model": "Nintendo Switch Joy-Con (L)",
+   "family": "switch"
+  },
+  {
+   "usb": "057E:2007",
+   "model": "Nintendo Switch Joy-Con (R)",
+   "family": "switch"
+  },
+  {
+   "usb": "057E:2008",
+   "model": "Nintendo Switch Combined Joy-Cons",
+   "family": "switch"
+  },
+  {
+   "usb": "057E:2009",
+   "model": "Nintendo Switch Pro Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "057E:200E",
+   "model": "Nintendo Switch Joy-Con (L/R)",
+   "family": "switch"
+  },
+  {
+   "usb": "057E:2017",
+   "model": "NSO SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "057E:2019",
+   "model": "NSO N64 Controller",
+   "family": "n64"
+  },
+  {
+   "usb": "057E:201E",
+   "model": "NSO Sega Genesis Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "057E:2069",
+   "model": "Nintendo Switch 2 Pro Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "057E:2073",
+   "model": "NSO GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0583:2050",
+   "model": "PSX",
+   "family": "psx"
+  },
+  {
+   "usb": "0583:2060",
+   "model": "iBuffalo Super Famicom Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "05A0:3232",
+   "model": "8BitDo Zero",
+   "family": "nes"
+  },
+  {
+   "usb": "05AC:0004",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "05E3:0596",
+   "model": "Sony PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "05E3:0681",
+   "model": "Austgame GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "062A:0020",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0662:70D5",
+   "model": "PowerA PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "06A3:0621",
+   "model": "Saitek PS1000 PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "06A3:F620",
+   "model": "Saitek PS2700 PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "06A3:F622",
+   "model": "Cyborg V3 Rumble Pad PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "06A3:F623",
+   "model": "Saitek Cyborg PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "06F7:0001",
+   "model": "N64 Adaptoid",
+   "family": "n64"
+  },
+  {
+   "usb": "0738:3180",
+   "model": "Mad Catz Alpha PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:3250",
+   "model": "Mad Catz Fightpad Pro PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:3285",
+   "model": "Mad Catz Arcade TES PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:3384",
+   "model": "Mad Catz TES PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:3480",
+   "model": "Mad Catz TE2 PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:3481",
+   "model": "Mad Catz TE2 PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:4426",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4516",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4520",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4526",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4536",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4586",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4716",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4718",
+   "model": "Mad Catz Street Fighter 4 Xbox 360 Fightstick",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4726",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4728",
+   "model": "Xbox 360 Fightpad",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4736",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:4738",
+   "model": "Mad Catz Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0738:8180",
+   "model": "Mad Catz SFV Arcade Alpha PS4 Fightstick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0738:8250",
+   "model": "Mad Catz Fightpad Pro PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0738:8263",
+   "model": "MLG PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:8384",
+   "model": "Mad Catz TES PS4 Fightstick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0738:8480",
+   "model": "Mad Catz TE2 PS4 Fightstick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0738:8481",
+   "model": "Mad Catz TE2 PS4 Fightstick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0738:8818",
+   "model": "Mad Catz SFIV PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:8838",
+   "model": "Mad Catz Arcade TES Plus PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:A856",
+   "model": "Mad Catz PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0738:B726",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0773:0106",
+   "model": "Sega Saturn Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "0810:0001",
+   "model": "Twin PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "0810:0003",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "0810:E501",
+   "model": "NEXT SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "081F:E401",
+   "model": "Super Famicom Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "0925:0005",
+   "model": "SmartJoy PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "0925:1700",
+   "model": "PS SS N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "0925:1801",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0925:1802",
+   "model": "Elecom PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "0925:8800",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "0925:8868",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "0925:8888",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "0926:2526",
+   "model": "GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0926:8888",
+   "model": "Cyber Gadget GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0A12:0001",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0B43:0003",
+   "model": "EMS Production PS2 Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "0B43:0005",
+   "model": "GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0C12:0005",
+   "model": "Manta DualShock 2",
+   "family": "psx"
+  },
+  {
+   "usb": "0C12:0708",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0713",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0C12:0E13",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0E15",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0E16",
+   "model": "Steel Play Metaltech PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0E18",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0E1E",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0E20",
+   "model": "Brook Mars PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0E21",
+   "model": "Brook Mars PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0E30",
+   "model": "Brook Audio Fighting Board PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0C12:0E31",
+   "model": "Brook Audio Fighting Board PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0EF1",
+   "model": "Brook PS2 Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "0C12:0EF7",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:0EF9",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0C12:1CF2",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1CF3",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1CF4",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1CF5",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1E11",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1E12",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1E18",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1E19",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:1E1C",
+   "model": "SnakeByte 4S PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:2E18",
+   "model": "Zeroplus PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:57A9",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:57AA",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0C12:8802",
+   "model": "Nyko Airflo Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0C12:880A",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0C12:8810",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0C12:F11C",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0CA3:0024",
+   "model": "Sega Mega Drive Mini 6B Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "0CA3:0025",
+   "model": "Sega Genesis Mini 3B Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "0D9D:3011",
+   "model": "Sanwa PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "0D9D:3013",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "0E12:0C12",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0E16:0C12",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0E6F:0109",
+   "model": "PDP PS3 Versus Fighting",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0111",
+   "model": "Afterglow PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0113",
+   "model": "Afterglow Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0114",
+   "model": "Afterglow PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0119",
+   "model": "Afterglow PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:011A",
+   "model": "Afterglow PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:011E",
+   "model": "Rock Candy PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0124",
+   "model": "Injustice PS3 Fightstick",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0128",
+   "model": "Rock Candy PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:012F",
+   "model": "Rock Candy PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0130",
+   "model": "EA Sports PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0132",
+   "model": "Battlefield 4 PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:0139",
+   "model": "Afterglow Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0146",
+   "model": "Rock Candy Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0180",
+   "model": "Faceoff Pro Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0E6F:0181",
+   "model": "Faceoff Deluxe Pro Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0E6F:0184",
+   "model": "Faceoff Deluxe Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0E6F:0185",
+   "model": "PDP Fightpad Pro GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "0E6F:0187",
+   "model": "Rock Candy Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0E6F:0188",
+   "model": "Afterglow Deluxe Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0E6F:0189",
+   "model": "PDP Realmz Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0E6F:0201",
+   "model": "GameStop Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0203",
+   "model": "Victrix PS4 Pro Fightstick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0E6F:0207",
+   "model": "Victrix PS4 Pro Fightstick",
+   "family": "ps4"
+  },
+  {
+   "usb": "0E6F:0213",
+   "model": "Afterglow Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0214",
+   "model": "Afterglow PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E6F:02A7",
+   "model": "PDP Raven Black Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02A8",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02B2",
+   "model": "PDP Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02B8",
+   "model": "PDP Afterglow Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02C8",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02D7",
+   "model": "PDP Black Camo Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02D8",
+   "model": "PDP Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02DA",
+   "model": "Logic3 Afterglow Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02EF",
+   "model": "PDP Xbox Series Kinetic Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:02F1",
+   "model": "PDP Xbox Atomic",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0315",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0401",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:0413",
+   "model": "Afterglow Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:1314",
+   "model": "Afterglow Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0E6F:6302",
+   "model": "Afterglow PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E8F:0003",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0E8F:1009",
+   "model": "Sony DualShock 2",
+   "family": "psx"
+  },
+  {
+   "usb": "0E8F:3010",
+   "model": "Mayflash Saturn Adapter",
+   "family": "genesis"
+  },
+  {
+   "usb": "0E8F:3013",
+   "model": "Mayflash N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "0E8F:3114",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F00:0001",
+   "model": "NES Controller",
+   "family": "nes"
+  },
+  {
+   "usb": "0F0D:0009",
+   "model": "Natec Genesis P44",
+   "family": "genesis"
+  },
+  {
+   "usb": "0F0D:0049",
+   "model": "Hatsune Miku Sho PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F0D:0051",
+   "model": "Hori Fighting Commander PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F0D:005E",
+   "model": "Hori Fighting Commander 4 PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0F0D:005F",
+   "model": "Hori Fighting Commander 4 PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F0D:0066",
+   "model": "Horipad 4 PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0F0D:006E",
+   "model": "Horipad 4 PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F0D:0084",
+   "model": "Hori Fighting Commander PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F0D:0085",
+   "model": "Hori Fighting Commander 2016 PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F0D:0086",
+   "model": "Hori Fighting Commander Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0F0D:0087",
+   "model": "Hori Fighting Stick mini 4 PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0F0D:0088",
+   "model": "Hori Fighting Stick mini 4 PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "0F0D:00A5",
+   "model": "Hori Miku Project Diva X HD PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0F0D:00A6",
+   "model": "Hori Miku Project Diva X HD PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "0F0D:00AA",
+   "model": "Hori Real Arcade Pro for Nintendo Switch",
+   "family": "switch"
+  },
+  {
+   "usb": "0F0D:00BA",
+   "model": "Hori Fighting Commander Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "0F0D:00C1",
+   "model": "Horipad Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0F0D:00DC",
+   "model": "Horipad Switch",
+   "family": "switch"
+  },
+  {
+   "usb": "0F0D:00F6",
+   "model": "Horipad Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "0F0D:0123",
+   "model": "Hori PS4 Controller Light",
+   "family": "ps4"
+  },
+  {
+   "usb": "0F0D:0150",
+   "model": "Hori Fighting Commander Octa Xbox One",
+   "family": "xbox"
+  },
+  {
+   "usb": "0F0D:0185",
+   "model": "Hori Switch Split Pad Pro",
+   "family": "switch"
+  },
+  {
+   "usb": "0F0D:0200",
+   "model": "Hori Switch Split Pad Pro",
+   "family": "switch"
+  },
+  {
+   "usb": "0F0D:0202",
+   "model": "Horipad O Nintendo Switch 2 Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "1002:9000",
+   "model": "8BitDo FC30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "10F5:018F",
+   "model": "Turtle Beach Rematch Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "11C0:4001",
+   "model": "GameStop PS4 Fun Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "11EC:A7E1",
+   "model": "Nintendo Switch",
+   "family": "switch"
+  },
+  {
+   "usb": "11FF:3341",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "1234:0004",
+   "model": "RetroUSB N64 RetroPort",
+   "family": "n64"
+  },
+  {
+   "usb": "1235:AB12",
+   "model": "8BitDo NES30",
+   "family": "nes"
+  },
+  {
+   "usb": "1235:AB20",
+   "model": "8BitDo SN30",
+   "family": "snes"
+  },
+  {
+   "usb": "1235:AB21",
+   "model": "SFC30 Joystick",
+   "family": "snes"
+  },
+  {
+   "usb": "1292:4643",
+   "model": "NES Controller",
+   "family": "nes"
+  },
+  {
+   "usb": "1292:464B",
+   "model": "NES Adapter",
+   "family": "nes"
+  },
+  {
+   "usb": "1292:4745",
+   "model": "Retro Bit Sega Genesis Adapter",
+   "family": "genesis"
+  },
+  {
+   "usb": "1292:5346",
+   "model": "SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "12AB:0301",
+   "model": "Afterglow Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "12BD:D013",
+   "model": "Retrolink Sega Saturn Classic Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "12BD:D015",
+   "model": "Retrolink SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "145F:0231",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "146B:0301",
+   "model": "Bigben PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "146B:0303",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "146B:0609",
+   "model": "Nacon Asymmetric PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "146B:0611",
+   "model": "Nacon Revolution 3 PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "146B:0D10",
+   "model": "Nacon Revolution Infinity PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "146B:5500",
+   "model": "Bigben PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "14D8:6208",
+   "model": "HitBox PS3 PC Analog Mode",
+   "family": "ps3"
+  },
+  {
+   "usb": "14D8:CD07",
+   "model": "Toodles 2008 Chimp PC PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "14FE:232A",
+   "model": "Sony PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "1532:0401",
+   "model": "Razer Panthera PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "1532:0402",
+   "model": "Razer Panthera PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "1532:0A14",
+   "model": "Razer Wolverine Ultimate Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "1532:0A29",
+   "model": "Razer Wolverine V2 Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "1532:1008",
+   "model": "Razer Panthera PS4 Evo Arcade Stick",
+   "family": "ps4"
+  },
+  {
+   "usb": "1532:100B",
+   "model": "Razer Wolverine PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "1532:1100",
+   "model": "Razer Raion PS4 Fightpad",
+   "family": "ps4"
+  },
+  {
+   "usb": "162E:BEEF",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "16C0:0A99",
+   "model": "Mega Drive Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "1740:057F",
+   "model": "Raphnet GC and N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "1781:057E",
+   "model": "Sega Saturn",
+   "family": "genesis"
+  },
+  {
+   "usb": "1781:0A96",
+   "model": "SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "1781:0A9D",
+   "model": "SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "187C:0600",
+   "model": "Alienware Dual Compatible PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "1A15:2262",
+   "model": "Dual Plus PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "1A34:0836",
+   "model": "Afterglow PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "1A34:F705",
+   "model": "GameCube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "1BAD:028E",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "1BAD:F016",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "1BAD:F900",
+   "model": "Afterglow Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "1BAD:F904",
+   "model": "PDP Xbox 360 Versus Fighting",
+   "family": "xbox"
+  },
+  {
+   "usb": "1BAD:FD00",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "1BAD:FD01",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "1D57:0020",
+   "model": "Tomee SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "1D57:0021",
+   "model": "Tomee NES Adapter",
+   "family": "nes"
+  },
+  {
+   "usb": "1D5A:1802",
+   "model": "Nokia GC 5000",
+   "family": "gamecube"
+  },
+  {
+   "usb": "1E1A:0C12",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "1F4F:0008",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "2002:9000",
+   "model": "8BitDo NES30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2073:654B",
+   "model": "Retro Bit SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "2075:7274",
+   "model": "Retro Bit Saturn Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "20D6:0060",
+   "model": "Tournament PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "20D6:2002",
+   "model": "PowerA Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:2005",
+   "model": "PowerA Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:200B",
+   "model": "PowerA Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:200F",
+   "model": "PowerA Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:2065",
+   "model": "PowerA Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:2802",
+   "model": "PowerA Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:319F",
+   "model": "Pro Ex mini PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "20D6:4002",
+   "model": "PowerA Xbox One Spectra Infinity",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:4005",
+   "model": "PowerA Advantage Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "20D6:571D",
+   "model": "Nyko Airflo PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "20D6:576D",
+   "model": "OPP PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "20D6:5795",
+   "model": "Pro Elite PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "20D6:57C7",
+   "model": "Pro Ex mini PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "20D6:57E5",
+   "model": "Batarang PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "20D6:792A",
+   "model": "BDA PS4 Fightpad",
+   "family": "ps4"
+  },
+  {
+   "usb": "20D6:A711",
+   "model": "PowerA Core Plus Gamecube Controller",
+   "family": "gamecube"
+  },
+  {
+   "usb": "20D6:A712",
+   "model": "PowerA Fusion Nintendo Switch Fight Pad",
+   "family": "switch"
+  },
+  {
+   "usb": "20D6:A713",
+   "model": "PowerA Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "20D6:A714",
+   "model": "PowerA Spectra Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "20D6:A720",
+   "model": "PowerA Advantage Nintendo Switch 2 Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "22BA:0107",
+   "model": "Technology Innovation PS2 Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "22BA:1020",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "24C6:5300",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "24C6:541A",
+   "model": "PowerA Xbox One Mini Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "24C6:543A",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "24C6:581A",
+   "model": "PowerA Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "24C6:5D04",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "24C6:FAFD",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "24C6:FAFE",
+   "model": "Rock Candy Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "2563:0523",
+   "model": "Redragon Saturn",
+   "family": "genesis"
+  },
+  {
+   "usb": "2563:0575",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "2563:0623",
+   "model": "Sony PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "25F0:83C1",
+   "model": "Sony PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "25F0:83C2",
+   "model": "Gioteck PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "25F0:83C3",
+   "model": "Gioteck VX2 PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "25F0:83C4",
+   "model": "Gioteck VX2 PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "25F0:C121",
+   "model": "Gioteck PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "25F0:C131",
+   "model": "Gioteck PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "2810:0009",
+   "model": "8BitDo SFC30",
+   "family": "snes"
+  },
+  {
+   "usb": "2820:0009",
+   "model": "8BitDo SNES30",
+   "family": "snes"
+  },
+  {
+   "usb": "288B:0003",
+   "model": "SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "289B:0002",
+   "model": "Raphnet NES Adapter",
+   "family": "nes"
+  },
+  {
+   "usb": "289B:0003",
+   "model": "Raphnet SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "289B:0005",
+   "model": "Raphnet Saturn Adapter 2.0",
+   "family": "genesis"
+  },
+  {
+   "usb": "289B:0026",
+   "model": "Raphnet SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "289B:002E",
+   "model": "Raphnet SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "289B:002F",
+   "model": "Raphnet SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "289B:0032",
+   "model": "Raphnet GC and N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "289B:003C",
+   "model": "Raphnet N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "289B:0042",
+   "model": "Raphnet Dual NES Adapter",
+   "family": "nes"
+  },
+  {
+   "usb": "289B:0043",
+   "model": "Raphnet Saturn",
+   "family": "genesis"
+  },
+  {
+   "usb": "289B:0044",
+   "model": "Raphnet PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "289B:0056",
+   "model": "Raphnet SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "289B:0057",
+   "model": "Raphnet SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "289B:0060",
+   "model": "Raphnet GC and N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "289B:0061",
+   "model": "Raphnet N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "289B:0062",
+   "model": "Raphnet GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "289B:0063",
+   "model": "Raphnet N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "289B:0064",
+   "model": "Raphnet N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "289B:0065",
+   "model": "Raphnet GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "294B:3004",
+   "model": "Snakebyte Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "2C22:2000",
+   "model": "Qanba Drone Arcade PS4 Joystick",
+   "family": "ps4"
+  },
+  {
+   "usb": "2C22:2010",
+   "model": "Qanba Drone 2 Arcade Joystick PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "2C22:2012",
+   "model": "Qanba Drone 2 Arcade Joystick PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "2C22:2300",
+   "model": "Qanba Obsidian Arcade Stick PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "2C22:2302",
+   "model": "Qanba Obsidian Arcade Stick PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "2C22:2500",
+   "model": "Qanba Dragon Arcade Joystick PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "2C22:2502",
+   "model": "Qanba Dragon Arcade Joystick PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "2D32:7369",
+   "model": "iBuffalo Super Famicom Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "2DC8:02E0",
+   "model": "8BitDo N30",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:0651",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "2DC8:1003",
+   "model": "8BitDo N30",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:1080",
+   "model": "8BitDo N30",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:2000",
+   "model": "8BitDo Pro 2 Xbox Controller",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:2003",
+   "model": "8BitDo Ultimate C Xbox Controller",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:200A",
+   "model": "8BitDo M30 Xbox Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "2DC8:2019",
+   "model": "8BitDo Ultimate Mini Wired Xbox Controller",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:2025",
+   "model": "8BitDo Ultimate C Xbox Controller",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:2100",
+   "model": "8BitDo SN30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:2101",
+   "model": "8BitDo Xbox One SN30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:2820",
+   "model": "8BitDo N30",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:2830",
+   "model": "8BitDo SFC30",
+   "family": "snes"
+  },
+  {
+   "usb": "2DC8:2840",
+   "model": "8BitDo SN30",
+   "family": "snes"
+  },
+  {
+   "usb": "2DC8:2862",
+   "model": "8BitDo SN30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:2865",
+   "model": "8BitDo N30 Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:2869",
+   "model": "8BitDo N64",
+   "family": "n64"
+  },
+  {
+   "usb": "2DC8:286A",
+   "model": "8BitDo GameCube",
+   "family": "gamecube"
+  },
+  {
+   "usb": "2DC8:3000",
+   "model": "8BitDo SN30",
+   "family": "snes"
+  },
+  {
+   "usb": "2DC8:3001",
+   "model": "8BitDo SF30",
+   "family": "snes"
+  },
+  {
+   "usb": "2DC8:3010",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3011",
+   "model": "8BitDo Ultimate",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3012",
+   "model": "8BitDo Ultimate",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3013",
+   "model": "8BitDo Ultimate",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3015",
+   "model": "8BitDo Ultimate C",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3016",
+   "model": "8BitDo Ultimate C",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3017",
+   "model": "8BitDo Ultimate C",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:301B",
+   "model": "8BitDo Ultimate 2C",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:301C",
+   "model": "8BitDo Ultimate 2C",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:301D",
+   "model": "8BitDo Ultimate 2C",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3106",
+   "model": "8BitDo Ultimate",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:310A",
+   "model": "8BitDo Ultimate 2C",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:310B",
+   "model": "8BitDo Ultimate 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3230",
+   "model": "8BitDo Zero 2",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:3810",
+   "model": "8BitDo F30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3820",
+   "model": "8BitDo NES30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:3830",
+   "model": "8BitDo N64",
+   "family": "n64"
+  },
+  {
+   "usb": "2DC8:5001",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "2DC8:5006",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "2DC8:5101",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "2DC8:5103",
+   "model": "8BitDo SN30",
+   "family": "snes"
+  },
+  {
+   "usb": "2DC8:5104",
+   "model": "8BitDo N30",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:5111",
+   "model": "8BitDo Lite SE",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:5112",
+   "model": "8BitDo Lite 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6000",
+   "model": "8BitDo SF30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6001",
+   "model": "8BitDo SN30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6002",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6003",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6006",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6007",
+   "model": "8BitDo Ultimate",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6009",
+   "model": "8BitDo Pro 3",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6012",
+   "model": "8BitDo Ultimate 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6100",
+   "model": "8BitDo SF30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6101",
+   "model": "8BitDo SN30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6102",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:6103",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:9000",
+   "model": "8BitDo FC30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:9001",
+   "model": "8BitDo N30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:9002",
+   "model": "8BitDo N64",
+   "family": "n64"
+  },
+  {
+   "usb": "2DC8:9012",
+   "model": "8BitDo SN30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:9015",
+   "model": "8BitDo N30 Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:9018",
+   "model": "8BitDo Zero 2",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:901B",
+   "model": "8BitDo Ultimate 3 Xbox Controller",
+   "family": "snespro"
+  },
+  {
+   "usb": "2DC8:AB12",
+   "model": "8BitDo NES30",
+   "family": "nes"
+  },
+  {
+   "usb": "2DC8:AB20",
+   "model": "8BitDo SN30",
+   "family": "snes"
+  },
+  {
+   "usb": "2DC8:AB21",
+   "model": "8BitDo SFC30",
+   "family": "snes"
+  },
+  {
+   "usb": "2E24:0BFF",
+   "model": "Hyperkin N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "2E24:200A",
+   "model": "Hyperkin Scout Premium SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "2E24:200B",
+   "model": "Hyperkin Admiral N64 Controller",
+   "family": "n64"
+  },
+  {
+   "usb": "2E8A:10DD",
+   "model": "Hand Held Legend GC Ultimate",
+   "family": "gamecube"
+  },
+  {
+   "usb": "2E95:7725",
+   "model": "Scuf PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "2F24:00F4",
+   "model": "Mayflash N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "2F24:00F5",
+   "model": "Mayflash N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "3030:3061",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3036:3736",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "3063:3862",
+   "model": "RetroUSB SNES RetroPort",
+   "family": "snes"
+  },
+  {
+   "usb": "3063:6630",
+   "model": "Nintendo Switch Joy-Con (R)",
+   "family": "switch"
+  },
+  {
+   "usb": "3064:3036",
+   "model": "Nintendo Switch Joy-Con (L)",
+   "family": "switch"
+  },
+  {
+   "usb": "3066:3732",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "3134:3363",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "3135:3430",
+   "model": "Hyperkin Admiral N64 Controller",
+   "family": "n64"
+  },
+  {
+   "usb": "3135:6539",
+   "model": "NSO N64 Controller",
+   "family": "n64"
+  },
+  {
+   "usb": "3135:6563",
+   "model": "PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "3139:3063",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3139:3237",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "3139:3638",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "3230:3165",
+   "model": "8BitDo SN30",
+   "family": "snes"
+  },
+  {
+   "usb": "3232:3337",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3237:3862",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3237:6634",
+   "model": "8BitDo FC30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "3239:3537",
+   "model": "Mega Drive",
+   "family": "genesis"
+  },
+  {
+   "usb": "3262:6634",
+   "model": "8BitDo Zero 2",
+   "family": "nes"
+  },
+  {
+   "usb": "3320:5720",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3339:3330",
+   "model": "8BitDo Zero 2",
+   "family": "nes"
+  },
+  {
+   "usb": "3363:3035",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3364:3733",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3366:3266",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3434:6265",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3461:6633",
+   "model": "Nintendo Switch Joy-Con (L)",
+   "family": "switch"
+  },
+  {
+   "usb": "3531:3439",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "3534:3161",
+   "model": "Brook Mars PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3536:3438",
+   "model": "Hyperkin N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "3537:1104",
+   "model": "GameSir X4A Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3537:3333",
+   "model": "RetroUSB N64 RetroPort",
+   "family": "n64"
+  },
+  {
+   "usb": "3539:3933",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3564:3032",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "3635:3330",
+   "model": "Microsoft Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3635:6639",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "3637:6332",
+   "model": "8BitDo Lite 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "3638:6632",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3732:6438",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3734:3962",
+   "model": "8BitDo N64",
+   "family": "n64"
+  },
+  {
+   "usb": "3735:6339",
+   "model": "PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "3764:3266",
+   "model": "PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "3766:3432",
+   "model": "PS2 Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "3820:0009",
+   "model": "8BitDo NES30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "3836:3436",
+   "model": "Xbox Series Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3836:3934",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3863:6130",
+   "model": "Mayflash N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "3866:3432",
+   "model": "Mega Drive",
+   "family": "genesis"
+  },
+  {
+   "usb": "3866:3866",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "38D2:1010",
+   "model": "Void Genesis",
+   "family": "genesis"
+  },
+  {
+   "usb": "38D2:1012",
+   "model": "Void Genesis",
+   "family": "genesis"
+  },
+  {
+   "usb": "3930:3435",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "3931:6466",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "3935:6135",
+   "model": "Hori Switch Split Pad Pro",
+   "family": "switch"
+  },
+  {
+   "usb": "3961:3732",
+   "model": "Nintendo Switch Joy-Con (R)",
+   "family": "switch"
+  },
+  {
+   "usb": "3961:6439",
+   "model": "8BitDo SN30",
+   "family": "snes"
+  },
+  {
+   "usb": "4320:7274",
+   "model": "NSO SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "4320:7570",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "4920:7265",
+   "model": "Sony PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "4C50:5453",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "5020:5359",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "5355:6150",
+   "model": "SNES Adapter",
+   "family": "snes"
+  },
+  {
+   "usb": "556F:632E",
+   "model": "RetroUSB SNES RetroPort",
+   "family": "snes"
+  },
+  {
+   "usb": "5720:6C65",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "6131:3739",
+   "model": "8BitDo Zero",
+   "family": "nes"
+  },
+  {
+   "usb": "6132:3666",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "6132:6633",
+   "model": "8BitDo N30",
+   "family": "nes"
+  },
+  {
+   "usb": "6134:3533",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "6134:3763",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "6134:6135",
+   "model": "NSO SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "6136:3037",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "6147:6170",
+   "model": "SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "6157:2020",
+   "model": "Hyperkin N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "6162:6239",
+   "model": "Brook Mars PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "6167:6170",
+   "model": "NEXT SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "6169:5355",
+   "model": "Mayflash Saturn Adapter",
+   "family": "genesis"
+  },
+  {
+   "usb": "616C:6C20",
+   "model": "Mayflash GameCube Adapter",
+   "family": "gamecube"
+  },
+  {
+   "usb": "6231:3533",
+   "model": "Xbox One Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "6232:6336",
+   "model": "Sony PlayStation Classic Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "6233:3136",
+   "model": "Saturn",
+   "family": "genesis"
+  },
+  {
+   "usb": "6233:3739",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "6234:3033",
+   "model": "8BitDo SN30 PP",
+   "family": "snes"
+  },
+  {
+   "usb": "6235:3736",
+   "model": "Horipad Switch Pro Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "6258:3320",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "6258:4720",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "6263:3636",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "62DD:A715",
+   "model": "PowerA Fusion Nintendo Switch Arcade Stick",
+   "family": "switch"
+  },
+  {
+   "usb": "62DD:A716",
+   "model": "PowerA Fusion Pro Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "6331:6637",
+   "model": "Saturn",
+   "family": "genesis"
+  },
+  {
+   "usb": "6333:3231",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "6339:3566",
+   "model": "Mayflash Saturn Adapter",
+   "family": "genesis"
+  },
+  {
+   "usb": "6362:3864",
+   "model": "8BitDo Zero 2",
+   "family": "nes"
+  },
+  {
+   "usb": "6363:3139",
+   "model": "Nintendo Switch Joy-Con",
+   "family": "switch"
+  },
+  {
+   "usb": "6363:3332",
+   "model": "8BitDo SFC30",
+   "family": "snes"
+  },
+  {
+   "usb": "6363:6633",
+   "model": "SN30 PP",
+   "family": "snes"
+  },
+  {
+   "usb": "6365:3761",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "6461:6230",
+   "model": "8BitDo Lite SE",
+   "family": "snespro"
+  },
+  {
+   "usb": "6462:3436",
+   "model": "8BitDo Lite 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "6466:3839",
+   "model": "Nintendo Switch Pro Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "6530:3362",
+   "model": "Retro Bit SNES Controller",
+   "family": "snes"
+  },
+  {
+   "usb": "6533:3562",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "6534:3831",
+   "model": "Rock Candy Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "6534:6362",
+   "model": "PS5 Controller",
+   "family": "ps5"
+  },
+  {
+   "usb": "6536:6631",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "6538:3433",
+   "model": "8BitDo Zero 2",
+   "family": "nes"
+  },
+  {
+   "usb": "6539:3135",
+   "model": "Nintendo Switch Pro Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "6539:3833",
+   "model": "Saturn",
+   "family": "genesis"
+  },
+  {
+   "usb": "6539:3863",
+   "model": "Nintendo Switch Joy-Con (R)",
+   "family": "switch"
+  },
+  {
+   "usb": "6561:6664",
+   "model": "8BitDo Lite SE",
+   "family": "snespro"
+  },
+  {
+   "usb": "6565:3234",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "6569:706D",
+   "model": "RetroUSB N64 RetroPort",
+   "family": "n64"
+  },
+  {
+   "usb": "656C:4320",
+   "model": "Sony PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "6633:3637",
+   "model": "Mega Drive",
+   "family": "genesis"
+  },
+  {
+   "usb": "6637:3361",
+   "model": "PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "6638:3833",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "6638:6339",
+   "model": "Xbox 360 Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "6665:3562",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "6666:0667",
+   "model": "Sony PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "6666:6562",
+   "model": "SNES",
+   "family": "snes"
+  },
+  {
+   "usb": "6666:8802",
+   "model": "TigerGame PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "6666:8804",
+   "model": "TigerGame PlayStation Adapter",
+   "family": "psx"
+  },
+  {
+   "usb": "694C:7250",
+   "model": "Nintendo Switch Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "694E:6E65",
+   "model": "Nintendo Switch Combined Joy-Cons",
+   "family": "switch"
+  },
+  {
+   "usb": "6972:2D58",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "6B72:5020",
+   "model": "Hyperkin Admiral N64 Controller",
+   "family": "n64"
+  },
+  {
+   "usb": "6F43:4C28",
+   "model": "Nintendo Switch Joy-Con (L)",
+   "family": "switch"
+  },
+  {
+   "usb": "6F43:5228",
+   "model": "Nintendo Switch Joy-Con (R)",
+   "family": "switch"
+  },
+  {
+   "usb": "6F43:6F72",
+   "model": "Nintendo Switch Pro Controller",
+   "family": "switch"
+  },
+  {
+   "usb": "6F44:3033",
+   "model": "8BitDo M30",
+   "family": "genesis"
+  },
+  {
+   "usb": "6F44:334E",
+   "model": "8BitDo SN30 Pro Plus",
+   "family": "snespro"
+  },
+  {
+   "usb": "6F44:3436",
+   "model": "8BitDo N64",
+   "family": "n64"
+  },
+  {
+   "usb": "6F44:4347",
+   "model": "8BitDo GameCube",
+   "family": "gamecube"
+  },
+  {
+   "usb": "6F44:6942",
+   "model": "8BitDo Lite",
+   "family": "snespro"
+  },
+  {
+   "usb": "6F44:6F72",
+   "model": "8BitDo Pro 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "6F44:7469",
+   "model": "8BitDo Lite 2",
+   "family": "snespro"
+  },
+  {
+   "usb": "6F64:3346",
+   "model": "8BitDo SF30 Pro",
+   "family": "snespro"
+  },
+  {
+   "usb": "6F64:7265",
+   "model": "8BitDo Zero",
+   "family": "nes"
+  },
+  {
+   "usb": "6F72:7265",
+   "model": "Mayflash N64 Adapter",
+   "family": "n64"
+  },
+  {
+   "usb": "726F:636E",
+   "model": "PDP Rock Candy PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "7331:0001",
+   "model": "Sony DualShock 3",
+   "family": "ps3"
+  },
+  {
+   "usb": "736F:2074",
+   "model": "Xbox Controller",
+   "family": "xbox"
+  },
+  {
+   "usb": "8000:1002",
+   "model": "8BitDo NES30",
+   "family": "nes"
+  },
+  {
+   "usb": "8888:0308",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "8888:0408",
+   "model": "PS3 Controller",
+   "family": "ps3"
+  },
+  {
+   "usb": "9886:0025",
+   "model": "Astro C40 TR PS4 Controller",
+   "family": "ps4"
+  },
+  {
+   "usb": "ACC4:801C",
+   "model": "KidzPlay Adventure PlayStation Controller",
+   "family": "psx"
+  },
+  {
+   "usb": "F000:0008",
+   "model": "Sega Saturn Controller",
+   "family": "genesis"
+  },
+  {
+   "usb": "F000:00F1",
+   "model": "SNES RetroPort",
+   "family": "snes"
+  }
+ ]
+}
