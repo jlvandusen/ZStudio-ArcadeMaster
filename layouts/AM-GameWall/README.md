@@ -17,7 +17,7 @@ comes up over the bottom row. The filter box, breadcrumbs and BACK / FILTERS hin
 
 ## Switching it on and off
 
-- **Tools > Cabinet Settings > MENUS > WALL OF GAMES.** On: every game list of the cabinet (Racing, Flight, Arcade, the all-games list ...) shows the wall. Off: the default view. The main menu, Tools and Settings keep the theme's own look.
+- **Tools > Cabinet Settings > MENUS > GAME LIST VIEW** steps through DEFAULT, WALL and PITWALL. WALL: every game list of the cabinet (Racing, Flight, Arcade, the all-games list ...) shows the wall. DEFAULT: the default view. The main menu, Tools and Settings keep the theme's own look.
 - By hand: `tools\Set-GameListView.ps1 -RetroFE <frontend> -View wall` or `-View default`; without `-View` it says which view each list has.
 - With the frontend open the page changes at once; the tiles are made the first time (about 12 s for 380 games).
 - A cabinet with a second screen keeps what that screen showed: the theme's extra-screen layouts are copied beside the wall.

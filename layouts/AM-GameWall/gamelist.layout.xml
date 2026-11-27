@@ -1,5 +1,5 @@
 <!--
-  WALL OF GAMES - game list (c) The Real Z Studios. James, 2026-11-27: "yes build wall of games next".
+  WALL OF GAMES - game list (c) The Real Z Studios. ArcadeMaster game list view: wall  (tools/Set-GameListView.ps1) James, 2026-11-27: "yes build wall of games next".
   Fifteen games on screen as picture tiles (medium_artwork/am_tile, tools/New-GameTiles.py) with their logos; the chosen
   game sits in the middle, larger, and plays its preview. UP / DOWN move through the games, LEFT / RIGHT the filters.
   The list is one line of games wrapped into three rows: each row has a hidden place off screen at both ends, so a
