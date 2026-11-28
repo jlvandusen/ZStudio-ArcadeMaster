@@ -103,7 +103,7 @@ class PixelDirect
     public void GameStart(string system, string game, string title, Color c)
     {
         var art = GameItem(system, game, game, -1);
-        string file = FindArt(Folder(system), game) ?? FindArt("mame", game);
+        string file = FindArt(Folder(system), game) ?? FindArt("mame", game) ?? FrontendArt(system, game, "marquee") ?? FrontendArt(system, game, "logo");
         Bitmap first = null;
         try { if (file != null) using (var img = Image.FromFile(file)) { first = new Bitmap(W, H); using (var g = Graphics.FromImage(first)) { g.Clear(Color.Black); g.DrawImage(img, 0, 0, W, H); } } } catch { first = null; }
         string style = Intro;
@@ -432,6 +432,17 @@ class PixelDirect
     }
     public void Console(string system, string altText) { Play(new List<Item> { ConsoleItem(system, altText) }); }
     public void Text(string text, Color c) { var t = TextItem(text, c, 1); if (t != null) Play(new List<Item> { t }); }
+    // the frontend closed: the goodbye text once, then the cabinet's default marquee held (black without one) - the one-off
+    // text fell back to the last game's logo, which stayed lit after quitting (James 2026-11-28)
+    public void Quit(string text, Color c)
+    {
+        var seq = new List<Item>();
+        var t = TextItem(text, c, 1); if (t != null) seq.Add(t);
+        string f = FindArt("console", "default-marquee");
+        Item idle = f != null ? FileItem(f, -1) : null;
+        seq.Add(idle ?? Solid(Color.Black, -1));
+        Play(seq);
+    }
     public void RandomAnimation()
     {
         var all = new List<string>();
@@ -478,7 +489,27 @@ class PixelDirect
         string folder = Folder(system);
         string f = FindArt(folder, game) ?? FindArt("mame", game);
         if (f != null) { var it = FileItem(f, loops); if (it != null) return it; }
+        // the frontend's own art for the game when the Pixelcade folders have none (James 2026-11-27, Pokken Tournament:
+        // "ugly scrolling marquee - needs to be the logo"): its marquee picture, else its logo fitted to the LEDs
+        f = FrontendArt(system, game, "marquee");
+        if (f != null) { var it = FileItem(f, loops); if (it != null) return it; }
+        f = FrontendArt(system, game, "logo");
+        if (f != null) { var it = FileItem(f, loops, true); if (it != null) return it; }
         return ConsoleItem(system, altText ?? game);
+    }
+
+    // <RetroFE>\collections\<system>\medium_artwork\<kind>\<game>.png / .jpg / .gif (the frontend names the list it
+    // started the game from; a list of another name is looked up in the game list, games.json, by item name)
+    public string RetroFERoot;
+    string FrontendArt(string system, string game, string kind)
+    {
+        if (string.IsNullOrEmpty(RetroFERoot) || string.IsNullOrEmpty(game) || string.IsNullOrEmpty(system)) return null;
+        foreach (var ext in new[] { ".png", ".jpg", ".gif" })
+        {
+            string p = Path.Combine(RetroFERoot, "collections", system, "medium_artwork", kind, game + ext);
+            if (File.Exists(p)) return p;
+        }
+        return null;
     }
 
     Item ConsoleItem(string system, string altText)
@@ -492,7 +523,9 @@ class PixelDirect
         return (f != null ? FileItem(f, -1) : null) ?? Solid(Color.Black, -1);
     }
 
-    Item FileItem(string file, int loops)
+    Item FileItem(string file, int loops) { return FileItem(file, loops, false); }
+    // fit: the whole picture, aspect kept, centred on black (a logo); else stretched to the 128 x 32 LEDs (a marquee)
+    Item FileItem(string file, int loops, bool fit)
     {
         try
         {
@@ -508,7 +541,9 @@ class PixelDirect
                     if (n > 1) img.SelectActiveFrame(fd, i);
                     using (var bmp = new Bitmap(W, H))
                     {
-                        using (var g = Graphics.FromImage(bmp)) { g.InterpolationMode = img.Width == W && img.Height == H ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBicubic; g.Clear(Color.Black); g.DrawImage(img, 0, 0, W, H); }
+                        using (var g = Graphics.FromImage(bmp)) { g.InterpolationMode = img.Width == W && img.Height == H ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBicubic; g.Clear(Color.Black);
+                            if (fit) { float k = Math.Min((float)W / img.Width, (float)H / img.Height); float w = img.Width * k, h = img.Height * k; g.DrawImage(img, (W - w) / 2, (H - h) / 2, w, h); }
+                            else g.DrawImage(img, 0, 0, W, H); }
                         it.Frames.Add(Convert(bmp));
                     }
                     int ms = delays != null && delays.Length >= i * 4 + 4 ? BitConverter.ToInt32(delays, i * 4) * 10 : 0;

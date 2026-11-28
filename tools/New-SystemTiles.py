@@ -47,6 +47,33 @@ def font(size):
     return ImageFont.load_default()
 
 
+def game_counts(manifest):
+    """games per list that are really on this cabinet: games.json (only what was found on disk; James 2026-11-27: the
+    Wii tile said 1529 games for 13), else the search index (every game a list knows, present or not)"""
+    import json
+    counts = {}
+    try:
+        for g in json.load(open(os.path.join(manifest, "games.json"), encoding="utf-8-sig")).get("games", []):
+            seen = set()
+            for v in (g.get("variants") or {}).values():
+                c = (v or {}).get("retrofeCollection")
+                if c and (v or {}).get("ok") and c not in seen:
+                    seen.add(c)
+                    counts[c] = counts.get(c, 0) + 1
+    except Exception:
+        counts = {}
+    # a list the game list does not know (a RetroBat system on the pedestal) keeps the search index's count
+    index = {}
+    try:
+        for g in json.load(open(os.path.join(manifest, "search-index.json"), encoding="utf-8")):
+            index[g.get("c", "")] = index.get(g.get("c", ""), 0) + 1
+    except Exception:
+        pass
+    for c, n in index.items():
+        counts.setdefault(c, n)
+    return counts
+
+
 def picture(themes, key):
     for rel in (("es-theme-carbon-master", "art", "consoles", "us", key + ".png"), ("es-theme-carbon-master", "art", "consoles", key + ".png"),
                 ("es-theme-RELOAD-", "art", "consoles", key + ".png"), ("es-theme-RELOAD-", "art", "logos", key + ".png")):
@@ -94,11 +121,7 @@ def main():
     if os.path.exists(sj):
         for s in json.load(open(sj, encoding="utf-8-sig")).get("systems", []):
             byfull[(s.get("fullname") or "").lower()] = s.get("system")
-    counts = {}
-    si = os.path.join(a.manifest, "search-index.json")
-    if os.path.exists(si):
-        for g in json.load(open(si, encoding="utf-8")):
-            counts[g["c"].lower()] = counts.get(g["c"].lower(), 0) + 1
+    counts = {k.lower(): n for k, n in game_counts(a.manifest).items()}
     cols = os.path.join(a.retrofe, "collections")
     made = missing = 0
     for maker in MAKERS:

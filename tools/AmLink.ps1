@@ -158,6 +158,27 @@ function Find-HereGame([string]$item, [string]$col) {
   if ($script:haveNames.ContainsKey($k)) { return $script:haveNames[$k] }
   return ''
 }
+# The other cabinet's menu may not be on this one (the pedestal's main menu has TeknoParrot; on the 2P stand-up the same
+# games are in Arcade - James 2026-11-27: the stand-up said JOINING for Pokken and never got there). Then the main-menu
+# entry here whose lists hold the game (its .sub files, by the loose name) is used, with the list it is in.
+function Find-HereMenu([string]$item) {
+  $mt = Join-Path $RetroFE 'collections\Main\menu.txt'
+  if (-not (Test-Path -LiteralPath $mt)) { return $null }
+  $k = Get-LooseName $item
+  foreach ($m in Get-Content -LiteralPath $mt) {
+    $m = $m.Trim(); if (-not $m -or $noFollow -contains $m) { continue }
+    $d = Join-Path $RetroFE "collections\$m"
+    foreach ($sub in @(Get-ChildItem -LiteralPath $d -Filter '*.sub' -File -ErrorAction SilentlyContinue)) {
+      foreach ($l in [IO.File]::ReadAllLines($sub.FullName)) { if ((Get-LooseName $l) -eq $k) { return @{ menu = $m; col = $sub.BaseName; item = $l.Trim() } } }
+    }
+  }
+  return $null
+}
+function Test-MainMenuHas([string]$menu) {
+  $mt = Join-Path $RetroFE 'collections\Main\menu.txt'
+  if (-not (Test-Path -LiteralPath $mt)) { return $true }
+  return @(Get-Content -LiteralPath $mt | Where-Object { $_.Trim() -eq $menu }).Count -gt 0
+}
 # The same game in a differently named list: the 2P stand-up starts Pokken from "Arcade PC", the pedestal has it in
 # "TeknoParrot"; Phantasy Star IV sits in "Megadrive - Genesis" here (James's link test, 2026-11-27 14:11: "first pick
 # followed, later ones not"). Returns @{ item; list } for this cabinet from the search index, or $null.
@@ -167,7 +188,8 @@ function Find-HereList([string]$item) {
   $k = Get-LooseName $item
   if ($script:haveLists.ContainsKey($k)) { return @{ item = $script:haveNames[$k]; list = $script:haveLists[$k] } }
   return $null
-}# Go to the same game here. The other cabinet names the game AND the list it took it from (TeknoParrot,
+}
+# Go to the same game here. The other cabinet names the game AND the list it took it from (TeknoParrot,
 # AM_TP_Emulators_TeknoParrot ...); the same game can sit in a differently named list on this cabinet (RACE2 stopped
 # following RACE1 after one game, 2026-11-27). So: twice with the list name, then by the game's name alone; after six
 # tries the game is not here and this cabinet stays where it is until the other one moves on.
@@ -265,6 +287,10 @@ try {
           # Xbox and moved through its menus for 15 s)
           $here = Find-HereGame $count.item $count.col
           if ($here -and $here -ne $count.item) { Say "$($count.item) is $here on this cabinet"; $count.item = $here }
+          if ($here -and -not (Test-MainMenuHas $count.menu)) {
+            $hm = Find-HereMenu $count.item
+            if ($hm) { Say "$($count.menu) is not a menu here: joining through $($hm.menu) ($($hm.col))"; $count.menu = $hm.menu; $count.col = $hm.col; $count.item = $hm.item }
+          }
           if (-not $here) {
             Say "$($j.host) started $($j.launchItem) ($($count.col)): not on this cabinet - staying here"
             Show-Card "$(Get-Cab $count.from) is playing $($count.title)" 'NOT ON THIS CABINET' ''; $count.phase = 'note'; $count.until = $now.AddSeconds(4)

@@ -41,7 +41,7 @@ class ReactiveKeys
             { "INSERT", 0x2D }, { "DEL", 0x2E } };
         for (int i = 0; i < 26; i++) d[((char)('A' + i)).ToString()] = 0x41 + i;
         for (int i = 0; i < 10; i++) { d[i.ToString()] = 0x30 + i; d[i + "_PAD"] = 0x60 + i; }
-        for (int i = 1; i <= 12; i++) d["F" + i] = 0x6F + i;
+        for (int i = 1; i <= 24; i++) d["F" + i] = 0x6F + i;   // F13-F24: the 2P stand-up's foot pedals (tools/Set-FootSwitch.ps1)
         return d;
     }
 

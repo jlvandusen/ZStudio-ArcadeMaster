@@ -46,6 +46,11 @@ if (Test-Path $mt0) {
   # retired entries: SETTINGS was the old DRIVE controller switcher - picking G29 / G920 / Xbox there copied old
   # emulator configs over the WheelMap ones (gas on the clutch again). Tools replaces it. Its files are kept.
   $full = @($full | Where-Object { $_ -notin 'SETTINGS' })
+  # the maker menus (Nintendo, Sega ...: Import-RetroBatSystems.py, marked am-retrobat.txt) replace the build's own system
+  # lists on the main menu; an old CONSOLES kept in the saved list came back at every start (2P stand-up, 2026-11-28)
+  $makers = @(Get-ChildItem (Join-Path $RetroFE 'collections') -Directory -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName 'am-retrobat.txt') })
+  if ($makers) { $full = @($full | Where-Object { $_ -notin 'CONSOLES', 'HANDHELDS', 'COMPUTERS' }) }
+  if ($full -contains 'Tools') { $full = @($full | Where-Object { $_ -ne 'Tools' }) + @('Tools') }   # Tools stays last
   Set-Content $fullFile $full -Encoding ascii
   $showAll = (Get-Setting 'cabinetShowAllModes') -match '^(yes|true|1)$'
   $modeCols = Get-AmAllModeCollections; $want = Get-AmModeCollectionsFor $eff.id

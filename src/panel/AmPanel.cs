@@ -54,7 +54,33 @@ static class AmPanel
     static string speech = "off";         // AmPanel.json "Speech": off | start
     static ExitGuard exitGuard;           // Esc ends any game (AmPanel.json "ExitKey": "ESC" | "none", "ExitGraceMs")
     static string exitKey = "ESC";
+    static LeapGestures leap;             // the Leap Motion's swipes / taps / circles work the menus (LeapGestures.cs)
+    static KeyRemap keyRemap;             // a key turned into another while a given program is in front (KeyRemap.cs)
     static GunMenus gunMenus;             // a light gun's trigger, buttons and d-pad work the menus (GunMenus.cs)
+    // games.json games marked as light-gun games (controls.lightgun), by item name, read once
+    static HashSet<string> gunGames;
+    static HashSet<string> GunGames()
+    {
+        if (gunGames != null) return gunGames;
+        var set = new HashSet<string>();
+        try
+        {
+            string f = Path.Combine(manifestDir, "games.json");
+            var js = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+            var d = js.Deserialize<Dictionary<string, object>>(File.ReadAllText(f));
+            var games = d.ContainsKey("games") ? d["games"] as System.Collections.ArrayList : null;
+            if (games != null) foreach (var o in games)
+            {
+                var g = o as Dictionary<string, object>; if (g == null) continue;
+                var c = g.ContainsKey("controls") ? g["controls"] as Dictionary<string, object> : null;
+                if (c == null || !c.ContainsKey("lightgun") || !(c["lightgun"] is bool) || !(bool)c["lightgun"]) continue;
+                string id = Convert.ToString(g["id"]); int k = id.LastIndexOf(':');
+                set.Add((k >= 0 ? id.Substring(k + 1) : id).ToLowerInvariant());
+            }
+        }
+        catch { }
+        return gunGames = set;
+    }
     static WiiRemotes wii;                // which DolphinBar slots have a Wii Remote; Dolphin's slots follow (WiiRemotes.cs)
     static GameOptions gameOptions;       // TAB on the selected game: emulator version, map buttons (AmPanel.json "GameOptionsKey")
     static string gameOptionsKey = "Tab";
@@ -254,6 +280,7 @@ static class AmPanel
             if (Str(cfg, "MarqueeScreensaver") != null) marquee.Screensaver = Str(cfg, "MarqueeScreensaver").ToLowerInvariant();
             // "PixelcadeDriver": "direct" = AmPanel drives the board over its serial port; the Java listener is stopped
             if (Str(cfg, "MarqueeIntro") != null) marquee.Intro = Str(cfg, "MarqueeIntro").ToLowerInvariant();
+            marquee.RetroFERoot = retroFERoot;   // the frontend's own game art when the Pixelcade folders have none
             if (string.Equals(Str(cfg, "PixelcadeDriver"), "direct", StringComparison.OrdinalIgnoreCase)) { var mq = marquee; mq.DirectWanted = true; new Thread(() => mq.StartDirect()) { IsBackground = true, Name = "pixel-open" }.Start(); }
             // two programs must never drive the same marquee: LEDBlinky stops getting the commands, unless
             // AmPanel.json asks for it with "PassThrough": true (then LEDBlinky's UsePixelcade must be 0)
@@ -976,6 +1003,13 @@ static class AmPanel
         try
         {
             wii = new WiiRemotes(manifestDir, toolsDir, Log);
+            // a light-gun game is running: the remote's camera aims (the list it was started from says "light gun", or the
+            // game list marks it - controls.lightgun)
+            wii.GunGame = delegate {
+                string sys, game; lock (Gate) { sys = State.ContainsKey("emulator") ? Convert.ToString(State["emulator"]) : ""; game = State.ContainsKey("game") ? Convert.ToString(State["game"]) : ""; }
+                if (System.Text.RegularExpressions.Regex.IsMatch(sys ?? "", @"(?i)light\s*gun")) return true;
+                return GunGames().Contains((game ?? "").ToLowerInvariant());
+            };
             wii.Changed = delegate { lock (Gate) State["wiiRemotes"] = wii.Live.Length == 0 ? "none synced (" + wii.Slots + " DolphinBar slots)" : "slot " + wii.Live; SaveState(); };
             // a remote just connected: which player is it in arcade games? The last answer for that slot is highlighted and
             // taken by itself after a few seconds; the remote's own d-pad and 2 / A answer too (it works AmPanel's screens)
@@ -1000,6 +1034,18 @@ static class AmPanel
             };
         }
         catch (Exception e) { Log("wii: not started - " + e.Message); }
+        try { keyRemap = new KeyRemap(toolsDir, Log); } catch (Exception e) { Log("key remap: not started - " + e.Message); }
+        // the Leap Motion works the menus, on a cabinet where its service is installed (docs/20)
+        try
+        {
+            using (var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\LeapService"))
+                if (k != null)
+                {
+                    leap = new LeapGestures(Log);
+                    leap.GameRunning = delegate { lock (Gate) return State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"]; };
+                }
+        }
+        catch (Exception e) { Log("leap: not started - " + e.Message); }
         try
         {
             gunMenus = new GunMenus(Log);   // on the tray thread: raw input arrives through its message loop
@@ -1009,7 +1055,7 @@ static class AmPanel
         if (!gameOptionsKey.Equals("none", StringComparison.OrdinalIgnoreCase) && retroFERoot != null)
             try
             {
-                gameOptions = new GameOptions(retroFERoot, manifestDir, gameOptionsKey, Log) { Ui = ui, OpenSearch = pendingPanelSearch };
+                gameOptions = new GameOptions(retroFERoot, manifestDir, gameOptionsKey, Log) { Ui = ui, OpenSearch = pendingPanelSearch, ToolsDir = toolsDir };
                 gameOptions.Selected = delegate { lock (Gate) return State.ContainsKey("selected") && State["selected"] != null ? Convert.ToString(State["selected"]) : null; };
                 gameOptions.SelectedSystem = delegate { lock (Gate) return State.ContainsKey("emulator") && State["emulator"] != null ? Convert.ToString(State["emulator"]) : null; };
             }

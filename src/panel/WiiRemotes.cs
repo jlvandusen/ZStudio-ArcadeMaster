@@ -75,7 +75,9 @@ class WiiRemotes
         {
             try
             {
-                if (!GameRunning && Process.GetProcessesByName("Dolphin").Length == 0 && Process.GetProcessesByName("DolphinWx").Length == 0)
+                // never while an emulator has the remote: a slot check makes the remote send a status report, after which the
+                // emulator must set it up again (James 2026-11-28: Cemu, opened on its own, lost the d-pad and the nunchuk)
+                if (!GameRunning && !EmulatorOwnsRemote())
                 {
                     var paths = SlotPaths(); Slots = paths.Count;
                     if (paths.Count > 0)
@@ -167,8 +169,8 @@ class WiiRemotes
         // tested sideways on the 2P stand-up (James 2026-11-27): the first guess had left / right and up / down crossed
         new[] { 0x0800, 0x26 },   // d-pad bit 0x08 -> UP
         new[] { 0x0400, 0x28 },   // d-pad bit 0x04 -> DOWN
-        new[] { 0x0200, 0x25 },   // d-pad bit 0x02 -> LEFT
-        new[] { 0x0100, 0x27 },   // d-pad bit 0x01 -> RIGHT
+        new[] { 0x0100, 0x25 },   // d-pad bit 0x01 -> LEFT   (James 2026-11-28: left and right were the wrong way round)
+        new[] { 0x0200, 0x27 },   // d-pad bit 0x02 -> RIGHT
         new[] { 0x0001, 0x0D },   // 2           -> Enter (select)
         new[] { 0x0008, 0x0D },   // A           -> Enter
         new[] { 0x0002, 0x1B },   // 1           -> Esc (back)
@@ -206,6 +208,12 @@ class WiiRemotes
             var buf = new byte[len];
             var down = new HashSet<byte>();   // keys this remote holds down right now
             bool hadExt = false;
+            bool ir = false;                  // the camera is on (pointer: menus and light-gun games)
+            double px = -1, py = -1;          // the smoothed pointer, 0..1 on the main screen
+            int mouseHeld = 0;                // mouse buttons this remote holds (1 = left, 2 = right)
+            byte modeNow = 0x32;              // the report mode asked for last
+            DateTime shakeUntil = DateTime.MinValue;   // the tap a swing makes: the key is down until then
+            bool remoteSwing = false, nunchukSwing = false;   // that controller is mid-swing (counted once)
             while (true)
             {
                 int n;
@@ -216,28 +224,71 @@ class WiiRemotes
                 {
                     owned = nowOwned;
                     foreach (var k in down) Key(k, false); down.Clear();
+                    Mouse(ref mouseHeld, 0);
+                    ir = false;   // Dolphin / Cemu set the camera up their own way
                     if (!owned) { StartExtension(h); Mode(h); }   // Dolphin / Cemu closed: the menus get the remote back
                 }
-                if (owned) continue;
+                if (owned)
+                {
+                    // Cemu cannot read this nunchuk's stick (its calibration block says max 0 / min 0: every push came out
+                    // as "left", James 2026-11-28). While Cemu has the screen the stick is read here, listening only, and
+                    // pressed as F17-F20, which Cemu's Controller profile takes as the nunchuk stick (Set-DolphinControllers).
+                    var stickKeys = new HashSet<byte>();
+                    if (CemuInFront())
+                    {
+                        int ext = id == 0x32 || id == 0x34 ? 3 : id == 0x35 ? 6 : id == 0x36 ? 13 : id == 0x37 ? 16 : -1;
+                        if (ext > 0 && n >= ext + 2 && !(buf[ext] == 0xFF && buf[ext + 1] == 0xFF))
+                        {
+                            int x = buf[ext], y = buf[ext + 1];
+                            if (y > 128 + Dead) stickKeys.Add(0x80); if (y < 128 - Dead) stickKeys.Add(0x81);   // F17 up, F18 down
+                            if (x < 128 - Dead) stickKeys.Add(0x82); if (x > 128 + Dead) stickKeys.Add(0x83);   // F19 left, F20 right
+                        }
+                        else if (ext < 0) { foreach (var k in down) stickKeys.Add(k); }   // a report without the nunchuk: keep what is held
+                    }
+                    foreach (var k in new List<byte>(down)) if (!stickKeys.Contains(k)) { Key(k, false); down.Remove(k); }
+                    foreach (var k in stickKeys) if (!down.Contains(k)) { Key(k, true); down.Add(k); }
+                    continue;
+                }
                 if (id == 0x20)   // a status report (the slot poll, a nunchuk plugged / pulled) ends the report mode: set it up again
                 {
                     bool ext = n > 3 && (buf[3] & 0x02) != 0;
                     if (ext && !hadExt) { StartExtension(h); log("wii: slot " + slot + " nunchuk plugged in"); }
                     hadExt = ext;
-                    Mode(h);
+                    Mode(h, modeNow);
                 }
                 if (id < 0x20 || id > 0x37) continue;
                 int core = ((buf[1] & 0x1F) << 8) | (buf[2] & 0x9F);
                 // nunchuk (report 0x32: 8 extension bytes after the buttons): stick X, stick Y, 3 accel bytes, then Z / C bits (0 = pressed)
                 int sx = 128, sy = 128; bool nz = false, nc = false;
-                if (id == 0x32 && n >= 9 && hadExt && !(buf[3] == 0xFF && buf[4] == 0xFF))
+                int ex = id == 0x32 ? 3 : id == 0x35 ? 6 : id == 0x37 ? 16 : -1;   // where the nunchuk's 6 bytes sit in this report
+                if (ex > 0 && n >= ex + 6 && hadExt && !(buf[ex] == 0xFF && buf[ex + 1] == 0xFF))
                 {
-                    sx = buf[3]; sy = buf[4]; nz = (buf[8] & 0x01) == 0; nc = (buf[8] & 0x02) == 0;
+                    sx = buf[ex]; sy = buf[ex + 1]; nz = (buf[ex + 5] & 0x01) == 0; nc = (buf[ex + 5] & 0x02) == 0;
                 }
                 var want = new HashSet<byte>();
                 string where = Where();
+                // the pointer (James 2026-11-28: "enable motion as well for mouse like movement for typing on the search"):
+                // the remote's camera sees the DolphinBar's lights; on in the menus and in light-gun games, off elsewhere
+                bool wantIr = where == "menus" || (where == "game" && GunGame());
+                if (wantIr != ir) { ir = wantIr; if (ir) StartCamera(h); else { StopCamera(h); Mouse(ref mouseHeld, 0); } }
+                byte wantMode = ir ? (byte)0x37 : (where == "game" && CemuInFront()) ? (byte)0x35 : (byte)0x32;
+                if (wantMode != modeNow) { modeNow = wantMode; Mode(h, modeNow); }
+                bool aimed = false;
+                if (ir && id == 0x37 && n >= 16)
+                {
+                    double x, y;
+                    if (Dots(buf, 6, out x, out y))
+                    {
+                        // the camera sees the bar mirrored; the bar spans less than the screen: a gain around the centre
+                        double tx = Clamp(0.5 + ((1 - x / 1023.0) - 0.5) * 1.6), ty = Clamp(0.5 + (y / 767.0 - 0.5) * 1.6);
+                        px = px < 0 ? tx : px * 0.55 + tx * 0.45; py = py < 0 ? ty : py * 0.55 + ty * 0.45;
+                        MoveTo(px, py); aimed = true;
+                    }
+                }
+                int mouseWant = 0;
                 if (where == "menus")
                 {
+                    if (ir && aimed) { if ((core & 0x0008) != 0) mouseWant |= 1; core &= ~0x0008; }   // pointing at the screen: A clicks there; B stays back (Esc, James 2026-11-28)
                     foreach (var m in Map) if ((core & m[0]) != 0) want.Add((byte)m[1]);
                     if (sx < 128 - Dead) want.Add(0x25); if (sx > 128 + Dead) want.Add(0x27);
                     if (sy > 128 + Dead) want.Add(0x26); if (sy < 128 - Dead) want.Add(0x28);
@@ -251,11 +302,34 @@ class WiiRemotes
                     // plays: the remote upright (B trigger, A under the thumb, d-pad), the nunchuk in the other hand (stick,
                     // C, Z). The stick is 8-way: past the dead zone on each axis.
                     var keys = PlayerKeys(PlayerOf(slot));   // the player this remote was given (0 = menus only: nothing)
+                    if (ir)
+                    {
+                        // a light-gun game: the remote is the gun - B shoots (left button), A reloads (right button)
+                        if ((core & 0x0004) != 0) mouseWant |= 1;
+                        if ((core & 0x0008) != 0) mouseWant |= 2;
+                        core &= ~0x000C;
+                    }
                     bool up = (core & 0x0800) != 0 || sy > 128 + Dead, dn = (core & 0x0400) != 0 || sy < 128 - Dead;
                     bool lf = (core & 0x0100) != 0 || sx < 128 - Dead, rt = (core & 0x0200) != 0 || sx > 128 + Dead;
                     Add(want, keys, "UP", up); Add(want, keys, "DOWN", dn); Add(want, keys, "LEFT", lf); Add(want, keys, "RIGHT", rt);
-                    Add(want, keys, "B1", (core & 0x0004) != 0);      // B (trigger)
-                    Add(want, keys, "B2", (core & 0x0008) != 0);      // A
+                    bool cemu = CemuInFront();   // Wii U on the panel's GamePad: the remote's A is the GamePad's A (button 1)
+                    if (cemu && id == 0x35 && n >= 12)
+                    {
+                        // James 2026-11-28: the drum roll is shaking the remote and the nunchuk up and down. Their
+                        // accelerometers rest near 128 (about 25 per g); a swing past ~2.4 g on either one is a shake.
+                        // It presses panel button 5 (the GamePad's X: roll / pound in Tropical Freeze) for a moment.
+                        int rd = Math.Max(Math.Abs(buf[3] - 128), Math.Max(Math.Abs(buf[4] - 128), Math.Abs(buf[5] - 128)));
+                        int nd = hadExt ? Math.Max(Math.Abs(buf[8] - 128), Math.Max(Math.Abs(buf[9] - 128), Math.Abs(buf[10] - 128))) : 0;
+                        // each swing of either controller is one tap (the drum roll: remote, nunchuk, remote ...): counted when it
+                        // goes past ~2.4 g, again only after that controller has settled below ~1.4 g
+                        bool tap = false;
+                        if (rd > 60 && !remoteSwing) { remoteSwing = true; tap = true; } else if (rd < 35) remoteSwing = false;
+                        if (nd > 60 && !nunchukSwing) { nunchukSwing = true; tap = true; } else if (nd < 35) nunchukSwing = false;
+                        if (tap && DateTime.Now > shakeUntil.AddMilliseconds(40)) shakeUntil = DateTime.Now.AddMilliseconds(90);
+                    }
+                    Add(want, keys, "B5", cemu && DateTime.Now < shakeUntil);
+                    Add(want, keys, "B1", (core & (cemu ? 0x0008 : 0x0004)) != 0);   // B (trigger); A in Cemu
+                    Add(want, keys, "B2", (core & (cemu ? 0x0004 : 0x0008)) != 0);   // A; B in Cemu
                     Add(want, keys, "B3", nz);                        // Z (nunchuk trigger)
                     Add(want, keys, "B4", nc);                        // C
                     Add(want, keys, "B5", (core & 0x0002) != 0);      // 1
@@ -263,16 +337,92 @@ class WiiRemotes
                     Add(want, keys, "START", (core & 0x1000) != 0);   // +
                     Add(want, keys, "COIN", (core & 0x0010) != 0);    // -
                 }
+                Mouse(ref mouseHeld, mouseWant);
                 foreach (var k in new List<byte>(down)) if (!want.Contains(k)) { Key(k, false); down.Remove(k); }
                 foreach (var k in want) if (!down.Contains(k)) { Key(k, true); down.Add(k); }
             }
         }
     }
 
+    static bool CemuInFront()
+    {
+        int pid; GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+        try { using (var p = Process.GetProcessById(pid)) return p.ProcessName.Equals("Cemu", StringComparison.OrdinalIgnoreCase); } catch { return false; }
+    }
+
+    // Dolphin always reads the remote itself. Cemu only when one of its controller profiles uses the real remote (api
+    // Wiimote); otherwise its GamePad is on the keyboard and the remote plays as the panel's keys (James 2026-11-28: "No
+    // A to start but the wii remote works in panel" - the old frontend's Cemu 1.26 has only the keyboard GamePad).
     static bool EmulatorOwnsRemote()
     {
-        foreach (var n in new[] { "Dolphin", "DolphinWx", "Cemu" }) { var ps = Process.GetProcessesByName(n); bool any = ps.Length > 0; foreach (var p in ps) p.Dispose(); if (any) return true; }
-        return false;
+        foreach (var n in new[] { "Dolphin", "DolphinWx" }) { var ps = Process.GetProcessesByName(n); bool any = ps.Length > 0; foreach (var p in ps) p.Dispose(); if (any) return true; }
+        return CemuReadsRemote();
+    }
+    static int cemuPid; static bool cemuReads;
+    static bool CemuReadsRemote()
+    {
+        var ps = Process.GetProcessesByName("Cemu");
+        try
+        {
+            if (ps.Length == 0) { cemuPid = 0; return false; }
+            if (ps[0].Id == cemuPid) return cemuReads;
+            cemuPid = ps[0].Id; cemuReads = false;
+            string dir = Path.Combine(Path.GetDirectoryName(ps[0].MainModule.FileName), "controllerProfiles");
+            foreach (var f in Directory.GetFiles(dir, "controller*.xml"))
+                if (File.ReadAllText(f).IndexOf("<api>Wiimote</api>", StringComparison.OrdinalIgnoreCase) >= 0) { cemuReads = true; break; }
+            return cemuReads;
+        }
+        catch { return cemuReads; }
+        finally { foreach (var p in ps) p.Dispose(); }
+    }
+
+    // which game is a light-gun game: set by AmPanel (the frontend's list for the running game)
+    public Func<bool> GunGame = () => false;
+
+    // the camera (wiibrew): pixel clock and logic on, then 0x08 to 0xB00030, the two sensitivity blocks, basic mode (1:
+    // 10 bytes, fits report 0x37 with the nunchuk), 0x08 to 0xB00030 again
+    static void StartCamera(SafeFileHandle h)
+    {
+        Out(h, 0x13, 0x04); Out(h, 0x1A, 0x04);
+        WriteReg(h, 0xB00030, new byte[] { 0x08 });
+        WriteReg(h, 0xB00000, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90, 0x00, 0xC0 });
+        WriteReg(h, 0xB0001A, new byte[] { 0x40, 0x00 });
+        WriteReg(h, 0xB00033, new byte[] { 0x01 });
+        WriteReg(h, 0xB00030, new byte[] { 0x08 });
+    }
+    static void StopCamera(SafeFileHandle h) { Out(h, 0x13, 0x00); Out(h, 0x1A, 0x00); }
+    static void Out(SafeFileHandle h, byte report, byte value) { var r = new byte[22]; r[0] = report; r[1] = value; int w; WriteFile(h, r, r.Length, out w, IntPtr.Zero); Thread.Sleep(30); }
+    static void WriteReg(SafeFileHandle h, int addr, byte[] data)
+    {
+        var r = new byte[22]; r[0] = 0x16; r[1] = 0x04; r[2] = (byte)(addr >> 16); r[3] = (byte)(addr >> 8); r[4] = (byte)addr; r[5] = (byte)data.Length;
+        Array.Copy(data, 0, r, 6, data.Length);
+        int w; WriteFile(h, r, r.Length, out w, IntPtr.Zero); Thread.Sleep(50);
+    }
+    // basic IR: two dots per 5 bytes (x lo, y lo, high bits y1 x1 y2 x2, x lo, y lo); 1023 = no dot. The middle of the two
+    // lights (or the one seen) is where the remote points.
+    static bool Dots(byte[] b, int at, out double x, out double y)
+    {
+        x = y = 0; int n = 0;
+        for (int g = 0; g < 2; g++)
+        {
+            int o = at + g * 5;
+            int x1 = b[o] | ((b[o + 2] >> 4) & 3) << 8, y1 = b[o + 1] | ((b[o + 2] >> 6) & 3) << 8;
+            int x2 = b[o + 3] | (b[o + 2] & 3) << 8, y2 = b[o + 4] | ((b[o + 2] >> 2) & 3) << 8;
+            if (x1 < 1023 && y1 < 1023) { x += x1; y += y1; n++; }
+            if (x2 < 1023 && y2 < 1023) { x += x2; y += y2; n++; }
+            if (n >= 2) break;
+        }
+        if (n == 0) return false;
+        x /= n; y /= n; return true;
+    }
+    static double Clamp(double v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+    [DllImport("user32.dll")] static extern void mouse_event(uint f, int x, int y, uint d, UIntPtr extra);
+    static void MoveTo(double x, double y) { mouse_event(0x8001 /* MOVE | ABSOLUTE, the main screen */, (int)(x * 65535), (int)(y * 65535), 0, UIntPtr.Zero); }
+    static void Mouse(ref int held, int want)
+    {
+        if ((want & 1) != (held & 1)) mouse_event((want & 1) != 0 ? 0x0002u : 0x0004u, 0, 0, 0, UIntPtr.Zero);   // left down / up
+        if ((want & 2) != (held & 2)) mouse_event((want & 2) != 0 ? 0x0008u : 0x0010u, 0, 0, 0, UIntPtr.Zero);   // right down / up
+        held = want;
     }
 
     const int Dead = 40;   // nunchuk stick: centre 128, about 35..228 at the ends
@@ -346,7 +496,7 @@ class WiiRemotes
     // read the remote themselves, so nothing is pressed while either runs), or "" (anything else: nothing is pressed)
     string Where()
     {
-        if (Process.GetProcessesByName("Dolphin").Length > 0 || Process.GetProcessesByName("Cemu").Length > 0) return "";
+        if (EmulatorOwnsRemote()) return "";
         int pid; GetWindowThreadProcessId(GetForegroundWindow(), out pid);
         string name;
         try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { return ""; }
@@ -356,9 +506,11 @@ class WiiRemotes
         return "game";
     }
 
-    static void Mode(SafeFileHandle h)
+    static void Mode(SafeFileHandle h) { Mode(h, 0x32); }   // 0x35 (buttons + motion + nunchuk) reports all the time too
+    static void Mode(SafeFileHandle h, byte report)
     {
-        var r = new byte[22]; r[0] = 0x12; r[1] = 0x00; r[2] = 0x32;   // buttons + 8 extension bytes (the nunchuk), when they change
+        var r = new byte[22]; r[0] = 0x12; r[1] = (byte)(report == 0x37 || report == 0x35 ? 0x04 : 0x00); r[2] = report;   // the camera reports all the time (the pointer moves), the rest only on a change
+          // 0x32 buttons + nunchuk; 0x37 buttons + accel + camera + nunchuk
         int w; WriteFile(h, r, r.Length, out w, IntPtr.Zero);
     }
 

@@ -1,0 +1,30 @@
+{
+  "_comment": "DESKTOP-ARCADE (2P stand-up) TeknoParrot gun games with pedals (James 2026-11-27: 'ensure time crisis and other games like 2spicy use them'). Applied by tools/Set-TeknoParrotControls.ps1 to UserProfiles\\<game>.xml of every TeknoParrot copy of the frontend that has the profile. Devices by name: footswitch = the PCsensor 3-pedal unit (pedals 1-3 send F13 / F14 / F15, tools/Set-FootSwitch.ps1), panel = the Mini-PAC keyboard, gun1 / gun2 = AimTrak 1 / 2. Keys are .NET key names (D1 = the 1 key). Pedal 1 = left, pedal 3 = right; the middle pedal is free.",
+  "_autoGuns": true,
+  "_devices": {
+    "footswitch": "VID_1A86&PID_E026&MI_00&Col01",
+    "panel": "VID_D209&PID_0440&MI_00",
+    "gun1": "VID_D209&PID_1601&MI_02",
+    "gun2": "VID_D209&PID_1602&MI_02"
+  },
+  "TC5": {
+    "Coin": ["panel", "D5"],
+    "Gun Trigger": ["gun1", "LeftButton"],
+    "Gun Button": ["gun1", "RightButton"],
+    "Left Pedal": ["footswitch", "F13"],
+    "Right Pedal": ["footswitch", "F15"],
+    "Up Select Sw": ["panel", "Up"],
+    "Down Select Sw": ["panel", "Down"],
+    "Enter Sw": ["panel", "D1"],
+    "Player 1 Light Gun": ["gun1", "gun"]
+  },
+  "2Spicy": {
+    "Coin 1": ["panel", "D5"],
+    "Player 1 Start": ["panel", "D1"],
+    "Player 1 Light Gun": ["gun1", "gun"],
+    "Player 1 Gun Trigger": ["gun1", "LeftButton"],
+    "Reload": ["gun1", "RightButton"],
+    "Pedal Left": ["footswitch", "F13"],
+    "Pedal Right": ["footswitch", "F15"]
+  }
+}
