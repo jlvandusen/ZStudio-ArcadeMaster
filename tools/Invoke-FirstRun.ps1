@@ -26,7 +26,9 @@ param(
   [string]$RetroBat,                 # found on the local drives when not given
   [switch]$Apply,
   [switch]$Move,                     # step 4: move the other frontend's folders in instead of linking them
-  [switch]$SkipDiscovery             # reuse discovery.json (a full scan takes minutes)
+  [switch]$SkipDiscovery,            # reuse discovery.json (a full scan takes minutes)
+  [string]$ImportFolder,             # take in this folder first (tools/Import-Folder.py: an emulator, a system's games, or many)
+  [string]$ImportSystem              # the system the folder's games are for, when its name does not say
 )
 $ErrorActionPreference = 'Stop'
 $tools = $PSScriptRoot
@@ -47,6 +49,16 @@ function Step([string]$name, [string]$exe, [string[]]$argv) {
 }
 Say ("=== first run on {0}: {1}" -f $env:COMPUTERNAME, $(if ($Apply) { 'APPLY' } else { 'dry run - nothing changes; -Apply to do it' }))
 
+# 0. an import: the folder is recognised, linked into the tree and recorded in discovery.json - then the steps below
+#    make its lists, launchers, keys, art and lights. No full drive scan for an import.
+if ($ImportFolder) {
+  $imp0 = @((Join-Path $tools 'Import-Folder.py'), '--folder', $ImportFolder, '--retrofe', $RetroFE, '--manifest', $ManifestDir)
+  if ($ImportSystem) { $imp0 += @('--system', $ImportSystem) }
+  if ($Move) { $imp0 += '--move' }
+  if ($Apply) { $imp0 += '--apply' }
+  Step 'import' $py $imp0
+  $SkipDiscovery = $true
+}
 # 1. discovery (read-only, so it runs in a dry run too)
 if (-not $SkipDiscovery -or -not (Test-Path (Join-Path $ManifestDir 'discovery.json'))) {
   Step 'discovery' $py @((Join-Path $tools 'Find-Emulators.py'), '--manifest', $ManifestDir)
