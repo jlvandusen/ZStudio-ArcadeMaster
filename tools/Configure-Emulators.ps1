@@ -37,8 +37,8 @@ $py = (Get-Command python -ErrorAction SilentlyContinue | Where-Object { $_.Sour
 if (-not $py) { $py = Get-ChildItem "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe", "$env:ProgramFiles\Python3*\python.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName }
 if (-not $py) { throw 'Python 3 not found - tools\Install-Prerequisites.ps1 -Runtime' }
 function Want([string]$n) { -not $Only -or $Only -contains $n }
-function Step([string]$name, [string]$exe, [string[]]$argv) {
-  if (-not (Want $name)) { return }
+function Step([string]$name, [string]$exe, [string[]]$argv, [switch]$Always) {
+  if (-not $Always -and -not (Want $name)) { return }   # -Always: the caller already decided (a group such as 'driving')
   Say "--- $name"
   $ErrorActionPreference = 'Continue'
   & $exe @argv 2>&1 | ForEach-Object { "$_" } | Select-Object -Last 20 | ForEach-Object { Say "    $_" }
@@ -64,8 +64,19 @@ if ($Apply) {
 else { foreach ($n in 'dolphin', 'devices', 'cards', 'lights') { if (Want $n) { Say "--- $n`n    (runs with -Apply)" } } }
 
 # DRIVING - DESKTOP-RACE2 adds its steps here (WheelMap and the racing tools). Keep the same Step / Want pattern.
-if (Want 'driving') {
-  Say '--- driving'
-  Say '    no driving steps yet (DESKTOP-RACE2 adds them)'
+# After 'keys' and 'devices', so the wheel lines are written last. Only on a cabinet with a wheel. -Only driving runs
+# both steps; -Only coinstart / emufixes one of them. Both change only what is wrong and write nothing when all is right
+# (Start-ArcadeMaster also runs them at every start on a wheel cabinet).
+$devFile = Join-Path $ManifestDir 'emulator-devices.json'
+$hasWheel = (Test-Path -LiteralPath $devFile) -and [bool]@((Get-Content -LiteralPath $devFile -Raw | ConvertFrom-Json).devices | Where-Object { $_.id -eq 'wheel' -or $_.vid -eq '046D' }).Count
+$wantDriving = (Want 'driving') -or (Want 'coinstart') -or (Want 'emufixes')
+if ($wantDriving -and -not $hasWheel) { Say "--- driving`n    no wheel on this cabinet ($devFile) - nothing to do" }
+elseif ($wantDriving) {
+  $ap = if ($Apply) { @('-Apply') } else { @() }
+  $drv = { param($n) (Want 'driving') -or (Want $n) }
+  # coin on Share, start on Options, test on Plus, service on Minus - TeknoParrot, MAME, Supermodel, Model 2
+  if (& $drv 'coinstart') { Step 'coinstart' 'powershell' (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'Set-CoinStartButtons.ps1'), '-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) + $ap) -Always }
+  # point fixes: catalog\emulator-fixes.json (TeknoParrot buttons by name) + the Supermodel template's [ Global ] extras
+  if (& $drv 'emufixes') { Step 'emufixes' 'powershell' (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'Set-EmulatorFixes.ps1'), '-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir) + $ap) -Always }
 }
 Say "=== done. Log: $log"
