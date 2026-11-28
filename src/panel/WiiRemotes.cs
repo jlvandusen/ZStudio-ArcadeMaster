@@ -212,7 +212,8 @@ class WiiRemotes
             double px = -1, py = -1;          // the smoothed pointer, 0..1 on the main screen
             int mouseHeld = 0;                // mouse buttons this remote holds (1 = left, 2 = right)
             byte modeNow = 0x32;              // the report mode asked for last
-            DateTime shakeUntil = DateTime.MinValue;   // a shake holds its key a little longer than the swing
+            DateTime shakeUntil = DateTime.MinValue;   // the tap a swing makes: the key is down until then
+            bool remoteSwing = false, nunchukSwing = false;   // that controller is mid-swing (counted once)
             while (true)
             {
                 int n;
@@ -319,7 +320,12 @@ class WiiRemotes
                         // It presses panel button 5 (the GamePad's X: roll / pound in Tropical Freeze) for a moment.
                         int rd = Math.Max(Math.Abs(buf[3] - 128), Math.Max(Math.Abs(buf[4] - 128), Math.Abs(buf[5] - 128)));
                         int nd = hadExt ? Math.Max(Math.Abs(buf[8] - 128), Math.Max(Math.Abs(buf[9] - 128), Math.Abs(buf[10] - 128))) : 0;
-                        if (rd > 60 || nd > 60) shakeUntil = DateTime.Now.AddMilliseconds(180);
+                        // each swing of either controller is one tap (the drum roll: remote, nunchuk, remote ...): counted when it
+                        // goes past ~2.4 g, again only after that controller has settled below ~1.4 g
+                        bool tap = false;
+                        if (rd > 60 && !remoteSwing) { remoteSwing = true; tap = true; } else if (rd < 35) remoteSwing = false;
+                        if (nd > 60 && !nunchukSwing) { nunchukSwing = true; tap = true; } else if (nd < 35) nunchukSwing = false;
+                        if (tap && DateTime.Now > shakeUntil.AddMilliseconds(40)) shakeUntil = DateTime.Now.AddMilliseconds(90);
                     }
                     Add(want, keys, "B5", cemu && DateTime.Now < shakeUntil);
                     Add(want, keys, "B1", (core & (cemu ? 0x0008 : 0x0004)) != 0);   // B (trigger); A in Cemu
