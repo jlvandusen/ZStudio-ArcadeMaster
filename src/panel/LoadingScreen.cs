@@ -139,8 +139,14 @@ class LoadingScreen : Form
 
     // the game's window in front with the keyboard - only when the frontend (or no program) has the foreground, so a
     // game's own launcher / dialog the player is using is never pushed aside
+    // set by KeepGameOnMainScreen: the game is still running (the frontend has not said "game stop")
+    static Func<bool> stillRunning = () => true;
+    [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
     static void BringForward(IntPtr game, Action<string> log)
     {
+        // never once the game is over: at a game's end a take-back's Alt+Tab left the frontend behind (James 2026-11-28:
+        // "exiting game didn't bring the frontend to front")
+        if (!stillRunning() || !IsWindow(game)) return;
         IntPtr fg = GetForegroundWindow();
         if (fg == game) { GiveKeyboard(game, log); return; }
         int fgPid; GetWindowThreadProcessId(fg, out fgPid);
@@ -282,10 +288,20 @@ class LoadingScreen : Form
         List<IntPtr> list;
         lock (minimisedFrontend) { list = new List<IntPtr>(minimisedFrontend); minimisedFrontend.Clear(); }
         foreach (var h in list) ShowWindowAsync(h, 9 /* SW_RESTORE */);
+        // and the frontend gets the screen back (a game's end left a desktop window or VS Code in front)
+        foreach (var p in Process.GetProcessesByName("retrofe"))
+            using (p)
+                if (p.MainWindowHandle != IntPtr.Zero)
+                {
+                    keybd_event(0x12, 0, 0, UIntPtr.Zero); keybd_event(0x12, 0, 2, UIntPtr.Zero);
+                    ShowWindowAsync(p.MainWindowHandle, 9 /* SW_RESTORE */); SetForegroundWindow(p.MainWindowHandle);
+                    break;
+                }
     }
 
     public static void KeepGameOnMainScreen(HashSet<IntPtr> baseline, Func<bool> stillPlaying, Action<string> log)
     {
+        stillRunning = stillPlaying;
         var main = Screen.PrimaryScreen.Bounds;
         try { SetCursorPos(main.X + main.Width / 2, main.Y + main.Height / 2); } catch { }
         var moved = new HashSet<IntPtr>();
