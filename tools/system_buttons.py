@@ -24,6 +24,9 @@ NATIVE = {
     "switch": {"b": "B", "a": "A", "y": "Y", "x": "X", "l": "L", "r": "R", "l2": "ZL", "r2": "ZR", "start": "PLUS",
                "select": "MINUS"},
     "gamecube": {"b": "A", "y": "B", "a": "X", "x": "Y", "r": "Z", "l2": "L", "r2": "R", "start": "START"},
+    # an emulated Wii Remote + Nunchuk (Set-EmulatorPanelKeys.py; the trackball is the pointer)
+    "wii": {"b": "A", "a": "B", "r": "1", "r2": "2", "y": "C", "x": "Z", "l": "SHAKE", "l2": "HOME", "start": "PLUS",
+            "select": "MINUS"},
     "xbox": {"b": "A", "a": "B", "y": "X", "x": "Y", "l": "WHITE", "r": "BLACK", "l2": "LT", "r2": "RT", "start": "START",
              "select": "BACK"},
     "xbox360": {"b": "A", "a": "B", "y": "X", "x": "Y", "l": "LB", "r": "RB", "l2": "LT", "r2": "RT", "start": "START",

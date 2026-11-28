@@ -70,6 +70,18 @@ def nk(k):
     return None
 
 
+def real_wiimote():
+    """a real Wii Remote is paired with this PC (Bluetooth name RVL-CNT-01 / Nintendo RVL-...)"""
+    try:
+        import subprocess
+        o = subprocess.run(["powershell", "-NoProfile", "-Command",
+                            "Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match 'RVL-CNT|Nintendo RVL' } | Select-Object -First 1 -ExpandProperty FriendlyName"],
+                           capture_output=True, text=True, timeout=30).stdout
+        return bool(o.strip())
+    except Exception:
+        return False
+
+
 def backup(p):
     if os.path.exists(p) and not os.path.exists(p + ".am-bak"):
         shutil.copy2(p, p + ".am-bak")
@@ -196,6 +208,21 @@ def main():
         # RetroBat's analog-trigger and modifier keys sat on Home / End / Insert / Delete: off
         drop = lambda k, l: k in ("Triggers/L-Analog", "Triggers/R-Analog", "Main Stick/Modifier", "C-Stick/Modifier")
         write(p, set_ini(p, "GCPad1", v, drop))
+    # ---- Wii: Dolphin's Wii Remote 1 - a real one stays (the 2P stand-up pairs real remotes); without one paired, an
+    # emulated Wii Remote + Nunchuk on the panel (layout = system_buttons.NATIVE["wii"]), the trackball / mouse as pointer
+    p = os.path.join(E, "dolphin-emu", "User", "Config", "WiimoteNew.ini")
+    if os.path.exists(os.path.join(E, "dolphin-emu")) and not real_wiimote():
+        m = {"Buttons/A": "b", "Buttons/B": "a", "Buttons/1": "r", "Buttons/2": "r2", "Nunchuk/Buttons/C": "y",
+             "Nunchuk/Buttons/Z": "x", "Buttons/Home": "l2", "Buttons/+": "start", "Buttons/-": "select"}
+        v = {"Source": "1", "Device": "DInput/0/Keyboard Mouse", "Extension": "Nunchuk"}
+        v.update({n: dinput(key[pad]) for n, pad in m.items() if key.get(pad)})
+        if key.get("l"):
+            for axis in ("X", "Y", "Z"):
+                v["Shake/" + axis] = dinput(key["l"])
+        for d, k in DIRS1.items():
+            v["D-Pad/" + d.capitalize()] = dinput(k); v["Nunchuk/Stick/" + d.capitalize()] = dinput(k)
+        v.update({"IR/Up": "`Cursor Y-`", "IR/Down": "`Cursor Y+`", "IR/Left": "`Cursor X-`", "IR/Right": "`Cursor X+`"})
+        write(p, set_ini(p, "Wiimote1", v))
     # ---- PSP: PPSSPP (keyboard = device 1, Android key codes)
     exe = os.path.join(E, "ppsspp", "PPSSPPWindows64.exe")
     if os.path.exists(exe):
