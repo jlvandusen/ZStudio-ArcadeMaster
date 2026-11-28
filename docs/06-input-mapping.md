@@ -836,3 +836,19 @@ copy is empty: G HUB keeps everything in the journal while it runs). The newest 
   its own. How a profile points at its wheel card is not known yet: nothing on the cabinets has ever changed it.
   To learn it, change the operating range once in G HUB's window and compare the file before and after.
 - Nothing is written to this file by our tools so far.
+
+## Hands-off emulator setup: fixes are put back at every start (2026-11-28)
+
+James: emulator setup has to be hands-off, also after an emulator update or on a fresh copy. On a wheel cabinet,
+Start-ArcadeMaster runs after the controller repair (Repair-EmulatorDevices):
+
+- `tools/Set-CoinStartButtons.ps1 -Apply`: coin on Share, start on Options, test on Plus, service on Minus in
+  TeknoParrot, MAME, Supermodel and Model 2 (Raw Thrills games call coin "Credit").
+- `tools/Set-EmulatorFixes.ps1 -Apply`: the point fixes in `catalog/emulator-fixes.json` (TeknoParrot buttons by
+  name, for example Dirty Drivin's Crank Forward = guns on the right paddle, a control a newer GameProfile added) and
+  the extra Supermodel `[ Global ]` lines of `tools/wheelmap/templates/supermodel.json` (steering saturation 40).
+
+Both change only what is missing or different, back each changed file up first, leave a running emulator's files
+for the next start, and write nothing when everything is right. **A fix found by hand on one cabinet goes into
+`catalog/emulator-fixes.json`** (optional `hosts` for one cabinet only), so every cabinet gets it and an update
+cannot take it away.

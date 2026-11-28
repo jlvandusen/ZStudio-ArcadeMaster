@@ -100,6 +100,15 @@ if (-not $NoDeviceCheck) {
     # MAME, Supermodel (Model 3), Model 2 and Cemu store a device id or number too: follow it after a reboot / port change
     $emu = Invoke-Tool 'Repair-EmulatorDevices.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-ScanFile', (Join-Path $ManifestDir 'directinput-scan.txt'), '-Apply')
     if ($emu -match '(\d+) file\(s\) fixed') { Write-Log ("controllers renumbered - re-pointed $($Matches[1]) emulator file(s): " + (($emu -split "`r?`n" | Where-Object { $_ -match ' -> ' } | ForEach-Object { $_.Trim() }) -join '; ')) }
+    # hands-off emulator setup (James 2026-11-28): the same coin / start / test / service buttons in every emulator, and
+    # the point fixes from catalog\emulator-fixes.json + the Supermodel template's extras, put back if an update or a fresh
+    # copy lost them. Both change only what is wrong, skip a running emulator's files and write nothing when all is right.
+    if ($now.wheel) {
+      $cs = Invoke-Tool 'Set-CoinStartButtons.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Apply')
+      if ($cs -match '(\d+) file\(s\) set' -and [int]$Matches[1] -gt 0) { Write-Log ("coin / start buttons put back in $($Matches[1]) file(s): " + (($cs -split "`r?`n" | Where-Object { $_ -match '^\s+SET ' } | ForEach-Object { $_.Trim() }) -join '; ')) }
+      $ef = Invoke-Tool 'Set-EmulatorFixes.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Apply')
+      if ($ef -match '(\d+) file\(s\) set' -and [int]$Matches[1] -gt 0) { Write-Log ("emulator fixes put back in $($Matches[1]) file(s): " + (($ef -split "`r?`n" | Where-Object { $_ -match '^\s+SET ' } | ForEach-Object { $_.Trim() }) -join '; ')) }
+    }
     $modesNow = (@($now.modes) | Sort-Object) -join ','; $modesFile = Join-Path $ManifestDir 'last-modes.txt'
     $modesLast = if (Test-Path $modesFile) { (Get-Content $modesFile -Raw).Trim() } else { '' }
     if ($modesNow -ne $modesLast) {
