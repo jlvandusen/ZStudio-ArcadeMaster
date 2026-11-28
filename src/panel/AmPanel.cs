@@ -54,6 +54,7 @@ static class AmPanel
     static string speech = "off";         // AmPanel.json "Speech": off | start
     static ExitGuard exitGuard;           // Esc ends any game (AmPanel.json "ExitKey": "ESC" | "none", "ExitGraceMs")
     static string exitKey = "ESC";
+    static LeapGestures leap;             // the Leap Motion's swipes / taps / circles work the menus (LeapGestures.cs)
     static KeyRemap keyRemap;             // a key turned into another while a given program is in front (KeyRemap.cs)
     static GunMenus gunMenus;             // a light gun's trigger, buttons and d-pad work the menus (GunMenus.cs)
     static WiiRemotes wii;                // which DolphinBar slots have a Wii Remote; Dolphin's slots follow (WiiRemotes.cs)
@@ -993,6 +994,17 @@ static class AmPanel
         }
         catch (Exception e) { Log("wii: not started - " + e.Message); }
         try { keyRemap = new KeyRemap(toolsDir, Log); } catch (Exception e) { Log("key remap: not started - " + e.Message); }
+        // the Leap Motion works the menus, on a cabinet where its service is installed (docs/20)
+        try
+        {
+            using (var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\LeapService"))
+                if (k != null)
+                {
+                    leap = new LeapGestures(Log);
+                    leap.GameRunning = delegate { lock (Gate) return State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"]; };
+                }
+        }
+        catch (Exception e) { Log("leap: not started - " + e.Message); }
         try
         {
             gunMenus = new GunMenus(Log);   // on the tray thread: raw input arrives through its message loop
