@@ -430,7 +430,10 @@ function Invoke-WMGenCemu($Prof, $Targets, $Manifest) {
     return $rep
 }
 # ------------------------------------------------------------------ Model 2 Emulator (ElSemi)
-# DirectInput OBJECT enumeration index of an axis (what m2emulator numbers axes by), from the live device.
+# The number m2emulator gives an axis: the device's axes counted in the order of their place in DirectInput's joystick
+# state (X, Y, Z, RotationX, RotationY, RotationZ, sliders), NOT the order the device lists them in. A G29 lists X,
+# slider (clutch), RotationZ (brake), Y (gas); counted that way the gas came out as axis 3, the clutch pedal, and the car
+# drove on its own (RACE1, Daytona USA, 2026-11-28). The previous owner's working files had gas on 1, brake on 2.
 $script:WMAxisOrderCache = @{}
 function Get-WMAxisObjectIndex($Prof, $dev, [int]$offset) {
     if (-not $dev) { return $null }
@@ -444,6 +447,7 @@ function Get-WMAxisObjectIndex($Prof, $dev, [int]$offset) {
             if ($hit) { $order = @($hit[0].Objects | Where-Object { $_.Kind -eq 'Axis' } | ForEach-Object { $_.Offset }) }
         } catch { }
         if (-not $order -and $dev.Contains('axisOrder')) { $order = @($dev.axisOrder) }   # recorded at capture time
+        if ($order) { $order = @($order | Sort-Object { [int]$_ }) }
         $script:WMAxisOrderCache[$key] = $order
     }
     $order = $script:WMAxisOrderCache[$key]
