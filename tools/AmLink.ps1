@@ -174,6 +174,9 @@ $me = [ordered]@{ host = $HostName; type = $type; beat = 0; alive = $false; idle
 $lastHello = [datetime]::MinValue; $lastUser = [datetime]::MinValue; $missItem = ''; $dirty = $true; $lastWrite = [datetime]::MinValue
 $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
+# games that are never joined (catalog\cabinet-link.json "noJoin"): one that does not work yet may be tried alone, but must
+# not pull the other cabinet into it (James 2026-11-28: SWDC crashed on RACE1 and RACE2 joined it and got stuck twice)
+$noJoin = @(); try { $noJoin = @((Get-Content -LiteralPath (Join-Path (Split-Path $PSScriptRoot) 'catalog\cabinet-link.json') -Raw | ConvertFrom-Json).noJoin | Where-Object { $_ }) } catch { }
 $noFollow = 'Tools', 'SETTINGS', 'Controller'      # menus that are not game lists: never followed into, nothing in them is joined
 $linkShown = $false   # the "cabinets are linked" card is up (attract)
 $missSaid = ''; $noteUntil = $null   # the "not on this cabinet" note: said once per game, taken down after a few seconds: @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
@@ -243,7 +246,8 @@ try {
         # RACE1's EXIT presses started "joining EXIT" on RACE2. A newer start replaces one that is still counting or
         # joining (RACE1's Batman was ignored while RACE2 was still busy with an earlier one).
         $joinable = $j.launchMenu -and ($noFollow -notcontains [string]$j.launchMenu) -and ([string]$j.launchMenu -ne $top)
-        if ($launched -and $joinable -and $j.launchBy -eq 'user' -and $j.type -eq $type -and $alive -and -not $userHere -and (-not $count -or $count.phase -eq 'note' -or $count.item -ne [string]$j.launchItem)) {
+        if ($launched -and $joinable -and $j.launchBy -eq 'user' -and $j.type -eq $type -and ($noJoin -contains [string]$j.launchItem)) { Say "$($j.host) started $($j.launchItem): on the no-join list - staying here"; if ($alive -and -not $userHere) { Show-Card "$(Get-Cab ([string]$j.host)) is playing" (Get-Title ([string]$j.launchCol) ([string]$j.launchItem)) 'not joined: this game is being set up' -AtTop; $noteUntil = $now.AddSeconds(4) } }
+        if ($launched -and $joinable -and $j.launchBy -eq 'user' -and $j.type -eq $type -and ($noJoin -notcontains [string]$j.launchItem) -and $alive -and -not $userHere -and (-not $count -or $count.phase -eq 'note' -or $count.item -ne [string]$j.launchItem)) {
           $count = @{ from = $j.host; menu = [string]$j.launchMenu; item = [string]$j.launchItem; col = [string]$j.launchCol; title = (Get-Title ([string]$j.launchCol) ([string]$j.launchItem)); until = $now.AddSeconds($CountdownSec); phase = 'count'; started = $now }
           $missItem = ''
           # a system this cabinet does not have at all is not followed: no countdown, no search through the menus
