@@ -1,6 +1,6 @@
 {
   "schema": "wheelmap.targets/1",
-  "description": "DESKTOP-ARCADE (2P stand-up): ONLY the frontend copy's own folders on D: (real copies, not junctions to the live CORE-TYPE R on E:). Cemu, RetroArch and the other emulators in the copy are still junctions to E: and are left out on purpose - give a folder its own copy first (as TeknoParrot, Dolphin and MAME have) before listing it here.",
+  "description": "DESKTOP-ARCADE (2P stand-up): ONLY the frontend copy's own folders on D: (real copies, not junctions to the live CORE-TYPE R on E:). RetroArch and the other emulators in the copy are still junctions to E: and are left out on purpose. Cemu has its own copy since 2026-11-28 (mlc01, the Wii U updates and saves, is a junction to the live one); it is not listed because this cabinet has no wheel to map - give a folder its own copy first (as TeknoParrot, Dolphin and MAME have) before listing it here.",
   "teknoparrot": [
     {
       "name": "CORE-am-TeknoParrot",
