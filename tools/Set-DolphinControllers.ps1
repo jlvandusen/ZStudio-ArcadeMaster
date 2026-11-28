@@ -200,3 +200,74 @@ foreach ($u in $DolphinUser) {
   Write-Host ("Dolphin {0}: real Wii Remotes {1}, balance board {2}, GC adapter {3}" -f $u, $real, $board, $gcad)
   if ($changes) { $changes | ForEach-Object { Write-Host "  $_" } } else { Write-Host '  no change' }
 }
+
+# ---- Cemu (Wii U) follows the real Wii Remotes too (James 2026-11-28: "shouldn't it auto select if the controller is on?").
+# Each synced remote becomes an emulated Wii Remote + nunchuk on Cemu's own Wiimote API, from Controller 2 on (Controller 1
+# stays the Wii U GamePad on the panel: many Wii U games need a GamePad). A slot that had its own controller gets it back
+# when the remote goes. Only a Cemu that is the frontend copy's own folder (never a junction into a live frontend).
+# Format and numbers from Cemu's source (src/input: InputManager, emulated/WiimoteController, api/Wiimote): emulated ids
+# A 1, B 2, 1 3, 2 4, Z 5, C 6, + 7, - 8, up 9, down 10, left 11, right 12, nunchuk stick 13-16, HOME 17; the remote's
+# own buttons Left 0, Right 1, Down 2, Up 3, + 4, 2 8, 1 9, B 10, A 11, - 12, HOME 15, C 16, Z 17; stick axes X+ 38,
+# Y+ 39, X- 44, Y- 45; device_type 1 = with a nunchuk.
+$cemus = @()
+foreach ($u in $DolphinUser) {
+  $emu = Split-Path (Split-Path $u)   # <frontend>\emulators
+  $c = Join-Path $emu 'Cemu'
+  if ((Test-Path (Join-Path $c 'Cemu.exe')) -and -not (Get-Item $c).LinkType) { $cemus += $c }
+}
+$liveSlots = @()
+$lf = Join-Path $ManifestDir 'wii-remotes.json'
+if (Test-Path $lf) { try { $liveSlots = @((Get-Content $lf -Raw | ConvertFrom-Json).slots | ForEach-Object { [int]$_ }) } catch { } }
+$amProfile = 'ArcadeMaster Wii Remote'
+$wiimoteMap = @( @(1, 11), @(2, 10), @(3, 9), @(4, 8), @(5, 17), @(6, 16), @(7, 4), @(8, 12), @(9, 3), @(10, 2), @(11, 0), @(12, 1), @(13, 39), @(14, 45), @(15, 44), @(16, 38), @(17, 15) )
+foreach ($c in $cemus) {
+  $pd = Join-Path $c 'controllerProfiles'; New-Item -ItemType Directory -Force $pd | Out-Null
+  $bak = Join-Path $pd 'ArcadeMaster-before'; New-Item -ItemType Directory -Force $bak | Out-Null
+  $done = @()
+  for ($i = 0; $i -lt 3; $i++) {   # Controller 2-4
+    $f = Join-Path $pd "controller$($i + 1).xml"
+    $ours = (Test-Path $f) -and ((Get-Content $f -Raw) -match "<profile>$([regex]::Escape($amProfile))")
+    if ($i -lt $liveSlots.Count) {
+      $slot = $liveSlots[$i]
+      $entries = ($wiimoteMap | ForEach-Object { "`t`t`t<entry>`n`t`t`t`t<mapping>$($_[0])</mapping>`n`t`t`t`t<button>$($_[1])</button>`n`t`t`t</entry>" }) -join "`n"
+      $xml = @"
+<?xml version="1.0" encoding="UTF-8"?>
+<emulated_controller>
+	<type>Wiimote</type>
+	<profile>$amProfile</profile>
+	<controller>
+		<api>Wiimote</api>
+		<uuid>$($slot - 1)</uuid>
+		<display_name>Controller $slot</display_name>
+		<motion>true</motion>
+		<rumble>0</rumble>
+		<axis>
+			<deadzone>0.25</deadzone>
+			<range>1</range>
+		</axis>
+		<rotation>
+			<deadzone>0.25</deadzone>
+			<range>1</range>
+		</rotation>
+		<trigger>
+			<deadzone>0.25</deadzone>
+			<range>1</range>
+		</trigger>
+		<mappings>
+$entries
+		</mappings>
+	</controller>
+	<device_type>1</device_type>
+</emulated_controller>
+"@
+      if (-not $ours -and (Test-Path $f) -and -not (Test-Path (Join-Path $bak (Split-Path $f -Leaf)))) { Copy-Item $f $bak }
+      $before = if (Test-Path $f) { Get-Content $f -Raw } else { '' }
+      if ($before -ne $xml) { [IO.File]::WriteAllText($f, $xml.Replace("`r`n", "`n"), (New-Object Text.UTF8Encoding $false)); $done += "Controller $($i + 2) = Wii Remote in DolphinBar slot $slot" }
+    } elseif ($ours) {
+      $b = Join-Path $bak (Split-Path $f -Leaf)
+      if (Test-Path $b) { Move-Item $b $f -Force; $done += "Controller $($i + 2) back to what it was" } else { Remove-Item $f -Force; $done += "Controller $($i + 2) off (no remote)" }
+    }
+  }
+  Write-Host ("Cemu {0}: real Wii Remotes {1}" -f $c, $liveSlots.Count)
+  if ($done) { $done | ForEach-Object { Write-Host "  $_" } } else { Write-Host '  no change' }
+}
