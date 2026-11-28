@@ -44,6 +44,11 @@ Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing @'
 using System;using System.Collections.Generic;using System.Runtime.InteropServices;using System.Text;
 public class LT{
  delegate bool P(IntPtr h,IntPtr l);
+ [DllImport("user32.dll")]static extern bool SetProcessDPIAware();
+ [DllImport("user32.dll")]static extern bool SetProcessDpiAwarenessContext(IntPtr c);
+ // physical pixels for screens, window rectangles and captures alike: DPI-unaware, a 4K screen at 200 % reads as
+ // 1920x1080 and a capture takes only its top-left quarter (pedestal, 2026-11-28)
+ public static void DpiAware(){try{if(SetProcessDpiAwarenessContext(new IntPtr(-4)))return;}catch{}try{SetProcessDPIAware();}catch{}}
  [DllImport("user32.dll")]static extern bool EnumWindows(P p,IntPtr l);
  [DllImport("user32.dll")]public static extern int GetWindowThreadProcessId(IntPtr h,out int p);
  [DllImport("user32.dll")]static extern bool IsWindowVisible(IntPtr h);
@@ -71,6 +76,7 @@ public class LT{
  public static void Focus(IntPtr h){keybd_event(0x12,0,0,UIntPtr.Zero);keybd_event(0x12,0,2,UIntPtr.Zero);SetForegroundWindow(h);}
 }
 '@
+[LT]::DpiAware()   # before anything reads a screen or a window rectangle
 function Get-Tree([int]$root) {
   $all = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId
   $set = New-Object 'System.Collections.Generic.HashSet[int]'; [void]$set.Add($root); $grew = $true
