@@ -149,6 +149,8 @@ try { $mc = Invoke-Tool 'Set-MenuControls.ps1' @('-RetroFE', $Root, '-ManifestDi
 
 # the main menu's wheel shows the wheel this cabinet really has (G HUB's picture of it); redrawn only when it changed
 try { $rw = Invoke-Tool 'New-RealWheelArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout); if ($rw -match '->|removed') { Write-Log (($rw -split "`r?`n" | Where-Object { $_ -match 'real wheel' }) -join ' ') } } catch { Write-Log "real wheel art failed: $($_.Exception.Message)" }
+# a hand-held controller is plugged in: the console lists show that controller's card; none: the panel's cards (tools\Set-PadCards.ps1)
+try { $pc = Invoke-Tool 'Set-PadCards.ps1' @('-RetroFE', $Root); if ($pc -match 'shown on|are back') { Write-Log (($pc -split "`r?`n" | Where-Object { $_ -match 'pad cards' }) -join ' ') } } catch { Write-Log "pad cards failed: $($_.Exception.Message)" }
 
 # the per-game controls cards (the real G29 with the game's buttons numbered, the pedals, the legend) are drawn from the
 # LIVE bindings: remade when a wheel cabinet has none yet, or a TeknoParrot binding is newer than the cards (Wheel Setup,
