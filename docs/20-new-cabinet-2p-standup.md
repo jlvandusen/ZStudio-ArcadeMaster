@@ -123,3 +123,20 @@ For James and for the Claude session that sets up the cabinet. docs/09 is the ge
   - LaunchBox / BigBox: `F:\LaunchBox`, `F:\support\LaunchBox`, `G:\LaunchBox`;
   - RocketLauncher: `F:\RocketLauncher`, `G:\RocketLauncher`.
 - **Drives:** C:, D: (added for ArcadeMaster), E:, F:, G:, H:. It has a D:, so the tools' defaults (`D:\ArcadeMaster\...`) can be used if D: is the data drive; still pass `-ManifestDir` / `-Root` / `-BuildRoot` explicitly. Pick the drive with room for the library, then fill in the PC name and GPU on the board when the session joins.
+
+## 2026-11-27 (afternoon): pedals, guns, Wii and console menus
+
+- **Foot switches** are a PCsensor 3-pedal unit (USB 1A86:E026). `tools\Set-FootSwitch.ps1` reads and reprograms it (the open-source footswitch tool's protocol).
+  - The pedals now send **F13 / F14 / F15** instead of A / B / C, so they no longer clash with P2 button 1 or the Mini-PAC's C. The old keys are in `manifest\footswitch-before.json`.
+  - The PS3 Time Crisis 4 and Razing Storm (RPCS3, through the old frontend's AutoHotkey programs) still expect A (cover) and C (duck). AmPanel turns the pedals into those keys only while those programs are in front (`tools\key-remap.DESKTOP-ARCADE.json`, `src\panel\KeyRemap.cs`).
+- **TeknoParrot gun games:** `tools\Set-TeknoParrotControls.ps1` writes `tools\teknoparrot-controls.DESKTOP-ARCADE.json` into every TeknoParrot copy of the frontend.
+  - Time Crisis 5 and 2 Spicy: AimTrak 1, left pedal = pedal 1, right pedal = pedal 3.
+  - Every other RawInput gun game gets what was not bound yet: aim and main trigger per player's gun, start and coin from the panel. 15 games had gaps.
+- **Controls cards:** light-gun games show the gun, what its buttons do, and the three pedals (lit where used). A game with its own launcher shows what really runs it.
+- **Wii:**
+  - A real Wii Remote: Dolphin gets it directly (nunchuk, pointer, motion). While Dolphin or Cemu runs, AmPanel only listens to the remote and never writes to it (it had broken the nunchuk under Dolphin).
+  - In the menus the remote works the frontend. In arcade games it plays as the player chosen when it connects (P1-P4, or menus only). MAME here uses `keyboardprovider dinput`: the default mode ignores keys a program sends.
+  - No remote: the panel is the remote. Each Wii game has a layout (sideways / nunchuk / classic, `tools\wii-layouts.json`), and TAB > WII CONTROLS changes it per game.
+- **Console menus without RetroBat:** the maker menus (Nintendo, Sega, Sony, Atari) are built from the build's own CONSOLES / HANDHELDS lists, and their tiles, cards and main-menu art come from each system's own `system_artwork`.
+- **Wii U (Cemu) does not start here:** the NVIDIA GTX 1650 driver has no Vulkan registered (`nv-vk64.json` is in the driver store but not in the card's driver entry). Driver 621.40 is downloaded for James to install. Cemu is a junction to the live frontend; a D: copy of the full folder is 11 GB (D: has about 17 GB free).
+- **Flight on the main menu** came from `modesSeen`: a CH yoke was plugged in once for a test. Taken out; Flight shows only with flight controls connected.
