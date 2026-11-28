@@ -352,9 +352,36 @@ def gamecube():
     return p
 
 
+def dreamcast():
+    shell = (222, 222, 226)
+    p = Pad(ink=(84, 86, 98))
+    p.shoulder('L', 120, 250, 70, (190, 190, 196)); p.shoulder('R', 470, 600, 70, (190, 190, 196))
+    p.m_oval(176, 290, 100, 124); p.m_oval(544, 290, 100, 124); p.m_box(100, 108, 620, 322, 76)
+    p.mould(shell)
+    p.m_box(292, 124, 428, 226, 14); p.mould((60, 62, 70), shadow=False, gloss=.2, depth=3)        # the memory card window
+    p.soft(360, 172, 54, 36, (150, 170, 150), 1, box=True, r=6)
+    p.stick('Stick', 196, 190, 27, color=(206, 208, 214), concave=False)
+    p.dpad(206, 288, 26, 18, color=(90, 92, 100))
+    for n, (dx, dy), c in (('Y', (0, -40), (60, 170, 90)), ('B', (40, 0), (70, 120, 220)), ('A', (0, 40), (214, 56, 60)), ('X', (-40, 0), (236, 196, 40))):
+        p.button(n, 524 + dx, 218 + dy, 19, color=c, text=WHITE)
+    p.button('Start', 360, 282, 13, color=(214, 56, 60), label='')
+    p.text(360, 308, 'START', 10)
+    return p
+
+
+def pcengine():
+    p = Pad(ink=(206, 208, 216))
+    p.m_box(100, 132, 620, 328, 22); p.mould((228, 226, 220))
+    p.m_box(118, 150, 602, 310, 12); p.mould((36, 38, 46), shadow=False, gloss=.15, depth=3)
+    p.dpad(204, 230, 40, 26, color=(34, 36, 42), disc=(52, 54, 62))
+    p.pill('Select', 336, 252, 42, 13, color=(96, 98, 106)); p.pill('Run', 400, 252, 42, 13, color=(96, 98, 106))
+    p.button('II', 488, 240, 25, color=(228, 110, 40), text=WHITE); p.button('I', 556, 240, 25, color=(228, 110, 40), text=WHITE)
+    return p
+
+
 DRAW = {'ps3': lambda: playstation('ps3'), 'ps4': lambda: playstation('ps4'), 'ps5': lambda: playstation('ps5'), 'psx': lambda: playstation('psx'),
         'xbox': lambda: xbox('xbox'), 'switch': lambda: xbox('switch'), 'snes': lambda: snes('snes'), 'snespro': lambda: snes('snespro'),
-        'nes': nes, 'genesis': genesis, 'n64': n64, 'gamecube': gamecube}
+        'nes': nes, 'genesis': genesis, 'n64': n64, 'gamecube': gamecube, 'dreamcast': dreamcast, 'pcengine': pcengine}
 
 
 def main(argv=None) -> int:

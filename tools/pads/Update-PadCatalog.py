@@ -53,6 +53,10 @@ FAMILIES = {
                 'buttons': ['A', 'B', 'C', 'X', 'Y', 'Z', 'L', 'R', 'Mode', 'Start']},
     'gamecube': {'label': 'GameCube controller', 'like': ['gamecube', 'wii'], 'sticks': 2,
                  'buttons': ['A', 'B', 'X', 'Y', 'Z', 'L', 'R', 'Start']},
+    'dreamcast': {'label': 'Dreamcast controller', 'like': ['dreamcast', 'naomi', 'atomiswave'], 'sticks': 1,
+                  'buttons': ['A', 'B', 'X', 'Y', 'L', 'R', 'Start']},
+    'pcengine': {'label': 'TurboGrafx-16 controller', 'like': ['pcengine', 'pcenginecd', 'supergrafx', 'tg16'], 'sticks': 0,
+                 'buttons': ['I', 'II', 'Select', 'Run']},
     'switch':  {'label': 'Nintendo Switch controller', 'like': ['switch', 'wiiu', 'wii'], 'sticks': 2,
                 'buttons': ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', 'Minus', 'Plus', 'LS', 'RS', 'Home', 'Capture']},
 }
@@ -73,6 +77,8 @@ RETROPAD = {
     'genesis': {'y': 'A', 'b': 'B', 'a': 'C', 'l': 'X', 'x': 'Y', 'r': 'Z', 'l2': 'L', 'r2': 'R', 'select': 'Mode', 'start': 'Start'},
     'n64':  {'b': 'B', 'a': 'A', 'l': 'L', 'r': 'R', 'l2': 'Z', 'start': 'Start'},
     'gamecube': {'b': 'A', 'y': 'B', 'a': 'X', 'x': 'Y', 'r': 'Z', 'l2': 'L', 'r2': 'R', 'start': 'Start'},
+    'dreamcast': {'b': 'A', 'a': 'B', 'y': 'X', 'x': 'Y', 'l2': 'L', 'r2': 'R', 'start': 'Start'},
+    'pcengine': {'b': 'II', 'a': 'I', 'select': 'Select', 'start': 'Run'},
 }
 for _f, _m in RETROPAD.items():
     FAMILIES[_f]['retropad'] = _m
@@ -90,6 +96,8 @@ RULES = [
     (r'\bM30\b|Genesis|Mega ?Drive|Saturn|Sega (Multi|MD)|6B Controller|3B Controller', 'genesis'),
     (r'SNES|SFC|SN30|SF30|Super (Famicom|Nintendo)', 'snes'),
     (r'\bNES\b|NES30|\bN30\b|Famicom|8BitDo Zero', 'nes'),
+    (r'Dreamcast', 'dreamcast'),
+    (r'PC ?Engine|TurboGrafx|\bPCE\b', 'pcengine'),
     (r'Xbox|XInput', 'xbox'),
 ]
 

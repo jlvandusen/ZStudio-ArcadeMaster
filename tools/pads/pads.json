@@ -361,6 +361,55 @@
     "start": "Start"
    }
   },
+  "dreamcast": {
+   "label": "Dreamcast controller",
+   "like": [
+    "dreamcast",
+    "naomi",
+    "atomiswave"
+   ],
+   "sticks": 1,
+   "buttons": [
+    "A",
+    "B",
+    "X",
+    "Y",
+    "L",
+    "R",
+    "Start"
+   ],
+   "retropad": {
+    "b": "A",
+    "a": "B",
+    "y": "X",
+    "x": "Y",
+    "l2": "L",
+    "r2": "R",
+    "start": "Start"
+   }
+  },
+  "pcengine": {
+   "label": "TurboGrafx-16 controller",
+   "like": [
+    "pcengine",
+    "pcenginecd",
+    "supergrafx",
+    "tg16"
+   ],
+   "sticks": 0,
+   "buttons": [
+    "I",
+    "II",
+    "Select",
+    "Run"
+   ],
+   "retropad": {
+    "b": "II",
+    "a": "I",
+    "select": "Select",
+    "start": "Run"
+   }
+  },
   "switch": {
    "label": "Nintendo Switch controller",
    "like": [
@@ -1634,6 +1683,11 @@
    "family": "ps4"
   },
   {
+   "usb": "0F0D:0138",
+   "model": "Hori PC Engine Mini Controller",
+   "family": "pcengine"
+  },
+  {
    "usb": "0F0D:0150",
    "model": "Hori Fighting Commander Octa Xbox One",
    "family": "xbox"
@@ -2164,6 +2218,11 @@
    "family": "genesis"
   },
   {
+   "usb": "289B:0008",
+   "model": "Raphnet Dreamcast Adapter",
+   "family": "dreamcast"
+  },
+  {
    "usb": "289B:0026",
    "model": "Raphnet SNES Adapter",
    "family": "snes"
@@ -2242,6 +2301,11 @@
    "usb": "289B:0065",
    "model": "Raphnet GameCube Adapter",
    "family": "gamecube"
+  },
+  {
+   "usb": "289B:00D0",
+   "model": "Raphnet Dreamcast Adapter",
+   "family": "dreamcast"
   },
   {
    "usb": "294B:3004",
@@ -3227,6 +3291,11 @@
    "usb": "6638:6339",
    "model": "Xbox 360 Controller",
    "family": "xbox"
+  },
+  {
+   "usb": "6664:3232",
+   "model": "Hori PC Engine Mini Controller",
+   "family": "pcengine"
   },
   {
    "usb": "6665:3562",
