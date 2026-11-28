@@ -50,6 +50,10 @@ if ($Startup) {
   Say "  ok  starts with Windows ($lnk)"
 }
 
+# 4b. the system helpers (GPU reset, USB self-heal ...): one admin prompt for all of them (tools\Install-SystemTasks.ps1)
+try { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo 'tools\Install-SystemTasks.ps1') -ManifestDir $manifest | ForEach-Object { Say "  $_" } }
+catch { Say "  note  system helpers not installed: $($_.Exception.Message) - Set up this PC asks again" }
+
 # 5. Set up this PC
 Start-Process (Join-Path $root 'AmPanel.exe') -ArgumentList 'setup' -WorkingDirectory $root
 Say ''

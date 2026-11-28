@@ -47,14 +47,23 @@ Contents:
    - builds the **Tools** menu;
    - opens **Set up this PC**.
 
-### Optional: let ArcadeMaster recover a stuck graphics driver (one admin click)
+### System helpers (one admin click)
 
-Some games can leave the graphics driver stuck when they quit (black screens, Alt+Tab does nothing). ArcadeMaster can
-reset the driver by itself, but setting that up needs one Windows admin approval. Open PowerShell and run:
+Two small helpers need Windows admin rights once. **Install.ps1** and **Set up this PC** set them up for you: Windows
+asks once (click **Yes**), and both are installed together.
+- **ArcadeMaster GPU Reset:** some games leave the graphics driver stuck when they quit (black screens, Alt+Tab does
+  nothing). The watchdog resets the driver by itself (section 7).
+- **ArcadeMaster USB Heal:** a touch screen, light board or pad that drops off USB ("Device Descriptor Request
+  Failed") is removed and Windows scans for hardware again, at start-up and every 2 minutes. The log is
+  `manifest\usb-heal.log`.
+
+If you clicked **No**, the health check shows "System helpers: not installed" and Set up this PC asks again. To set them
+up by hand:
 ```
-Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File C:\ArcadeMaster\repo\tools\Install-GpuReset.ps1'
+powershell -ExecutionPolicy Bypass -File C:\ArcadeMaster\repo\tools\Install-SystemTasks.ps1 -ManifestDir C:\ArcadeMaster\manifest
 ```
-Click **Yes**. This adds a scheduled task called "ArcadeMaster GPU Reset" (see section 7).
+An update that brings a new helper works the same way: the health check lists it as waiting, and the next Set up this
+PC installs it.
 
 ## 3. Set up this PC
 
@@ -287,13 +296,14 @@ python C:\ArcadeMaster\repo\tools\Move-OffRetroBat.py --retrobat <RetroBat folde
 
 - **Frontend watchdog:** AmPanel watches the frontend in the menus. If it stops answering for 25 seconds, AmPanel:
   1. stops it;
-  2. resets the graphics driver, if you approved the GPU reset task (section 2);
+  2. resets the graphics driver, if the GPU reset helper is installed (section 2);
   3. starts it again.
 
   It does this at most twice in 10 minutes, then leaves it and logs "restart the PC".
 - **Theme safety:** a new theme that isn't confirmed goes back to the last one that worked.
 - **Self-heal:** a game that fails because of incomplete ROM files is repaired from a complete copy elsewhere on your
   drives, where one exists. The log is `manifest\rom-repairs.log`.
+- **USB heal:** a USB device that fails is removed and found again every 2 minutes (section 2).
 - **Backups:** every settings file ArcadeMaster changes is kept once as `<file>.am-bak`.
 
 ## 8. Troubleshooting
@@ -313,7 +323,8 @@ Logs are all in `C:\ArcadeMaster\manifest\`:
 - `launcher.log`: start-up and updates;
 - `first-run.log`: Set up this PC;
 - `release-update.log`: updates;
-- `content-refresh.log`: art.
+- `content-refresh.log`: art;
+- `usb-heal.log`: USB devices brought back.
 
 ## 9. Uninstall
 
@@ -321,7 +332,7 @@ Logs are all in `C:\ArcadeMaster\manifest\`:
 2. Run `C:\ArcadeMaster\repo\tools\Move-OffRetroBat.py ... --undo` (section 5.12) to remove the folder links. This
    leaves your other frontend's files exactly where they were.
 3. Delete `C:\ArcadeMaster`, and `ArcadeMaster.lnk` from your Startup folder.
-4. If you installed it, remove the "ArcadeMaster GPU Reset" task in Task Scheduler.
+4. Remove the "ArcadeMaster GPU Reset" and "ArcadeMaster USB Heal" tasks in Task Scheduler.
 
 > **Do step 2 before step 3.** Deleting the folder while the folder links are still there could delete the real
 > emulators, BIOS files and saves they point to.

@@ -58,7 +58,7 @@ function Add-Result([string]$id, [string]$label, [string]$state, [string]$detail
 }
 $fix = -not $NoFix
 $cab = $null; $cf = Join-Path $ManifestDir 'cabinet.json'; if (Test-Path $cf) { $cab = Get-Content $cf -Raw | ConvertFrom-Json }
-$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; ffbdriver = 'Wheel force feedback driver'; ghub = 'Logitech G HUB'; gpu = 'Graphics driver'; emulators = 'Emulator versions'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
+$checks = [ordered]@{ runtime = 'RetroFE runtime'; settings = 'Settings'; controls = 'Controls file'; screens = 'Second-screen layouts'; menu = 'Main menu'; launchers = 'Launchers'; games = 'Games that can start'; pedals = 'Pedals in TeknoParrot games'; wheel = 'Wheel bindings in TeknoParrot games'; updates = 'Automatic updates'; system = 'System helpers'; tactile = 'Bass shakers'; crashes = 'Games that crashed'; ffbdriver = 'Wheel force feedback driver'; ghub = 'Logitech G HUB'; gpu = 'Graphics driver'; emulators = 'Emulator versions'; previews = 'Game preview videos'; panel = 'Control panel keys'; logs = 'Logs'; disk = 'Disk space'; art = 'Intro + Tools art' }
 foreach ($k in $checks.Keys) { Emit @{ type = 'step'; id = $k; label = $checks[$k]; status = 'pending' } }
 
 # runtime
@@ -412,6 +412,16 @@ else {
   elseif ($uDid) { Add-Result 'updates' $checks.updates 'FIXED' ($uDid -join '; ') }
   else { Add-Result 'updates' $checks.updates 'OK' "every 15 min; RetroFE build $buildTxt" }
 }
+# system: the admin-only helpers (GPU reset, USB self-heal ... tools\Install-SystemTasks.ps1). Only shown - installing
+# needs admin rights, so "Set up this PC" or the script itself does it (one prompt). An update that brings a new helper
+# shows up here as waiting.
+Emit @{ type = 'step'; id = 'system'; label = $checks.system; status = 'run' }
+try {
+  $sj = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Install-SystemTasks.ps1') -ManifestDir $ManifestDir -Check | Out-String | ConvertFrom-Json
+  $sw = @($sj.items | Where-Object { @($sj.waiting) -contains $_.id } | ForEach-Object { $_.task })
+  if ($sw.Count) { Add-Result 'system' $checks.system 'WARN' ("not installed or out of date: $($sw -join ', ') - tray > Set up this PC (asks for admin once)") }
+  else { Add-Result 'system' $checks.system 'OK' (@($sj.items | ForEach-Object { $_.task }) -join ', ') }
+} catch { Add-Result 'system' $checks.system 'WARN' "could not check: $($_.Exception.Message)" }
 # tactile: when the bass shakers are switched on (Tools > Bass Shakers, manifest\tactile.json) the game sound goes
 # through VoiceMeeter. After a restart VoiceMeeter may not be running - then no game has sound at all - so it is started
 # again; a missing shaker card is reported (unplugged).
