@@ -1,0 +1,15 @@
+{
+ "_comment": "The standard arcade-encoder keyboard layout (Ultimarc I-PAC / MAME defaults) for a PC whose panel ArcadeMaster has not learned (no LEDBlinky map). tools/Invoke-FirstRun.ps1 copies it to <manifest>\\panel.json only when there is none. Player 1's stick = the arrow keys, player 2's = R F D G.",
+ "players": [
+  {
+   "position": "P1", "buttons": 8, "rows": 2, "cols": 4, "start": true, "coin": true,
+   "keys": { "P1B1": "LCONTROL", "P1B2": "LALT", "P1B3": "SPACE", "P1B4": "LSHIFT", "P1B5": "Z", "P1B6": "X",
+             "P1B7": "C", "P1B8": "V", "P1START": "1", "P1COIN": "5" }
+  },
+  {
+   "position": "P2", "buttons": 8, "rows": 2, "cols": 4, "start": true, "coin": true,
+   "keys": { "P2B1": "A", "P2B2": "S", "P2B3": "Q", "P2B4": "W", "P2B5": "I", "P2B6": "K", "P2B7": "J",
+             "P2B8": "L", "P2START": "2", "P2COIN": "6" }
+  }
+ ]
+}

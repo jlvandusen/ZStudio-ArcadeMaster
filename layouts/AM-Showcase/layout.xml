@@ -1,0 +1,184 @@
+<!--
+  AM-Showcase - GAME LIST (c) The Real Z Studios - art: tools/New-ArcadeThemes.py
+  A stage: two light beams sweep over the game's own drifting fanart, the video glows in a double neon frame
+  with a glint passing over it, the logo drops in, the box art fans out on a lit floor. KEYS: the row is sideways
+  but the menu is vertical (UP / DOWN = previous / next box), LEFT / RIGHT = playlists.
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+  <sound type="select"    src="sounds/select.wav"/>
+  <sound type="highlight" src="sounds/highlight.wav"/>
+  <sound type="load"      src="sounds/load.wav"/>
+  <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="am_backdrop" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".5"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set><set duration="16"><animate type="width" to="2060" algorithm="easeInOutSine"/><animate type="height" to="1159" algorithm="easeInOutSine"/></set><set duration="16"><animate type="width" to="1920" algorithm="easeInOutSine"/><animate type="height" to="1080" algorithm="easeInOutSine"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set><set duration="14"><animate type="width" to="2090" algorithm="easeInOutSine"/><animate type="height" to="1176" algorithm="easeInOutSine"/><animate type="x" to="900" algorithm="easeInOutSine"/><animate type="y" to="520" algorithm="easeInOutSine"/></set><set duration="14"><animate type="width" to="1932" algorithm="easeInOutSine"/><animate type="height" to="1087" algorithm="easeInOutSine"/><animate type="x" to="1000" algorithm="easeInOutSine"/><animate type="y" to="550" algorithm="easeInOutSine"/></set><set duration="10"><animate type="width" to="2040" algorithm="easeInOutSine"/><animate type="height" to="1148" algorithm="easeInOutSine"/><animate type="x" to="960" algorithm="easeInOutSine"/><animate type="y" to="540" algorithm="easeInOutSine"/></set></onMenuIdle>
+    <onGameEnter><set duration="1.2"><animate type="width" to="2600" algorithm="easeInCubic"/><animate type="height" to="1463" algorithm="easeInCubic"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/><animate type="y" to="540"/></set></onGameExit>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="images/shw_shade.png" x="0" y="0" width="1920" height="1080" alpha="1" layer="2"/>
+  <image src="images/shw_beam.png" x="330" y="-40" xOrigin="center" yOrigin="top" width="720" height="1300" angle="14" alpha=".75" layer="3">
+    <onIdle><set duration="7"><animate type="angle" to="-8" algorithm="easeInOutSine"/></set><set duration="7"><animate type="angle" to="14" algorithm="easeInOutSine"/></set></onIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="1"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".8"><animate type="alpha" to=".75" algorithm="easeOutCubic"/></set></onMenuIdle>
+  </image>
+  <image src="images/shw_beam2.png" x="1800" y="-40" xOrigin="center" yOrigin="top" width="720" height="1300" angle="-14" alpha=".75" layer="3">
+    <onIdle><set duration="7"><animate type="angle" to="8" algorithm="easeInOutSine"/></set><set duration="7"><animate type="angle" to="-14" algorithm="easeInOutSine"/></set></onIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="1"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".8"><animate type="alpha" to=".75" algorithm="easeOutCubic"/></set></onMenuIdle>
+  </image>
+  <image src="images/shw_spark.png" x="160" y="1000" xOrigin="center" yOrigin="center" width="30" height="30" alpha="0" layer="4">
+    <onIdle><set duration="0"><animate type="nop"/></set><set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="1000" to="897"/></set><set duration="7"><animate type="y" to="380" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>
+  </image>
+  <image src="images/shw_spark.png" x="760" y="1040" xOrigin="center" yOrigin="center" width="22" height="22" alpha="0" layer="4">
+    <onIdle><set duration="2.5"><animate type="nop"/></set><set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="1040" to="917"/></set><set duration="8"><animate type="y" to="300" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>
+  </image>
+  <image src="images/shw_spark.png" x="1300" y="1000" xOrigin="center" yOrigin="center" width="26" height="26" alpha="0" layer="4">
+    <onIdle><set duration="1.2"><animate type="nop"/></set><set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="1000" to="904"/></set><set duration="6.5"><animate type="y" to="420" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>
+  </image>
+  <image src="images/shw_spark.png" x="1700" y="1040" xOrigin="center" yOrigin="center" width="34" height="34" alpha="0" layer="4">
+    <onIdle><set duration="3.6"><animate type="nop"/></set><set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="1040" to="910"/></set><set duration="9"><animate type="y" to="260" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>
+  </image>
+  <image src="images/shw_spark.png" x="1880" y="980" xOrigin="center" yOrigin="center" width="20" height="20" alpha="0" layer="4">
+    <onIdle><set duration="5"><animate type="nop"/></set><set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="980" to="900"/></set><set duration="7.5"><animate type="y" to="500" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>
+  </image>
+  <image src="images/shw_spark.png" x="420" y="1030" xOrigin="center" yOrigin="center" width="18" height="18" alpha="0" layer="4">
+    <onIdle><set duration="4.4"><animate type="nop"/></set><set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="1030" to="945"/></set><set duration="6"><animate type="y" to="520" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>
+  </image>
+  <image src="images/shw_frame.png" x="1060" y="420" xOrigin="center" yOrigin="center" width="1130" height="675" alpha="1" layer="6"/>
+  <reloadableVideo type="am_video" imageType="logo" menuScrollReload="true" x="1060" y="420" xOrigin="center" yOrigin="center" width="1040" maxHeight="585" alpha="0" layer="5">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="width" to="1140"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="1040" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onGameExit><set duration=".3"><animate type="alpha" to="1"/></set></onGameExit>
+  </reloadableVideo>
+  <image src="images/shw_glint.png" x="390" y="420" xOrigin="center" yOrigin="center" width="540" height="960" alpha="0" layer="7">
+    <onIdle><set duration="2.5"><animate type="nop"/></set><set duration=".01"><animate type="x" to="390"/><animate type="alpha" to=".55"/></set><set duration="1.1"><animate type="x" to="1730" algorithm="easeInOutSine"/></set><set duration=".01"><animate type="alpha" to="0"/></set><set duration="4"><animate type="nop"/></set></onIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+  </image>
+  <image src="images/black.png" x="1060" y="420" xOrigin="center" yOrigin="center" width="1040" height="585" alpha="0" layer="8">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="8"><animate type="nop"/></set><set duration=".6"><animate type="alpha" to=".84" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </image>
+  <reloadableScrollingText type="am_story" menuScrollReload="true" x="580" y="158" width="960" height="525" fontSize="28" loadFontSize="28" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="16" startPosition="0" startTime="10" endTime="5" alpha="0" layer="9">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="8.2"><animate type="nop"/></set><set duration=".6"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableScrollingText>
+  <reloadableImage type="am_hint" x="1060" y="188" xOrigin="center" yOrigin="center" width="900" height="85" alpha="0" layer="17">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="y" to="188"/></set></onMenuScroll>
+    <onMenuIdle><set duration="1.1"><animate type="nop"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="198" algorithm="easeOutBounce"/></set></onMenuIdle>
+    <onIdle><set duration="1.2"><animate type="alpha" to=".8" algorithm="easeInOutSine"/></set><set duration="1.2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set></onIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableText type="title" menuScrollReload="true" x="1060" y="785" xOrigin="center" yOrigin="center" fontSize="34" loadFontSize="34" fontColor="ffffff" alpha="0" layer="10">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <image src="images/shw_info.png" x="255" y="420" xOrigin="center" yOrigin="center" width="430" height="400" alpha="1" layer="7"/>
+  <reloadableImage type="logo" x="255" y="170" xOrigin="center" yOrigin="center" width="390" maxHeight="170" alpha="0" layer="9">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="y" to="110"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".15"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="250" algorithm="easeOutBounce"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableText type="year" menuScrollReload="true" x="255" y="390" xOrigin="center" yOrigin="center" fontSize="64" loadFontSize="64" fontColor="ffe259" alpha="0" layer="9">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="255" y="460" xOrigin="center" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="2ec8ff" alpha="0" layer="9">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <reloadableText type="genre" menuScrollReload="true" x="255" y="515" xOrigin="center" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="c9ced8" alpha="0" layer="9">
+    <onMenuIdle><set duration=".2"><animate type="alpha" to="1"/></set></onMenuIdle>
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableText>
+  <reloadableImage type="playlist" mode="commonlayout" x="300" y="40" xOrigin="center" yOrigin="center" width="520" height="54" alpha="1" layer="11">
+    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="300" y="92" xOrigin="center" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <reloadableText type="am_breadcrumb" x="600" y="40" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="e6e9f0" alpha=".95" layer="11"/>
+  <text value="&lt; BACK" x="48" y="89" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="ff2fa0" alpha=".9" layer="11"/>
+  <text value="&lt; &gt;  FILTERS" x="552" y="89" xOrigin="right" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="2ec8ff" alpha=".9" layer="11"/>
+  <image src="images/touch_hit.png" touchAction="back" x="40" y="71" width="130" height="40" layer="12"/>
+  <image src="images/touch_hit.png" touchAction="prevPlaylist" x="40" y="13" width="110" height="54" layer="12"/>
+  <image src="images/touch_hit.png" touchAction="nextPlaylist" x="450" y="13" width="110" height="54" layer="12"/>
+  <image src="images/shw_rail.png" x="0" y="812" width="1920" height="16" alpha="1" layer="4"/>
+  <image src="images/shw_floor.png" x="560" y="1010" xOrigin="center" yOrigin="center" width="1300" height="240" alpha=".85" layer="4">
+    <onIdle><set duration="2.2"><animate type="alpha" to=".55" algorithm="easeInOutSine"/></set><set duration="2.2"><animate type="alpha" to=".85" algorithm="easeInOutSine"/></set></onIdle>
+  </image>
+  <image src="images/shw_sel.png" x="560" y="930" xOrigin="center" yOrigin="center" width="440" height="440" alpha=".8" layer="5">
+    <onMenuScroll><set duration=".05"><animate type="width" to="500"/><animate type="height" to="500"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="width" to="440" algorithm="easeOutCubic"/><animate type="height" to="440" algorithm="easeOutCubic"/></set></onMenuIdle>
+  </image>
+  <menu type="custom" imageType="cover" scrollTime=".18" scrollAcceleration=".04" minScrollTime=".06" orientation="vertical">
+    <itemDefaults x="560" y="930" xOrigin="center" yOrigin="center" width="175" maxHeight="205" alpha="0" layer="10" fontColor="ffffff" fontSize="26" loadFontSize="26"/>
+    <item xOffset="-600" yOffset="42" angle="-16" width="120" maxHeight="140" alpha="0" layer="10"/>
+    <item xOffset="-490" yOffset="36" angle="-14" width="130" maxHeight="150" alpha="0.35" layer="11"/>
+    <item xOffset="-360" yOffset="26" angle="-10" width="150" maxHeight="175" alpha="0.6" layer="12"/>
+    <item xOffset="-200" yOffset="14" angle="-6" width="175" maxHeight="205" alpha="0.85" layer="13"/>
+    <item selected="true" xOffset="0" yOffset="0" angle="0" width="230" maxHeight="260" alpha="1" layer="14"/>
+    <item xOffset="200" yOffset="14" angle="6" width="175" maxHeight="205" alpha="0.85" layer="13"/>
+    <item xOffset="360" yOffset="26" angle="10" width="150" maxHeight="175" alpha="0.6" layer="12"/>
+    <item xOffset="490" yOffset="36" angle="14" width="130" maxHeight="150" alpha="0.35" layer="11"/>
+    <item xOffset="600" yOffset="42" angle="16" width="120" maxHeight="140" alpha="0" layer="10"/>
+  </menu>
+  <reloadableImage type="am_controls" x="1490" y="935" xOrigin="center" yOrigin="center" width="760" height="207" alpha="0" layer="12">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".9"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="am_burst" mode="systemlayout" x="center" y="center" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="15">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to=".55"/><animate type="width" to="2200"/><animate type="height" to="1238"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0" algorithm="easeOutCubic"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onMenuIdle>
+    <onGameEnter><set duration=".8"><animate type="alpha" to="1"/><animate type="width" to="3000"/><animate type="height" to="1688"/></set></onGameEnter>
+    <onGameExit><set duration=".3"><animate type="alpha" to="0"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onGameExit>
+  </reloadableImage>
+  <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".4" layer="16"/>
+  <image src="images/fx_sweep.png" x="0" y="-160" width="1920" height="160" alpha="0" layer="18">
+    <onGameEnter><set duration=".01"><animate type="alpha" to="1"/><animate type="y" to="-160"/></set><set duration=".42"><animate type="y" to="1080" algorithm="easeInQuadratic"/></set><set duration=".01"><animate type="alpha" to="0"/></set></onGameEnter>
+  </image>
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">
+    <onGameEnter><set duration=".35"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>
+  </image>
+  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="19">
+    <onGameEnter><set duration=".55"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to=".55" algorithm="easeOutCubic"/><animate type="width" to="1960"/><animate type="height" to="1103"/></set><set duration="1.6"><animate type="width" to="2060" algorithm="easeInOutSine"/><animate type="height" to="1159" algorithm="easeInOutSine"/></set></onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onGameExit>
+  </reloadableImage>
+  <reloadableImage type="logo" x="center" y="400" xOrigin="center" yOrigin="center" width="600" maxHeight="340" alpha="0" layer="19">
+    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="900" algorithm="easeOutCubic"/></set><set duration="2.2"><animate type="nop"/></set></onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="600"/></set></onGameExit>
+  </reloadableImage>
+  <reloadableImage type="am_controls" x="960" y="840" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="19">
+    <onGameEnter><set duration=".8"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" from="880" to="840" algorithm="easeOutCubic"/></set></onGameEnter>
+    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>
+  </reloadableImage>
+  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="19">
+    <onMenuExit><set duration=".12"><animate type="alpha" to=".7"/></set></onMenuExit>
+    <onExit><set duration=".12"><animate type="alpha" to=".7"/></set></onExit>
+    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>
+    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>
+  </image>
+  <text value="LOADING - PLEASE WAIT" x="960" y="540" xOrigin="center" yOrigin="center" fontSize="64" loadFontSize="64" fontColor="ffe259" alpha="0" layer="19">
+    <onMenuExit><set duration=".12"><animate type="alpha" to="1"/></set></onMenuExit>
+    <onExit><set duration=".12"><animate type="alpha" to="1"/></set></onExit>
+    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>
+    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>
+  </text>
+</layout>

@@ -69,6 +69,30 @@ def system_key(retrofe, coll):
     return NAME_KEY.get(coll.lower())
 
 
+_PADS = None
+
+
+def own_pad(key):
+    """our own picture of the controller this console came with (tools/pads, layouts/ArcadeMaster/images/pads) or ''.
+    It ships with the release, so a PC without RetroBat's RELOAD theme still gets a controller on the card."""
+    global _PADS
+    here = os.path.dirname(os.path.abspath(__file__))
+    if _PADS is None:
+        try:
+            import json
+            _PADS = json.load(open(os.path.join(here, "pads", "pads.json"), encoding="utf-8"))["families"]
+        except Exception:
+            _PADS = {}
+    best = None
+    for fam, f in _PADS.items():
+        like = f.get("like", [])
+        if key in like and (best is None or like.index(key) < best[0]):
+            best = (like.index(key), fam)
+    if not best:
+        return ""
+    p = os.path.join(os.path.dirname(here), "layouts", "ArcadeMaster", "images", "pads", "pad_%s.png" % best[1])
+    return p if os.path.exists(p) else ""
+
 def card(title, controller, key, dst):
     W, H, S = 1100, 300, 2
     im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
@@ -86,7 +110,12 @@ def card(title, controller, key, dst):
         c = c.resize((max(1, round(c.width * k)), max(1, round(c.height * k))), Image.LANCZOS)
         im.alpha_composite(c, (x0 + (330 * S - c.width) // 2, (H * S - c.height) // 2))
         x0 += 360 * S
-    d.text((x0, 26 * S), "HOW TO PLAY  " + title.upper(), font=font(30 * S), fill=(255, 255, 255, 255))
+    # the title shrinks to fit ("SUPER NINTENDO ENTERTAINMENT SYSTEM" was cut off at 30 px)
+    head = "HOW TO PLAY  " + title.upper()
+    size = 30
+    while size > 16 and d.textlength(head, font=font(size * S)) > W * S - x0 - 30 * S:
+        size -= 1
+    d.text((x0, (26 + (30 - size) // 2) * S), head, font=font(size * S), fill=(255, 255, 255, 255))
     names = NATIVE.get(key)
     rows = [(panel, (names or GENERIC).get(pad)) for pad, panel in PANEL]
     rows = [(p, n) for p, n in rows if n]
@@ -127,7 +156,7 @@ def main():
     cols = os.path.join(a.retrofe, "collections")
     menu = os.path.join(cols, "Main", "menu.txt")
     makers = [l.strip() for l in open(menu, encoding="utf-8", errors="replace")] if os.path.exists(menu) else []
-    done, sure, lists = 0, 0, 0
+    done, sure, lists, marquees = 0, 0, 0, 0
     for maker in makers:
         mt = os.path.join(cols, maker, "menu.txt")
         if not maker or not os.path.exists(mt):
@@ -141,6 +170,8 @@ def main():
             ctrl = os.path.join(theme, "controls", key + ".png") if theme else ""
             if not os.path.exists(ctrl):
                 ctrl = os.path.join(own, "device.png")
+            if not os.path.exists(ctrl):          # no RELOAD art, no picture of the system's own: our drawn controller
+                ctrl = own_pad(key)
             title = re.sub(r"\s*\(RetroBat\)", "", coll)
             dst = os.path.join(art, "am_controls", coll + ".png")
             if a.force or not os.path.exists(dst):
@@ -161,6 +192,15 @@ def main():
             bdst = os.path.join(art, "am_backdrop", coll + ".jpg")
             if os.path.exists(bg) and (a.force or not os.path.exists(bdst)):
                 backdrop(bg, bdst)
+            # a system has no marquee of its own: its menu tile (the logo, "GAME BOY - 61 GAMES") is its marquee, so a
+            # theme that shows marquees (Arcade Hall's marquee stack and cabinet window, Cabinet) is never empty in a
+            # maker menu (2026-11-27). A marquee already there is kept.
+            logo, mq = os.path.join(art, "logo", coll + ".png"), os.path.join(art, "marquee", coll + ".png")
+            if os.path.exists(logo) and not os.path.exists(mq):
+                os.makedirs(os.path.dirname(mq), exist_ok=True)
+                shutil.copy2(logo, mq)
+                marquees += 1
+    print("system cards: %d system marquees from their tiles" % marquees)
     print("system cards: %d written (%d with the console's own button names), %d game lists show theirs" % (done, sure, lists))
 
 

@@ -327,6 +327,7 @@ static class AmPanel
     // a SEARCH pill on the touch screen while the menus are up; it opens the search page. Needs RetroFE's cabinet link
     // (settings.conf linkEvents = yes) to jump, and <manifest>\search-index.json (tools/New-SearchIndex.py).
     static GameLink gameLink;
+    static bool pendingSetup;   // "AmPanel.exe setup" before the tray window existed
     // the selected game's own list (a merged list's items keep theirs), for its system's button lights
     static string GameList() { return gameLink == null ? null : (gameLink.SelectedCollection ?? gameLink.Menu); }
     static SearchIndex searchIndex;
@@ -536,6 +537,13 @@ static class AmPanel
                 case "15": if (arg1 != null) State["selected"] = arg1; what = "light game controls"; break;
                 case "16": State["paused"] = true; what = "game pause"; break;
                 case "17": State["paused"] = false; what = "game unpause"; break;
+                // "AmPanel.exe setup": the release's Install.ps1 ends by opening Set up this PC (SetupWizard.cs)
+                case "setup":
+                    what = "setup wizard";
+                    if (ui != null && toolsDir != null && retroFERoot != null)
+                        ui.BeginInvoke((MethodInvoker)delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });
+                    else pendingSetup = true;   // a fresh start: the tray window comes later (RunTray)
+                    break;
                 default:
                     if (c.EndsWith(".lwax", StringComparison.OrdinalIgnoreCase)) { State["animation"] = c; what = "animation start"; }
                     // a main-menu entry (EXIT, CORE's cmd) is not a game: RetroFE "starts" it from the Main collection. As a
@@ -980,6 +988,8 @@ static class AmPanel
             catch (Exception e) { Log("reactive: not started - " + e.Message); }
         }
         ui = new Control(); ui.CreateControl(); var unused = ui.Handle;   // the tray thread's window: Invoke target
+        if (pendingSetup && toolsDir != null && retroFERoot != null)
+            ui.BeginInvoke((MethodInvoker)delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });
         StartSearch();
         if (!exitKey.Equals("none", StringComparison.OrdinalIgnoreCase))
         {
@@ -1065,9 +1075,47 @@ static class AmPanel
             }
             catch (Exception e) { Log("devices: listener not started - " + e.Message); }
         }
+        // the frontend watchdog (FrontendWatchdog.cs): a RetroFE that stops answering in the menus is restarted, with a
+        // graphics driver reset when the elevated task is installed
+        var watchdog = new System.Windows.Forms.Timer { Interval = 5000 };
+        watchdog.Tick += delegate {
+            bool playing; lock (Gate) playing = State.ContainsKey("playing") && State["playing"] is bool && (bool)State["playing"];
+            FrontendWatchdog.Tick(playing, AppDomain.CurrentDomain.BaseDirectory, Log);
+        };
+        watchdog.Start();
         try { var ico = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AmPanel.ico"); if (File.Exists(ico)) tray.Icon = new Icon(ico); } catch { }
         var menu = new ContextMenuStrip();
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
+        if (toolsDir != null && retroFERoot != null)
+            menu.Items.Add("Set up this PC...", null, delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });   // first run (SetupWizard.cs)
+        if (toolsDir != null && retroFERoot != null)
+            menu.Items.Add("Import a folder...", null, delegate {
+                // an emulator, a system's games or a folder of systems (tools\Import-Folder.py via Invoke-FirstRun -ImportFolder)
+                using (var fb = new FolderBrowserDialog { Description = "Pick a folder to import: an emulator, a system's games, or a folder of systems", ShowNewFolderButton = false })
+                    if (fb.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(fb.SelectedPath))
+                        new SetupWizard(toolsDir, retroFERoot, manifestDir, fb.SelectedPath).Show();
+            });
+        if (toolsDir != null)
+            menu.Items.Add("Check for updates...", null, delegate {
+                // a release install asks GitHub (tools\Update-Release.ps1 -Check); the update itself installs when ArcadeMaster
+                // next starts, before the frontend opens. A git install updates through git at every start.
+                string script = Path.Combine(toolsDir, "Update-Release.ps1"), root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+                string msg;
+                if (Directory.Exists(Path.Combine(Path.GetDirectoryName(toolsDir), ".git"))) msg = "This cabinet runs from a git copy of ArcadeMaster: it updates from GitHub every time it starts.";
+                else if (!File.Exists(script)) msg = "Update tool not found: " + script;
+                else
+                {
+                    try
+                    {
+                        var p = Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\" -Root \"" + root + "\" -ManifestDir \"" + manifestDir + "\" -Check")
+                            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true });
+                        string o = p.StandardOutput.ReadToEnd(); p.WaitForExit(60000);
+                        var lines = o.Trim().Split('\n'); msg = lines[lines.Length - 1].Trim();
+                    }
+                    catch (Exception ex) { msg = "Update check failed: " + ex.Message; }
+                }
+                MessageBox.Show(msg, "ArcadeMaster updates");
+            });
         if (leds != null)
             menu.Items.Add("Buttons (which light is which)...", null, delegate { OpenButtons(); });
         if (leds != null)

@@ -1,0 +1,173 @@
+<!--
+  COCKPIT - game list (c) The Real Z Studios. ArcadeMaster game list view: cockpit  (tools/Set-GameListView.ps1)
+  James, 2026-11-27, from the first round of theme mock-ups. You sit in the car: the chosen game's backdrop is the view
+  ahead, its preview plays in the windscreen, the games pass as a row of logos under it, and the dash across the bottom
+  is the default theme's own speedo, rev counter and real wheel (they move with the wheel and pedals).
+  Stop on a game and its controls card comes up over the dash. UP / DOWN games, LEFT / RIGHT filters.
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+  <sound type="select"    src="../../../sounds/select.wav"/>
+  <sound type="highlight" src="../../../sounds/highlight.wav"/>
+  <sound type="load"      src="../../../sounds/load.wav"/>
+
+  <!-- the view ahead -->
+  <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".5"><animate type="alpha" to=".85" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="fanart" x="0" y="0" width="1920" height="1080" alpha="0" layer="2">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".5"><animate type="alpha" to=".85" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="../../../images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".55" layer="3"/>
+
+  <!-- the windscreen: the chosen game's preview -->
+  <image src="../../../images/ui_video_frame.png" x="960" y="345" xOrigin="center" yOrigin="center" width="860" height="500" alpha="1" layer="5"/>
+  <reloadableVideo type="am_video" imageType="logo" x="960" y="345" xOrigin="center" yOrigin="center" width="814" maxHeight="458" alpha="0" layer="6">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".35"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+  </reloadableVideo>
+
+  <!-- the games, a row of logos on the road ahead -->
+  <menu type="custom" menuIndex="0" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
+    <itemDefaults x="960" y="668" xOrigin="center" yOrigin="center" width="240" maxHeight="90" alpha="0" layer="10" fontColor="ffffff" fontSize="30" loadFontSize="30"/>
+    <item xOffset="-1150" yOffset="0" width="240" maxHeight="90" alpha="0"/>
+    <item xOffset="-640" yOffset="0" width="240" maxHeight="90" alpha=".55"/>
+    <item xOffset="-350" yOffset="0" width="240" maxHeight="90" alpha=".8"/>
+    <item selected="true" xOffset="0" yOffset="0" width="400" maxHeight="130" alpha="1" layer="12"/>
+    <item xOffset="350" yOffset="0" width="240" maxHeight="90" alpha=".8"/>
+    <item xOffset="640" yOffset="0" width="240" maxHeight="90" alpha=".55"/>
+    <item xOffset="1150" yOffset="0" width="240" maxHeight="90" alpha="0"/>
+  </menu>
+
+  <!-- filter box, where you are, how to move: the same as the default theme -->
+  <reloadableImage type="playlist" mode="commonlayout" x="400" y="34" xOrigin="center" yOrigin="center" width="600" height="58" alpha="1" layer="11">
+    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="400" y="82" xOrigin="center" yOrigin="center" fontSize="24" loadFontSize="24" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <text value="&lt; BACK" x="110" y="82" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="ff2fa0" alpha=".9" layer="11"/>
+  <text value="&lt; &gt;  FILTERS" x="560" y="82" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="2ec8ff" alpha=".9" layer="11"/>
+  <reloadableText type="am_breadcrumb" x="1880" y="34" xOrigin="right" yOrigin="center" fontSize="28" loadFontSize="28" fontColor="e6e9f0" alpha=".95" layer="11"/>
+
+  <!-- the dash: the default theme's own instrument cluster, moved into place -->
+  <image src="../../../images/am-views/cockpit_dash.png" x="0" y="730" width="1920" height="350" alpha="1" layer="8"/>
+  <!-- plain dials under the cabinet's own: a list without gauge pictures (a cabinet with no wheel) still has a dash -->
+  <image src="../../../images/racing_speedo_face.png" x="300" y="900" xOrigin="center" yOrigin="center" width="280" height="280" alpha=".9" layer="9"/>
+  <image src="../../../images/racing_tacho_face.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" alpha=".9" layer="9"/>
+  <reloadableText type="title" menuScrollReload="true" x="960" y="1058" xOrigin="center" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alpha="1" layer="13"/>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="60" y="1052" xOrigin="left" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="2ec8ff" alpha="1" layer="13"/>
+  <reloadableText type="year" menuScrollReload="true" x="1860" y="1052" xOrigin="right" yOrigin="center" fontSize="26" loadFontSize="26" fontColor="ffb000" alpha="1" layer="13"/>
+  <!-- gauge 1: speedo (racing) / attitude indicator (flight) / target (lightgun) -->
+  <reloadableImage type="am_gauge_under" mode="systemlayout" x="300" y="900" xOrigin="center" yOrigin="center" width="258" height="258" layer="11">
+    <!-- flight horizon: roll = angle, pitch = y -->
+    <onMenuScroll><set duration=".35"><animate type="angle" to="28" algorithm="easeOutCubic"/><animate type="y" to="940" algorithm="easeOutCubic"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration="1.6"><animate type="angle" to="-14" algorithm="easeInOutSine"/><animate type="y" to="905" algorithm="easeInOutSine"/></set>
+      <set duration="2.2"><animate type="angle" to="9" algorithm="easeInOutSine"/><animate type="y" to="930" algorithm="easeInOutSine"/></set>
+      <set duration="1.4"><animate type="angle" to="-4" algorithm="easeInOutSine"/><animate type="y" to="915" algorithm="easeInOutSine"/></set>
+      <set duration="1.8"><animate type="angle" to="16" algorithm="easeInOutSine"/><animate type="y" to="925" algorithm="easeInOutSine"/></set>
+      <set duration="1.6"><animate type="angle" to="0" algorithm="easeInOutSine"/><animate type="y" to="920" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+  <reloadableImage type="am_gauge_face" mode="systemlayout" x="300" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12">
+    <onMenuScroll><set duration=".08"><animate type="width" to="292"/><animate type="height" to="292"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".25"><animate type="width" to="280" algorithm="easeOutCubic"/><animate type="height" to="280" algorithm="easeOutCubic"/></set></onMenuIdle>
+  </reloadableImage>
+  <!-- live dash: red glow that brightens with the brake pedal -->
+  <image src="../../../images/live/live_brake_glow.png" x="300" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveAxis="2" liveFrom="32767" liveTo="-32768"/>
+  <reloadableImage type="am_gauge_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="230" liveNeedleSmooth="0.92" mode="systemlayout" x="300" y="900" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
+    <!-- speedo needle: floor it on scroll, settle into an idle flutter -->
+    <onMenuScroll><set duration=".16"><animate type="angle" to="112" algorithm="easeOutQuadratic"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".55"><animate type="angle" to="-70" algorithm="easeOutCubic"/></set>
+      <set duration=".35"><animate type="angle" to="-104" algorithm="easeOutCubic"/></set>
+      <set duration=".22"><animate type="angle" to="-92" algorithm="easeInOutSine"/></set>
+      <set duration=".28"><animate type="angle" to="-106" algorithm="easeInOutSine"/></set>
+      <set duration=".2"><animate type="angle" to="-95" algorithm="easeInOutSine"/></set>
+      <set duration="1.6"><animate type="angle" to="-100" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+
+  <!-- gauge 2: tacho (racing) / HUD reticle (flight) / target (lightgun) -->
+  <reloadableImage type="am_gauge2_face" mode="systemlayout" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12">
+    <onIdle>
+      <set duration="2"><animate type="alpha" to=".85" algorithm="easeInOutSine"/></set>
+      <set duration="2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set>
+    </onIdle>
+  </reloadableImage>
+  <!-- live dash (New-LiveDashArt): the gear the shifter is in, and a flash while a shift paddle is pulled -->
+  <image src="../../../images/live/live_gear_1.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="12"/>
+  <image src="../../../images/live/live_gear_2.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="13"/>
+  <image src="../../../images/live/live_gear_3.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="14"/>
+  <image src="../../../images/live/live_gear_4.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="15"/>
+  <image src="../../../images/live/live_gear_5.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="16"/>
+  <image src="../../../images/live/live_gear_6.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="17"/>
+  <image src="../../../images/live/live_gear_R.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="18"/>
+  <image src="../../../images/live/live_shift_up.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="4"/>
+  <image src="../../../images/live/live_shift_down.png" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" layer="12" liveDevice="wheel" liveButton="5"/>
+  <reloadableImage type="am_gauge2_over" liveNeedle="1" liveDevice="wheel" liveNeedleSpan="215" liveNeedleSmooth="0.7" mode="systemlayout" x="1620" y="900" xOrigin="center" yOrigin="center" width="280" height="280" angle="-135" layer="13">
+    <!-- tacho: bang off the limiter on scroll, drop like an upshift, then idle -->
+    <onMenuScroll><set duration=".1"><animate type="angle" to="128" algorithm="easeOutQuadratic"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".3"><animate type="angle" to="-20" algorithm="easeOutCubic"/></set>
+      <set duration=".45"><animate type="angle" to="40" algorithm="easeInOutSine"/></set>
+      <set duration=".5"><animate type="angle" to="-88" algorithm="easeOutCubic"/></set>
+      <set duration=".18"><animate type="angle" to="-80" algorithm="easeInOutSine"/></set>
+      <set duration=".22"><animate type="angle" to="-91" algorithm="easeInOutSine"/></set>
+      <set duration="1.8"><animate type="angle" to="-86" algorithm="easeInOutSine"/></set>
+    </onMenuIdle>
+  </reloadableImage>
+
+  <!-- spinner: steering wheel (racing) / yoke (flight) / crosshair (lightgun) - a real driving line, not a metronome -->
+  <reloadableImage type="am_spinner" mode="systemlayout" x="960" y="905" xOrigin="center" yOrigin="center" width="270" height="270" layer="14">
+    <onMenuScroll><set duration=".12"><animate type="angle" to="42" algorithm="easeOutQuadratic"/><animate type="y" to="892"/></set></onMenuScroll>
+    <onMenuIdle>
+      <set duration=".45"><animate type="angle" to="-9" algorithm="easeOutCubic"/><animate type="y" to="902"/></set>
+      <set duration=".3"><animate type="angle" to="0" algorithm="easeOutCubic"/><animate type="y" to="900"/></set>
+      <set duration="1.4"><animate type="angle" to="-24" algorithm="easeInOutSine"/><animate type="y" to="904"/></set>
+      <set duration=".4"><animate type="nop"/></set>
+      <set duration="1.1"><animate type="angle" to="32" algorithm="easeInOutSine"/><animate type="y" to="897"/></set>
+      <set duration=".55"><animate type="angle" to="14" algorithm="easeInOutSine"/><animate type="y" to="900"/></set>
+      <set duration="1.3"><animate type="angle" to="-58" algorithm="easeInOutQuadratic"/><animate type="y" to="906"/></set>
+      <set duration=".35"><animate type="nop"/></set>
+      <set duration=".7"><animate type="angle" to="-40" algorithm="easeInOutSine"/></set>
+      <set duration="1.6"><animate type="angle" to="0" algorithm="easeInOutSine"/><animate type="y" to="900"/></set>
+      <set duration="1.2"><animate type="nop"/></set>
+    </onMenuIdle>
+    <onGameEnter><set duration="1"><animate type="angle" to="720" algorithm="easeInCubic"/><animate type="width" to="520"/><animate type="height" to="520"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="angle" to="0" algorithm="easeOutCubic"/><animate type="width" to="330"/><animate type="height" to="330"/></set></onGameExit>
+  </reloadableImage>
+  <!-- the cabinet's real wheel (New-RealWheelArt): straight up when the wheel is centred, turns only with the wheel - no decorative swing. Empty unless the cabinet has one; am_spinner is then empty instead -->
+  <reloadableImage type="am_realwheel" mode="systemlayout" liveSteer="450" liveDevice="wheel" x="960" y="905" xOrigin="center" yOrigin="center" width="270" height="270" layer="14">
+    <onGameEnter><set duration="1"><animate type="width" to="520"/><animate type="height" to="520"/></set></onGameEnter>
+    <onGameExit><set duration=".6"><animate type="width" to="330"/><animate type="height" to="330"/></set></onGameExit>
+  </reloadableImage>
+
+  <!-- burst: speed lines (racing) / muzzle flash (lightgun) on every scroll -->
+  <reloadableImage type="am_burst" mode="systemlayout" x="center" y="center" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="15">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to=".55"/><animate type="width" to="2200"/><animate type="height" to="1238"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".45"><animate type="alpha" to="0" algorithm="easeOutCubic"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onMenuIdle>
+    <onGameEnter><set duration=".8"><animate type="alpha" to="1"/><animate type="width" to="3000"/><animate type="height" to="1688"/></set></onGameEnter>
+    <onGameExit><set duration=".3"><animate type="alpha" to="0"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onGameExit>
+  </reloadableImage>
+
+
+  <!-- stop on a game: its controls card comes up over the dash -->
+  <reloadableImage type="am_controls" x="960" y="905" xOrigin="center" yOrigin="center" width="1000" height="273" alpha="0" layer="16">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="3"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="am_controls_wheel" x="605" y="905" xOrigin="center" yOrigin="center" width="273" height="273" alpha="0" layer="16" liveDevice="wheel" liveSteer="450">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="3"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+</layout>

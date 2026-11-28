@@ -1,0 +1,89 @@
+<!--
+  PIT WALL - game list (c) The Real Z Studios. ArcadeMaster game list view: pitwall  (tools/Set-GameListView.ps1)
+  James, 2026-11-27, from the theme mock-ups. The chosen game's preview fills the whole screen. The list is a timing
+  tower down the left, like a race broadcast, with the chosen game on a bright bar. Lower right: the game's logo, its
+  maker and year; stop on a game and its controls card comes up. UP / DOWN games, LEFT / RIGHT filters.
+  Fast: one video (full screen, one size), small logos, three small pictures of our own (images/am-views/pit_*.png).
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+  <sound type="select"    src="../../../sounds/select.wav"/>
+  <sound type="highlight" src="../../../sounds/highlight.wav"/>
+  <sound type="load"      src="../../../sounds/load.wav"/>
+
+  <!-- the chosen game fills the screen: its backdrop at once, its preview video over it when you stop -->
+  <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".4"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="fanart" x="0" y="0" width="1920" height="1080" alpha="0" layer="2">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".4"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableVideo type="am_video" imageType="am_backdrop" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" maxHeight="1080" alpha="0" layer="3">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="1.2"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+  </reloadableVideo>
+  <image src="../../../images/am-views/pit_fade.png" x="0" y="560" width="1920" height="520" alpha="1" layer="4"/>
+
+  <!-- the timing tower -->
+  <image src="../../../images/am-views/pit_tower.png" x="50" y="60" width="460" height="960" alpha="1" layer="6"/>
+  <reloadableImage type="playlist" mode="commonlayout" x="280" y="104" xOrigin="center" yOrigin="center" width="420" height="41" alpha="1" layer="11">
+    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>
+  </reloadableImage>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="280" y="146" xOrigin="center" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <text value="&lt; BACK" x="80" y="146" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="ff2fa0" alpha=".9" layer="11"/>
+  <text value="&lt; &gt; FILTERS" x="368" y="146" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="2ec8ff" alpha=".9" layer="11"/>
+  <image src="../../../images/am-views/pit_sel.png" x="280" y="500" xOrigin="center" yOrigin="center" width="460" height="76" alpha="1" layer="8">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to=".55"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".15"><animate type="alpha" to="1"/></set></onMenuIdle>
+  </image>
+  <!-- the chosen game's place in the list, on the bar like a position number -->
+  <reloadableText type="collectionIndex" menuScrollReload="true" x="92" y="500" xOrigin="center" yOrigin="center" fontSize="34" loadFontSize="34" fontColor="0a0c14" alpha="1" layer="11"/>
+  <menu type="custom" menuIndex="0" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
+    <itemDefaults x="300" y="500" xOrigin="center" yOrigin="center" width="290" maxHeight="56" alpha="0" layer="10" fontColor="ffffff" fontSize="30" loadFontSize="30"/>
+    <item xOffset="0" yOffset="-304" width="290" maxHeight="56" alpha="0"/>
+    <item xOffset="0" yOffset="-228" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="-152" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="-76" width="290" maxHeight="56" alpha=".85"/>
+    <item selected="true" xOffset="0" yOffset="0" width="330" maxHeight="64" alpha="1" layer="12"/>
+    <item xOffset="0" yOffset="76" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="152" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="228" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="304" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="380" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="456" width="290" maxHeight="56" alpha=".85"/>
+    <item xOffset="0" yOffset="532" width="290" maxHeight="56" alpha="0"/>
+  </menu>
+
+  <!-- where you are -->
+  <reloadableText type="am_breadcrumb" x="1840" y="46" xOrigin="right" yOrigin="center" fontSize="28" loadFontSize="28" fontColor="e6e9f0" alpha=".95" layer="11"/>
+
+  <!-- the chosen game, lower right: logo, maker, year; they make room for the controls card -->
+  <reloadableImage type="logo" x="1500" y="700" xOrigin="center" yOrigin="center" width="640" maxHeight="230" alpha="0" layer="9">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set><set duration="2.2"><animate type="nop"/></set><set duration=".35"><animate type="y" to="560" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableText type="title" menuScrollReload="true" x="560" y="1040" xOrigin="left" yOrigin="center" fontSize="38" loadFontSize="38" fontColor="ffffff" alpha="1" layer="13"/>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="1700" y="1040" xOrigin="right" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="2ec8ff" alpha="1" layer="13"/>
+  <reloadableText type="year" menuScrollReload="true" x="1840" y="1040" xOrigin="right" yOrigin="center" fontSize="30" loadFontSize="30" fontColor="ffb000" alpha="1" layer="13"/>
+
+  <!-- stop on a game: its controls card comes up at the bottom right -->
+  <reloadableImage type="am_controls" x="1310" y="850" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="14">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="2.5"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="am_controls_wheel" x="920" y="850" xOrigin="center" yOrigin="center" width="300" height="300" alpha="0" layer="14" liveDevice="wheel" liveSteer="450">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="2.5"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+</layout>

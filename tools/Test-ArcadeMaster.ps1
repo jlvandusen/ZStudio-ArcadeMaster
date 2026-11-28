@@ -83,6 +83,25 @@ if ($git -and (Test-Path (Join-Path $repo '.git'))) {
 }
 Report 'hooks' $bad "$($hooks.Count) hooks use LF, commit check on"
 
+# ---- game list views: only pictures the release carries ----
+# A view (layouts\AM-*\gamelist.layout.xml) is copied into a list's own layout folder, so its pictures are named from
+# there (../../../). Every one must be in the repo: the theme's own (layouts\ArcadeMaster) or the view's images folder.
+# A picture that exists only on a cabinet would be a hole on a fresh install.
+$bad = @(); $lay = Join-Path $repo 'layouts'; $nViews = 0
+foreach ($vf in Get-ChildItem -LiteralPath $lay -Filter 'gamelist.layout.xml' -Recurse -File) {
+  $nViews++; $vdir = Split-Path $vf.FullName; $vt = [IO.File]::ReadAllText($vf.FullName)
+  try { [void][xml]$vt } catch { $bad += "$($vf.Directory.Name): not well-formed ($($_.Exception.Message))"; continue }
+  if ($vt -notmatch 'ArcadeMaster game list view: \w+|WALL OF GAMES - game list') { $bad += "$($vf.Directory.Name): no 'ArcadeMaster game list view: <name>' mark, so -View default could not take it away" }
+  foreach ($m in [regex]::Matches($vt, '(?:src|font)="([^"]+)"')) {
+    $p = $m.Groups[1].Value
+    if ($p -like '../../../images/am-views/*') { $q = Join-Path $vdir ('images\' + ($p -replace '^.*/am-views/', '')) }
+    elseif ($p -like '../../../*') { $q = Join-Path $lay ('ArcadeMaster\' + ($p.Substring(9) -replace '/', '\')) }
+    else { $q = Join-Path $lay ('ArcadeMaster\' + ($p -replace '/', '\')) }
+    if (-not (Test-Path -LiteralPath $q)) { $bad += "$($vf.Directory.Name): $p is not in the repo" }
+  }
+}
+Report 'views' $bad "$nViews game list views use only pictures and fonts that are in the repo"
+
 if ($Watchdog) {
   $t = Join-Path $env:TEMP ("am-selftest-{0}" -f [guid]::NewGuid().ToString('N').Substring(0, 8))
   $problems = @()
@@ -155,7 +174,7 @@ if ($Watchdog) {
 
 if ($Cabinet) {
   $problems = @(); $cfg = $null
-  foreach ($cf in 'R:\ArcadeMaster\ArcadeMaster.config.json', 'D:\ArcadeMaster\ArcadeMaster.config.json', 'C:\ArcadeMaster\ArcadeMaster.config.json') { if (Test-Path $cf) { $cfg = Get-Content $cf -Raw | ConvertFrom-Json; break } }
+  foreach ($cf in (Join-Path (Split-Path (Split-Path $PSScriptRoot)) 'ArcadeMaster.config.json'), 'R:\ArcadeMaster\ArcadeMaster.config.json', 'D:\ArcadeMaster\ArcadeMaster.config.json', 'C:\ArcadeMaster\ArcadeMaster.config.json') { if (Test-Path $cf) { $cfg = Get-Content $cf -Raw | ConvertFrom-Json; break } }
   if (-not $cfg -or -not $cfg.RetroFERoot -or -not (Test-Path $cfg.RetroFERoot)) { $problems += 'no ArcadeMaster.config.json with a RetroFERoot that exists on this machine' }
   else {
     . (Join-Path $PSScriptRoot 'lib\AmPython.ps1'); $py = Find-AmPython
@@ -180,7 +199,9 @@ if ($Cabinet) {
       # the MAME per-game mappings: the json reads, every cfg it names parses (dry run writes nothing)
       $mOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-MameControls.ps1') -RetroFE $cfg.RetroFERoot 2>&1
       $mErr = @($mOut | Where-Object { $_ -is [Management.Automation.ErrorRecord] })
-      if ($mErr -or $LASTEXITCODE) { $problems += "Set-MameControls (dry run): $(if ($mErr) { ($mErr[0].ToString() -split "`n")[0] } else { "exit $LASTEXITCODE" })" }
+      # a frontend without MAME (a fresh release install) has no MAME cfg folder: nothing to check there, not a problem
+    if (($mOut | Out-String) -match 'no MAME cfg folder') { $mErr = @(); $LASTEXITCODE = 0 }
+    if ($mErr -or $LASTEXITCODE) { $problems += "Set-MameControls (dry run): $(if ($mErr) { ($mErr[0].ToString() -split "`n")[0] } else { "exit $LASTEXITCODE" })" }
       $ErrorActionPreference = 'Stop'
     }
   }

@@ -39,8 +39,10 @@ CORES = {
 }
 # steps 2-3: standalone emulators. system -> [(emulator in discovery.json, exe file name, arguments)], first one found
 # wins (the one inside the RetroBat this frontend uses first). {rom} = the game file, {name} = its name without the
-# extension, {w} {h} = the main screen's size. Each emulator's own command-line options for a full-screen batch start.
+# extension, {dir} = the game's folder, {w} {h} = the main screen's size. Each emulator's own command-line options for a full-screen batch start.
 STANDALONE = {
+    # MAME: the set name, with the game's own folder as its ROM path (a found MAME folder is not always MAME's own roms)
+    "mame": [("mame", "mame.exe", '-skip_gameinfo -rompath "{dir}" {name}'), ("mame", "mame64.exe", '-skip_gameinfo -rompath "{dir}" {name}')],
     "model2": [("m2emulator", "emulator_multicpu.exe", '"{name}"'), ("m2emulator", "EMULATOR.EXE", '"{name}"')],
     "model3": [("supermodel", "supermodel.exe", '-res={w},{h} -fullscreen -wide-screen "{rom}"')],
     "gamecube": [("dolphin", "Dolphin.exe", '-b -C Dolphin.Display.Fullscreen=True -e "{rom}"')],
@@ -74,7 +76,7 @@ from system_buttons import PAD
 
 # bezels (James 2026-11-27: "Snes needs bezels"): RetroBat's decoration sets, a png per system and a .info that says
 # where the game's picture goes. Not for arcade lists (vertical games would sit in a sideways frame).
-NO_BEZEL = {"fbneo", "naomi", "atomiswave", "mame", "neogeo"}
+NO_BEZEL = {"fbneo", "naomi", "atomiswave", "mame", "neogeo", "nds", "3ds"}   # + two-screen handhelds: own layouts
 # panel.json key names -> RetroArch key names
 KEYNAME = {"LCONTROL": "ctrl", "RCONTROL": "rctrl", "LALT": "alt", "RALT": "ralt", "LSHIFT": "shift", "RSHIFT": "rshift",
            "SPACE": "space", "BACKSLASH": "backslash", "SLASH": "slash", "ENTER": "enter", "TAB": "tab"}
@@ -334,6 +336,13 @@ def main():
     except Exception:
         pass
     ra = [e for e in disc.get("emulators", []) if e["emulator"] == "retroarch" and e.get("cores")]
+    # ArcadeMaster's own emulators folder first (tools/Move-OffRetroBat.py links / moves them there), then the
+    # RetroBat this frontend came from
+    own = os.path.join(os.path.dirname(a.manifest), "emulators").lower() + "\\"
+
+    def pref(exe):
+        x = exe.lower()
+        return 0 if x.startswith(own) else 1 if home and x.startswith(home + "\\") else 2
     # the RetroArch of the RetroBat this frontend already uses (its BIOS folder and settings), else the one with most cores
     home = None
     for f in sorted(os.listdir(launchers)) if os.path.isdir(launchers) else []:
@@ -342,7 +351,7 @@ def main():
             if m:
                 home = m.group(1).strip().lower()
                 break
-    ra.sort(key=lambda e: (0 if home and e["exe"].lower().startswith(home + "\\") else 1, -len(e["cores"])))
+    ra.sort(key=lambda e: (pref(e["exe"]), -len(e["cores"])))
     if not ra:
         print("direct launchers: no RetroArch with cores found (run tools/Find-Emulators.py first)")
         return
@@ -357,8 +366,10 @@ def main():
     # the bezel set: RetroBat's decorations next to the RetroArch in use (system\decorations\<set>\systems)
     deco = None
     if a.bezels != "none":
-        for root in ([home] if home else []) + [os.path.dirname(os.path.dirname(radir))]:
-            d = os.path.join(root, "system", "decorations", a.bezels, "systems")
+        # ArcadeMaster's own decorations folder first (tools/Move-OffRetroBat.py), then RetroBat's
+        for d in [os.path.join(os.path.dirname(a.manifest), "decorations", a.bezels, "systems")] + [
+                os.path.join(root, "system", "decorations", a.bezels, "systems")
+                for root in ([home] if home else []) + [os.path.dirname(os.path.dirname(radir))]]:
             if os.path.isdir(d):
                 deco = d
                 break
@@ -376,6 +387,39 @@ def main():
         if only and sysname not in only:
             continue
         name = "AM_DL_" + m.group(1)
+        if sysname == "ports":
+            # each port is its own RetroArch core (<item>.libretro -> cores\<item>_libretro.dll), started with no game
+            # file - except a port whose core reads data from a folder of the same name (XRick: xrick\data.zip).
+            # RetroFE picks the launcher per item from collections\Ports\launchers\<item>.conf.
+            lp = re.search(r"^\s*list\.path\s*=\s*(.+?)\s*$", t, re.M)
+            pdir = lp.group(1) if lp else ""
+            items = sorted(f[:-len(".libretro")] for f in (os.listdir(pdir) if os.path.isdir(pdir) else []) if f.endswith(".libretro"))
+            made = []
+            for it in items:
+                dll = os.path.join(radir, "cores", it + "_libretro.dll")
+                if not os.path.exists(dll):
+                    continue
+                data = next((os.path.join(pdir, it, d) for d in ("data.zip", "data") if os.path.exists(os.path.join(pdir, it, d))), None)
+                pconf = ["executable = %s" % ra["exe"],
+                         'arguments = --appendconfig "%s" -L "%s"%s' % (cfg, dll, ' "%s"' % data if data else ""),
+                         "currentDirectory = %s" % radir] + hooks(os.path.join(launchers, "AM_RB_%s.conf" % m.group(1)))
+                if not a.dry_run:
+                    open(os.path.join(launchers, "%s_%s.conf" % (name, it)), "w", encoding="latin-1").write("\n".join(pconf) + "\n")
+                    os.makedirs(os.path.join(cols, c, "launchers"), exist_ok=True)
+                    open(os.path.join(cols, c, "launchers", it + ".conf"), "w", encoding="latin-1").write("%s_%s\n" % (name, it))
+                made.append(it)
+            if not made:
+                skipped.append(sysname)
+                continue
+            if not a.dry_run:
+                # the list's own launcher: the first port (an item without its own file still starts something real)
+                first = open(os.path.join(launchers, "%s_%s.conf" % (name, made[0])), encoding="latin-1").read()
+                open(os.path.join(launchers, name + ".conf"), "w", encoding="latin-1").write(first)
+                t = re.sub(r"^\s*launcher\s*=.*$", "launcher = %s" % name, t, flags=re.M)
+                t = re.sub(r"^# was AM_RB_\S+ \(direct launcher\)\r?\n", "", t, flags=re.M)
+                open(sc, "w", encoding="latin-1").write("# was AM_RB_%s (direct launcher)\n" % m.group(1) + t)
+            done.append("%s=%d ports (%s)" % (c, len(made), ", ".join(made)))
+            continue
         core = next((x for x in CORES.get(sysname, []) if x in ra["cores"]), None)
         if core:
             bz = bezel_cfg(a.manifest, deco, sysname, screen) if not a.dry_run else None
@@ -389,7 +433,7 @@ def main():
             pick = None
             for emu, exe_name, args in STANDALONE.get(sysname, []):
                 cands = [e for e in disc.get("emulators", []) if e["emulator"] == emu and os.path.basename(e["exe"]).lower() == exe_name.lower()]
-                cands.sort(key=lambda e: 0 if home and e["exe"].lower().startswith(home + "\\") else 1)
+                cands.sort(key=lambda e: pref(e["exe"]))
                 if cands:
                     pick = (cands[0]["exe"], args)
                     break
@@ -403,7 +447,16 @@ def main():
                 pcsx2_pad(pick[0])
             if sysname == "xbox" and not a.dry_run:
                 xemu_pad(pick[0])
-            args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{w}", str(w)).replace("{h}", str(h))
+            if sysname == "xbox360" and not a.dry_run:
+                # Xenia's one-time "DISCLAIMER ... open the quickstart guide?" box stops the first game on a new PC
+                # (James 2026-11-27); Xenia marks it seen in HKCU\Software\Xenia XEFLAGS = 1
+                try:
+                    import winreg
+                    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r"Software\Xenia") as k:
+                        winreg.SetValueEx(k, "XEFLAGS", 0, winreg.REG_DWORD, 1)
+                except OSError:
+                    pass
+            args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{dir}", "%ITEM_DIRECTORY%").replace("{w}", str(w)).replace("{h}", str(h))
             conf = ["executable = %s" % pick[0], "arguments = %s" % args, "currentDirectory = %s" % os.path.dirname(pick[0])]
             how = os.path.basename(pick[0])
         conf += hooks(os.path.join(launchers, "AM_RB_%s.conf" % m.group(1)))
@@ -419,6 +472,14 @@ def main():
         print("  " + d)
     if skipped:
         print("  left on RetroBat (no RetroArch core for it yet): " + ", ".join(sorted(set(skipped))))
+    # the panel's keys in every standalone emulator (tools/Set-EmulatorPanelKeys.py)
+    if not a.dry_run:
+        import subprocess
+        import sys
+        here = os.path.dirname(os.path.abspath(__file__))
+        emus = os.path.join(os.path.dirname(a.manifest), "emulators")
+        if os.path.isdir(emus):
+            subprocess.call([sys.executable, os.path.join(here, "Set-EmulatorPanelKeys.py"), "--manifest", a.manifest, "--emulators", emus])
 
 
 if __name__ == "__main__":

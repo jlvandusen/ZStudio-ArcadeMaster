@@ -44,7 +44,9 @@ import argparse
 import datetime as dt
 import json
 import math
+import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -258,14 +260,53 @@ def x_text(kind, x, y, size, color, layer, origin='center', alpha=1):
             f'    {HIDE_ON_SCROLL}\n    {HIDE_ON_EXIT}\n  </reloadableText>\n')
 
 
-def x_playlist(x, y, w, h, layer, ix, iy, isize=24, icolor='9aa3b2', iorigin='center'):
+def x_playlist(x, y, w, h, layer, ix, iy, isize=24, icolor='9aa3b2', iorigin='center', crumb=None, hints='below'):
     """the active playlist banner (LEFT / RIGHT switch it) + 'position / count' in the list"""
     return (f'  <reloadableImage type="playlist" mode="commonlayout" x="{x}" y="{y}" xOrigin="center" yOrigin="center" width="{w}" height="{h}" alpha="1" layer="{layer}">\n'
             f'    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set>'
             f'<set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>\n'
             f'  </reloadableImage>\n'
             f'  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="{ix}" y="{iy}" xOrigin="{iorigin}" yOrigin="center" '
-            f'fontSize="{isize}" loadFontSize="{isize}" fontColor="{icolor}" alpha=".9" layer="{layer}"/>\n')
+            f'fontSize="{isize}" loadFontSize="{isize}" fontColor="{icolor}" alpha=".9" layer="{layer}"/>\n'
+            + x_nav(x, y, w, h, layer, ix, iorigin, crumb, hints))
+
+
+def x_nav(x, y, w, h, layer, ix, iorigin, crumb=None, hints='below'):
+    """ArcadeMaster's nav header (2026-11-27, James: "show breadcrumbs ... and nav buttons to move back and forth"), placed
+    round this theme's filter bar: where you are (MAIN > NINTENDO > ALL GAMES), the BACK / FILTERS hints under the bar,
+    and touch zones on the bar's arrows and on BACK."""
+    left, right, top, bottom = x - w // 2, x + w // 2, y - h // 2, y + h // 2
+    # the breadcrumb right of the bar (past a counter that sits there), or top left when the bar is on the right half
+    cx = (ix + 170 if iorigin == 'left' and ix > right else right + 40) if right < 1300 else 40
+    cy = y if right < 1300 else 34
+    cs = 28
+    if crumb:                                  # the theme's own place, where the default would cover its art
+        cx, cy, cs = crumb
+    if hints == 'left':
+        # no room under the bar (Box Art: the video frame starts there): BACK sits left of the bar, the bar's own arrows
+        # are the filter hint
+        hint = (f'  <text value="&lt; BACK" x="{left - 16}" y="{y}" xOrigin="right" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="ff2fa0" alpha=".9" layer="{layer}"/>\n'
+                f'  <image src="images/touch_hit.png" touchAction="back" x="{left - 130}" y="{top}" width="120" height="{h}" layer="{layer + 1}"/>\n')
+    else:
+        hint = (f'  <text value="&lt; BACK" x="{left + 8}" y="{bottom + 22}" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="ff2fa0" alpha=".9" layer="{layer}"/>\n'
+                f'  <text value="&lt; &gt;  FILTERS" x="{right - 8}" y="{bottom + 22}" xOrigin="right" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="2ec8ff" alpha=".9" layer="{layer}"/>\n'
+                f'  <image src="images/touch_hit.png" touchAction="back" x="{left}" y="{bottom + 4}" width="130" height="40" layer="{layer + 1}"/>\n')
+    return (f'  <reloadableText type="am_breadcrumb" x="{cx}" y="{cy}" yOrigin="center" fontSize="{cs}" loadFontSize="{cs}" fontColor="e6e9f0" alpha=".95" layer="{layer}"/>\n'
+            + hint +
+            f'  <image src="images/touch_hit.png" touchAction="prevPlaylist" x="{left}" y="{top}" width="110" height="{h}" layer="{layer + 1}"/>\n'
+            f'  <image src="images/touch_hit.png" touchAction="nextPlaylist" x="{right - 110}" y="{top}" width="110" height="{h}" layer="{layer + 1}"/>\n')
+
+
+def x_loading(prefix=''):
+    """the LOADING - PLEASE WAIT card from the moment a choice is made (James 2026-11-27: "delays with a please wait ... to
+    not press into games by accident"); same as ArcadeMaster's am-loading-card"""
+    ev = ('    <onMenuExit><set duration=".12"><animate type="alpha" to="{a}"/></set></onMenuExit>\n'
+          '    <onExit><set duration=".12"><animate type="alpha" to="{a}"/></set></onExit>\n'
+          '    <onMenuEnter><set duration=".2"><animate type="alpha" to="0"/></set></onMenuEnter>\n'
+          '    <onEnter><set duration=".2"><animate type="alpha" to="0"/></set></onEnter>\n')
+    return (f'  <image src="{prefix}images/black.png" x="0" y="0" width="{W}" height="{H}" alpha="0" layer="19">\n' + ev.format(a='.7') + '  </image>\n'
+            f'  <text value="LOADING - PLEASE WAIT" x="{W // 2}" y="{H // 2}" xOrigin="center" yOrigin="center" fontSize="64" loadFontSize="64" '
+            f'fontColor="ffe259" alpha="0" layer="19">\n' + ev.format(a='1') + '  </text>\n')
 
 
 def x_launch(prefix=''):
@@ -276,7 +317,8 @@ def x_launch(prefix=''):
             f'  <reloadableImage type="logo" x="center" y="center" xOrigin="center" yOrigin="center" width="700" maxHeight="360" alpha="0" layer="19">\n'
             f'    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set>'
             f'<set duration="1"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="0"/></set></onGameEnter>\n'
-            f'    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>\n  </reloadableImage>\n')
+            f'    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>\n  </reloadableImage>\n'
+            + x_loading(prefix))
 
 
 def x_head(comment, monitor=None, min_show=True):
@@ -395,6 +437,7 @@ class Theme:
 class Wall(Theme):
     name, p = 'Wall', 'wall'
     label = 'Tile Wall'
+    ENTRANCE = 'drop'        # main menu: characters fall in from above
     about = 'a brick wall of logo tiles; the chosen game opens big with its video, controls card and hint'
     idea = ('CoinOPS "Wall" / "Night Wall" (a wall of game screens with the chosen one in front) - here a staggered '
             'two-column tile wall that scrolls with UP / DOWN')
@@ -518,6 +561,7 @@ class Wall(Theme):
 class Marquee(Theme):
     name, p = 'Marquee', 'marq'
     label = 'Cabinet'
+    ENTRANCE = 'rise'        # main menu: characters come up from below
     about = "a cabinet frame over the game's own art: lit marquee, framed screen, controls card on the control panel"
     idea = ('CoinOPS "Marquee" / "Marquee + Bezel" (marquee art beside a bezel-framed screen) - here the screen IS the '
             'cabinet: marquee lightbox on top, video in a clean modern screen frame, the controls card on the panel deck')
@@ -590,7 +634,7 @@ class Marquee(Theme):
                 + x_image('images/marq_deck.png', 960, 928, 1180, 310, 8)
                 + x_controls(960, 928, 1100, 300, 9)
                 # left side panel: playlist + list
-                + x_playlist(205, 52, 380, 37, 11, 205, 92, 22)
+                + x_playlist(205, 52, 380, 37, 11, 205, 92, 22, crumb=(1500, 16, 17))
                 + f'  <image src="images/marq_sel.png" x="{self.LX}" y="{self.LY}" xOrigin="center" yOrigin="center" width="380" height="124" alpha="1" layer="9">\n'
                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to=".4"/></set></onMenuScroll>\n'
                   '    <onMenuIdle><set duration=".15"><animate type="alpha" to="1"/></set></onMenuIdle>\n  </image>\n'
@@ -636,6 +680,7 @@ class Marquee(Theme):
 class Wheel(Theme):
     name, p = 'Wheel', 'whl'
     label = 'Spin Wheel'
+    ENTRANCE = 'spin'        # main menu: characters spin in on the spot
     about = 'curved logo wheel on the right, a big video on the left, the story as a ticker'
     idea = ('CoinOPS "Wheel Ani" and CORE "TYPE R" (logos on a curved, tilted wheel at the screen edge) - here a neon arc '
             'on the right with a glass band under the logos, the video big on the left and the story running as a ticker')
@@ -711,7 +756,7 @@ class Wheel(Theme):
                   '    <onMenuIdle><set duration="1.2"><animate type="alpha" to=".5" algorithm="easeInOutSine"/></set>'
                   '<set duration="1.2"><animate type="alpha" to=".9" algorithm="easeInOutSine"/></set></onMenuIdle>\n  </image>\n'
                 + menu
-                + x_playlist(330, 38, 560, 54, 11, 640, 38, 24, iorigin='left')
+                + x_playlist(330, 38, 560, 54, 11, 640, 38, 24, iorigin='left', crumb=(640, 86, 20))
                 + x_text('title', 1180, 38, 32, 'ffffff', 11, 'right')
                 + x_image('images/whl_video_frame.png', 640, 420, 1180, 690, 5)
                 + x_video(640, 420, 1120, 630, 6)
@@ -804,7 +849,7 @@ class Poster(Theme):
                 + x_image('images/pst_rail.png', 0, 990, W, 16, 4, origin=False)
                 + menu
                 + x_text('title', self.PX, 1040, 30, 'ffffff', 12)
-                + x_playlist(1500, 38, 600, 58, 11, 1500, 548, 22)
+                + x_playlist(1500, 38, 600, 58, 11, 1500, 548, 22, hints='left')
                 + '  <reloadableImage type="logo" x="565" y="170" xOrigin="center" yOrigin="center" width="500" maxHeight="150" alpha="0" layer="6">\n'
                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="x" to="535"/></set></onMenuScroll>\n'
                   '    <onMenuIdle><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="x" to="565" algorithm="easeOutCubic"/></set></onMenuIdle>\n'
@@ -926,7 +971,380 @@ class Neon(Theme):
         return c
 
 
-THEMES = [Wall(), Marquee(), Wheel(), Poster(), Neon()]
+# ------------------------------------------------------------------- rich pieces shared by Showcase and Arcade Hall
+# (James 2026-11-27 on Box Art / Neon Lite: "We need something very graphical and elaborate like the default") - the
+# default's own moving parts: the game's fanart drifting (Ken Burns), the per-system burst on every scroll (shared
+# system_artwork, New-MenuHeroArt.py links it), the story glass, the launch sweep with the game's art and controls card.
+def x_kenburns():
+    return ('  <image src="images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>\n'
+            '  <reloadableImage type="am_backdrop" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">\n'
+            '    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>\n'
+            '    <onMenuIdle><set duration=".5"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>'
+            '<set duration="16"><animate type="width" to="2060" algorithm="easeInOutSine"/><animate type="height" to="1159" algorithm="easeInOutSine"/></set>'
+            '<set duration="16"><animate type="width" to="1920" algorithm="easeInOutSine"/><animate type="height" to="1080" algorithm="easeInOutSine"/></set></onMenuIdle>\n'
+            f'    {HIDE_ON_EXIT}\n  </reloadableImage>\n'
+            '  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="1">\n'
+            '    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>\n'
+            '    <onMenuIdle><set duration=".45"><animate type="alpha" from="0" to="1" algorithm="easeOutCubic"/></set>'
+            '<set duration="14"><animate type="width" to="2090" algorithm="easeInOutSine"/><animate type="height" to="1176" algorithm="easeInOutSine"/><animate type="x" to="900" algorithm="easeInOutSine"/><animate type="y" to="520" algorithm="easeInOutSine"/></set>'
+            '<set duration="14"><animate type="width" to="1932" algorithm="easeInOutSine"/><animate type="height" to="1087" algorithm="easeInOutSine"/><animate type="x" to="1000" algorithm="easeInOutSine"/><animate type="y" to="550" algorithm="easeInOutSine"/></set>'
+            '<set duration="10"><animate type="width" to="2040" algorithm="easeInOutSine"/><animate type="height" to="1148" algorithm="easeInOutSine"/><animate type="x" to="960" algorithm="easeInOutSine"/><animate type="y" to="540" algorithm="easeInOutSine"/></set></onMenuIdle>\n'
+            '    <onGameEnter><set duration="1.2"><animate type="width" to="2600" algorithm="easeInCubic"/><animate type="height" to="1463" algorithm="easeInCubic"/></set></onGameEnter>\n'
+            '    <onGameExit><set duration=".6"><animate type="width" to="1920"/><animate type="height" to="1080"/><animate type="x" to="960"/><animate type="y" to="540"/></set></onGameExit>\n'
+            f'    {HIDE_ON_EXIT}\n  </reloadableImage>\n')
+
+
+def x_burst_fx():
+    return ('  <reloadableImage type="am_burst" mode="systemlayout" x="center" y="center" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="15">\n'
+            '    <onMenuScroll><set duration=".05"><animate type="alpha" to=".55"/><animate type="width" to="2200"/><animate type="height" to="1238"/></set></onMenuScroll>\n'
+            '    <onMenuIdle><set duration=".45"><animate type="alpha" to="0" algorithm="easeOutCubic"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onMenuIdle>\n'
+            '    <onGameEnter><set duration=".8"><animate type="alpha" to="1"/><animate type="width" to="3000"/><animate type="height" to="1688"/></set></onGameEnter>\n'
+            '    <onGameExit><set duration=".3"><animate type="alpha" to="0"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onGameExit>\n'
+            '  </reloadableImage>\n'
+            '  <image src="images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".4" layer="16"/>\n')
+
+
+def x_story_glass(cx, cy, w, h):
+    """after 8 s on one game a dark glass covers the video and the game's story scrolls (the default's behaviour)"""
+    return (f'  <image src="images/black.png" x="{cx}" y="{cy}" xOrigin="center" yOrigin="center" width="{w}" height="{h}" alpha="0" layer="8">\n'
+            '    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>\n'
+            '    <onMenuIdle><set duration="8"><animate type="nop"/></set><set duration=".6"><animate type="alpha" to=".84" algorithm="easeOutCubic"/></set></onMenuIdle>\n'
+            f'    {HIDE_ON_GAME}\n    {HIDE_ON_EXIT}\n  </image>\n'
+            f'  <reloadableScrollingText type="am_story" menuScrollReload="true" x="{cx - w // 2 + 40}" y="{cy - h // 2 + 30}" width="{w - 80}" height="{h - 60}" fontSize="28" loadFontSize="28" '
+            'fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="16" startPosition="0" startTime="10" endTime="5" alpha="0" layer="9">\n'
+            '    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>\n'
+            '    <onMenuIdle><set duration="8.2"><animate type="nop"/></set><set duration=".6"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>\n'
+            f'    {HIDE_ON_GAME}\n    {HIDE_ON_EXIT}\n  </reloadableScrollingText>\n')
+
+
+def x_launch_rich():
+    """the default's launch: a sweep down the screen, blackout, then the game's art, logo and controls card while it loads"""
+    return ('  <image src="images/fx_sweep.png" x="0" y="-160" width="1920" height="160" alpha="0" layer="18">\n'
+            '    <onGameEnter><set duration=".01"><animate type="alpha" to="1"/><animate type="y" to="-160"/></set>'
+            '<set duration=".42"><animate type="y" to="1080" algorithm="easeInQuadratic"/></set><set duration=".01"><animate type="alpha" to="0"/></set></onGameEnter>\n  </image>\n'
+            '  <image src="images/black.png" x="0" y="0" width="1920" height="1080" alpha="0" layer="18">\n'
+            '    <onGameEnter><set duration=".35"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1"/></set></onGameEnter>\n'
+            '    <onGameExit><set duration=".6"><animate type="alpha" to="0"/></set></onGameExit>\n  </image>\n'
+            '  <reloadableImage type="fanart" x="960" y="540" xOrigin="center" yOrigin="center" width="1920" height="1080" alpha="0" layer="19">\n'
+            '    <onGameEnter><set duration=".55"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to=".55" algorithm="easeOutCubic"/><animate type="width" to="1960"/><animate type="height" to="1103"/></set>'
+            '<set duration="1.6"><animate type="width" to="2060" algorithm="easeInOutSine"/><animate type="height" to="1159" algorithm="easeInOutSine"/></set></onGameEnter>\n'
+            '    <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="1920"/><animate type="height" to="1080"/></set></onGameExit>\n  </reloadableImage>\n'
+            '  <reloadableImage type="logo" x="center" y="400" xOrigin="center" yOrigin="center" width="600" maxHeight="340" alpha="0" layer="19">\n'
+            '    <onGameEnter><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="900" algorithm="easeOutCubic"/></set><set duration="2.2"><animate type="nop"/></set></onGameEnter>\n'
+            '    <onGameExit><set duration=".01"><animate type="alpha" to="0"/><animate type="width" to="600"/></set></onGameExit>\n  </reloadableImage>\n'
+            '  <reloadableImage type="am_controls" x="960" y="840" xOrigin="center" yOrigin="center" width="1100" height="300" alpha="0" layer="19">\n'
+            '    <onGameEnter><set duration=".8"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" from="880" to="840" algorithm="easeOutCubic"/></set></onGameEnter>\n'
+            '    <onGameExit><set duration=".01"><animate type="alpha" to="0"/></set></onGameExit>\n  </reloadableImage>\n'
+            + x_loading())
+
+
+def x_sparks(prefix, spots, layer=4, root=''):
+    """sparks drifting up through the scene, each on its own slow loop (alpha / y only: cheap)"""
+    out = ''
+    for i, (x, y0, y1, size, dur, delay) in enumerate(spots):
+        out += (f'  <image src="{root}images/{prefix}_spark.png" x="{x}" y="{y0}" xOrigin="center" yOrigin="center" width="{size}" height="{size}" alpha="0" layer="{layer}">\n'
+                f'    <onIdle><set duration="{delay}"><animate type="nop"/></set>'
+                f'<set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="{y0}" to="{y0 - (y0 - y1) // 6}"/></set>'
+                f'<set duration="{dur}"><animate type="y" to="{y1}" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>\n  </image>\n')
+    return out
+
+
+def beam_png(w, h, color, strength=.62):
+    m = Image.new('L', (w, h))
+    ImageDraw.Draw(m).polygon([(w // 2 - 24, 0), (w // 2 + 24, 0), (w, h), (0, h)], fill=255)
+    m = m.filter(ImageFilter.GaussianBlur(34))
+    fade_down = ImageChops.invert(Image.linear_gradient('L').resize((w, h)))
+    a = ImageChops.multiply(m, fade_down).point(lambda v: int(v * strength))
+    im = Image.new('RGBA', (w, h), rgba(color, 0))
+    im.putalpha(a)
+    return im
+
+
+def spark_png(size, color):
+    im = blank(size, size)
+    d = ImageDraw.Draw(im)
+    c = size // 2
+    d.line((c, 4, c, size - 4), fill=rgba(color, 220), width=2)
+    d.line((4, c, size - 4, c), fill=rgba(color, 220), width=2)
+    glow = radial_fast(size, size, color, alpha=200, power=2.2)
+    im = Image.alpha_composite(glow, im.filter(ImageFilter.GaussianBlur(1)))
+    ImageDraw.Draw(im).ellipse((c - 3, c - 3, c + 3, c + 3), fill=(255, 255, 255, 255))
+    return im
+
+
+# ---------------------------------------------------------------------------------------------- AM-Showcase
+class Showcase(Theme):
+    name, p = 'Showcase', 'shw'
+    label = 'Showcase'
+    ENTRANCE = 'drop'        # main menu: characters fall in from above
+    about = ('a stage: light beams sweep over the game\'s drifting fanart, its video glows in a double neon frame with a '
+             'passing glint, the logo drops in, box art fans out on a lit floor')
+    idea = 'a game reveal on a stage - spotlights, a big screen, the boxes lined up in front'
+    keys = 'UP / DOWN: previous / next box (the row is sideways, the menu is vertical)   LEFT / RIGHT: playlists'
+    accent, accent2, bg_dark = (255, 47, 160), (46, 200, 255), (8, 8, 14)
+    VX, VY, VW, VH = 1060, 420, 1040, 585       # the video
+    PX, PY = 560, 930                           # the box-art row
+    SLOTS = {0: (0, 0, 230, 260, 0, 1), 1: (200, 14, 175, 205, 6, .85), 2: (360, 26, 150, 175, 10, .6),
+             3: (490, 36, 130, 150, 14, .35), 4: (600, 42, 120, 140, 16, 0)}
+
+    def art(self, img):
+        save_jpg(plain_bg((22, 16, 34), (6, 6, 10)), img / 'shw_bg.jpg')
+        shade = Image.new('RGBA', (W, H))
+        top, mid = vgrad(W, 300, (0, 0, 0, 170), (0, 0, 0, 30)), vgrad(W, 480, (0, 0, 0, 30), (0, 0, 0, 230))
+        shade.alpha_composite(top, (0, 0)); shade.alpha_composite(mid, (0, 600))
+        save_png(shade, img / 'shw_shade.png')
+        save_png(beam_png(720, 1300, (190, 230, 255)), img / 'shw_beam.png')
+        save_png(beam_png(720, 1300, (255, 150, 220)), img / 'shw_beam2.png')
+        fw, fh = self.VW + 90, self.VH + 90
+        outer = neon_frame(fw, fh, self.VW + 40, self.VH + 40, self.accent2, r=20, width=3, blur=16)
+        inner = neon_frame(fw, fh, self.VW, self.VH, self.accent, r=12, width=5, blur=12, fill=(0, 0, 0, 200))
+        save_png(Image.alpha_composite(outer, inner), img / 'shw_frame.png')
+        g = Image.new('L', (220, 900))
+        ImageDraw.Draw(g).rectangle((80, 0, 140, 900), fill=150)
+        g = g.filter(ImageFilter.GaussianBlur(22)).rotate(-22, expand=True)
+        glint = Image.new('RGBA', g.size, (255, 255, 255, 0)); glint.putalpha(g)
+        save_png(glint, img / 'shw_glint.png')
+        save_png(radial_fast(1300, 240, self.accent, alpha=150), img / 'shw_floor.png')
+        save_png(radial_fast(440, 440, (255, 255, 255), alpha=120), img / 'shw_sel.png')
+        save_png(glow_line_layer(W, 16, lambda d2, s, f, w: d2.line((60 * s, 8 * s, (W - 60) * s, 8 * s), fill=f, width=w), self.accent2, 2, 5), img / 'shw_rail.png')
+        panel = blank(430, 400)
+        ImageDraw.Draw(panel).rounded_rectangle((0, 0, 429, 399), radius=18, fill=(6, 8, 16, 170), outline=rgba(self.accent2, 140), width=2)
+        save_png(panel, img / 'shw_info.png')
+        save_png(spark_png(48, self.accent2), img / 'shw_spark.png')
+        self.art_common(img)
+
+    def game_xml(self):
+        items = []
+        for j in range(-4, 5):
+            dx, dy, w, mh, ang, a = self.SLOTS[abs(j)]
+            sg = -1 if j < 0 else 1
+            sel = ' selected="true"' if j == 0 else ''
+            items.append(f'    <item{sel} xOffset="{dx * sg}" yOffset="{dy}" angle="{ang * sg}" width="{w}" maxHeight="{mh}" alpha="{a}" layer="{14 - abs(j)}"/>')
+        menu = ('  <menu type="custom" imageType="cover" scrollTime=".18" scrollAcceleration=".04" minScrollTime=".06" orientation="vertical">\n'
+                f'    <itemDefaults x="{self.PX}" y="{self.PY}" xOrigin="center" yOrigin="center" width="175" maxHeight="205" alpha="0" layer="10" fontColor="ffffff" fontSize="26" loadFontSize="26"/>\n'
+                + '\n'.join(items) + '\n  </menu>\n')
+        VX, VY = self.VX, self.VY
+        beams = ''
+        for src, x, a0, a1 in (('shw_beam.png', 330, 14, -8), ('shw_beam2.png', 1800, -14, 8)):
+            beams += (f'  <image src="images/{src}" x="{x}" y="-40" xOrigin="center" yOrigin="top" width="720" height="1300" angle="{a0}" alpha=".75" layer="3">\n'
+                      f'    <onIdle><set duration="7"><animate type="angle" to="{a1}" algorithm="easeInOutSine"/></set>'
+                      f'<set duration="7"><animate type="angle" to="{a0}" algorithm="easeInOutSine"/></set></onIdle>\n'
+                      '    <onMenuScroll><set duration=".05"><animate type="alpha" to="1"/></set></onMenuScroll>\n'
+                      '    <onMenuIdle><set duration=".8"><animate type="alpha" to=".75" algorithm="easeOutCubic"/></set></onMenuIdle>\n  </image>\n')
+        return (x_head('  AM-Showcase - GAME LIST (c) The Real Z Studios - art: tools/New-ArcadeThemes.py\n'
+                       '  A stage: two light beams sweep over the game\'s own drifting fanart, the video glows in a double neon frame\n'
+                       '  with a glint passing over it, the logo drops in, the box art fans out on a lit floor. KEYS: the row is sideways\n'
+                       '  but the menu is vertical (UP / DOWN = previous / next box), LEFT / RIGHT = playlists.')
+                + x_sounds()
+                + x_kenburns()
+                + x_image('images/shw_shade.png', 0, 0, W, H, 2, origin=False)
+                + beams
+                + x_sparks('shw', [(160, 1000, 380, 30, 7, 0), (760, 1040, 300, 22, 8, 2.5), (1300, 1000, 420, 26, 6.5, 1.2),
+                                   (1700, 1040, 260, 34, 9, 3.6), (1880, 980, 500, 20, 7.5, 5), (420, 1030, 520, 18, 6, 4.4)])
+                # the screen
+                + x_image('images/shw_frame.png', VX, VY, self.VW + 90, self.VH + 90, 6)
+                + (f'  <reloadableVideo type="am_video" imageType="logo" menuScrollReload="true" x="{VX}" y="{VY}" xOrigin="center" yOrigin="center" width="{self.VW}" maxHeight="{self.VH}" alpha="0" layer="5">\n'
+                   f'    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="width" to="{self.VW + 100}"/></set></onMenuScroll>\n'
+                   f'    <onMenuIdle><set duration=".3"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="width" to="{self.VW}" algorithm="easeOutCubic"/></set></onMenuIdle>\n'
+                   f'    {HIDE_ON_EXIT}\n    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>\n'
+                   '    <onGameExit><set duration=".3"><animate type="alpha" to="1"/></set></onGameExit>\n  </reloadableVideo>\n')
+                + (f'  <image src="images/shw_glint.png" x="{VX - self.VW // 2 - 150}" y="{VY}" xOrigin="center" yOrigin="center" width="540" height="960" alpha="0" layer="7">\n'
+                   f'    <onIdle><set duration="2.5"><animate type="nop"/></set>'
+                   f'<set duration=".01"><animate type="x" to="{VX - self.VW // 2 - 150}"/><animate type="alpha" to=".55"/></set>'
+                   f'<set duration="1.1"><animate type="x" to="{VX + self.VW // 2 + 150}" algorithm="easeInOutSine"/></set>'
+                   '<set duration=".01"><animate type="alpha" to="0"/></set><set duration="4"><animate type="nop"/></set></onIdle>\n'
+                   f'    {HIDE_ON_GAME}\n  </image>\n')
+                + x_story_glass(VX, VY, self.VW, self.VH)
+                + x_hint(VX, VY - self.VH // 2 + 70, 900, 85, 17)
+                + x_text('title', VX, 785, 34, 'ffffff', 10)
+                # left: the logo drops in, what the game is
+                + x_image('images/shw_info.png', 255, 420, 430, 400, 7)
+                + ('  <reloadableImage type="logo" x="255" y="170" xOrigin="center" yOrigin="center" width="390" maxHeight="170" alpha="0" layer="9">\n'
+                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/><animate type="y" to="110"/></set></onMenuScroll>\n'
+                   '    <onMenuIdle><set duration=".15"><animate type="nop"/></set><set duration=".45"><animate type="alpha" to="1" algorithm="easeOutCubic"/><animate type="y" to="250" algorithm="easeOutBounce"/></set></onMenuIdle>\n'
+                   f'    {HIDE_ON_EXIT}\n  </reloadableImage>\n')
+                + x_text('year', 255, 390, 64, 'ffe259', 9)
+                + x_text('manufacturer', 255, 460, 32, '2ec8ff', 9)
+                + x_text('genre', 255, 515, 24, 'c9ced8', 9)
+                + x_playlist(300, 40, 520, 54, 11, 300, 92, 22, crumb=(600, 40, 24))
+                # the floor and the boxes
+                + x_image('images/shw_rail.png', 0, 812, W, 16, 4, origin=False)
+                + (f'  <image src="images/shw_floor.png" x="{self.PX}" y="1010" xOrigin="center" yOrigin="center" width="1300" height="240" alpha=".85" layer="4">\n'
+                   '    <onIdle><set duration="2.2"><animate type="alpha" to=".55" algorithm="easeInOutSine"/></set><set duration="2.2"><animate type="alpha" to=".85" algorithm="easeInOutSine"/></set></onIdle>\n  </image>\n')
+                + (f'  <image src="images/shw_sel.png" x="{self.PX}" y="{self.PY}" xOrigin="center" yOrigin="center" width="440" height="440" alpha=".8" layer="5">\n'
+                   '    <onMenuScroll><set duration=".05"><animate type="width" to="500"/><animate type="height" to="500"/></set></onMenuScroll>\n'
+                   '    <onMenuIdle><set duration=".3"><animate type="width" to="440" algorithm="easeOutCubic"/><animate type="height" to="440" algorithm="easeOutCubic"/></set></onMenuIdle>\n  </image>\n')
+                + menu
+                + x_controls(1490, 935, 760, 207, 12)
+                + x_burst_fx()
+                + x_launch_rich()
+                + '</layout>\n')
+
+    def main_extras(self):
+        """main menu: the stage's two light beams sweep over the hero show (under the characters, layer 11)"""
+        out = ''
+        for src, x, a0, a1 in (('shw_beam.png', 300, 16, -6), ('shw_beam2.png', 1700, -16, 6)):
+            out += (f'  <image src="../../../images/{src}" x="{x}" y="-40" xOrigin="center" yOrigin="top" width="720" height="1300" angle="{a0}" alpha=".6" layer="11">\n'
+                    f'    <onIdle><set duration="8"><animate type="angle" to="{a1}" algorithm="easeInOutSine"/></set>'
+                    f'<set duration="8"><animate type="angle" to="{a0}" algorithm="easeInOutSine"/></set></onIdle>\n  </image>\n')
+        return out
+
+    def preview(self, s):
+        c = s.base(self, backdrop_alpha=1)
+        s.paste(c, self.img('shw_shade.png'), 0, 0, W, H, origin=False)
+        s.paste(c, self.img('shw_beam.png'), 330, 610, 720, 1300, alpha=.75, angle=6)
+        s.paste(c, self.img('shw_beam2.png'), 1800, 610, 720, 1300, alpha=.75, angle=-6)
+        s.fit(c, s.video, self.VX, self.VY, self.VW, self.VH)
+        s.paste(c, self.img('shw_frame.png'), self.VX, self.VY, self.VW + 90, self.VH + 90)
+        s.text(c, s.title, self.VX, 785, 34, (255, 255, 255))
+        s.paste(c, self.img('shw_info.png'), 255, 420, 430, 400)
+        s.fit(c, s.logo(0), 255, 250, 390, 170)
+        s.paste(c, self.img('shw_floor.png'), self.PX, 1010, 1300, 240, alpha=.85)
+        s.paste(c, self.img('shw_sel.png'), self.PX, self.PY, 440, 440, alpha=.8)
+        for j in sorted(range(-3, 4), key=lambda v: -abs(v)):
+            dx, dy, w, mh, ang, a = self.SLOTS[abs(j)]
+            sg = -1 if j < 0 else 1
+            s.fit(c, s.cover(j), self.PX + dx * sg, self.PY + dy, w, mh, alpha=a, angle=ang * sg)
+        s.paste(c, s.controls, 1490, 935, 760, 207)
+        s.playlist(c, 300, 40, 520, 54)
+        return c
+
+
+# ------------------------------------------------------------------------------------------- AM-ArcadeHall
+class Hall(Theme):
+    name, p = 'ArcadeHall', 'hal'
+    label = 'Arcade Hall'
+    ENTRANCE = 'rise'        # main menu: characters come up from below
+    about = ('a games room: the chosen game in a lit arcade cabinet (its marquee flickering on top, its video on the screen, '
+             'its controls on the deck), the list a stack of glowing marquees, the default\'s gauges and sparks')
+    idea = 'walking down a row of cabinets: every game is a lit marquee, the chosen one is the cabinet in front of you'
+    accent, accent2, bg_dark = (255, 176, 0), (255, 47, 160), (10, 8, 14)
+    CX, CY, CW, CH = 560, 570, 1080, 1020                 # the cabinet
+    LX, LY = 1500, 540                                     # the marquee stack
+    ROWS = {0: (0, 640, 170, 1), 1: (185, 540, 140, .75), 2: (340, 470, 120, .45), 3: (470, 420, 110, 0)}
+
+    def art(self, img):
+        save_jpg(plain_bg((26, 16, 22), (6, 5, 8)), img / 'hal_bg.jpg')
+        shade = Image.new('RGBA', (W, H))
+        shade.alpha_composite(vgrad(W, 1080, (0, 0, 0, 120), (0, 0, 0, 200)), (0, 0))
+        save_png(shade, img / 'hal_shade.png')
+        cw, ch = self.CW, self.CH
+        cab = blank(cw, ch)
+        d = ImageDraw.Draw(cab)
+        d.rounded_rectangle((10, 0, cw - 10, ch - 1), radius=28, fill=(16, 14, 22, 240))
+        d.rounded_rectangle((40, 730, cw - 40, ch - 6), radius=16, fill=(30, 28, 40, 245))       # the control deck
+        cab = punch(cab, (40, 25, cw - 40, 175), 10)                                                 # marquee window
+        cab = punch(cab, (100, 205, cw - 100, 700), 10)                                              # the screen
+        rim = glow_line_layer(cw, ch, rrect_fn((12, 2, cw - 12, ch - 3), 28), self.accent, 3, 14)    # T-molding
+        bez = glow_line_layer(cw, ch, rrect_fn((96, 201, cw - 96, 704), 12), self.accent2, 3, 10)    # screen bezel
+        mq = glow_line_layer(cw, ch, rrect_fn((36, 21, cw - 36, 179), 12), self.accent, 2, 8)        # marquee rim
+        save_png(cab, img / 'hal_cab.png')
+        save_png(Image.alpha_composite(Image.alpha_composite(rim, bez), mq), img / 'hal_glow.png')
+        g = Image.new('L', (880, 495))
+        ImageDraw.Draw(g).polygon([(0, 0), (380, 0), (120, 495), (0, 495)], fill=26)
+        g = g.filter(ImageFilter.GaussianBlur(30))
+        glass = Image.new('RGBA', g.size, (255, 255, 255, 0)); glass.putalpha(g)
+        save_png(glass, img / 'hal_glass.png')
+        save_png(neon_frame(700, 210, 660, 175, self.accent, r=14, width=4, blur=12, fill=(0, 0, 0, 150)), img / 'hal_sel.png')
+        save_png(radial_fast(820, 260, self.accent, alpha=110), img / 'hal_selglow.png')
+        save_png(spark_png(48, self.accent), img / 'hal_spark.png')
+        self.art_common(img)
+
+    def game_xml(self):
+        rows = []
+        for j in range(-3, 4):
+            dy, w, mh, a = self.ROWS[abs(j)]
+            sg = -1 if j < 0 else 1
+            sel = ' selected="true"' if j == 0 else ''
+            rows.append(f'    <item{sel} yOffset="{dy * sg}" width="{w}" maxHeight="{mh}" alpha="{a}" layer="{14 - abs(j)}"/>')
+        menu = ('  <menu type="custom" imageType="marquee" scrollTime=".16" scrollAcceleration=".035" orientation="vertical">\n'
+                f'    <itemDefaults x="{self.LX}" y="{self.LY}" xOrigin="center" yOrigin="center" width="540" maxHeight="140" alpha="0" layer="10" fontColor="ffffff" fontSize="34" loadFontSize="34"/>\n'
+                + '\n'.join(rows) + '\n  </menu>\n')
+        CX, CY = self.CX, self.CY
+        mx, my = CX, CY - self.CH // 2 + 100          # marquee window centre
+        sx, sy = CX, CY - self.CH // 2 + 452          # screen centre
+        dx, dy = CX, CY - self.CH // 2 + 872          # deck centre
+        flicker = ('    <onIdle><set duration="3.4"><animate type="alpha" to="1"/></set><set duration=".06"><animate type="alpha" to=".55"/></set>'
+                   '<set duration=".05"><animate type="alpha" to="1"/></set><set duration=".08"><animate type="alpha" to=".7"/></set>'
+                   '<set duration=".1"><animate type="alpha" to="1"/></set><set duration="2.6"><animate type="alpha" to=".92" algorithm="easeInOutSine"/></set>'
+                   '<set duration="2"><animate type="alpha" to="1" algorithm="easeInOutSine"/></set></onIdle>\n')
+        gauges = ''
+        for gx, face, over, span in ((1230, 'am_gauge_face', 'am_gauge_over', 112), (1770, 'am_gauge2_face', 'am_gauge2_over', 128)):
+            gauges += (f'  <reloadableImage type="{face}" mode="systemlayout" x="{gx}" y="985" xOrigin="center" yOrigin="center" width="190" height="190" layer="12"/>\n'
+                       f'  <reloadableImage type="{over}" mode="systemlayout" x="{gx}" y="985" xOrigin="center" yOrigin="center" width="190" height="190" angle="-135" layer="13">\n'
+                       f'    <onMenuScroll><set duration=".14"><animate type="angle" to="{span}" algorithm="easeOutQuadratic"/></set></onMenuScroll>\n'
+                       '    <onMenuIdle><set duration=".5"><animate type="angle" to="-70" algorithm="easeOutCubic"/></set><set duration=".35"><animate type="angle" to="-104" algorithm="easeOutCubic"/></set>'
+                       '<set duration="1.6"><animate type="angle" to="-98" algorithm="easeInOutSine"/></set></onMenuIdle>\n  </reloadableImage>\n')
+        return (x_head('  AM-ArcadeHall - GAME LIST (c) The Real Z Studios - art: tools/New-ArcadeThemes.py\n'
+                       '  A games room: the chosen game is the lit cabinet in front of you (its marquee flickering in the top window, its\n'
+                       '  video on the screen, its controls card on the deck); the list is a stack of glowing marquees; the default\'s\n'
+                       '  gauges answer every scroll. UP / DOWN = games, LEFT / RIGHT = playlists.')
+                + x_sounds()
+                + x_kenburns()
+                + x_image('images/hal_shade.png', 0, 0, W, H, 2, origin=False)
+                + x_sparks('hal', [(1160, 1060, 360, 30, 7, 0), (1880, 1040, 260, 24, 8.5, 2), (1320, 1000, 480, 20, 6, 3.3),
+                                   (1650, 1060, 200, 28, 9, 1.1), (70, 1040, 300, 22, 7.5, 4.2)])
+                # the cabinet
+                + x_image('images/hal_cab.png', CX, CY, self.CW, self.CH, 5)
+                + (f'  <image src="images/hal_glow.png" x="{CX}" y="{CY}" xOrigin="center" yOrigin="center" width="{self.CW}" height="{self.CH}" alpha="1" layer="6">\n'
+                   + flicker + '  </image>\n')
+                + (f'  <reloadableImage type="marquee" x="{mx}" y="{my}" xOrigin="center" yOrigin="center" width="1000" maxHeight="150" alpha="0" layer="4">\n'
+                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to=".25"/></set></onMenuScroll>\n'
+                   '    <onMenuIdle><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>\n'
+                   + flicker.replace('to="1"/>', 'to="1"/>') + f'    {HIDE_ON_EXIT}\n  </reloadableImage>\n')
+                + (f'  <reloadableVideo type="am_video" imageType="logo" menuScrollReload="true" x="{sx}" y="{sy}" xOrigin="center" yOrigin="center" width="880" maxHeight="495" alpha="0" layer="4">\n'
+                   '    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>\n'
+                   '    <onMenuIdle><set duration=".3"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>\n'
+                   f'    {HIDE_ON_EXIT}\n    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>\n'
+                   '    <onGameExit><set duration=".3"><animate type="alpha" to="1"/></set></onGameExit>\n  </reloadableVideo>\n')
+                + x_image('images/hal_glass.png', sx, sy, 880, 495, 7)
+                + x_story_glass(sx, sy, 880, 495)
+                + x_hint(sx, sy - 180, 820, 78, 17)
+                + x_controls(dx, dy, 990, 270, 8)
+                # the marquee stack
+                + (f'  <image src="images/hal_selglow.png" x="{self.LX}" y="{self.LY}" xOrigin="center" yOrigin="center" width="820" height="260" alpha=".7" layer="8">\n'
+                   '    <onIdle><set duration="1.4"><animate type="alpha" to=".4" algorithm="easeInOutSine"/></set><set duration="1.4"><animate type="alpha" to=".75" algorithm="easeInOutSine"/></set></onIdle>\n  </image>\n')
+                + (f'  <image src="images/hal_sel.png" x="{self.LX}" y="{self.LY}" xOrigin="center" yOrigin="center" width="700" height="210" alpha="1" layer="9">\n'
+                   '    <onMenuScroll><set duration=".06"><animate type="width" to="740"/><animate type="height" to="222"/></set></onMenuScroll>\n'
+                   '    <onMenuIdle><set duration=".2"><animate type="width" to="700" algorithm="easeOutCubic"/><animate type="height" to="210" algorithm="easeOutCubic"/></set></onMenuIdle>\n  </image>\n')
+                + menu
+                + x_text('title', self.LX, 965, 32, 'ffffff', 12)
+                + x_text('year', self.LX - 110, 1025, 30, 'ffb000', 12)
+                + x_text('manufacturer', self.LX + 110, 1025, 28, 'ff2fa0', 12)
+                + gauges
+                + x_playlist(1500, 40, 560, 52, 11, 1500, 92, 22, crumb=(40, 28, 22))
+                + x_burst_fx()
+                + x_launch_rich()
+                + '</layout>\n')
+
+    def main_extras(self):
+        """main menu: the hall's sparks drift up through the hero show"""
+        return x_sparks('hal', [(200, 1060, 300, 32, 7, 0), (900, 1040, 240, 24, 8.5, 1.8), (1250, 1000, 420, 22, 6, 3.1),
+                                (1650, 1060, 200, 30, 9, 1), (1860, 1020, 380, 20, 7, 4.4)], layer=11, root='../../../')
+
+    def preview(self, s):
+        c = s.base(self, backdrop_alpha=1)
+        s.paste(c, self.img('hal_shade.png'), 0, 0, W, H, origin=False)
+        CX, CY = self.CX, self.CY
+        s.fit(c, s.marquee or s.logo(0), CX, CY - self.CH // 2 + 100, 1000, 150)
+        s.fit(c, s.video, CX, CY - self.CH // 2 + 452, 880, 495)
+        s.paste(c, self.img('hal_cab.png'), CX, CY, self.CW, self.CH)
+        s.paste(c, self.img('hal_glow.png'), CX, CY, self.CW, self.CH)
+        s.paste(c, s.controls, CX, CY - self.CH // 2 + 872, 990, 270)
+        s.paste(c, self.img('hal_selglow.png'), self.LX, self.LY, 820, 260, alpha=.7)
+        s.paste(c, self.img('hal_sel.png'), self.LX, self.LY, 700, 210)
+        for j in range(-2, 3):
+            dy, w, mh, a = self.ROWS[abs(j)]
+            s.fit(c, s.logo(j), self.LX, self.LY + dy * (-1 if j < 0 else 1), w, mh, alpha=a)
+        s.text(c, s.title, self.LX, 965, 32, (255, 255, 255))
+        s.playlist(c, 1500, 40, 560, 52)
+        return c
+
+
+# Box Art (Poster) and Neon Lite are retired (James 2026-11-27: "I don't like" them); Showcase and Arcade Hall take
+# their place. Their classes stay above so an old install can still be rebuilt on purpose (--only Poster,Neon).
+THEMES = [Wall(), Marquee(), Wheel(), Showcase(), Hall()]
+RETIRED = {'Poster': Poster(), 'Neon': Neon()}
 
 
 # ======================================================================================== preview mock-ups (Pillow)
@@ -1081,6 +1499,45 @@ def write(path: Path, text: str):
     ET.parse(path)                                   # every layout must be well-formed XML
 
 
+def main_variant(xml: str, theme) -> str:
+    """The shared hero main menu, given the theme's own character entrance and extras. The default slides each character
+    in from the right (x 2200 -> 1480) and back out; a theme can make them
+      drop - fall in from above with a bounce, leave upwards      rise - come up from below, sink back down
+      spin - spin in on the spot, spin out
+    and add its own layers (Showcase's light beams, Arcade Hall's sparks) via main_extras()."""
+    style = getattr(theme, 'ENTRANCE', '')
+    if style in ('drop', 'rise'):
+        start = '-420' if style == 'drop' else '1560'
+        easing = 'easeOutBounce' if style == 'drop' else 'easeOutBack'
+        xml = xml.replace('x="2200" y="775"', f'x="1480" y="{start}"')
+        xml = xml.replace('<animate type="x" from="2200" to="1480" algorithm="easeOutBack"/>',
+                          f'<animate type="y" from="{start}" to="775" algorithm="{easing}"/>')
+        xml = xml.replace('<animate type="x" to="2200" algorithm="easeInBack"/>', f'<animate type="y" to="{start}" algorithm="easeInBack"/>')
+    elif style == 'spin':
+        xml = xml.replace('x="2200" y="775"', 'x="1480" y="775"')
+        xml = xml.replace('<animate type="x" from="2200" to="1480" algorithm="easeOutBack"/>',
+                          '<animate type="angle" from="-200" to="0" algorithm="easeOutBack"/>')
+        xml = xml.replace('<animate type="x" to="2200" algorithm="easeInBack"/>', '<animate type="angle" to="200" algorithm="easeInBack"/>')
+    extra = theme.main_extras() if hasattr(theme, 'main_extras') else ''
+    if extra:
+        xml = xml.replace('</layout>', extra + '</layout>')
+    return xml
+
+
+def copy_named_files(xml: Path, src_root: Path, dst_root: Path):
+    """every file a layout names (src="images/..", font="fonts/..", sound="sounds/..") that is in the source layout,
+    copied to the same place in the theme. Paths in a RetroFE layout are relative to the layout folder; per-game media
+    (reloadableImage types) are not files and are skipped."""
+    text = xml.read_text(encoding='utf-8')
+    for m in re.finditer(r'(?:src|font|sound)="([^"]+\.(?:png|jpg|jpeg|gif|ttf|otf|wav|mp3|ogg))"', text, re.I):
+        rel = m.group(1).replace('\\', '/')
+        s = src_root / rel
+        if s.is_file():
+            d = dst_root / rel
+            d.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(s, d)
+
+
 def build(theme: Theme, root: Path):
     out = root / theme.folder
     img = out / 'images'
@@ -1103,6 +1560,21 @@ def build(theme: Theme, root: Path):
     shutil.copytree(SRC / 'sounds', out / 'sounds', dirs_exist_ok=True)
     shutil.copytree(SRC / 'fonts', out / 'fonts', dirs_exist_ok=True)
     shutil.copytree(SRC / 'collections' / 'Main' / 'medium_artwork' / 'logo', out / 'collections' / 'Main' / 'medium_artwork' / 'logo', dirs_exist_ok=True)
+    # the parts every theme shares with ArcadeMaster (James 2026-11-27, "all themes delivered"): the touch screen (SEARCH,
+    # breadcrumbs, panels, list touch) and the hero main menu - copied with every picture / font they name
+    for rel in ('layout - 1.xml', 'collections/Main/layout/layout.xml', 'collections/Main/layout/layout - 1.xml'):
+        dst = out / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(SRC / rel, dst)
+        copy_named_files(SRC / rel, SRC, out)
+    # each theme's own main-menu personality over the shared hero show (backlog 1b: "different character entrances")
+    mm = out / 'collections' / 'Main' / 'layout' / 'layout.xml'
+    mm.write_text(main_variant(mm.read_text(encoding='utf-8'), theme), encoding='utf-8', newline='\n')
+    ET.parse(mm)
+    for f in ('touch_hit.png', 'black.png'):
+        if (SRC / 'images' / f).exists():
+            shutil.copy2(SRC / 'images' / f, img / f)
+    copy_named_files(out / 'layout.xml', SRC, out)    # the default's own pictures a theme's game list uses (vignette, sweep ...)
     meta = {'name': theme.folder, 'label': theme.label, 'about': theme.about, 'idea': theme.idea, 'keys': theme.keys,
             'madeBy': 'tools/New-ArcadeThemes.py', 'resolution': f'{W}x{H}', 'monitors': 2}
     (out / MARKER).write_text(json.dumps(meta, indent=2) + '\n', encoding='utf-8', newline='\n')
@@ -1128,6 +1600,14 @@ def install(theme: Theme, root: Path, retrofe: Path, manifest: Path, samples: Sa
         if not (dst / MARKER).exists():
             print(f'skip  {theme.folder}: {dst} exists and was not made by this script')
             return None
+        # the theme holds folder links to the default theme's art (New-MenuHeroArt.py): unlink those first, so the
+        # delete can never reach the real pictures (older Pythons' rmtree could follow a junction)
+        for dp, dns, _ in os.walk(dst, topdown=True):
+            for dn in list(dns):
+                p = os.path.join(dp, dn)
+                if os.path.realpath(p) != os.path.normpath(p):
+                    os.rmdir(p)
+                    dns.remove(dn)
         shutil.rmtree(dst)
     shutil.copytree(src, dst)
     am = retrofe / 'layouts' / 'ArcadeMaster'

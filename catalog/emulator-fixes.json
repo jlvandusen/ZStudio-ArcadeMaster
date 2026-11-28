@@ -1,0 +1,54 @@
+{
+  "_about": "Point fixes for emulator configs that a full WheelMap regenerate does not cover, or that an emulator update can undo (a TeknoParrot update that migrates its profiles). tools/Set-EmulatorFixes.ps1 applies them at every start (Start-ArcadeMaster): only what is missing or different is changed, each changed file is backed up first, and nothing is touched while that emulator runs. A fix found by hand on one cabinet is written HERE, so every cabinet gets it and an update cannot take it away (James 2026-11-28: emulator setup has to be hands-off). Entries are keyed by the control's NAME in the emulator's file; a file without that control is skipped and reported. 'hosts' (optional) limits an entry to those cabinets. Wheel buttons are the wheel's own 0-based numbers (G29: 0 Cross, 1 Square, 2 Circle, 3 Triangle, 4 right paddle, 5 left paddle, 6 R2, 7 L2, 8 Share, 9 Options, 10 R3, 11 L3, 19 Plus, 20 Minus). Not here: coin / start / test / service (tools/Set-CoinStartButtons.ps1) and Supermodel's [ Global ] extras such as the steering saturation (tools/wheelmap/templates/supermodel.json 'settings', which Set-EmulatorFixes also applies).",
+  "teknoparrot": {
+    "DirtyDrivin": {
+      "_why": "James 2026-11-27: machine guns on the right paddle, the crank on the left. a newer TeknoParrot GameProfile added 'Crank Forward' (the guns: RACE1's revision 22 and RACE2's GameProfile have it); UserProfiles made before it do not have the button at all.",
+      "buttons": {
+        "Crank The Yank!": {
+          "wheel": 5,
+          "mapping": "P1Button1"
+        },
+        "Crank Forward": {
+          "wheel": 4,
+          "mapping": "P1Button5"
+        }
+      }
+    },
+    "FNFDrift": {
+      "_why": "James 2026-11-28: coin on Share in every game 'for the kids to figure out'. This profile had no Coin button at all, so Set-CoinStartButtons had nothing to move; the entry adds it (its game mapping comes from TeknoParrot's GameProfile).",
+      "buttons": {
+        "Coin": {
+          "wheel": 8
+        }
+      }
+    },
+    "H2Overdrive": {
+      "_why": "James 2026-11-28: coin on Share in every game 'for the kids to figure out'. This profile had no Coin button at all, so Set-CoinStartButtons had nothing to move; the entry adds it (its game mapping comes from TeknoParrot's GameProfile).",
+      "buttons": {
+        "Coin": {
+          "wheel": 8
+        }
+      }
+    },
+    "FNFSC": {
+      "_why": "No Coin button and no gears in this cabinet's profile (Test-WheelBindings, 2026-11-28): coin on Share as in every game, and the shifter's gears 1-4 (G29 shifter = wheel buttons 12-15, as in Model 3).",
+      "buttons": {
+        "Coin": {
+          "wheel": 8
+        },
+        "Gear Shift 1": {
+          "wheel": 12
+        },
+        "Gear Shift 2": {
+          "wheel": 13
+        },
+        "Gear Shift 3": {
+          "wheel": 14
+        },
+        "Gear Shift 4": {
+          "wheel": 15
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,92 @@
+<!--
+  SPLIT SCREEN - game list (c) The Real Z Studios. ArcadeMaster game list view: split  (tools/Set-GameListView.ps1)
+  James, 2026-11-27, from the second round of theme mock-ups. Left: the chosen game playing, its controls card under
+  it. Down the middle: the list as a strip. Right: the game's logo, what it is (maker, year, players, kind of game),
+  how often it has been played on THIS cabinet (medium_artwork/am_stats, tools/New-GameStats.ps1) and its story.
+  UP / DOWN games, LEFT / RIGHT filters.
+  Fast: one video with one fixed size, small logos, three small pictures of our own (images/am-views/split_*.png).
+-->
+<layout width="1920" height="1080" font="fonts/OpenSans.ttf" loadFontSize="48" fontColor="ffffff" minShowTime="0">
+  <sound type="select"    src="../../../sounds/select.wav"/>
+  <sound type="highlight" src="../../../sounds/highlight.wav"/>
+  <sound type="load"      src="../../../sounds/load.wav"/>
+
+  <!-- the chosen game's own backdrop behind everything, dimmed -->
+  <image src="../../../images/bg_neutral.png" x="0" y="0" width="1920" height="1080" layer="0"/>
+  <reloadableImage type="am_backdrop" x="0" y="0" width="1920" height="1080" alpha="0" layer="1">
+    <onMenuScroll><set duration=".08"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".5"><animate type="alpha" to=".5" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <image src="../../../images/fx_vignette.png" x="0" y="0" width="1920" height="1080" alpha=".5" layer="2"/>
+
+  <!-- LEFT: the game playing, its controls under it -->
+  <reloadableText type="am_breadcrumb" x="40" y="44" yOrigin="center" fontSize="28" loadFontSize="28" fontColor="e6e9f0" alpha=".95" layer="11"/>
+  <image src="../../../images/ui_video_frame.png" x="470" y="345" xOrigin="center" yOrigin="center" width="900" height="524" alpha="1" layer="5"/>
+  <reloadableVideo type="am_video" imageType="logo" x="470" y="345" xOrigin="center" yOrigin="center" width="852" maxHeight="480" alpha="0" layer="6">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".35"><animate type="nop"/></set><set duration=".3"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+  </reloadableVideo>
+  <reloadableText type="title" menuScrollReload="true" x="44" y="640" xOrigin="left" yOrigin="center" fontSize="40" loadFontSize="40" fontColor="ffffff" alpha="1" layer="10"/>
+  <reloadableImage type="am_controls" x="470" y="850" xOrigin="center" yOrigin="center" width="860" height="235" alpha="0" layer="9">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".7"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+  <reloadableImage type="am_controls_wheel" x="165" y="850" xOrigin="center" yOrigin="center" width="235" height="235" alpha="0" layer="9" liveDevice="wheel" liveSteer="450">
+    <onMenuScroll><set duration=".06"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".7"><animate type="nop"/></set><set duration=".35"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".15"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableImage>
+
+  <!-- MIDDLE: the list as a strip down the join -->
+  <image src="../../../images/am-views/split_strip.png" x="1010" y="540" xOrigin="center" yOrigin="center" width="170" height="1080" alpha="1" layer="6"/>
+  <image src="../../../images/am-views/split_sel.png" x="1010" y="540" xOrigin="center" yOrigin="center" width="186" height="104" alpha="1" layer="8">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to=".55"/></set></onMenuScroll>
+    <onMenuIdle><set duration=".15"><animate type="alpha" to="1"/></set></onMenuIdle>
+  </image>
+  <menu type="custom" menuIndex="0" imageType="logo" scrollTime=".14" scrollAcceleration=".035" orientation="vertical">
+    <itemDefaults x="1010" y="540" xOrigin="center" yOrigin="center" width="132" maxHeight="72" alpha="0" layer="10" fontColor="ffffff" fontSize="22" loadFontSize="22"/>
+    <item xOffset="0" yOffset="-550" width="132" maxHeight="72" alpha="0"/>
+    <item xOffset="0" yOffset="-440" width="132" maxHeight="72" alpha=".45"/>
+    <item xOffset="0" yOffset="-330" width="132" maxHeight="72" alpha=".75"/>
+    <item xOffset="0" yOffset="-220" width="132" maxHeight="72" alpha=".75"/>
+    <item xOffset="0" yOffset="-110" width="132" maxHeight="72" alpha=".75"/>
+    <item selected="true" xOffset="0" yOffset="0" width="150" maxHeight="84" alpha="1" layer="12"/>
+    <item xOffset="0" yOffset="110" width="132" maxHeight="72" alpha=".75"/>
+    <item xOffset="0" yOffset="220" width="132" maxHeight="72" alpha=".75"/>
+    <item xOffset="0" yOffset="330" width="132" maxHeight="72" alpha=".75"/>
+    <item xOffset="0" yOffset="440" width="132" maxHeight="72" alpha=".45"/>
+    <item xOffset="0" yOffset="550" width="132" maxHeight="72" alpha="0"/>
+  </menu>
+
+  <!-- RIGHT: what the game is -->
+  <reloadableImage type="playlist" mode="commonlayout" x="1500" y="44" xOrigin="center" yOrigin="center" width="420" height="41" alpha="1" layer="11">
+    <onPlaylistEnter><set duration=".08"><animate type="alpha" to=".4"/></set><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onPlaylistEnter>
+  </reloadableImage>
+  <text value="&lt; BACK" x="1130" y="44" yOrigin="center" fontSize="20" loadFontSize="20" fontColor="ff2fa0" alpha=".9" layer="11"/>
+  <reloadableText type="collectionIndexSize" menuScrollReload="true" x="1880" y="44" xOrigin="right" yOrigin="center" fontSize="22" loadFontSize="22" fontColor="9aa3b2" alpha=".9" layer="11"/>
+  <reloadableImage type="logo" x="1500" y="200" xOrigin="center" yOrigin="center" width="700" maxHeight="220" alpha="0" layer="9"><onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll><onMenuIdle><set duration=".25"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle><onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit></reloadableImage>
+  <image src="../../../images/am-views/split_panel.png" x="1500" y="545" xOrigin="center" yOrigin="center" width="760" height="400" alpha="1" layer="7"/>
+  <text value="MAKER" x="1150" y="372" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
+  <reloadableText type="manufacturer" menuScrollReload="true" x="1150" y="418" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
+  <text value="YEAR" x="1560" y="372" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
+  <reloadableText type="year" menuScrollReload="true" x="1560" y="418" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffb000" alpha="1" layer="10"/>
+  <text value="PLAYERS" x="1150" y="462" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
+  <reloadableText type="numberPlayers" menuScrollReload="true" x="1150" y="508" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
+  <text value="KIND OF GAME" x="1560" y="462" fontSize="20" loadFontSize="20" fontColor="9aa3b2" layer="10"/>
+  <reloadableText type="genre" menuScrollReload="true" x="1560" y="508" xOrigin="left" yOrigin="center" fontSize="32" loadFontSize="32" fontColor="ffffff" alpha="1" layer="10"/>
+  <text value="ON THIS CABINET" x="1150" y="556" fontSize="20" loadFontSize="20" fontColor="2ec8ff" layer="10"/>
+  <reloadableScrollingText type="am_stats" menuScrollReload="true" x="1150" y="586" width="700" height="130" fontSize="30" loadFontSize="30" fontColor="e6e9f0" alignment="left" direction="vertical" scrollingSpeed="1" startPosition="0" startTime="3600" endTime="5" alpha="1" layer="10"/>
+  <!-- its story, scrolling slowly -->
+  <reloadableScrollingText type="am_story" menuScrollReload="true" x="1130" y="790" width="740" height="250" fontSize="26" loadFontSize="26" fontColor="cfd4de" alignment="left" direction="vertical" scrollingSpeed="12" startPosition="0" startTime="14" endTime="4" alpha="0" layer="10">
+    <onMenuScroll><set duration=".05"><animate type="alpha" to="0"/></set></onMenuScroll>
+    <onMenuIdle><set duration="1.2"><animate type="nop"/></set><set duration=".5"><animate type="alpha" to="1" algorithm="easeOutCubic"/></set></onMenuIdle>
+    <onGameEnter><set duration=".1"><animate type="alpha" to="0"/></set></onGameEnter>
+    <onMenuExit><set duration=".1"><animate type="alpha" to="0"/></set></onMenuExit>
+  </reloadableScrollingText>
+</layout>

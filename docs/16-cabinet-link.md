@@ -182,5 +182,12 @@ address, left over from the DRIVE copy.
   connects in; 14:03:38 RACE2 connects out to RACE1:1970.
 - A game played alone with the net board on starts and plays normally (RACE2, Dirt Devils, RACE1 not listening), so
   the net board can stay on. Windows Firewall is off on both rigs, so no prompt came up.
-- Not linked yet: Daytona (Model 2), TeknoParrot games. Each emulator has its own network settings; Model 3 is the
+- **Model 2 (Daytona USA, Sega Rally, Indy 500, Over Rev ...): `tools\Set-Model2Link.ps1 -Peer <twin>`.** The Model 2
+  emulator links while a file named `m2network.ini` sits next to `EMULATOR.INI` (RxPort, NextIP = the other rig,
+  NextPort; 1978 on both). `-Off` renames it to `m2network.ini.am-off`. The DRIVE copy's `_m2network.ini` is not read
+  by the emulator and is left alone. Tested on RACE2 (2026-11-27): Daytona USA started alone with the link on reaches
+  PUSH START BUTTON and listens on UDP 1978. UDP, so a stray port probe cannot use the link up as it did in
+  Supermodel. The emulator exits with 0xC00000FD when its window is closed, with or without the link: nothing to do
+  with the link. Each game still needs MASTER (RACE1) / SLAVE (RACE2) in its test menu (Test = the G29's **+**).
+- Not linked yet: TeknoParrot games. Each emulator has its own network settings; Model 3 is the
   first because Supermodel has them in one file.

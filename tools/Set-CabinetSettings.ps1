@@ -94,6 +94,11 @@ $S.menuSounds = @{ group = 'SCREEN AND SOUND'; label = 'MENU SOUNDS'; detail = '
 $S.story = @{ group = 'MENUS'; label = 'GAME STORY PANEL'; detail = 'After 8 s on a game, its story scrolls over the video'; kind = 'switch'; default = $true
   get = { [bool](Read-AmUi $ManifestDir).story }
   set = { param($on) 'layout updated' + (SetUi 'story' $on) } }
+# how the game lists look (tools\Set-GameListView.ps1): the default, or one of the views built from the theme mock-ups
+$S.gameListView = @{ group = 'MENUS'; label = 'GAME LIST VIEW'; detail = 'DEFAULT: one game at a time. WALL: fifteen picture tiles, the chosen game playing in the middle. PITWALL: the preview fills the screen, the list is a tower on the left. SPLIT: the game on the left, what it is and how often it was played here on the right. COCKPIT: the preview in the windscreen, a row of logos, the gauges and wheel on a dash'; kind = 'cycle'; presets = @('default', 'wall', 'pitwall', 'split', 'cockpit'); default = 'default'
+  get = { "$(& (Join-Path $t 'Set-GameListView.ps1') -RetroFE $RetroFE -Current)".Trim() }
+  show = { param($v) "$v".ToUpper() }
+  set = { param($v) $o = & (Join-Path $t 'Set-GameListView.ps1') -RetroFE $RetroFE -View $v 6>&1 | Out-String; (($o.Trim() -split "`r?`n") | Select-Object -Last 1) } }
 $S.controlHints = @{ group = 'MENUS'; label = 'SPECIAL-CONTROL REMINDERS'; detail = 'Banner for trackball, spinner, gun, wheel and 4-way games'; kind = 'switch'; default = $true
   get = { [bool](Read-AmUi $ManifestDir).controlHints }
   set = { param($on) 'layout updated' + (SetUi 'controlHints' $on) } }

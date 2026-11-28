@@ -100,6 +100,15 @@ if (-not $NoDeviceCheck) {
     # MAME, Supermodel (Model 3), Model 2 and Cemu store a device id or number too: follow it after a reboot / port change
     $emu = Invoke-Tool 'Repair-EmulatorDevices.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-ScanFile', (Join-Path $ManifestDir 'directinput-scan.txt'), '-Apply')
     if ($emu -match '(\d+) file\(s\) fixed') { Write-Log ("controllers renumbered - re-pointed $($Matches[1]) emulator file(s): " + (($emu -split "`r?`n" | Where-Object { $_ -match ' -> ' } | ForEach-Object { $_.Trim() }) -join '; ')) }
+    # hands-off emulator setup (James 2026-11-28): the same coin / start / test / service buttons in every emulator, and
+    # the point fixes from catalog\emulator-fixes.json + the Supermodel template's extras, put back if an update or a fresh
+    # copy lost them. Both change only what is wrong, skip a running emulator's files and write nothing when all is right.
+    if ($now.wheel) {
+      $cs = Invoke-Tool 'Set-CoinStartButtons.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Apply')
+      if ($cs -match '(\d+) file\(s\) set' -and [int]$Matches[1] -gt 0) { Write-Log ("coin / start buttons put back in $($Matches[1]) file(s): " + (($cs -split "`r?`n" | Where-Object { $_ -match '^\s+SET ' } | ForEach-Object { $_.Trim() }) -join '; ')) }
+      $ef = Invoke-Tool 'Set-EmulatorFixes.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Apply')
+      if ($ef -match '(\d+) file\(s\) set' -and [int]$Matches[1] -gt 0) { Write-Log ("emulator fixes put back in $($Matches[1]) file(s): " + (($ef -split "`r?`n" | Where-Object { $_ -match '^\s+SET ' } | ForEach-Object { $_.Trim() }) -join '; ')) }
+    }
     $modesNow = (@($now.modes) | Sort-Object) -join ','; $modesFile = Join-Path $ManifestDir 'last-modes.txt'
     $modesLast = if (Test-Path $modesFile) { (Get-Content $modesFile -Raw).Trim() } else { '' }
     if ($modesNow -ne $modesLast) {
@@ -149,6 +158,8 @@ try { $mc = Invoke-Tool 'Set-MenuControls.ps1' @('-RetroFE', $Root, '-ManifestDi
 
 # the main menu's wheel shows the wheel this cabinet really has (G HUB's picture of it); redrawn only when it changed
 try { $rw = Invoke-Tool 'New-RealWheelArt.ps1' @('-RetroFE', $Root, '-ManifestDir', $ManifestDir, '-Layout', $Layout); if ($rw -match '->|removed') { Write-Log (($rw -split "`r?`n" | Where-Object { $_ -match 'real wheel' }) -join ' ') } } catch { Write-Log "real wheel art failed: $($_.Exception.Message)" }
+# a hand-held controller is plugged in: the console lists show that controller's card; none: the panel's cards (tools\Set-PadCards.ps1)
+try { $pc = Invoke-Tool 'Set-PadCards.ps1' @('-RetroFE', $Root); if ($pc -match 'shown on|are back') { Write-Log (($pc -split "`r?`n" | Where-Object { $_ -match 'pad cards' }) -join ' ') } } catch { Write-Log "pad cards failed: $($_.Exception.Message)" }
 
 # the per-game controls cards (the real G29 with the game's buttons numbered, the pedals, the legend) are drawn from the
 # LIVE bindings: remade when a wheel cabinet has none yet, or a TeknoParrot binding is newer than the cards (Wheel Setup,
@@ -310,6 +321,15 @@ try {
     if ($m3Peer) { $m3Out = & (Join-Path $PSScriptRoot 'Set-SupermodelLink.ps1') -RetroFE $Root -Peer $m3Peer -Apply 6>&1 | Out-String; Write-Log ('Model 3 link: ' + (($m3Out.Trim() -split "`r?`n") -join '; ')) }
   }
 } catch { Write-Log "Model 3 link not set: $($_.Exception.Message)" }
+# Model 2 linked play (Daytona USA; tools\Set-Model2Link.ps1, RACE2 2026-11-27): the same pair, the same rule. The
+# emulator links only while its m2network.ini exists and names the twin, so it is written again at every start.
+try {
+  if (-not $PrepOnly -and $lk -and $lkLine -and $lkLine.Matches[0].Groups[1].Value -match '^(yes|true|1)$' -and (Test-Path (Join-Path $Root 'emulators\m2emulator'))) {
+    $m2 = @($lk.model3Pairs | Where-Object { @($_) -contains $env:COMPUTERNAME } | Select-Object -First 1)
+    $m2Peer = @($m2 | ForEach-Object { $_ } | Where-Object { $_ -and $_ -ne $env:COMPUTERNAME }) | Select-Object -First 1
+    if ($m2Peer) { $m2Out = & (Join-Path $PSScriptRoot 'Set-Model2Link.ps1') -RetroFE $Root -Peer $m2Peer -Apply 6>&1 | Out-String; Write-Log ('Model 2 link: ' + (($m2Out.Trim() -split "`r?`n") -join '; ')) }
+  }
+} catch { Write-Log "Model 2 link not set: $($_.Exception.Message)" }
 $deckOn = [bool](Read-AmUi $ManifestDir).streamDeck   # Tools > Cabinet Settings > Stream Deck
 if (-not $deckOn -and (Test-Path $deck)) { Write-Log 'Stream Deck controller off (Cabinet Settings)' }
 if ($deckOn -and $pyw -and (Test-Path $deck)) {

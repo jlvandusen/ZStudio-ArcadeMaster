@@ -438,6 +438,57 @@ def main():
         shutil.rmtree(old, ignore_errors=True)
     print("menu heroes: %d entries (%s), %d files written%s" % (len(heroes), ", ".join(heroes), made,
           (", no art for: " + ", ".join(missing)) if missing else ""))
+    print("menu heroes: shared with %d other theme(s)" % share_with_themes(a.retrofe, a.layout, out))
+
+
+def share_with_themes(retrofe, layout, out):
+    """Every other theme whose main menu is the hero show (the AM-* themes, 2026-11-27: their main menus stood empty on
+    black - this art is drawn per cabinet into <layout>'s own folder only) gets a folder link to each am_hero_* /
+    am_spinner folder here, so one set of pictures serves every theme with no copies."""
+    import _winapi
+    n = 0
+    lroot = os.path.join(retrofe, "layouts")
+    for t in sorted(os.listdir(lroot)) if os.path.isdir(lroot) else []:
+        if t == layout:
+            continue
+        main_xml = os.path.join(lroot, t, "collections", "Main", "layout", "layout.xml")
+        try:
+            if "am_hero_" not in open(main_xml, encoding="utf-8", errors="replace").read():
+                continue
+        except OSError:
+            continue
+        dst_root = os.path.join(lroot, t, "collections", "Main", "medium_artwork")
+        os.makedirs(dst_root, exist_ok=True)
+        for d in os.listdir(out):
+            if not (d.startswith("am_hero_") or d == "am_spinner"):
+                continue
+            src, dst = os.path.join(out, d), os.path.join(dst_root, d)
+            if os.path.lexists(dst):
+                if os.path.normcase(os.path.realpath(dst)) == os.path.normcase(os.path.realpath(src)):
+                    continue
+                if os.path.isdir(dst) and not os.path.islink(dst) and os.path.realpath(dst) == os.path.normpath(dst):
+                    continue                      # a theme's own folder of that name: left alone
+            _winapi.CreateJunction(src, dst)
+        n += 1
+        # the per-system art the default's game list reads with mode="systemlayout" (gauges, needles, spinner, the
+        # scroll burst, backgrounds - <layout>\collections\<list>\system_artwork, drawn per cabinet): a theme whose game
+        # list uses it (Showcase, Arcade Hall) links each list's folder to the default's
+        try:
+            uses = 'mode="systemlayout"' in open(os.path.join(lroot, t, "layout.xml"), encoding="utf-8", errors="replace").read()
+        except OSError:
+            uses = False
+        cols = os.path.join(lroot, layout, "collections")
+        if uses and os.path.isdir(cols):
+            for c in os.listdir(cols):
+                src = os.path.join(cols, c, "system_artwork")
+                if not os.path.isdir(src) or os.path.realpath(src) != os.path.normpath(src):
+                    continue
+                dst = os.path.join(lroot, t, "collections", c, "system_artwork")
+                if os.path.lexists(dst):
+                    continue                          # already linked, or the theme's own
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                _winapi.CreateJunction(src, dst)
+    return n
 
 
 if __name__ == "__main__":

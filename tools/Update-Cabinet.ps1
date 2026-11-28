@@ -25,7 +25,10 @@
 param(
   [Parameter(Mandatory)][string]$Root,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
-  [string]$BuildRoot = 'D:\ArcadeMaster\build',
+  # next to the manifest folder (R:\ArcadeMaster\build on the pedestal, D:\ArcadeMaster\build on the racing cabinets).
+  # Start-ArcadeMaster passes only -Root and -ManifestDir: a fixed D:\ default failed at every boot on a PC without D:
+  # ("Cannot find drive ... 'D'", 2026-11-28) and a finished RetroFE build never went in at start.
+  [string]$BuildRoot = (Join-Path (Split-Path $ManifestDir) 'build'),
   [string]$GstRoot,
   [switch]$DeployOnly,
   [switch]$NoPull,

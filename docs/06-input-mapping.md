@@ -770,3 +770,107 @@ Next steps towards our own G29 library, without G HUB:
   plugged-in controller can be (3+ axes and 10+ buttons), the two controller numbers are swapped in the whole file. The
   old file is kept beside it as `Supermodel.ini.wheel-<time>.bak`.
 - Steering on a second real controller (a pad, a second wheel) is somebody's choice and is left alone.
+
+## Model 3: the emulator crashed every time a game was closed (RACE1, 2026-11-27)
+
+- **What showed it:** System Health's "Games that crashed" said the Model 3 emulator had crashed 9 times in one afternoon,
+  always in Windows' `dinput8.dll`. The times matched the moments James left Dirt Devils: it crashed on every exit.
+- **Cause:** `emulators\Supermodel\opengl32.dll`, the add-on force feedback plug-in that came with the drive (FFB Arcade
+  Plugin, 2024). Supermodel already drives the wheel itself (`ForceFeedback = 1`, DirectInput), and the plug-in gets
+  nothing from the emulator here (no `Outputs` line), so it only held the wheel a second time and fell over when both
+  let go.
+- **Tested on RACE1** (Dirt Devils, started and closed three ways): as it was - crash; plug-in off, emulator force
+  feedback on - clean exit; plug-in on, emulator force feedback off - crash. So the plug-in, not the emulator.
+- **Fix on RACE1:** the plug-in file is renamed to `opengl32.dll.am-off-exit-crash` (rename it back to undo). The
+  emulator's own force feedback is unchanged.
+- **Not known yet:** whether the crash left the wheel's force feedback in a bad state for the menus afterwards (the
+  menu force was weak after a game on RACE1), and whether RACE2 has the same plug-in.
+
+## Menu force feedback was gone after every game (fixed in the frontend, 2026-11-27)
+
+- **What James felt** (RACE1, 2026-11-26): turning the wheel in the menus did not re-centre and had no force, after a
+  game had been played.
+- **Cause:** the frontend takes the wheel back the instant a game ends. At that moment the wheel opens but refuses every
+  effect, because the game that just closed still has it. The frontend kept that useless hold until the next game.
+- **Fix** (frontend fork PR 21): an open that got no effect at all is let go, and the frontend tries again every 5
+  seconds (up to 2 minutes, starting afresh after every game).
+- **Tested on RACE1:** Dirt Devils closed at 15:35:53, every effect refused; at 15:35:58 the wheel was back with
+  centring, damping, ticks and rumble.
+- A correction to the Model 3 section above: RACE2's 2022 build of the plug-in also crashes on exit on RACE1, while
+  RACE2 itself exits clean with it. So on RACE1 it is the plug-in as such; the difference between the rigs is elsewhere
+  (their `SDL2.dll` beside Supermodel differs). RACE1 runs Model 3 without the plug-in.
+## Hand-held controllers by name (2026-11-27)
+
+The controller scan (`tools\wheelmap\WheelMap.ps1 -Detect`) now names hand-held pads and sorts each into a family: the
+shape and the words printed on its buttons.
+
+| Family | Pads |
+|---|---|
+| `ps3`, `ps4`, `ps5`, `psx` | PlayStation controllers and their look-alikes |
+| `n64` | Nintendo 64 pads and adapters (Mayflash, Raphnet, Hyperkin, 8BitDo 64, Switch Online) |
+| `snes`, `snespro` | SNES-style pads; `snespro` has two sticks (8BitDo SN30 Pro, Pro 2, Ultimate) |
+| `nes` | NES-style pads (8BitDo N30, Zero) |
+| `genesis` | Genesis / Mega Drive / Saturn-style six-button pads (8BitDo M30, Retro-Bit) |
+| `gamecube`, `switch`, `xbox` | the rest |
+
+The list is `tools\pads\pads.json`, written by `python tools\pads\Update-PadCatalog.py` from the public SDL controller
+list (583 pads). A pad is found by its USB id, else by its name. Run the script again when a pad is not recognised;
+the family rules are at the top of that script.
+
+An 8BitDo pad switched to X-input mode looks like an Xbox 360 controller to Windows. When its name still says 8BitDo
+the scan goes by the name; otherwise leave the pad in D-input mode (hold START + B to turn it on).
+
+A PS3 controller needs a driver on Windows before any program sees it (DsHidMini). That is an install: ask James.
+
+Still to do: the pad's picture and button names on the controls cards, and setting the emulators up for the pad that
+is plugged in.
+## G HUB: where the wheel's rotation lives (2026-11-27)
+
+Read from a copy of `%LOCALAPPDATA%\LGHUB\settings.db` (copy `settings.db-wal` and `settings.db-shm` with it, or the
+copy is empty: G HUB keeps everything in the journal while it runs). The newest row of table `data` is one JSON text.
+
+- `cards.cards[]` with `"attribute": "WHEEL_SETTINGS"` holds the wheel: `wheelAperture` (rotation, 180 to 900,
+  default 900), `centerSpringStrength` (20), `wheelDamping` (10), `wheelSensitivity` (50).
+- Out of the box there is one such card, read-only, and one profile (the desktop) for one application.
+- A game gets its own rotation in G HUB through an application entry, a profile for it and a wheel settings card of
+  its own. How a profile points at its wheel card is not known yet: nothing on the cabinets has ever changed it.
+  To learn it, change the operating range once in G HUB's window and compare the file before and after.
+- Nothing is written to this file by our tools so far.
+
+## Hands-off emulator setup: fixes are put back at every start (2026-11-28)
+
+James: emulator setup has to be hands-off, also after an emulator update or on a fresh copy. On a wheel cabinet,
+Start-ArcadeMaster runs after the controller repair (Repair-EmulatorDevices):
+
+- `tools/Set-CoinStartButtons.ps1 -Apply`: coin on Share, start on Options, test on Plus, service on Minus in
+  TeknoParrot, MAME, Supermodel and Model 2 (Raw Thrills games call coin "Credit").
+- `tools/Set-EmulatorFixes.ps1 -Apply`: the point fixes in `catalog/emulator-fixes.json` (TeknoParrot buttons by
+  name, for example Dirty Drivin's Crank Forward = guns on the right paddle, a control a newer GameProfile added) and
+  the extra Supermodel `[ Global ]` lines of `tools/wheelmap/templates/supermodel.json` (steering saturation 40).
+
+Both change only what is missing or different, back each changed file up first, leave a running emulator's files
+for the next start, and write nothing when everything is right. **A fix found by hand on one cabinet goes into
+`catalog/emulator-fixes.json`** (optional `hosts` for one cabinet only), so every cabinet gets it and an update
+cannot take it away.
+
+## Wheel rotation without G HUB (2026-11-28)
+
+`tools\Set-WheelRange.ps1 -Degrees 270` sets how far the G29 turns lock to lock by sending the wheel its own "set
+range" command over USB. G HUB stays running and its settings are not touched. Proven on DESKTOP-RACE1: after 270,
+a quarter turn of the wheel is full lock (James watched the menu's wheel picture).
+
+- The wheel puts no stop at the new limit by itself; you can turn past it and the steering just stays at full lock.
+  `-EndStops` asks the motor to push back over the last few degrees (a spring on the wheel's fourth force slot);
+  that part is not confirmed yet.
+- It lasts until the wheel is unplugged, the PC restarts or G HUB sends its own value again.
+- Works for the wheels that take the classic Logitech command (G25, G27, Driving Force GT, G29). The G29 has no
+  rotation setting on its newer vendor interface (asked: nine features, none for the wheel), and G920 / G923 use a
+  different command that this tool does not send.
+- Careful with games whose emulator already shrinks the steering (Model 3 uses a saturation of 40): with the wheel
+  itself on 270 that would be shrunk twice. Per-game use has to set one or the other, not both.
+## Model 2: change its control files only while it is closed (2026-11-28)
+
+The Model 2 emulator writes the controls it holds in memory back to `CFG\<rom>.input` when it closes. A fix made
+while a game runs can be undone the moment the game is closed (RACE2: closing Daytona put the old controls back over
+six freshly copied files). `Repair-EmulatorDevices.ps1` skips these files while `EMULATOR.EXE` runs and says so.
+Its axes are numbered X, Y, RotationZ, slider (gas 1, brake 2, clutch 3 on a G29), not in the order the wheel lists them.

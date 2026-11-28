@@ -69,3 +69,43 @@ foreach ($grp in $bad | Group-Object Profile) {
   foreach ($r in $grp.Group) { Write-Host ("    {0,-8} {1,-11} bound to '{2}', should be {3}" -f $r.Status, $r.Control, $r.Bound, $r.Should) }
 }
 if ($Csv) { $rows | Export-Csv -NoTypeInformation -Encoding UTF8 $Csv; Write-Host "all rows: $Csv" }
+
+# ---- what TeknoParrot's own, current definition of each game has that this cabinet's profile does not
+# TeknoParrot ships GameProfiles\<game>.xml and keeps the cabinet's bindings in UserProfiles\<game>.xml. A TeknoParrot
+# update can add a control to the first that the second never gets: Dirty Drivin' gained "Crank Forward" (it fires the
+# guns), and both racing rigs had no button for it (James, 2026-11-27: "machine guns not working"). It can also move a
+# game to another loader (OpenParrot -> TeknoParrot), which changed how Dirty Drivin' ran on one rig only. Both are
+# listed here; they are information, not counted as faults above, because a control can be left out on purpose.
+$notes = New-Object System.Collections.Generic.List[string]
+# controls catalog\emulator-fixes.json binds (Set-EmulatorFixes, at every start): the next start adds them, so they are
+# told apart from the ones nobody has decided on yet
+$fixCat = Join-Path (Split-Path $PSScriptRoot) 'catalog\emulator-fixes.json'
+$fixed = @{}
+if (Test-Path -LiteralPath $fixCat) {
+  foreach ($gp in @((Get-Content -LiteralPath $fixCat -Raw | ConvertFrom-Json).teknoparrot.PSObject.Properties | Where-Object { $_.Name -notlike '_*' })) {
+    $fixed[$gp.Name.ToLower()] = @($gp.Value.buttons.PSObject.Properties | ForEach-Object { $_.Name.Trim().ToLower() })
+  }
+}
+foreach ($tp in $TeknoParrot | Select-Object -Unique) {
+  $ud = Join-Path $tp 'UserProfiles'; $gd = Join-Path $tp 'GameProfiles'
+  if (-not (Test-Path -LiteralPath $ud) -or -not (Test-Path -LiteralPath $gd)) { continue }
+  foreach ($f in Get-ChildItem -LiteralPath $ud -Filter *.xml -File) {
+    $gf = Join-Path $gd $f.Name; if (-not (Test-Path -LiteralPath $gf)) { continue }
+    try { $u = [xml][IO.File]::ReadAllText($f.FullName); $g = [xml][IO.File]::ReadAllText($gf) } catch { continue }
+    $un = @($u.SelectNodes('//JoystickButtons') | Where-Object { $_.ButtonName } | ForEach-Object { $_.ButtonName.Trim().ToLower() })
+    if (-not @($un | Where-Object { $_ -match $want['Steering'].match }).Count) { continue }   # driving games only
+    $new = @($g.SelectNodes('//JoystickButtons') | Where-Object { $_.ButtonName -and $un -notcontains $_.ButtonName.Trim().ToLower() } | ForEach-Object { $_.ButtonName.Trim() } |
+             Where-Object { $_ -notmatch '(?i)^(wheel|steering|gas|brake|accelerat\w*|throttle|handle)\b.*\b(left|right|up|down|\+|-)$' })   # keyboard halves of an axis
+    $ul = "$($u.GameProfile.EmulatorType)"; $gl = "$($g.GameProfile.EmulatorType)"
+    $bits = @()
+    $cov = @($fixed[$f.BaseName.ToLower()]); $soon = @($new | Where-Object { $cov -contains $_.ToLower() }); $open = @($new | Where-Object { $cov -notcontains $_.ToLower() })
+    if ($open) { $bits += "controls this cabinet's profile lacks: $($open -join ', ') (to bind them on every cabinet: catalog\emulator-fixes.json)" }
+    if ($soon) { $bits += "added at the next start by catalog\emulator-fixes.json: $($soon -join ', ')" }
+    if ($ul -and $gl -and $ul -ne $gl) { $bits += "loader here is $ul, TeknoParrot's current one is $gl" }
+    if ($bits) { $notes.Add(("  {0,-18} {1}" -f $f.BaseName, ($bits -join '; '))) }
+  }
+}
+if ($notes.Count) {
+  Write-Host ("{0} game(s) differ from TeknoParrot's current definition (for information):" -f $notes.Count)
+  $notes | ForEach-Object { Write-Host $_ }
+}

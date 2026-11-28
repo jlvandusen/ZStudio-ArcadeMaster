@@ -38,6 +38,38 @@ out about my company". James sends it himself; no session contacts anyone outsid
       discover everything and emulators etc set it up and configure"). Discover (read-only), report and choose, set up
       (asked, logged, safe to re-run), prove it (one test launch per system, self-heal), then keep discovering at boot.
       Never deletes or moves the user's files without a yes; never downloads ROMs, BIOS files or art.
+- Progress 2026-11-27 (ARCADE-PEDESTAL):
+  - `tools/Invoke-FirstRun.ps1` chains discovery, lists, direct launchers and panel keys, links, content and lights,
+    then the check. It is a dry run by default.
+  - AmPanel tray > **Set up this PC...** runs it: a check first, then "Set it up" after a yes.
+  - Every standalone emulator gets the panel's keys (`Set-EmulatorPanelKeys.py`): PCSX2, xemu, Xenia, Dolphin GC,
+    PPSSPP, Citra, Yuzu and Cemu.
+  - 34 RetroArch consoles have bezels. Xenia's first-run disclaimer is pre-acknowledged.
+  - Done later the same day:
+    - lists for PCs without RetroBat (`New-ListsFromDiscovery.py`);
+    - Wii Remote + Nunchuk on the panel;
+    - Model 3 card and lights;
+    - folder import (AmPanel tray > Import a folder...);
+    - the release build and updater (`Build-Release.ps1`, `Update-Release.ps1`). Publishing is on hold until James
+      says so ("keep collecting the updates before packaging").
+  - **Still open:**
+    - the clean-PC dry run (a PC or VM that has never had ArcadeMaster);
+    - a test launch per system after import;
+    - generalising the links past RetroBat (LaunchBox and bare folders link through Import a folder today).
+- [ ] **First run links, then offers to move** (James 2026-11-27: "when it does a discovery of a new system first run
+      it can then find all the stuff and do the same thing to each thus not effecting another frontend etc.. or give the
+      user option to move it all if wanted"). After discovery, `tools/Move-OffRetroBat.py` (link mode) puts a folder
+      link in the ArcadeMaster tree for every emulator, BIOS, saves and game folder found, whatever frontend owns it
+      (RetroBat, LaunchBox, a bare folder); the other frontend keeps working. Generalise it past RetroBat
+      (discovery.json as the source). A choice in the wizard: keep links, or move everything in (`--mode move`).
+      Done on ARCADE-PEDESTAL 2026-11-27 for RetroBat: 20 links + 176 TeknoParrot games; R:\ArcadeMaster\STORAGE.md.
+- [x] **Import: point at a folder and take it in** (2026-11-27: tools/Import-Folder.py + tray; the test launch is still open) (James 2026-11-27: "add ability to perform import of a new game or
+      system etc as needed and point to a folder and consume the rom or emulators etc"). In AmPanel: pick a folder; it
+      tells what it found (an emulator by its exe from the catalog, a system's games by folder name and extensions, a
+      single game), links it (or moves it, if asked) into the tree, makes / updates the list and its direct launcher,
+      runs the art, cards, lights and search index for it, and test-launches one game.
+- [ ] **Combine the cabinets' storage** when James says so: each cabinet's `<manifest>\storage-map.json` lists every
+      link and its real folder; `--mode move` (same drive) or a copy to one drive turns links into real folders.
 - [ ] **No RetroBat requirement** (James 2026-11-27: "not require retrobat and use their default emulators, retrobat is
       just a frontend not the emulator"). An emulator catalog of our own (tools/emulators/*.json: exe names, version,
       command line per system, config files to write). Direct launchers per system; we write each emulator's config

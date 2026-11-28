@@ -254,11 +254,23 @@ if (Test-Path $mt) {
 
 # launchers (report only - emulators are never touched)
 Emit @{ type = 'step'; id = 'launchers'; label = $checks.launchers; status = 'run' }
-$broken = @(); $toolsLauncherFixed = $false
+$broken = @(); $toolsLauncherFixed = $false; $caseFixed = @()
+$launcherFiles = @(Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter *.conf -File -ErrorAction SilentlyContinue | ForEach-Object BaseName)
 foreach ($c in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   $cs = Join-Path $c.FullName 'settings.conf'; if (-not (Test-Path $cs)) { continue }
   $ln = (Select-String -Path $cs -Pattern '^\s*launcher\s*=\s*(.+)$' | Select-Object -First 1); if (-not $ln) { continue }
   $lname = $ln.Matches[0].Groups[1].Value.Trim() -replace '%ITEM_COLLECTION_NAME%', $c.Name; $lc = Join-Path $RetroFE "launchers.windows\$lname.conf"
+  # RetroFE compares launcher names letter for letter, Windows does not: a list that asks for "Sega Model 2" while the
+  # file is "SEGA Model 2.conf" passes every file check here and still starts nothing ("Launcher executable not found";
+  # Daytona USA on RACE2 2026-11-27 and RACE1 2026-11-28). The list's line is rewritten to the file's exact name.
+  if (($launcherFiles -cnotcontains $lname) -and ($launcherFiles -contains $lname)) {
+    $exact = @($launcherFiles | Where-Object { $_ -eq $lname })[0]
+    if ($fix) {
+      $ct = [IO.File]::ReadAllText($cs); $bak = "$cs.am-launcher-bak"; if (-not (Test-Path -LiteralPath $bak)) { Copy-Item -LiteralPath $cs $bak }
+      $ct = [regex]::Replace($ct, '(?m)^(\s*launcher\s*=\s*).+?([ \t]*\r?)$', { param($mm) $mm.Groups[1].Value + $exact + $mm.Groups[2].Value }, 1)
+      [IO.File]::WriteAllText($cs, $ct, (New-Object Text.UTF8Encoding($false))); $caseFixed += "$($c.Name) -> '$exact'"; $lname = $exact; $lc = Join-Path $RetroFE "launchers.windows\$lname.conf"
+    } else { $broken += "$($c.Name): asks for launcher '$lname' but the file is '$exact.conf' (capital letters differ) - its games will not start" }
+  }
   if (-not (Test-Path $lc) -and $lname -eq 'AM_TOOLS' -and $fix -and (Test-Path (Join-Path $c.FullName 'RunHidden.vbs'))) {
     # ArcadeMaster's own Tools launcher (the one launcher this check may write): same text as New-CabinetToolsCollection
     Set-Content $lc "executable = C:\Windows\System32\wscript.exe`r`narguments = `"$($c.FullName)\RunHidden.vbs`" `"%ITEM_FILEPATH%`"`r`nreboot = yes" -Encoding ascii
@@ -270,7 +282,8 @@ foreach ($c in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   $full = if ([IO.Path]::IsPathRooted($exe)) { $exe } else { Join-Path $RetroFE $exe }
   if (-not (Test-Path $full)) { $broken += "$($c.Name): $exe not found" }
 }
-if ($toolsLauncherFixed -and -not $broken) { Add-Result 'launchers' $checks.launchers 'FIXED' 'Tools menu launcher (AM_TOOLS) was missing - put back' }
+if ($caseFixed -and -not $broken) { Add-Result 'launchers' $checks.launchers 'FIXED' ("launcher name written the way its file is spelled, so the games start: " + ($caseFixed -join '; ') + " - takes effect at the next start of the frontend") }
+elseif ($toolsLauncherFixed -and -not $broken) { Add-Result 'launchers' $checks.launchers 'FIXED' 'Tools menu launcher (AM_TOOLS) was missing - put back' }
 elseif ($broken) { Add-Result 'launchers' $checks.launchers 'WARN' (($broken | Select-Object -First 4) -join '; ') + $(if ($broken.Count -gt 4) { " (+$($broken.Count - 4) more)" }) } else { Add-Result 'launchers' $checks.launchers 'OK' 'every launcher points at an existing program' }
 
 # games: TeknoParrot profiles inside THIS frontend whose game path is gone get repaired (Repair-TPProfiles: backup
@@ -469,12 +482,21 @@ $why = { param($mod, $code)
     '^(ntdll|KERNELBASE|ucrtbase|USER32)\.dll$' { "inside the program itself ($mod, code 0x$code)"; break }
     default { "in $mod (code 0x$code)" }
   } }
-$crash = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'Application Error'; Id = 1000; StartTime = (Get-Date).AddHours(-$CrashHours) } -ErrorAction SilentlyContinue |
-  ForEach-Object { $p = $_.Properties; $exe = ([string]$p[0].Value).ToLower(); if ($names.ContainsKey($exe)) { [pscustomobject]@{ who = $names[$exe]; when = $_.TimeCreated; why = (& $why ([string]$p[3].Value) ([string]$p[6].Value)) } } })
+# Known, harmless: Supermodel with the force feedback plug-in (its own opengl32.dll beside Supermodel.exe) ends with an
+# access violation AFTER the game has closed - on every exit, on RACE1 and RACE2 alike (measured 2026-11-27, plug-in
+# log shows a clean detach). Counted and said, but not a warning. Without the plug-in a Supermodel crash is a real one.
+$ffbExit = $false
+foreach ($lc in Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter *.conf -File -ErrorAction SilentlyContinue) {
+  $m = Select-String -LiteralPath $lc.FullName -Pattern '^\s*executable\s*=\s*(.+Supermodel\.exe)\s*$' | Select-Object -First 1
+  if ($m) { $sx = $m.Matches[0].Groups[1].Value.Trim().Trim('"'); if (-not [IO.Path]::IsPathRooted($sx)) { $sx = Join-Path $RetroFE $sx }; if (Test-Path -LiteralPath (Join-Path (Split-Path $sx) 'opengl32.dll')) { $ffbExit = $true } }
+}$crash = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'Application Error'; Id = 1000; StartTime = (Get-Date).AddHours(-$CrashHours) } -ErrorAction SilentlyContinue |
+  ForEach-Object { $p = $_.Properties; $exe = ([string]$p[0].Value).ToLower(); if ($names.ContainsKey($exe)) { [pscustomobject]@{ who = $names[$exe]; when = $_.TimeCreated; why = (& $why ([string]$p[3].Value) ([string]$p[6].Value)); known = ($exe -eq 'supermodel.exe' -and $ffbExit) } } })
 if (-not $crash.Count) { Add-Result 'crashes' $checks.crashes 'OK' "no game, emulator or frontend crash in the last $CrashHours h ($($names.Count) programs watched)" }
 else {
   $lines = foreach ($grp in $crash | Group-Object who) { $last = $grp.Group | Sort-Object when | Select-Object -Last 1; "{0} crashed {1}x, last {2:HH:mm} {3}" -f $grp.Name, $grp.Count, $last.when, $last.why }
-  Add-Result 'crashes' $checks.crashes 'WARN' ($lines -join '; ')
+  # all of them the known one: said, but not an alarm
+  if (-not @($crash | Where-Object { -not $_.known }).Count) { Add-Result 'crashes' $checks.crashes 'OK' ("known and harmless: Sega Model 3 closes with an error after every game while its force feedback plug-in is on ({0}x in the last {1} h); play is not affected" -f $crash.Count, $CrashHours) }
+  else { Add-Result 'crashes' $checks.crashes 'WARN' ($lines -join '; ') }
 }
 # wheel force feedback driver: Windows lists force feedback for a wheel through a maker's driver (registry OEMForceFeedback
 # CLSID). Uninstalling Logitech G HUB removes that driver but leaves the entry (DESKTOP-RACE1, 2026-11-26): the wheel
