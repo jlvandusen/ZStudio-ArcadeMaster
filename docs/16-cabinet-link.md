@@ -189,5 +189,24 @@ address, left over from the DRIVE copy.
   PUSH START BUTTON and listens on UDP 1978. UDP, so a stray port probe cannot use the link up as it did in
   Supermodel. The emulator exits with 0xC00000FD when its window is closed, with or without the link: nothing to do
   with the link. Each game still needs MASTER (RACE1) / SLAVE (RACE2) in its test menu (Test = the G29's **+**).
+- **Daytona USA linked works (James, 2026-11-28: "Network checking", then "Worked").** Both rigs start through the
+  menu, RACE1 is MASTER and RACE2 SLAVE in the test menu (**+** opens it and picks, **-** moves). Each EMULATOR owns
+  UDP 1978. On the way there, four things had to be fixed, each of which can catch a new cabinet:
+  1. **The list's launcher name must match the launcher file's case.** `collections\Sega Model 2\settings.conf` said
+     `launcher = %ITEM_COLLECTION_NAME%` ("Sega Model 2"), the file is `SEGA Model 2.conf`: "Launcher executable not
+     found". RACE1's PR 397 repairs that trap at every start.
+  2. **The controls must point at the wheel.** RACE2's `CFG\*.input` came with the DRIVE copy, every control on joy 2
+     (the handbrake on RACE2), start on Enter, test / service on F2 / F1. Both rigs now have the same six files; the
+     gas slot was corrected to axis 1 (RACE1 2026-11-28: WheelMap had put it on axis 3, the clutch). Repair-EmulatorDevices
+     puts steering back on the wheel and Set-CoinStartButtons puts start / coin / test / service on Options / Share /
+     Plus / Minus at every start.
+  3. **The emulator writes its controls back into `CFG\<rom>.input` when it closes.** A file changed while a game runs
+     is overwritten at its exit; change them with the emulator closed (the start-up tools skip it while it runs).
+  4. **Esc only drops it into a window.** AmPanel's exit guard closes it (exit-rules.json: EMULATOR = close); the guard
+     only works when the menu tells AmPanel a game started (settings.conf `LEDBlinkyDirectory` to the shim - missing on
+     RACE1 until PR 402).
+- **Sega Touring Car does not link** (2026-11-28): both rigs' EMULATOR listen on UDP 1978, the firewalls are off, the
+  game shows "CHECKING NETWORK - THIS IS MASTER SITE" / "SLAVE SITE" and never leaves it. Emulator 1.1a's notes name
+  network fixes for Daytona, Sega GT 24h and Over Rev only; Touring Car's link is most likely not emulated.
 - Not linked yet: TeknoParrot games. Each emulator has its own network settings; Model 3 is the
   first because Supermodel has them in one file.
