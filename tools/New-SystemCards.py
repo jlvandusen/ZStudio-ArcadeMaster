@@ -69,6 +69,30 @@ def system_key(retrofe, coll):
     return NAME_KEY.get(coll.lower())
 
 
+_PADS = None
+
+
+def own_pad(key):
+    """our own picture of the controller this console came with (tools/pads, layouts/ArcadeMaster/images/pads) or ''.
+    It ships with the release, so a PC without RetroBat's RELOAD theme still gets a controller on the card."""
+    global _PADS
+    here = os.path.dirname(os.path.abspath(__file__))
+    if _PADS is None:
+        try:
+            import json
+            _PADS = json.load(open(os.path.join(here, "pads", "pads.json"), encoding="utf-8"))["families"]
+        except Exception:
+            _PADS = {}
+    best = None
+    for fam, f in _PADS.items():
+        like = f.get("like", [])
+        if key in like and (best is None or like.index(key) < best[0]):
+            best = (like.index(key), fam)
+    if not best:
+        return ""
+    p = os.path.join(os.path.dirname(here), "layouts", "ArcadeMaster", "images", "pads", "pad_%s.png" % best[1])
+    return p if os.path.exists(p) else ""
+
 def card(title, controller, key, dst):
     W, H, S = 1100, 300, 2
     im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
@@ -146,6 +170,8 @@ def main():
             ctrl = os.path.join(theme, "controls", key + ".png") if theme else ""
             if not os.path.exists(ctrl):
                 ctrl = os.path.join(own, "device.png")
+            if not os.path.exists(ctrl):          # no RELOAD art, no picture of the system's own: our drawn controller
+                ctrl = own_pad(key)
             title = re.sub(r"\s*\(RetroBat\)", "", coll)
             dst = os.path.join(art, "am_controls", coll + ".png")
             if a.force or not os.path.exists(dst):
