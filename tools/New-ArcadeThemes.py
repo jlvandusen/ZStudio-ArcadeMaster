@@ -437,6 +437,7 @@ class Theme:
 class Wall(Theme):
     name, p = 'Wall', 'wall'
     label = 'Tile Wall'
+    ENTRANCE = 'drop'        # main menu: characters fall in from above
     about = 'a brick wall of logo tiles; the chosen game opens big with its video, controls card and hint'
     idea = ('CoinOPS "Wall" / "Night Wall" (a wall of game screens with the chosen one in front) - here a staggered '
             'two-column tile wall that scrolls with UP / DOWN')
@@ -560,6 +561,7 @@ class Wall(Theme):
 class Marquee(Theme):
     name, p = 'Marquee', 'marq'
     label = 'Cabinet'
+    ENTRANCE = 'rise'        # main menu: characters come up from below
     about = "a cabinet frame over the game's own art: lit marquee, framed screen, controls card on the control panel"
     idea = ('CoinOPS "Marquee" / "Marquee + Bezel" (marquee art beside a bezel-framed screen) - here the screen IS the '
             'cabinet: marquee lightbox on top, video in a clean modern screen frame, the controls card on the panel deck')
@@ -678,6 +680,7 @@ class Marquee(Theme):
 class Wheel(Theme):
     name, p = 'Wheel', 'whl'
     label = 'Spin Wheel'
+    ENTRANCE = 'spin'        # main menu: characters spin in on the spot
     about = 'curved logo wheel on the right, a big video on the left, the story as a ticker'
     idea = ('CoinOPS "Wheel Ani" and CORE "TYPE R" (logos on a curved, tilted wheel at the screen edge) - here a neon arc '
             'on the right with a glass band under the logos, the video big on the left and the story running as a ticker')
@@ -1035,11 +1038,11 @@ def x_launch_rich():
             + x_loading())
 
 
-def x_sparks(prefix, spots, layer=4):
+def x_sparks(prefix, spots, layer=4, root=''):
     """sparks drifting up through the scene, each on its own slow loop (alpha / y only: cheap)"""
     out = ''
     for i, (x, y0, y1, size, dur, delay) in enumerate(spots):
-        out += (f'  <image src="images/{prefix}_spark.png" x="{x}" y="{y0}" xOrigin="center" yOrigin="center" width="{size}" height="{size}" alpha="0" layer="{layer}">\n'
+        out += (f'  <image src="{root}images/{prefix}_spark.png" x="{x}" y="{y0}" xOrigin="center" yOrigin="center" width="{size}" height="{size}" alpha="0" layer="{layer}">\n'
                 f'    <onIdle><set duration="{delay}"><animate type="nop"/></set>'
                 f'<set duration=".6"><animate type="alpha" from="0" to=".9"/><animate type="y" from="{y0}" to="{y0 - (y0 - y1) // 6}"/></set>'
                 f'<set duration="{dur}"><animate type="y" to="{y1}" algorithm="easeOutSine"/><animate type="alpha" to="0" algorithm="easeInQuadratic"/></set></onIdle>\n  </image>\n')
@@ -1073,6 +1076,7 @@ def spark_png(size, color):
 class Showcase(Theme):
     name, p = 'Showcase', 'shw'
     label = 'Showcase'
+    ENTRANCE = 'drop'        # main menu: characters fall in from above
     about = ('a stage: light beams sweep over the game\'s drifting fanart, its video glows in a double neon frame with a '
              'passing glint, the logo drops in, box art fans out on a lit floor')
     idea = 'a game reveal on a stage - spotlights, a big screen, the boxes lined up in front'
@@ -1176,6 +1180,15 @@ class Showcase(Theme):
                 + x_launch_rich()
                 + '</layout>\n')
 
+    def main_extras(self):
+        """main menu: the stage's two light beams sweep over the hero show (under the characters, layer 11)"""
+        out = ''
+        for src, x, a0, a1 in (('shw_beam.png', 300, 16, -6), ('shw_beam2.png', 1700, -16, 6)):
+            out += (f'  <image src="../../../images/{src}" x="{x}" y="-40" xOrigin="center" yOrigin="top" width="720" height="1300" angle="{a0}" alpha=".6" layer="11">\n'
+                    f'    <onIdle><set duration="8"><animate type="angle" to="{a1}" algorithm="easeInOutSine"/></set>'
+                    f'<set duration="8"><animate type="angle" to="{a0}" algorithm="easeInOutSine"/></set></onIdle>\n  </image>\n')
+        return out
+
     def preview(self, s):
         c = s.base(self, backdrop_alpha=1)
         s.paste(c, self.img('shw_shade.png'), 0, 0, W, H, origin=False)
@@ -1201,6 +1214,7 @@ class Showcase(Theme):
 class Hall(Theme):
     name, p = 'ArcadeHall', 'hal'
     label = 'Arcade Hall'
+    ENTRANCE = 'rise'        # main menu: characters come up from below
     about = ('a games room: the chosen game in a lit arcade cabinet (its marquee flickering on top, its video on the screen, '
              'its controls on the deck), the list a stack of glowing marquees, the default\'s gauges and sparks')
     idea = 'walking down a row of cabinets: every game is a lit marquee, the chosen one is the cabinet in front of you'
@@ -1302,6 +1316,11 @@ class Hall(Theme):
                 + x_burst_fx()
                 + x_launch_rich()
                 + '</layout>\n')
+
+    def main_extras(self):
+        """main menu: the hall's sparks drift up through the hero show"""
+        return x_sparks('hal', [(200, 1060, 300, 32, 7, 0), (900, 1040, 240, 24, 8.5, 1.8), (1250, 1000, 420, 22, 6, 3.1),
+                                (1650, 1060, 200, 30, 9, 1), (1860, 1020, 380, 20, 7, 4.4)], layer=11, root='../../../')
 
     def preview(self, s):
         c = s.base(self, backdrop_alpha=1)
@@ -1480,6 +1499,31 @@ def write(path: Path, text: str):
     ET.parse(path)                                   # every layout must be well-formed XML
 
 
+def main_variant(xml: str, theme) -> str:
+    """The shared hero main menu, given the theme's own character entrance and extras. The default slides each character
+    in from the right (x 2200 -> 1480) and back out; a theme can make them
+      drop - fall in from above with a bounce, leave upwards      rise - come up from below, sink back down
+      spin - spin in on the spot, spin out
+    and add its own layers (Showcase's light beams, Arcade Hall's sparks) via main_extras()."""
+    style = getattr(theme, 'ENTRANCE', '')
+    if style in ('drop', 'rise'):
+        start = '-420' if style == 'drop' else '1560'
+        easing = 'easeOutBounce' if style == 'drop' else 'easeOutBack'
+        xml = xml.replace('x="2200" y="775"', f'x="1480" y="{start}"')
+        xml = xml.replace('<animate type="x" from="2200" to="1480" algorithm="easeOutBack"/>',
+                          f'<animate type="y" from="{start}" to="775" algorithm="{easing}"/>')
+        xml = xml.replace('<animate type="x" to="2200" algorithm="easeInBack"/>', f'<animate type="y" to="{start}" algorithm="easeInBack"/>')
+    elif style == 'spin':
+        xml = xml.replace('x="2200" y="775"', 'x="1480" y="775"')
+        xml = xml.replace('<animate type="x" from="2200" to="1480" algorithm="easeOutBack"/>',
+                          '<animate type="angle" from="-200" to="0" algorithm="easeOutBack"/>')
+        xml = xml.replace('<animate type="x" to="2200" algorithm="easeInBack"/>', '<animate type="angle" to="200" algorithm="easeInBack"/>')
+    extra = theme.main_extras() if hasattr(theme, 'main_extras') else ''
+    if extra:
+        xml = xml.replace('</layout>', extra + '</layout>')
+    return xml
+
+
 def copy_named_files(xml: Path, src_root: Path, dst_root: Path):
     """every file a layout names (src="images/..", font="fonts/..", sound="sounds/..") that is in the source layout,
     copied to the same place in the theme. Paths in a RetroFE layout are relative to the layout folder; per-game media
@@ -1523,6 +1567,10 @@ def build(theme: Theme, root: Path):
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SRC / rel, dst)
         copy_named_files(SRC / rel, SRC, out)
+    # each theme's own main-menu personality over the shared hero show (backlog 1b: "different character entrances")
+    mm = out / 'collections' / 'Main' / 'layout' / 'layout.xml'
+    mm.write_text(main_variant(mm.read_text(encoding='utf-8'), theme), encoding='utf-8', newline='\n')
+    ET.parse(mm)
     for f in ('touch_hit.png', 'black.png'):
         if (SRC / 'images' / f).exists():
             shutil.copy2(SRC / 'images' / f, img / f)
