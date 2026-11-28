@@ -51,7 +51,7 @@ VIOLET, GREEN, RED, ORANGE = (123, 92, 255), (61, 220, 132), (255, 90, 90), (255
 TEXT, DIM, FAINT = (230, 233, 240), (154, 163, 178), (60, 66, 84)
 PLAYER = [(0xff, 0x3b, 0x3b), (0x2e, 0x8b, 0xff), (0x3d, 0xdc, 0x84), (0xff, 0xcc, 0x00)]
 BTN_COLORS = [MAGENTA, CYAN, AMBER, GREEN, VIOLET, ORANGE, (155, 231, 255), RED]
-CARD_VERSION = 15   # bump to force a re-render of every signature card (links follow: files are rewritten in place)
+CARD_VERSION = 16   # bump to force a re-render of every signature card (links follow: files are rewritten in place)
 
 LINK_MAX = 1000           # NTFS caps a file at 1023 names; leave headroom
 W, H, S = 1100, 300, 2   # card size, supersampling factor
@@ -1070,6 +1070,19 @@ class Emulators:
         return self.cols[col]
 
     def item(self, col: str, item: str) -> str:
+        # a game with its own launcher (collections/<col>/launchers/<item>.conf names it): Time Crisis 4 in Arcade PC
+        # runs on "Sony PlayStation 3 Guns", not on the list's TeknoParrot (the card said TeknoParrot, 2026-11-27)
+        own = self.root / 'collections' / col / 'launchers' / f'{item}.conf'
+        if own.exists():
+            try:
+                ln = next((l.strip() for l in own.read_text(encoding='utf-8', errors='replace').splitlines() if l.strip()), '')
+            except OSError:
+                ln = ''
+            if ln and (self.root / 'launchers.windows' / f'{ln}.conf').exists():
+                lc = read_conf(self.root / 'launchers.windows' / f'{ln}.conf')
+                exe = Path(lc.get('executable', '').replace('/', '\\'))
+                if 'teknoparrot' not in exe.stem.lower() and 'retroarch' not in exe.stem.lower():
+                    return ln
         label, kind, base, conf = self.collection(col)
         try:
             if kind == 'pc':
