@@ -110,6 +110,30 @@ switch ($Tool) {
     }
     else { Write-Host 'The newest driver is already installed.' -ForegroundColor Green }
   }
+  'SystemHelpers' {
+    # the admin-only helpers (tools\Install-SystemTasks.ps1): GPU reset, USB heal. All in place: USB heal runs once now
+    # and its last lines are shown. Some waiting: installed detached with the frontend out of the way (Windows' admin
+    # prompt must be seen - Start-SystemTasksInstall.ps1), and this panel closes (James 2026-11-28: "add it to the
+    # setting tool choices").
+    Banner 'SYSTEM HELPERS - graphics driver reset and USB self-heal'
+    $sj = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $t 'Install-SystemTasks.ps1') -ManifestDir $ManifestDir -Check | Out-String | ConvertFrom-Json
+    Emit @{ type = 'tiles'; tiles = @(@($sj.items) | ForEach-Object { @{ label = ($_.task -replace '^ArcadeMaster ', '').ToUpper(); value = $(if (@($sj.waiting) -contains $_.id) { 'NOT INSTALLED' } else { 'ON' }); suffix = ''; icon = 'repair' } }) }
+    if (@($sj.waiting).Count) {
+      $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $t 'Start-SystemTasksInstall.ps1')`" -ManifestDir `"$ManifestDir`" -RetroFE `"$RetroFE`""
+      $ok = $false
+      try { $r = ([wmiclass]'Win32_Process').Create($cmd, $t, $null); $ok = $r.ReturnValue -eq 0 } catch { }
+      if (-not $ok) { Start-Process powershell.exe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', (Join-Path $t 'Start-SystemTasksInstall.ps1'), '-ManifestDir', $ManifestDir, '-RetroFE', $RetroFE) }
+      Write-Host 'Installing: the menu steps aside. Answer Windows'' admin prompt with YES (if it does not show, click the flashing shield on the taskbar). The menu comes back when it is done.' -ForegroundColor Yellow
+      Start-Sleep -Seconds 4
+      Emit @{ type = 'close'; why = 'system helpers install started - Windows'' admin prompt must be seen' }
+    }
+    else {
+      Write-Host 'Both helpers are installed. Checking USB devices now...' -ForegroundColor Green
+      & schtasks.exe /run /tn 'ArcadeMaster USB Heal' | Out-Null; Start-Sleep -Seconds 8
+      $ul = Join-Path $ManifestDir 'usb-heal.log'
+      if (Test-Path $ul) { Get-Content $ul -Tail 5 | ForEach-Object { Write-Host $_ } } else { Write-Host 'Every USB device is fine.' }
+    }
+  }
   'MenuButtons' {
     # the one menu layout (catalog\menu-controls.json), named for this cabinet's controllers
     Banner 'MENU BUTTONS - the same on every cabinet'
