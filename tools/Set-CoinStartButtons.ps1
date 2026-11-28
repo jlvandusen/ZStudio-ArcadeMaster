@@ -140,7 +140,17 @@ foreach ($r in $Roots) {
   # does not change (coin stays on Share) is skipped. The first version built one two-way table and looked for "any old
   # code": on a second visit (the frontend's copy and the E: copy are the same files) it swapped start straight back.
   $pairs = @(@{ old = $OldCoin; new = $Coin }, @{ old = $OldStart; new = $Start }) | Where-Object { $_.old -ne $_.new -and $_.old -ge 0 -and $_.new -ge 0 }
-  foreach ($f in Get-ChildItem -LiteralPath (Join-Path $r 'CFG') -Filter *.input -File -ErrorAction SilentlyContinue) {
+  # The Model 2 emulator writes the controls it holds back into CFG\<rom>.input when it closes: a file changed while it
+  # runs is overwritten at its exit (RACE2, 2026-11-28). Its files wait for the next start then.
+  $m2Files = @(Get-ChildItem -LiteralPath (Join-Path $r 'CFG') -Filter *.input -File -ErrorAction SilentlyContinue)
+  if ($m2Files -and (Get-Process EMULATOR, emulator_multicpu -ErrorAction SilentlyContinue)) { $notes.Add("Model 2 is running - $r\CFG is left for the next start"); $m2Files = @() }
+  # Start / coin / test / service by their SLOT in the game's control list (tools\wheelmap\templates\m2emulator.json
+  # 'games' -> 'schemas'): a file whose start was a key (Enter) or test / service on F2 / F1 gets the wheel's buttons too.
+  # Before, only start and coin were moved, and only from L3 / R3: RACE2's Daytona kept test / service on F2 / F1 while
+  # RACE1's had Plus / Minus (James, 2026-11-28: "why are both rigs different").
+  $m2t = $null; $m2tf = Join-Path $wm 'templates\m2emulator.json'; if (Test-Path -LiteralPath $m2tf) { $m2t = Get-Content -LiteralPath $m2tf -Raw | ConvertFrom-Json }
+  $slotWant = [ordered]@{ 'Start' = $Start; 'Coin 1' = $Coin; 'Coin' = $Coin }; if ($Test -ge 0) { $slotWant['Test'] = $Test }; if ($Service -ge 0) { $slotWant['Service'] = $Service }
+  foreach ($f in $m2Files) {
     $b = [IO.File]::ReadAllBytes($f.FullName); $out = [byte[]]$b.Clone(); $n = 0; $words = [int]($b.Length / 4) - 2
     foreach ($pr in $pairs) {
       $co = (& $code $pr.old); $cn = (& $code $pr.new)
@@ -148,6 +158,17 @@ foreach ($r in $Roots) {
       $clash = @(0..($words - 1) | Where-Object { [BitConverter]::ToUInt32($out, $_ * 4) -eq $cn })      # another control on the new button: it takes the old one
       foreach ($i in $at) { [BitConverter]::GetBytes([uint32]$cn).CopyTo($out, $i * 4); $n++ }
       foreach ($i in $clash) { [BitConverter]::GetBytes([uint32]$co).CopyTo($out, $i * 4); $n++ }
+    }
+    $schemaName = if ($m2t -and $m2t.games) { [string]$m2t.games.($f.BaseName) } else { '' }
+    $slots = if ($schemaName -and $m2t.schemas.$schemaName) { @($m2t.schemas.$schemaName) } else { @() }
+    if ($slots.Count -and $slots.Count -ne $words) { $notes.Add("$($f.Name): $words controls in the file, $($slots.Count) in the template's '$schemaName' - slots left alone"); $slots = @() }
+    for ($i = 0; $i -lt $slots.Count; $i++) {
+      $sn = [string]$slots[$i]; if (-not $slotWant.Contains($sn)) { continue }
+      $cn = (& $code $slotWant[$sn]); $cur = [BitConverter]::ToUInt32($out, $i * 4)
+      if ($cur -eq $cn) { continue }
+      # another control already on that wheel button takes this slot's old code, so one press never does two things
+      foreach ($j in 0..($words - 1)) { if ($j -ne $i -and [BitConverter]::ToUInt32($out, $j * 4) -eq $cn -and -not $slotWant.Contains([string]$slots[$j])) { [BitConverter]::GetBytes([uint32]$cur).CopyTo($out, $j * 4); $n++ } }
+      [BitConverter]::GetBytes([uint32]$cn).CopyTo($out, $i * 4); $n++
     }
     if ($n) { Save-Bytes $f.FullName $out "Model 2: $n control code(s)" }
   }
