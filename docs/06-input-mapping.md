@@ -874,3 +874,11 @@ The Model 2 emulator writes the controls it holds in memory back to `CFG\<rom>.i
 while a game runs can be undone the moment the game is closed (RACE2: closing Daytona put the old controls back over
 six freshly copied files). `Repair-EmulatorDevices.ps1` skips these files while `EMULATOR.EXE` runs and says so.
 Its axes are numbered X, Y, RotationZ, slider (gas 1, brake 2, clutch 3 on a G29), not in the order the wheel lists them.
+
+## Wheel rotation per game (2026-11-28)
+
+`catalog\wheel-rotation.json` says how far the wheel turns for a game: by the game's list (`lists`) or by the game`r
+(`games`, which wins). The game start hook sends that rotation straight to the wheel (`Set-WheelRange.ps1`) and the end
+hook puts the menu's value back (`menu`, 900). A list or game that is not named is left alone. First entry: Sega Model 2
+at 270, which James drove in Daytona USA ("270 is perfect"). Add a list only after it has been driven that way: Model 3
+already shrinks the steering in the emulator, so it needs its saturation taken out first.
