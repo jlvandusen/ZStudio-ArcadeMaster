@@ -48,8 +48,17 @@ if (Test-Path -LiteralPath $tf) {
   foreach ($e in @($t.teknoparrot)) { if ($e.root) { $roots += [string]$e.root } }
   foreach ($e in @($t.supermodel)) { if ($e.ini) { $smInis += [string]$e.ini } }
 }
-# a folder reached twice (the frontend's emulators\TeknoParrot is a junction to E:\DRIVE Collection\...) counts once
-function Get-RealPath([string]$p) { $i = Get-Item -LiteralPath $p; if ($i.LinkType -and $i.Target) { return [string]@($i.Target)[0] }; $i.FullName }
+# the folder's real place: a link anywhere on the way is followed (RACE2: <frontend>\emulators\TeknoParrot is a junction;
+# RACE1: <frontend>\emulators itself is a link to E:\DRIVE Collection\emulators), so one folder reached by two paths is
+# written - and backed up - once
+function Get-RealPath([string]$p) {
+  $full = (Get-Item -LiteralPath $p).FullName; $parts = $full.TrimEnd([char]92).Split([char]92); $cur = $parts[0] + [char]92
+  for ($k = 1; $k -lt $parts.Count; $k++) {
+    $cur = Join-Path $cur $parts[$k]; $i = Get-Item -LiteralPath $cur -ErrorAction SilentlyContinue
+    if ($i -and $i.LinkType -and $i.Target) { $t = [string]@($i.Target)[0]; if (-not [IO.Path]::IsPathRooted($t)) { $t = Join-Path (Split-Path $cur) $t }; $cur = $t }
+  }
+  $cur
+}
 $roots = @($roots | Where-Object { Test-Path -LiteralPath $_ } | ForEach-Object { Get-RealPath $_ } | Sort-Object -Unique)
 
 # ---------------- TeknoParrot: buttons by name
@@ -62,7 +71,7 @@ foreach ($r in $tpRoots) {
     $f = Join-Path $r "UserProfiles\$($game.Name).xml"; if (-not (Test-Path -LiteralPath $f)) { continue }
     if ($seenFiles.ContainsKey($f)) { continue }; $seenFiles[$f] = 1
     $raw = [IO.File]::ReadAllText($f)
-    if ($raw.ToLower().IndexOf($guid) -lt 0) { $notes.Add("$($game.Name): not bound to this wheel - left alone"); continue }
+    if ($raw.ToLower().IndexOf($guid) -lt 0) { $notes.Add("$($game.Name) ($r): not bound to this wheel - left alone"); continue }
     $x = New-Object Xml.XmlDocument; $x.PreserveWhitespace = $false; $x.LoadXml($raw)
     $nodes = @($x.SelectNodes('//JoystickButtons'))
     $onWheel = { param($n) $n.DirectInputButton -and ([string]$n.DirectInputButton.JoystickGuid).ToLower() -eq $guid }
@@ -77,11 +86,11 @@ foreach ($r in $tpRoots) {
       $n = $nodes | Where-Object { [string]$_.ButtonName -eq $b.Name } | Select-Object -First 1
       if ($n -and (& $onWheel $n) -and [string]$n.BindNameDi -eq $name) { continue }                       # already right
       $other = $nodes | Where-Object { $_ -ne $n -and (& $onWheel $_) -and [string]$_.BindNameDi -eq $name } | Select-Object -First 1
-      if ($other) { $notes.Add("$($game.Name): '$($b.Name)' not set - wheel button $want is '$($other.ButtonName)'"); continue }
+      if ($other) { $notes.Add("$($game.Name) ($r): '$($b.Name)' not set - wheel button $want is '$($other.ButtonName)'"); continue }
       if (-not $n) {
         # a control the emulator's own GameProfile has, missing from this older profile: add it
-        if ($known -and $known -notcontains $b.Name) { $notes.Add("$($game.Name): '$($b.Name)' is not a control of this TeknoParrot's profile - skipped"); continue }
-        if (-not $tmpl) { $notes.Add("$($game.Name): no wheel button to copy the layout from - '$($b.Name)' skipped"); continue }
+        if ($known -and $known -notcontains $b.Name) { $notes.Add("$($game.Name) ($r): '$($b.Name)' is not a control of this TeknoParrot's profile - skipped"); continue }
+        if (-not $tmpl) { $notes.Add("$($game.Name) ($r): no wheel button to copy the layout from - '$($b.Name)' skipped"); continue }
         # the control's own entry from the emulator's GameProfile (its InputMapping and flags), else a wheel button's
         $src = $gpNodes | Where-Object { [string]$_.ButtonName -eq $b.Name } | Select-Object -First 1
         if ($src) { $n = $x.ImportNode($src, $true) } else { $n = $tmpl.CloneNode($true); $n.ButtonName = $b.Name }
