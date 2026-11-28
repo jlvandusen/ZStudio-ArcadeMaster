@@ -24,6 +24,9 @@ NATIVE = {
     "switch": {"b": "B", "a": "A", "y": "Y", "x": "X", "l": "L", "r": "R", "l2": "ZL", "r2": "ZR", "start": "PLUS",
                "select": "MINUS"},
     "gamecube": {"b": "A", "y": "B", "a": "X", "x": "Y", "r": "Z", "l2": "L", "r2": "R", "start": "START"},
+    # Supermodel (its Supermodel.ini is set to the panel): each button's roles across Model 3's game types
+    "model3": {"b": "PUNCH / FIRE", "a": "KICK / EVENT", "r": "GUARD / SHOOT", "r2": "ESCAPE / JUMP", "start": "START",
+               "select": "COIN"},
     # an emulated Wii Remote + Nunchuk (Set-EmulatorPanelKeys.py; the trackball is the pointer)
     "wii": {"b": "A", "a": "B", "r": "1", "r2": "2", "y": "C", "x": "Z", "l": "SHAKE", "l2": "HOME", "start": "PLUS",
             "select": "MINUS"},

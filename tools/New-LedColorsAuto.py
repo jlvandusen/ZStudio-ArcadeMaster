@@ -103,7 +103,7 @@ def system_lights(retrofe, out):
         if exe == "retroarch.exe":
             players = (1, 2)              # the panel's 4p keys are all mapped; light the two main seats
         elif exe in ("cemu.exe", "pcsx2-qt.exe", "pcsx2-qtx64.exe", "xemu.exe", "xenia_canary.exe", "xenia.exe",
-                     "dolphin.exe", "ppssppwindows64.exe", "citra-qt.exe", "azahar.exe", "yuzu.exe", "suyu.exe"):
+                     "dolphin.exe", "ppssppwindows64.exe", "citra-qt.exe", "azahar.exe", "yuzu.exe", "suyu.exe", "supermodel.exe"):
             players = (1,)                # player 1's keys written by New-DirectLaunchers / Set-EmulatorPanelKeys
         else:
             continue                      # a standalone whose keys we don't write yet: no promise on the panel
