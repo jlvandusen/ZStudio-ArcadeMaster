@@ -254,11 +254,23 @@ if (Test-Path $mt) {
 
 # launchers (report only - emulators are never touched)
 Emit @{ type = 'step'; id = 'launchers'; label = $checks.launchers; status = 'run' }
-$broken = @(); $toolsLauncherFixed = $false
+$broken = @(); $toolsLauncherFixed = $false; $caseFixed = @()
+$launcherFiles = @(Get-ChildItem (Join-Path $RetroFE 'launchers.windows') -Filter *.conf -File -ErrorAction SilentlyContinue | ForEach-Object BaseName)
 foreach ($c in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   $cs = Join-Path $c.FullName 'settings.conf'; if (-not (Test-Path $cs)) { continue }
   $ln = (Select-String -Path $cs -Pattern '^\s*launcher\s*=\s*(.+)$' | Select-Object -First 1); if (-not $ln) { continue }
   $lname = $ln.Matches[0].Groups[1].Value.Trim() -replace '%ITEM_COLLECTION_NAME%', $c.Name; $lc = Join-Path $RetroFE "launchers.windows\$lname.conf"
+  # RetroFE compares launcher names letter for letter, Windows does not: a list that asks for "Sega Model 2" while the
+  # file is "SEGA Model 2.conf" passes every file check here and still starts nothing ("Launcher executable not found";
+  # Daytona USA on RACE2 2026-11-27 and RACE1 2026-11-28). The list's line is rewritten to the file's exact name.
+  if (($launcherFiles -cnotcontains $lname) -and ($launcherFiles -contains $lname)) {
+    $exact = @($launcherFiles | Where-Object { $_ -eq $lname })[0]
+    if ($fix) {
+      $ct = [IO.File]::ReadAllText($cs); $bak = "$cs.am-launcher-bak"; if (-not (Test-Path -LiteralPath $bak)) { Copy-Item -LiteralPath $cs $bak }
+      $ct = [regex]::Replace($ct, '(?m)^(\s*launcher\s*=\s*).+?([ \t]*\r?)$', { param($mm) $mm.Groups[1].Value + $exact + $mm.Groups[2].Value }, 1)
+      [IO.File]::WriteAllText($cs, $ct, (New-Object Text.UTF8Encoding($false))); $caseFixed += "$($c.Name) -> '$exact'"; $lname = $exact; $lc = Join-Path $RetroFE "launchers.windows\$lname.conf"
+    } else { $broken += "$($c.Name): asks for launcher '$lname' but the file is '$exact.conf' (capital letters differ) - its games will not start" }
+  }
   if (-not (Test-Path $lc) -and $lname -eq 'AM_TOOLS' -and $fix -and (Test-Path (Join-Path $c.FullName 'RunHidden.vbs'))) {
     # ArcadeMaster's own Tools launcher (the one launcher this check may write): same text as New-CabinetToolsCollection
     Set-Content $lc "executable = C:\Windows\System32\wscript.exe`r`narguments = `"$($c.FullName)\RunHidden.vbs`" `"%ITEM_FILEPATH%`"`r`nreboot = yes" -Encoding ascii
@@ -270,7 +282,8 @@ foreach ($c in Get-ChildItem (Join-Path $RetroFE 'collections') -Directory) {
   $full = if ([IO.Path]::IsPathRooted($exe)) { $exe } else { Join-Path $RetroFE $exe }
   if (-not (Test-Path $full)) { $broken += "$($c.Name): $exe not found" }
 }
-if ($toolsLauncherFixed -and -not $broken) { Add-Result 'launchers' $checks.launchers 'FIXED' 'Tools menu launcher (AM_TOOLS) was missing - put back' }
+if ($caseFixed -and -not $broken) { Add-Result 'launchers' $checks.launchers 'FIXED' ("launcher name written the way its file is spelled, so the games start: " + ($caseFixed -join '; ') + " - takes effect at the next start of the frontend") }
+elseif ($toolsLauncherFixed -and -not $broken) { Add-Result 'launchers' $checks.launchers 'FIXED' 'Tools menu launcher (AM_TOOLS) was missing - put back' }
 elseif ($broken) { Add-Result 'launchers' $checks.launchers 'WARN' (($broken | Select-Object -First 4) -join '; ') + $(if ($broken.Count -gt 4) { " (+$($broken.Count - 4) more)" }) } else { Add-Result 'launchers' $checks.launchers 'OK' 'every launcher points at an existing program' }
 
 # games: TeknoParrot profiles inside THIS frontend whose game path is gone get repaired (Repair-TPProfiles: backup
