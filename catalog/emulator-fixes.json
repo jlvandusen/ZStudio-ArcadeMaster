@@ -53,6 +53,17 @@
           "wheel": 15
         }
       }
+    },
+    "MKDX": {
+      "_why": "Mario Kart Arcade GP DX, James 2026-11-28: the 'Use your BANAPASSPORT card' notice before every race could only be skipped with the cabinet's Mario Button, which was on the keyboard's Enter only. TeknoParrot's newer GameProfile has SkipNoticeScreen; profiles made earlier lack it. Mario Button on Cross (free in this game).",
+      "config": {
+        "SkipNoticeScreen": "1"
+      },
+      "buttons": {
+        "Mario Button": {
+          "wheel": 0
+        }
+      }
     }
   }
 }

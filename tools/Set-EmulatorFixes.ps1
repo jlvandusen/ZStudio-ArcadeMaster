@@ -81,7 +81,7 @@ foreach ($r in $tpRoots) {
     $gpNodes = if (Test-Path -LiteralPath $gp) { @(([xml](Get-Content -LiteralPath $gp -Raw)).SelectNodes('//JoystickButtons')) } else { @() }
     $known = @($gpNodes | ForEach-Object { [string]$_.ButtonName })
     $done = @()
-    foreach ($b in @($game.Value.buttons.PSObject.Properties)) {
+    foreach ($b in @(if ($game.Value.buttons) { $game.Value.buttons.PSObject.Properties })) {
       $want = [int]$b.Value.wheel; $name = "$prefix Buttons$want"
       $n = $nodes | Where-Object { [string]$_.ButtonName -eq $b.Name } | Select-Object -First 1
       if ($n -and (& $onWheel $n) -and [string]$n.BindNameDi -eq $name) { continue }                       # already right
@@ -103,6 +103,22 @@ foreach ($r in $tpRoots) {
       foreach ($k in $set.Keys) { $e = $d.SelectSingleNode($k); if (-not $e) { $e = $x.CreateElement($k); [void]$d.AppendChild($e) }; $e.InnerText = $set[$k] }
       foreach ($tag in 'BindNameDi', 'BindName') { $e = $n.SelectSingleNode($tag); if (-not $e) { $e = $x.CreateElement($tag); [void]$n.AppendChild($e) }; $e.InnerText = $name }
       $done += "$($b.Name) -> wheel button $want"
+    }
+    # game settings by name ("config": { "SkipNoticeScreen": "1" }): a setting a newer GameProfile added is copied from
+    # it into this older profile first (MKDX's Banapass card notice, 2026-11-28)
+    if ($game.Value.config) {
+      $cv = $x.SelectSingleNode('//ConfigValues')
+      $gpX = if (Test-Path -LiteralPath $gp) { [xml](Get-Content -LiteralPath $gp -Raw) } else { $null }
+      foreach ($c in @($game.Value.config.PSObject.Properties)) {
+        $fi = @($x.SelectNodes('//ConfigValues/FieldInformation') | Where-Object { [string]$_.FieldName -eq $c.Name }) | Select-Object -First 1
+        if (-not $fi) {
+          $src = if ($gpX) { @($gpX.SelectNodes('//ConfigValues/FieldInformation') | Where-Object { [string]$_.FieldName -eq $c.Name }) | Select-Object -First 1 } else { $null }
+          if (-not $src -or -not $cv) { $notes.Add("$($game.Name) ($r): setting '$($c.Name)' is not in this TeknoParrot's profile - skipped"); continue }
+          $fi = $x.ImportNode($src, $true); [void]$cv.AppendChild($fi)
+        }
+        if ([string]$fi.FieldValue -eq [string]$c.Value) { continue }
+        $fi.FieldValue = [string]$c.Value; $done += "$($c.Name) = $($c.Value)"
+      }
     }
     if (-not $done) { continue }
     $s = New-Object Xml.XmlWriterSettings; $s.Indent = $true; $s.Encoding = $u8
