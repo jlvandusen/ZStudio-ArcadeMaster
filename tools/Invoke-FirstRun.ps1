@@ -125,6 +125,9 @@ if ($Apply) {
   Step 'content' 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'Update-CabinetContent.ps1'), '-RetroFE', $RetroFE, '-ManifestDir', $ManifestDir, '-Force')
   Step 'lights' $py @((Join-Path $tools 'New-LedColorsAuto.py'), '--manifest', $ManifestDir, '--retrofe', $RetroFE)
 } else { Say '--- content, lights: written with -Apply' }
+# 5b. the system helpers (GPU reset, USB self-heal ...): missing or older ones, with one admin prompt
+if ($Apply) { Step 'system helpers' 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'Install-SystemTasks.ps1'), '-ManifestDir', $ManifestDir) }
+else { Step 'system helpers' 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'Install-SystemTasks.ps1'), '-ManifestDir', $ManifestDir, '-Check') }
 # 6. check
 Step 'check' 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'Test-ArcadeMaster.ps1'), '-Cabinet')
 Say "=== done. Log: $log"
