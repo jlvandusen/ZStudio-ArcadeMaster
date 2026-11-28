@@ -868,3 +868,9 @@ a quarter turn of the wheel is full lock (James watched the menu's wheel picture
   different command that this tool does not send.
 - Careful with games whose emulator already shrinks the steering (Model 3 uses a saturation of 40): with the wheel
   itself on 270 that would be shrunk twice. Per-game use has to set one or the other, not both.
+## Model 2: change its control files only while it is closed (2026-11-28)
+
+The Model 2 emulator writes the controls it holds in memory back to `CFG\<rom>.input` when it closes. A fix made
+while a game runs can be undone the moment the game is closed (RACE2: closing Daytona put the old controls back over
+six freshly copied files). `Repair-EmulatorDevices.ps1` skips these files while `EMULATOR.EXE` runs and says so.
+Its axes are numbered X, Y, RotationZ, slider (gas 1, brake 2, clutch 3 on a G29), not in the order the wheel lists them.

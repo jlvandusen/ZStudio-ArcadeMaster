@@ -59,6 +59,9 @@ elseif ($ScanFile -and (Test-Path -LiteralPath $ScanFile)) {
   $live = @($live | Where-Object { $_.instanceGuid })
 }
 else { . (Join-Path $wm 'lib\Common.ps1'); $live = @((Get-WMDevices).directInput | Where-Object { -not $_.error } | ForEach-Object { $p = Get-Pad $_; $p | Add-Member -NotePropertyName axes -NotePropertyValue ([int]$_.axisCount) -Force; $p | Add-Member -NotePropertyName buttons -NotePropertyValue ([int]$_.buttonCount) -Force; $p }) }   # with the counts, so the steering checks also run without a scan file
+# The Model 2 emulator writes the controls it has in memory back to CFG\<rom>.input when it closes (RACE2, 2026-11-28:
+# closing Daytona undid a fix made while it ran). Its files are only touched while it is closed.
+function Test-M2Running { [bool](Get-Process -Name EMULATOR, emulator_multicpu -ErrorAction SilentlyContinue) }
 # ---- Model 3: is the game's steering on the wheel at all?
 # A copied drive can come with Supermodel.ini written for another PC's controller order. RACE2's had every control on
 # JOY2, which on RACE2 is the handbrake lever (one slider, no buttons): Start did nothing in Dirt Devils, and the first
@@ -91,6 +94,7 @@ if ($wheels.Count -eq 1) {
   # tank's first stick): when it sits on a controller that is not there or cannot be a wheel, that number and the
   # wheel's are swapped in every control of the file. Keys (codes under 0x100) have no controller and stay.
   foreach ($r0 in @($sr | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Sort-Object -Unique)) {
+    if (Test-M2Running) { if (Test-Path -LiteralPath (Join-Path $r0 'CFG')) { Write-Host "  SKIPPED $r0\CFG: the Model 2 emulator is running (it writes its controls back to these files when it closes)" }; continue }
     foreach ($f2 in Get-ChildItem -LiteralPath (Join-Path $r0 'CFG') -Filter *.input -File -ErrorAction SilentlyContinue) {
       $b2 = [IO.File]::ReadAllBytes($f2.FullName); $words2 = [int]($b2.Length / 4) - 2; if ($words2 -lt 5) { continue }
       $sj = 0; for ($i = 0; $i -lt $words2; $i++) { $v = [BitConverter]::ToUInt32($b2, $i * 4); if (($v -shr 24) -eq 0xFF) { $sj = [int](($v -shr 8) -band 0xF); break } }
@@ -169,7 +173,7 @@ foreach ($r in $Roots) {
   }
   if ($joyMap.Count) {
     $ini = Join-Path $r 'Config\Supermodel.ini'; if (Test-Path -LiteralPath $ini) { Edit-Text $ini $swapJoy 'Supermodel JOY number' }
-    foreach ($f in Get-ChildItem -LiteralPath (Join-Path $r 'CFG') -Filter *.input -File -ErrorAction SilentlyContinue) {
+    foreach ($f in $(if (Test-M2Running) { @() } else { Get-ChildItem -LiteralPath (Join-Path $r 'CFG') -Filter *.input -File -ErrorAction SilentlyContinue })) {
       $b = [IO.File]::ReadAllBytes($f.FullName); $out = [byte[]]$b.Clone(); $n = 0
       $words = [int]($b.Length / 4) - 2          # the last two words are not controls (see WheelMap Gen-Others, m2emulator)
       for ($i = 0; $i -lt $words; $i++) {
