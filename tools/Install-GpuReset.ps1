@@ -7,7 +7,8 @@
   then hung at start in NtGdiDdDDIGetDeviceState / nvoglv64, the screens stayed black and Alt+Tab did nothing.
   James: "can we detect it and kill and reload?" AmPanel's frontend watchdog uses this task (src/panel/AmPanel.cs).
 .EXAMPLE
-  Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File tools\Install-GpuReset.ps1 -RunNow'
+  Start-Process powershell -Verb RunAs -ArgumentList '-NoExit -NoProfile -ExecutionPolicy Bypass -File "R:\repos\personal\ZStudio-ArcadeMaster\tools\Install-GpuReset.ps1" -RunNow'
+  Give -File a full path: an elevated PowerShell ignores -WorkingDirectory and starts in C:\Windows\System32.
 #>
 param([switch]$RunNow, [string]$ManifestDir = 'R:\ArcadeMaster\manifest')
 $ErrorActionPreference = 'Stop'

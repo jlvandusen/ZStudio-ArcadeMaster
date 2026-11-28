@@ -12,7 +12,8 @@
   "Device Descriptor Request Failed". James: "I need you to perform it automagically self heal".
   The command is stored in the task itself (not a script file a user could change), as Install-GpuReset.ps1 does.
 .EXAMPLE
-  Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File tools\Install-UsbHeal.ps1 -RunNow'
+  Start-Process powershell -Verb RunAs -ArgumentList '-NoExit -NoProfile -ExecutionPolicy Bypass -File "R:\repos\personal\ZStudio-ArcadeMaster\tools\Install-UsbHeal.ps1" -RunNow'
+  Give -File a full path: an elevated PowerShell ignores -WorkingDirectory and starts in C:\Windows\System32.
 #>
 param([switch]$RunNow, [string]$ManifestDir = 'R:\ArcadeMaster\manifest')
 $ErrorActionPreference = 'Stop'

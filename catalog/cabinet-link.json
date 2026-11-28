@@ -3,5 +3,5 @@
   "enabled": ["DESKTOP-RACE1", "DESKTOP-RACE2", "ARCADE-PEDESTAL", "DESKTOP-ARCADE"],
   "model3Pairs": [["DESKTOP-RACE1", "DESKTOP-RACE2"]],
   "idleSec": 30,
-  "countdownSec": 5
+  "countdownSec": 10
 }

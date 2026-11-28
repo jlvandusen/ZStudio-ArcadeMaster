@@ -11,6 +11,14 @@ rigs" can be a real two-player race.
 once; any button cancels the countdown. RetroFE itself only ever talks to 127.0.0.1, so nothing on the network can
 drive a cabinet directly: the helper decides.
 
+**The joining cabinet can always say no** (James, 2026-11-28, after the pedestal joined the stand-up's Pokken: the
+other system must be able to cancel the sync):
+- The countdown is 10 s (was 5 s). Besides any panel button, a touch on the card or on the big **STAY HERE** button
+  on the touch screen (every screen but the main one) cancels it.
+- A game the cabinet joined shows **LEAVE THIS GAME** on the touch screen for its first 2 minutes (`-LeaveSec`). A tap
+  ends the game here through AmPanel's exit guard (`{"cmd":"endgame"}` on the `ArcadeMaster.Panel` pipe) and the menu
+  comes back. The cabinet that started the game plays on.
+
 ## Parts
 | Part | Where | State |
 |---|---|---|
@@ -56,7 +64,7 @@ Racing opened on its third game. Patch 0017 makes opposite directions cancel. Ra
 
 ## Part 2-3: the helper (`tools\AmLink.ps1`)
 **Where it is on:** `catalog\cabinet-link.json` lists the cabinets (`DESKTOP-RACE1`, `DESKTOP-RACE2`), the idle time
-(30 s) and the countdown (5 s). At the next start of the frontend Start-ArcadeMaster adds `linkEvents = yes` to that
+(30 s) and the countdown (10 s). At the next start of the frontend Start-ArcadeMaster adds `linkEvents = yes` to that
 cabinet's settings.conf once and starts the helper (hidden; it ends with the launcher). **Cabinet Settings > CABINET
 LINK** switches it off or on for one cabinet; a cabinet that has its own `linkEvents` line keeps its choice.
 

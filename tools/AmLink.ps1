@@ -8,9 +8,11 @@
   The rule: THIS cabinet only follows while nobody is using it (no menu action for -IdleSec), and only a cabinet of
   the same type (racing with racing ...) where somebody IS choosing games. Then:
     - the other cabinet's selection -> this one goes to the same game (enters the same menu first, backs out if needed);
-    - the other cabinet starts a game -> "<cabinet> is starting <game> - joining in 5 4 3 2 1" on this screen;
-      any menu button here cancels; no button -> the same game starts here. A game this cabinet does not have is
-      skipped with a line on the card.
+    - the other cabinet starts a game -> "<cabinet> is starting <game> - joining in 10 ... 1" on this screen and a
+      STAY HERE button on the touch screen; any menu button, a touch on the card or on STAY HERE cancels; nothing ->
+      the same game starts here. A game this cabinet does not have is skipped with a line on the card.
+    - a game joined that way: for its first 2 minutes the touch screen shows LEAVE THIS GAME, which ends the game here
+      (AmPanel's exit guard) and brings the menu back.
   What this cabinet does because of the link is published as "remote", and nobody follows a "remote" action, so two
   cabinets can never chase each other.
 .EXAMPLE
@@ -22,7 +24,8 @@ param(
   [string]$Share,
   [string]$HostName = $env:COMPUTERNAME,      # tests: another name
   [int]$IdleSec = 30,
-  [int]$CountdownSec = 5,
+  [int]$CountdownSec = 10,                    # long enough to reach a button or the touch screen (James 2026-11-28; was 5)
+  [int]$LeaveSec = 120,                       # a joined game: the touch screen offers LEAVE THIS GAME for this long
   [int]$ShowLinkEverySec = 120,               # attract: every this many seconds the linked cabinets show the same game and say so (0 = off)
   [int]$ShowLinkSec = 14,                     # ... for this long
   [int]$RelayPort = 47803,                    # every frontend event is passed on to AmPanel here
@@ -72,6 +75,29 @@ public class AmLinkCard : Form {
       g.DrawString(Line3, f3, new SolidBrush(Color.FromArgb(255, 176, 0)), new RectangleF(0, 150, Width, 40), c);
     }
   }
+  // a touch / click on the card means "stay here" (James 2026-11-28: the other cabinet must be able to cancel the sync)
+  public bool Tapped;
+  protected override void OnMouseDown(MouseEventArgs e) { Tapped = true; base.OnMouseDown(e); }
+}
+// a big touch button on the touch screen (any screen but the main one): STAY HERE during the countdown, LEAVE THIS GAME
+// while a joined game runs. It never takes the keyboard from the frontend or the game.
+public class AmLinkButton : Form {
+  public string Caption = "", Note = ""; public bool Tapped; public Color Accent = Color.FromArgb(255, 176, 0);
+  public AmLinkButton() { FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual; BackColor = Color.FromArgb(10, 12, 20); DoubleBuffered = true; Opacity = 0.96; }
+  protected override bool ShowWithoutActivation { get { return true; } }
+  protected override CreateParams CreateParams { get { CreateParams p = base.CreateParams; p.ExStyle |= 0x08000000 | 0x00000008 | 0x00000080; return p; } }
+  protected override void OnMouseDown(MouseEventArgs e) { Tapped = true; Invalidate(); base.OnMouseDown(e); }
+  protected override void OnPaint(PaintEventArgs e) {
+    Graphics g = e.Graphics; g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+    using (SolidBrush b = new SolidBrush(Tapped ? Color.FromArgb(60, Accent) : Color.FromArgb(10, 12, 20))) g.FillRectangle(b, ClientRectangle);
+    using (Pen pen = new Pen(Accent, 6)) g.DrawRectangle(pen, 3, 3, Width - 7, Height - 7);
+    StringFormat c = new StringFormat(); c.Alignment = StringAlignment.Center; c.LineAlignment = StringAlignment.Center;
+    float big = Math.Max(14f, Math.Min(Height * 0.28f, Width * 0.07f));
+    using (Font f1 = new Font("Segoe UI Black", big, FontStyle.Italic, GraphicsUnit.Pixel)) using (Font f2 = new Font("Segoe UI", big * 0.42f, GraphicsUnit.Pixel)) {
+      using (SolidBrush b = new SolidBrush(Accent)) g.DrawString(Caption, f1, b, new RectangleF(0, 0, Width, Height * 0.66f), c);
+      using (SolidBrush b = new SolidBrush(Color.FromArgb(190, 210, 230))) g.DrawString(Note, f2, b, new RectangleF(0, Height * 0.58f, Width, Height * 0.36f), c);
+    }
+  }
 }
 '@
 $card = $null
@@ -86,7 +112,36 @@ function Show-Card([string]$a, [string]$b, [string]$c, [switch]$AtTop) {
   if (-not $script:card.Visible) { $script:card.Show() }
   $script:card.Invalidate()
 }
-function Hide-Card { if ($script:card -and $script:card.Visible) { $script:card.Hide() } }
+function Hide-Card { if ($script:card -and $script:card.Visible) { $script:card.Hide() }; if ($script:card) { $script:card.Tapped = $false } }
+
+# ---- the touch-screen button: one on every screen but the main one (the pedestal's touch screen, a marquee ...)
+$buttons = @()
+function Show-TouchButton([string]$caption, [string]$note, [Drawing.Color]$accent) {
+  if (-not $script:buttons.Count) {
+    foreach ($scr in [Windows.Forms.Screen]::AllScreens) {
+      if ($scr.Primary) { continue }
+      $b = New-Object AmLinkButton; $r = $scr.Bounds
+      $w = [int]($r.Width * 0.8); $h = [int]([Math]::Min($r.Height * 0.4, $w * 0.3))
+      $b.Bounds = New-Object Drawing.Rectangle(($r.X + ($r.Width - $w) / 2), ($r.Y + $r.Height - $h - [int]($r.Height * 0.06)), $w, $h)
+      $script:buttons += $b
+    }
+  }
+  foreach ($b in $script:buttons) {
+    $b.Accent = $accent
+    if ($b.Caption -ne $caption -or $b.Note -ne $note) { $b.Caption = $caption; $b.Note = $note; $b.Invalidate() }
+    if (-not $b.Visible) { $b.Tapped = $false; $b.Show() }
+  }
+}
+function Hide-TouchButton { foreach ($b in $script:buttons) { if ($b.Visible) { $b.Hide() }; $b.Tapped = $false } }
+function Test-TouchButton { foreach ($b in $script:buttons) { if ($b.Visible -and $b.Tapped) { return $true } }; return $false }
+# end the game in front, as the exit key does: AmPanel's exit guard ("endgame" on its pipe)
+function Stop-JoinedGame {
+  try {
+    $c = New-Object IO.Pipes.NamedPipeClientStream('.', 'ArcadeMaster.Panel', [IO.Pipes.PipeDirection]::InOut); $c.Connect(1500)
+    $w = New-Object IO.StreamWriter($c); $w.AutoFlush = $true; $rd = New-Object IO.StreamReader($c)
+    $w.WriteLine('{"cmd":"endgame"}'); $rep = $rd.ReadLine(); $c.Dispose(); return [string]$rep
+  } catch { return "AmPanel did not answer: $($_.Exception.Message)" }
+}
 
 # names for the card: the title RetroFE shows (meta\hyperlist\<collection>.xml), and "RACE2" for DESKTOP-RACE2
 $titleCache = @{}
@@ -176,6 +231,7 @@ $myFile = Join-Path $Share "$HostName.json"
 $peers = @{}; $lastPeerRead = [datetime]::MinValue
 $noFollow = 'Tools', 'SETTINGS', 'Controller'      # menus that are not game lists: never followed into, nothing in them is joined
 $linkShown = $false   # the "cabinets are linked" card is up (attract)
+$joined = $null       # a game this cabinet joined: @{ item; from; at; running; since } (LEAVE THIS GAME on the touch screen)
 $missSaid = ''; $noteUntil = $null   # the "not on this cabinet" note: said once per game, taken down after a few seconds: @{ from; menu; item; col; until; phase = 'count' | 'go' | 'note'; started }
 # attractModeTime as RetroFE sees it: settings.conf, then settings1-15.conf on top (the cabinet type's defaults are in
 # settings8.conf, docs/21 phase 3)
@@ -259,12 +315,34 @@ try {
       }
     }
 
+    # 3b. a game this cabinet joined: for its first $LeaveSec seconds the touch screen offers LEAVE THIS GAME, which ends
+    # it here and brings the menu back (James 2026-11-28: the pedestal joined the stand-up's Pokken; "the other system"
+    # must be able to cancel the sync). The game is running once the frontend stops saying hello.
+    if ($joined) {
+      if (-not $alive) { $joined.running = $true }
+      $age = ($now - $joined.at).TotalSeconds
+      if (($joined.running -and $alive) -or (-not $joined.running -and $age -gt 60) -or $age -gt ($LeaveSec + 60)) { Hide-TouchButton; $joined = $null }
+      elseif ($joined.running -and ($now - $joined.since).TotalSeconds -gt $LeaveSec) { Hide-TouchButton }
+      elseif ($joined.running) {
+        if (-not $joined.since) { $joined.since = $now }
+        if (Test-TouchButton) {
+          Hide-TouchButton; $r = Stop-JoinedGame
+          Say "joined game left here (touch): $($joined.item) - $r"; $joined = $null
+        } else { Show-TouchButton 'LEAVE THIS GAME' "joined from $(Get-Cab $joined.from) - tap to go back to the menu" ([Drawing.Color]::FromArgb(255, 90, 90)) }
+      }
+    }
+
     # 4. the countdown / joining
     if ($count) {
       if ($count.phase -eq 'count') {
-        if ($userHere -or -not $alive) { Say 'countdown cancelled here'; Show-Card "$(Get-Cab $count.from) is playing $($count.title)" 'STAYING HERE' ''; $count.phase = 'note'; $count.until = $now.AddSeconds(2) }
-        elseif ($now -ge $count.until) { $count.phase = 'go'; $count.until = $now.AddSeconds(15) }
-        else { Show-Card "$(Get-Cab $count.from) is starting" $count.title ("JOINING IN {0}   -   any button to stay" -f [Math]::Ceiling(($count.until - $now).TotalSeconds)) }
+        $tapped = ($card -and $card.Tapped) -or (Test-TouchButton)
+        if ($userHere -or -not $alive -or $tapped) { Say ('countdown cancelled here' + $(if ($tapped) { ' (touch)' } else { '' })); Hide-TouchButton; Show-Card "$(Get-Cab $count.from) is playing $($count.title)" 'STAYING HERE' ''; $count.phase = 'note'; $count.until = $now.AddSeconds(2) }
+        elseif ($now -ge $count.until) { Hide-TouchButton; $count.phase = 'go'; $count.until = $now.AddSeconds(15) }
+        else {
+          $left = [Math]::Ceiling(($count.until - $now).TotalSeconds)
+          Show-Card "$(Get-Cab $count.from) is starting" $count.title ("JOINING IN {0}   -   any button or touch to stay" -f $left)
+          Show-TouchButton 'STAY HERE' ("$(Get-Cab $count.from) is starting $($count.title) - joining in $left") ([Drawing.Color]::FromArgb(255, 176, 0))
+        }
       }
       elseif ($count.phase -eq 'go') {
         Show-Card "$(Get-Cab $count.from) is starting" $count.title 'JOINING ...'
@@ -276,6 +354,7 @@ try {
           # the same game is selected here: open it ONCE and finish (a game that quits at once must not be started again)
           $b = [Text.Encoding]::UTF8.GetBytes('open'); [void]$tx.Send($b, $b.Length, '127.0.0.1', $CommandPort); $lastCmd = 'open'; $lastCmdAt = $now
           Say "joined: opened $($count.item) here"; $count.phase = 'note'; $count.until = $now.AddSeconds(2)
+          $joined = @{ item = $count.item; from = $count.from; at = $now; running = $false; since = $null }
         }
       }
       elseif ($now -ge $count.until) { Hide-Card; $count = $null }
