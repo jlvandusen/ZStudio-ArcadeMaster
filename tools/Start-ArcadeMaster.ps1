@@ -312,6 +312,15 @@ try {
     if ($m3Peer) { $m3Out = & (Join-Path $PSScriptRoot 'Set-SupermodelLink.ps1') -RetroFE $Root -Peer $m3Peer -Apply 6>&1 | Out-String; Write-Log ('Model 3 link: ' + (($m3Out.Trim() -split "`r?`n") -join '; ')) }
   }
 } catch { Write-Log "Model 3 link not set: $($_.Exception.Message)" }
+# Model 2 linked play (Daytona USA; tools\Set-Model2Link.ps1, RACE2 2026-11-27): the same pair, the same rule. The
+# emulator links only while its m2network.ini exists and names the twin, so it is written again at every start.
+try {
+  if (-not $PrepOnly -and $lk -and $lkLine -and $lkLine.Matches[0].Groups[1].Value -match '^(yes|true|1)$' -and (Test-Path (Join-Path $Root 'emulators\m2emulator'))) {
+    $m2 = @($lk.model3Pairs | Where-Object { @($_) -contains $env:COMPUTERNAME } | Select-Object -First 1)
+    $m2Peer = @($m2 | ForEach-Object { $_ } | Where-Object { $_ -and $_ -ne $env:COMPUTERNAME }) | Select-Object -First 1
+    if ($m2Peer) { $m2Out = & (Join-Path $PSScriptRoot 'Set-Model2Link.ps1') -RetroFE $Root -Peer $m2Peer -Apply 6>&1 | Out-String; Write-Log ('Model 2 link: ' + (($m2Out.Trim() -split "`r?`n") -join '; ')) }
+  }
+} catch { Write-Log "Model 2 link not set: $($_.Exception.Message)" }
 $deckOn = [bool](Read-AmUi $ManifestDir).streamDeck   # Tools > Cabinet Settings > Stream Deck
 if (-not $deckOn -and (Test-Path $deck)) { Write-Log 'Stream Deck controller off (Cabinet Settings)' }
 if ($deckOn -and $pyw -and (Test-Path $deck)) {
