@@ -1,0 +1,10 @@
+{
+  "name": "AM-ArcadeHall",
+  "label": "Arcade Hall",
+  "about": "a games room: the chosen game in a lit arcade cabinet (its marquee flickering on top, its video on the screen, its controls on the deck), the list a stack of glowing marquees, the default's gauges and sparks",
+  "idea": "walking down a row of cabinets: every game is a lit marquee, the chosen one is the cabinet in front of you",
+  "keys": "UP / DOWN: games   LEFT / RIGHT: playlists   SELECT: play   BACK: main menu",
+  "madeBy": "tools/New-ArcadeThemes.py",
+  "resolution": "1920x1080",
+  "monitors": 2
+}

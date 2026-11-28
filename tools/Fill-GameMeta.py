@@ -91,7 +91,13 @@ def main():
         try:
             trees[f] = ET.parse(f)
         except ET.ParseError:
-            pass
+            # RetroFE reads lists with a bare "&" (MAME's "Game & Watch ..."); escape those and try again
+            try:
+                t = open(f, encoding="utf-8", errors="replace").read()
+                t = re.sub(r"&(?!amp;|lt;|gt;|quot;|apos;|#)", "&amp;", t)
+                trees[f] = ET.ElementTree(ET.fromstring(t.encode("utf-8")))
+            except ET.ParseError as e:
+                print("  skipped %s: %s" % (os.path.basename(f), e))
     # 1. what any list knows per set name
     known = {}
     for t in trees.values():
