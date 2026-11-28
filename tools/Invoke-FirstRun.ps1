@@ -93,6 +93,8 @@ if (-not (Test-Path $pj)) {
 $imp = @((Join-Path $tools 'Import-RetroBatSystems.py'), '--retrofe', $RetroFE, '--manifest', $ManifestDir, '--all') + $dry
 if ($RetroBat) { $imp += @('--retrobat', $RetroBat) }
 Step 'lists' $py $imp
+# 2b. lists for what discovery found that no list has yet: every system on a PC without RetroBat, the extra ones beside it
+Step 'lists (found)' $py (@((Join-Path $tools 'New-ListsFromDiscovery.py'), '--retrofe', $RetroFE, '--manifest', $ManifestDir) + $dry)
 # 3. launchers (+ panel keys in every emulator)
 Step 'launchers' $py (@((Join-Path $tools 'New-DirectLaunchers.py'), '--retrofe', $RetroFE, '--manifest', $ManifestDir) + $dry)
 if (-not $Apply) { Say '    (a dry run counts only the lists that exist already: with -Apply every list above gets its launcher)' }

@@ -39,8 +39,10 @@ CORES = {
 }
 # steps 2-3: standalone emulators. system -> [(emulator in discovery.json, exe file name, arguments)], first one found
 # wins (the one inside the RetroBat this frontend uses first). {rom} = the game file, {name} = its name without the
-# extension, {w} {h} = the main screen's size. Each emulator's own command-line options for a full-screen batch start.
+# extension, {dir} = the game's folder, {w} {h} = the main screen's size. Each emulator's own command-line options for a full-screen batch start.
 STANDALONE = {
+    # MAME: the set name, with the game's own folder as its ROM path (a found MAME folder is not always MAME's own roms)
+    "mame": [("mame", "mame.exe", '-skip_gameinfo -rompath "{dir}" {name}'), ("mame", "mame64.exe", '-skip_gameinfo -rompath "{dir}" {name}')],
     "model2": [("m2emulator", "emulator_multicpu.exe", '"{name}"'), ("m2emulator", "EMULATOR.EXE", '"{name}"')],
     "model3": [("supermodel", "supermodel.exe", '-res={w},{h} -fullscreen -wide-screen "{rom}"')],
     "gamecube": [("dolphin", "Dolphin.exe", '-b -C Dolphin.Display.Fullscreen=True -e "{rom}"')],
@@ -454,7 +456,7 @@ def main():
                         winreg.SetValueEx(k, "XEFLAGS", 0, winreg.REG_DWORD, 1)
                 except OSError:
                     pass
-            args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{w}", str(w)).replace("{h}", str(h))
+            args = pick[1].replace("{rom}", "%ITEM_FILEPATH%").replace("{name}", "%ITEM_NAME%").replace("{dir}", "%ITEM_DIRECTORY%").replace("{w}", str(w)).replace("{h}", str(h))
             conf = ["executable = %s" % pick[0], "arguments = %s" % args, "currentDirectory = %s" % os.path.dirname(pick[0])]
             how = os.path.basename(pick[0])
         conf += hooks(os.path.join(launchers, "AM_RB_%s.conf" % m.group(1)))
