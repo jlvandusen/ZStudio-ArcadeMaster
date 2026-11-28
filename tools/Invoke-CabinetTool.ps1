@@ -7,7 +7,7 @@
   Afterwards it refreshes the Tools list art (state shown on each item) - RetroFE restarts (reboot = yes).
 #>
 param(
-  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'RestartPC', 'ShutdownPC', 'EmulatorUpdates', 'MenuButtons', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'MenuMusic', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme')]
+  [Parameter(Mandatory)][ValidateSet('WheelSetup', 'FlightSetup', 'GpuDriver', 'RestartPC', 'ShutdownPC', 'EmulatorUpdates', 'MenuButtons', 'PanelTest', 'DetectControllers', 'RepairIds', 'RebuildMenus', 'ToggleFfb', 'ToggleTactile', 'ToggleSecondScreen', 'ShuffleBackgrounds', 'TogglePerfLog', 'MenuMusic', 'CabinetType', 'SystemSettings', 'SystemHealth', 'Themes', 'ResetTheme', 'SystemHelpers')]
   [string]$Tool,
   [Parameter(Mandatory)][string]$RetroFE,
   [string]$ManifestDir = 'D:\ArcadeMaster\manifest',
