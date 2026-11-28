@@ -852,3 +852,19 @@ Both change only what is missing or different, back each changed file up first, 
 for the next start, and write nothing when everything is right. **A fix found by hand on one cabinet goes into
 `catalog/emulator-fixes.json`** (optional `hosts` for one cabinet only), so every cabinet gets it and an update
 cannot take it away.
+
+## Wheel rotation without G HUB (2026-11-28)
+
+`tools\Set-WheelRange.ps1 -Degrees 270` sets how far the G29 turns lock to lock by sending the wheel its own "set
+range" command over USB. G HUB stays running and its settings are not touched. Proven on DESKTOP-RACE1: after 270,
+a quarter turn of the wheel is full lock (James watched the menu's wheel picture).
+
+- The wheel puts no stop at the new limit by itself; you can turn past it and the steering just stays at full lock.
+  `-EndStops` asks the motor to push back over the last few degrees (a spring on the wheel's fourth force slot);
+  that part is not confirmed yet.
+- It lasts until the wheel is unplugged, the PC restarts or G HUB sends its own value again.
+- Works for the wheels that take the classic Logitech command (G25, G27, Driving Force GT, G29). The G29 has no
+  rotation setting on its newer vendor interface (asked: nine features, none for the wheel), and G920 / G923 use a
+  different command that this tool does not send.
+- Careful with games whose emulator already shrinks the steering (Model 3 uses a saturation of 40): with the wheel
+  itself on 270 that would be shrunk twice. Per-game use has to set one or the other, not both.
