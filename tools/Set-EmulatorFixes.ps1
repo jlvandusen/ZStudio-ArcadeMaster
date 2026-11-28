@@ -69,7 +69,8 @@ foreach ($r in $tpRoots) {
     $prefix = 'Driving'; foreach ($n in $nodes) { if ((& $onWheel $n) -and [string]$n.BindNameDi -match '^(.*?) ?Buttons ?\d+$') { $prefix = $Matches[1]; break } }
     $tmpl = $nodes | Where-Object { (& $onWheel $_) -and [string]$_.BindNameDi -match 'Buttons ?\d+$' } | Select-Object -First 1
     $gp = Join-Path $r "GameProfiles\$($game.Name).xml"
-    $known = if (Test-Path -LiteralPath $gp) { @(([xml](Get-Content -LiteralPath $gp -Raw)).GameProfile.JoystickButtons.JoystickButtons | ForEach-Object { [string]$_.ButtonName }) } else { @() }
+    $gpNodes = if (Test-Path -LiteralPath $gp) { @(([xml](Get-Content -LiteralPath $gp -Raw)).SelectNodes('//JoystickButtons')) } else { @() }
+    $known = @($gpNodes | ForEach-Object { [string]$_.ButtonName })
     $done = @()
     foreach ($b in @($game.Value.buttons.PSObject.Properties)) {
       $want = [int]$b.Value.wheel; $name = "$prefix Buttons$want"
@@ -81,7 +82,9 @@ foreach ($r in $tpRoots) {
         # a control the emulator's own GameProfile has, missing from this older profile: add it
         if ($known -and $known -notcontains $b.Name) { $notes.Add("$($game.Name): '$($b.Name)' is not a control of this TeknoParrot's profile - skipped"); continue }
         if (-not $tmpl) { $notes.Add("$($game.Name): no wheel button to copy the layout from - '$($b.Name)' skipped"); continue }
-        $n = $tmpl.CloneNode($true); $n.ButtonName = $b.Name
+        # the control's own entry from the emulator's GameProfile (its InputMapping and flags), else a wheel button's
+        $src = $gpNodes | Where-Object { [string]$_.ButtonName -eq $b.Name } | Select-Object -First 1
+        if ($src) { $n = $x.ImportNode($src, $true) } else { $n = $tmpl.CloneNode($true); $n.ButtonName = $b.Name }
         if ($b.Value.mapping) { $m = $n.SelectSingleNode('InputMapping'); if ($m) { $m.InnerText = [string]$b.Value.mapping } }
         [void]$tmpl.ParentNode.InsertAfter($n, ($nodes | Select-Object -Last 1)); $nodes = @($x.SelectNodes('//JoystickButtons'))
       }

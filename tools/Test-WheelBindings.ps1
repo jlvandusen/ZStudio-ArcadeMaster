@@ -77,6 +77,15 @@ if ($Csv) { $rows | Export-Csv -NoTypeInformation -Encoding UTF8 $Csv; Write-Hos
 # game to another loader (OpenParrot -> TeknoParrot), which changed how Dirty Drivin' ran on one rig only. Both are
 # listed here; they are information, not counted as faults above, because a control can be left out on purpose.
 $notes = New-Object System.Collections.Generic.List[string]
+# controls catalog\emulator-fixes.json binds (Set-EmulatorFixes, at every start): the next start adds them, so they are
+# told apart from the ones nobody has decided on yet
+$fixCat = Join-Path (Split-Path $PSScriptRoot) 'catalog\emulator-fixes.json'
+$fixed = @{}
+if (Test-Path -LiteralPath $fixCat) {
+  foreach ($gp in @((Get-Content -LiteralPath $fixCat -Raw | ConvertFrom-Json).teknoparrot.PSObject.Properties | Where-Object { $_.Name -notlike '_*' })) {
+    $fixed[$gp.Name.ToLower()] = @($gp.Value.buttons.PSObject.Properties | ForEach-Object { $_.Name.Trim().ToLower() })
+  }
+}
 foreach ($tp in $TeknoParrot | Select-Object -Unique) {
   $ud = Join-Path $tp 'UserProfiles'; $gd = Join-Path $tp 'GameProfiles'
   if (-not (Test-Path -LiteralPath $ud) -or -not (Test-Path -LiteralPath $gd)) { continue }
@@ -89,7 +98,9 @@ foreach ($tp in $TeknoParrot | Select-Object -Unique) {
              Where-Object { $_ -notmatch '(?i)^(wheel|steering|gas|brake|accelerat\w*|throttle|handle)\b.*\b(left|right|up|down|\+|-)$' })   # keyboard halves of an axis
     $ul = "$($u.GameProfile.EmulatorType)"; $gl = "$($g.GameProfile.EmulatorType)"
     $bits = @()
-    if ($new) { $bits += "controls this cabinet's profile lacks: $($new -join ', ')" }
+    $cov = @($fixed[$f.BaseName.ToLower()]); $soon = @($new | Where-Object { $cov -contains $_.ToLower() }); $open = @($new | Where-Object { $cov -notcontains $_.ToLower() })
+    if ($open) { $bits += "controls this cabinet's profile lacks: $($open -join ', ') (to bind them on every cabinet: catalog\emulator-fixes.json)" }
+    if ($soon) { $bits += "added at the next start by catalog\emulator-fixes.json: $($soon -join ', ')" }
     if ($ul -and $gl -and $ul -ne $gl) { $bits += "loader here is $ul, TeknoParrot's current one is $gl" }
     if ($bits) { $notes.Add(("  {0,-18} {1}" -f $f.BaseName, ($bits -join '; '))) }
   }
