@@ -1,0 +1,9 @@
+{
+  "_about": "How far the wheel turns lock to lock for each game, set at the game's start by tools/Record-GamePlay.ps1 through tools/Set-WheelRange.ps1 (straight to the wheel, G HUB untouched) and put back to 'menu' when the game ends. 'lists' goes by the game's own list (the collection it is started from: Sega Model 2, TeknoParrot ...); 'games' goes by the game's item name and wins. A list or game that is not named is left alone: the wheel stays as it is. Only add a list after somebody has driven it that way - an emulator that already shrinks the steering itself (Model 3: saturation 40 in Supermodel.ini) would be shrunk twice. James, RACE1, 2026-11-28, Daytona USA: '270 is perfect'.",
+  "menu": 900,
+  "lists": {
+    "Sega Model 2": 270
+  },
+  "games": {
+  }
+}

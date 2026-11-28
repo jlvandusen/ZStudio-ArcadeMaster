@@ -46,11 +46,32 @@ if ($Phase -eq 'start') {
   # the mouse pointer is hidden while the game runs (Set-GameCursor -Hide; the end hook and the boot show it again)
   try { & (Join-Path $PSScriptRoot 'Set-GameCursor.ps1') -Hide | Out-Null } catch { }
   Save-Json ([ordered]@{ key = $key; item = $Item; collection = $Collection; start = (Get-Date).ToString('o') }) $cur
-  Write-PlayLog "start $key"
+  # the wheel's rotation for this game (catalog\wheel-rotation.json): an arcade racer gets 270 degrees, sent straight to
+  # the wheel; the end hook puts the menu's value back. A game or list that is not in the catalog is left alone.
+  try {
+    $wrFile = Join-Path (Split-Path $PSScriptRoot) 'catalog\wheel-rotation.json'
+    if (Test-Path -LiteralPath $wrFile) {
+      $wr = Get-Content -LiteralPath $wrFile -Raw | ConvertFrom-Json; $deg = 0
+      if ($wr.games -and $wr.games.PSObject.Properties[$Item]) { $deg = [int]$wr.games.$Item } elseif ($Collection -and $wr.lists -and $wr.lists.PSObject.Properties[$Collection]) { $deg = [int]$wr.lists.$Collection }
+      if ($deg -ge 40 -and $deg -le 900) {
+        $wo = & (Join-Path $PSScriptRoot 'Set-WheelRange.ps1') -Degrees $deg 6>&1 | Out-String
+        Set-Content (Join-Path $ManifestDir 'wheel-rotation.set') $deg; Write-PlayLog ($wo.Trim())
+      }
+    }
+  } catch { Write-PlayLog "wheel rotation not set: $($_.Exception.Message)" }  Write-PlayLog "start $key"
   return
 }
 
-# ------------------------------------------------------------------ end: the mouse pointer back
+# ------------------------------------------------------------------ end: the wheel's rotation back to the menu's
+try {
+  $wrSet = Join-Path $ManifestDir 'wheel-rotation.set'
+  if (Test-Path -LiteralPath $wrSet) {
+    Remove-Item -LiteralPath $wrSet -ErrorAction SilentlyContinue
+    $wrFile = Join-Path (Split-Path $PSScriptRoot) 'catalog\wheel-rotation.json'; $back = 900
+    if (Test-Path -LiteralPath $wrFile) { $wm = [int](Get-Content -LiteralPath $wrFile -Raw | ConvertFrom-Json).menu; if ($wm -ge 40 -and $wm -le 900) { $back = $wm } }
+    $wo = & (Join-Path $PSScriptRoot 'Set-WheelRange.ps1') -Degrees $back 6>&1 | Out-String; Write-PlayLog ($wo.Trim())
+  }
+} catch { Write-PlayLog "wheel rotation not put back: $($_.Exception.Message)" }# ------------------------------------------------------------------ end: the mouse pointer back
 try { & (Join-Path $PSScriptRoot 'Set-GameCursor.ps1') -Show | Out-Null } catch { }
 # ------------------------------------------------------------------ end: JoyToKey back for the menus
 if (Test-Path $jtkFile) {
