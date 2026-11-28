@@ -432,6 +432,17 @@ class PixelDirect
     }
     public void Console(string system, string altText) { Play(new List<Item> { ConsoleItem(system, altText) }); }
     public void Text(string text, Color c) { var t = TextItem(text, c, 1); if (t != null) Play(new List<Item> { t }); }
+    // the frontend closed: the goodbye text once, then the cabinet's default marquee held (black without one) - the one-off
+    // text fell back to the last game's logo, which stayed lit after quitting (James 2026-11-28)
+    public void Quit(string text, Color c)
+    {
+        var seq = new List<Item>();
+        var t = TextItem(text, c, 1); if (t != null) seq.Add(t);
+        string f = FindArt("console", "default-marquee");
+        Item idle = f != null ? FileItem(f, -1) : null;
+        seq.Add(idle ?? Solid(Color.Black, -1));
+        Play(seq);
+    }
     public void RandomAnimation()
     {
         var all = new List<string>();

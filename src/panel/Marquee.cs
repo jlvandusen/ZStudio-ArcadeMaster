@@ -135,7 +135,7 @@ class Marquee
     public void FrontendStart() { if (direct != null) { direct.Text(StartText, ToColor(PickColor(null))); return; } inAttract = false; Send(Text(StartText, 1, "FEStart")); }
     public void FrontendQuit()
     {
-        if (direct != null) { direct.Text(QuitText, ToColor(PickColor(null))); return; }
+        if (direct != null) { direct.Quit(QuitText, ToColor(PickColor(null))); return; }
         inAttract = false;
         var r = new List<string>();
         string t = Text(QuitText, 1, "FEQuit"); if (t != null) r.Add(t);
