@@ -70,6 +70,17 @@ def nk(k):
     return None
 
 
+SUPERMODEL = {"LCONTROL": "KEY_LEFTCTRL", "RCONTROL": "KEY_RIGHTCTRL", "LALT": "KEY_LEFTALT", "RALT": "KEY_RIGHTALT",
+              "LSHIFT": "KEY_LEFTSHIFT", "RSHIFT": "KEY_RIGHTSHIFT", "SPACE": "KEY_SPACE", "ENTER": "KEY_RETURN",
+              "UP": "KEY_UP", "DOWN": "KEY_DOWN", "LEFT": "KEY_LEFT", "RIGHT": "KEY_RIGHT", "BACKSLASH": "KEY_BACKSLASH",
+              "SLASH": "KEY_SLASH"}
+
+
+def supermodel_key(k):
+    k = k.upper()
+    return SUPERMODEL.get(k, "KEY_" + k)
+
+
 def real_wiimote():
     """a real Wii Remote is paired with this PC (Bluetooth name RVL-CNT-01 / Nintendo RVL-...)"""
     try:
@@ -208,6 +219,42 @@ def main():
         # RetroBat's analog-trigger and modifier keys sat on Home / End / Insert / Delete: off
         drop = lambda k, l: k in ("Triggers/L-Analog", "Triggers/R-Analog", "Main Stick/Modifier", "C-Stick/Modifier")
         write(p, set_ini(p, "GCPad1", v, drop))
+    # ---- Model 3: Supermodel (Config\Supermodel.ini). Each panel button carries its roles across Model 3's game types
+    # (system_buttons.NATIVE["model3"]); player 2's for the two-player fighters. Only the keyboard part of a line changes:
+    # a JOY / MOUSE binding on the same line (WheelMap's, a gun's) stays.
+    p = os.path.join(E, "supermodel", "Config", "Supermodel.ini")
+    if os.path.exists(p):
+        p2 = next((pp for pp in panel["players"] if pp.get("position") == "P2"), None)
+        key2 = {pad: (p2 or {}).get("keys", {}).get("P2" + btn) for pad, btn in PAD.items()}
+        roles = {"b": ["Punch", "Shift", "ShortPass", "VR1", "ViewChange", "TwinJoyShot1", "AnalogJoyTrigger", "Trigger",
+                       "AnalogTriggerLeft", "SkiPollLeft"],
+                 "a": ["Kick", "Beat", "LongPass", "VR2", "HandBrake", "RearBrake", "TwinJoyShot2", "AnalogJoyEvent",
+                       "Offscreen", "AnalogTriggerRight", "SkiPollRight"],
+                 "r": ["Guard", "Charge", "Shoot", "VR3", "MusicSelect", "AnalogJoyTrigger2"],
+                 "r2": ["Escape", "Jump", "VR4", "AnalogJoyEvent2"],
+                 "y": ["TwinJoyTurbo1"], "x": ["TwinJoyTurbo2"], "l2": ["GearShiftN"], "start": ["Start1"], "select": ["Coin1"]}
+        want = {}
+        for pad, names in roles.items():
+            if key.get(pad):
+                for n in names:
+                    want["Input" + n] = supermodel_key(key[pad])
+        for pad, n in (("b", "Punch2"), ("a", "Kick2"), ("r", "Guard2"), ("r2", "Escape2"), ("start", "Start2"), ("select", "Coin2")):
+            if key2.get(pad):
+                want["Input" + n] = supermodel_key(key2[pad])
+        for d, k in DIRS1.items():
+            want["InputJoy" + d.capitalize()] = supermodel_key(k)
+        for d, k in DIRS2.items():
+            want["InputJoy" + d.capitalize() + "2"] = supermodel_key(k)
+        t = open(p, encoding="utf-8", errors="replace").read()
+
+        def fix(m):
+            name, val, tail = m.group(1), m.group(2), m.group(3)
+            # the panel's key first; every other binding already on the line stays (a second key someone added on
+            # purpose - Start on Enter too - a wheel, a gun, the mouse); NONE goes once a real binding is there
+            keep = [tok.strip() for tok in val.split(",") if tok.strip() and tok.strip().upper() not in ("NONE", want[name].upper())]
+            return '%s = "%s"%s' % (name, ",".join([want[name]] + keep), tail)
+        rx = re.compile(r'^(%s)\s*=\s*"([^"]*)"(.*)$' % "|".join(re.escape(k) for k in want), re.M)
+        write(p, rx.sub(fix, t))
     # ---- Wii: Dolphin's Wii Remote 1 - a real one stays (the 2P stand-up pairs real remotes); without one paired, an
     # emulated Wii Remote + Nunchuk on the panel (layout = system_buttons.NATIVE["wii"]), the trackball / mouse as pointer
     p = os.path.join(E, "dolphin-emu", "User", "Config", "WiimoteNew.ini")
