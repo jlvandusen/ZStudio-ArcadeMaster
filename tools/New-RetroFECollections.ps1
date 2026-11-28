@@ -25,6 +25,14 @@ $ErrorActionPreference = 'Stop'
 $cols = Join-Path $RetroFE 'collections'
 $marker = 'ARCADEMASTER-GENERATED.txt'
 $names = @{ racing = 'Racing'; flight = 'Flight'; lightgun = 'Lightgun'; standup = 'Arcade' }
+# platforms / source lists that are home consoles or computers, never the Arcade list (zzzShutdown = CoinOPS scripts)
+$homeSystems = '(?i)^(Amiga|Amiga CD32|Commodore|C64|Atari (ST|800|5200|7800|2600|Jaguar|Lynx)|Super Nintendo|SNES|Nintendo|NES|Famicom|Game ?Boy|GameCube|Wii|Genesis|Mega ?Drive|Master System|Saturn|Dreamcast|Sega CD|32X|Game Gear|Playstation|PSP|PS[1-5]|Xbox|PC Gamer|PC Engine|TurboGrafx|Neo Geo (CD|Pocket)|3DO|MSX|ZX|Amstrad|DOS|zzzShutdown)\b'
+# whole arcade-board lists that are not in games.json (made by Import-RetroBatSystems.py ...) go into Arcade as a full
+# merge (an empty .sub = every game of that list): the standalone arcade emulators - Model 2, Model 3, Naomi, Atomiswave,
+# FinalBurn, Neo Geo (James 2026-11-28: "It should have teknoparrot and standalone arcade games system and system3
+# emulators too")
+$arcadeBoardLists = @('Model 2', 'Model 3', 'Naomi (RetroBat)', 'Atomiswave', 'Final Burn', 'Neo Geo')
+# (TeknoParrot comes in game by game from games.json, so its racing / gun games stay out of Arcade)
 
 # --- clean previous generation
 # only the launchers of collections made here (AM_PC, AM_TP_*): AM_TOOLS belongs to New-CabinetToolsCollection, and
@@ -85,6 +93,10 @@ foreach ($g in $m.games) {
   if ($g.fit -and $g.fit.level -eq 'unsupported' -and -not $IncludeUnsupported) { $skipped.Add("$($g.id) - not playable on this cabinet: $(($g.fit.notes) -join '; ')"); continue }
   $cat = $g.category; if ($cat -eq 'arcade' -or -not $names.ContainsKey($cat)) { $cat = 'standup' }
   if ($Modes -notcontains $cat) { $skipped.Add("$($g.id) [$cat] - not a mode of this cabinet"); continue }
+  # Arcade is arcade games only: MAME / FinalBurn sets, TeknoParrot and the arcade boards. A home console or computer game
+  # with no category of its own stays in its system's menu (James 2026-11-28 on the pedestal: "I am in arcade and it has
+  # Amiga games in here").
+  if ($cat -eq 'standup' -and ("$($g.platform)" -match $homeSystems -or @($g.sources | Where-Object { "$($_.collection)" -match $homeSystems }).Count)) { $skipped.Add("$($g.id) [$cat] - home system ($($g.platform)): in its own menu, not in Arcade"); continue }
   $picked = @()
   foreach ($v in Get-VariantOrder $g) {
     if ($v.Value.retrofeCollection) { $picked += , @($v.Value.retrofeCollection, $v.Value.profile, $v.Name) }
@@ -282,6 +294,13 @@ foreach ($cat in $Order) {
   $dir = New-Collection $name "# merged $cat collection (items come from the .sub files)`r`nlist.menuSort = yes`r`n"
   $n = 0
   foreach ($src in $subs[$cat].Keys) { Set-Content (Join-Path $dir "$src.sub") ($subs[$cat][$src] | Sort-Object) -Encoding ascii; $n += $subs[$cat][$src].Count }
+  if ($cat -eq 'standup') {
+    foreach ($b in $arcadeBoardLists) {
+      if ($subs[$cat].ContainsKey($b) -or -not (Test-Path -LiteralPath (Join-Path $cols "$b\settings.conf"))) { continue }
+      Set-Content -LiteralPath (Join-Path $dir "$b.sub") '' -Encoding ascii -NoNewline   # empty = the whole list
+      $subs[$cat][$b] = @('(all)')
+    }
+  }
   $menu.Add($name)
   Write-Host ("{0,-9} {1,3} entries from {2}" -f $name, $n, (($subs[$cat].Keys | Sort-Object) -join ', '))
 }
