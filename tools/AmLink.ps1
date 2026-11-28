@@ -126,7 +126,9 @@ function Send-Cmd([string]$c, [double]$minGapSec = 0.6) {
 # Kong Country - Tropical Freeze (USA) (v16)" is "Donkey Kong Country - Tropical Freeze (USA)" on the 2P stand-up.
 # Returns the name to look for here, or '' when the game is not on this cabinet. No index: the name as it came.
 $haveNames = $null; $haveLists = @{}
-function Get-LooseName([string]$n) { (($n.ToLower() -replace '\((v\s?[\d.]+|rev\s?[\w.]+|dlc|update|unl)\)', '') -replace '\s+', ' ').Trim() }
+# Punctuation is ignored too: the pedestal's "Mario & Sonic at the Rio 2016 - Olympic Games (USA) (v16)" is "Mario &
+# Sonic at the Rio 2016 Olympic Games (USA)" on the 2P stand-up (2026-11-28: the stand-up never went to it).
+function Get-LooseName([string]$n) { (($n.ToLower() -replace '\((v\s?[\d.]+|rev\s?[\w.]+|dlc|update|unl)\)', '') -replace '&', ' and ' -replace '[^\p{L}\p{N}]+', ' ').Trim() }
 function Find-HereGame([string]$item, [string]$col) {
   if ($col -and (Test-Path -LiteralPath (Join-Path $RetroFE "collections\$col"))) { return $item }
   if ($null -eq $script:haveNames) {
@@ -312,7 +314,23 @@ try {
               @($peers.Values | Where-Object { $_.data.type -eq $type -and $_.data.alive -and ($now - $_.seen).TotalSeconds -le 5 -and $_.data.menu -and $_.data.menu -ne $top -and ($noFollow -notcontains [string]$_.data.menu) }).Count) {
         $mates = @($peers.Values | Where-Object { $_.data.type -eq $type -and $_.data.alive -and ($now - $_.seen).TotalSeconds -le 5 -and $_.data.menu -and $_.data.menu -ne $top -and ($noFollow -notcontains [string]$_.data.menu) } | ForEach-Object { $_.data })
         $first = @(@($HostName) + @($mates | ForEach-Object { [string]$_.host }) | Sort-Object)[0]
-        if ($first -ne $HostName) { $ld = $mates | Where-Object { $_.host -eq $first } | Select-Object -First 1; if ($ld -and $ld.item -and $me.menu -eq [string]$ld.menu -and $me.item -ne [string]$ld.item) { Send-Goto ([string]$ld.item) ([string]$ld.col) 0.5 } }
+        # the same game in a differently named list goes too: the pedestal's "Wii U" is "Nintendo Wii U" on the 2P stand-up
+        # (2026-11-28: James, "2p didn't follow pedestal" - the stand-up showed the card and stayed on its own game)
+        if ($first -ne $HostName) {
+          $ld = $mates | Where-Object { $_.host -eq $first } | Select-Object -First 1
+          if ($ld -and $ld.item) {
+            $want = [string]$ld.item; $wantList = [string]$ld.menu; $wantCol = [string]$ld.col
+            if ($me.menu -ne $wantList) {
+              $sa = Find-HereList $want
+              if ($sa -and ($noFollow -notcontains $sa.list)) { $want = $sa.item; $wantList = $sa.list; $wantCol = '' } else { $want = '' }
+            }
+            if ($want -and $me.item -ne $want) {
+              if ($altFor -ne "sync|$want") { $altFor = "sync|$want"; $altTries = 0 }
+              if ($me.menu -eq $wantList) { Send-Goto $want $wantCol 0.5 }
+              elseif ($altTries -lt 3) { $bc = $lastCmdAt; Send-Cmd "show`t$wantList" 1.5; if ($lastCmdAt -ne $bc) { $altTries++ } }
+            }
+          }
+        }
         Show-Card 'CABINET LINK' ("{0}  +  {1}" -f (Get-Cab $HostName), ((@($mates | ForEach-Object { Get-Cab ([string]$_.host) }) | Sort-Object) -join '  +  ')) 'pick a game here and the other cabinet follows  -  start it and it joins' -AtTop
         if (-not $linkShown) { $linkShown = $true; Say "attract: showing the link with $((@($mates | ForEach-Object { $_.host })) -join ', ')" }
       }      # 6. attract on a game list, not on the main menu (James 2026-11-26: the race cab "always misses attract mode" - on
