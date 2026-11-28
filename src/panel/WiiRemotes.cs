@@ -75,7 +75,9 @@ class WiiRemotes
         {
             try
             {
-                if (!GameRunning && Process.GetProcessesByName("Dolphin").Length == 0 && Process.GetProcessesByName("DolphinWx").Length == 0)
+                // never while an emulator has the remote: a slot check makes the remote send a status report, after which the
+                // emulator must set it up again (James 2026-11-28: Cemu, opened on its own, lost the d-pad and the nunchuk)
+                if (!GameRunning && !EmulatorOwnsRemote())
                 {
                     var paths = SlotPaths(); Slots = paths.Count;
                     if (paths.Count > 0)
