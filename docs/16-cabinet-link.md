@@ -208,5 +208,15 @@ address, left over from the DRIVE copy.
 - **Sega Touring Car does not link** (2026-11-28): both rigs' EMULATOR listen on UDP 1978, the firewalls are off, the
   game shows "CHECKING NETWORK - THIS IS MASTER SITE" / "SLAVE SITE" and never leaves it. Emulator 1.1a's notes name
   network fixes for Daytona, Sega GT 24h and Over Rev only; Touring Car's link is most likely not emulated.
-- Not linked yet: TeknoParrot games. Each emulator has its own network settings; Model 3 is the
+- **Mario Kart Arcade GP DX (TeknoParrot MKDX) linked works (James, 2026-11-28: "Worked great").** What it takes:
+  1. TeknoParrot's Network / Gateway = the router (192.168.1.1 on both rigs); the firewalls are off.
+  2. In the game's test menu (**+**), Game Settings: a different Cabinet ID per rig - RACE1 1, RACE2 2 - and leave
+     through the menu's own save line. The game keeps it in `<game>\FTestMode	estmode_*.bin` (and GTestMode): byte
+     114 is the cabinet number counted from 0. The first try was not saved on either rig and both stayed on the same
+     number, so they did not see each other.
+  3. The "Use your BANAPASSPORT card" notice before every race: `SkipNoticeScreen = 1` and the Mario Button on Cross
+     (catalog/emulator-fixes.json, applied at every start).
+- **Sega World Drivers Championship (SWDC)** does not run on either rig (fatal error after waiting on its online
+  login); it is on the link's no-join list. Offline Mode = 1 is set on both, not yet tried.
+- Not linked yet: the other TeknoParrot games. Each emulator has its own network settings; Model 3 is the
   first because Supermodel has them in one file.
