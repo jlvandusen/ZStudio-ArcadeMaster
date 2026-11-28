@@ -173,6 +173,7 @@ If your encoder is set up differently, there are two ways to tell ArcadeMaster:
 
 - **Xbox pads, and PlayStation 3/4 pads through ScpToolkit or DS4Windows:** these work next to the panel in RetroArch,
   PCSX2, Cemu, xemu (where the pad is player 1 and the panel player 2) and Xenia.
+- **Wii:** without a real Wii Remote paired, the panel is an emulated Wii Remote + Nunchuk (A, B, 1, 2 on B1-B4, C / Z on B5 / B6, shake B7, Home B8) and the trackball or mouse is the pointer. Pair a real Wii Remote and it is used instead.
 - After plugging a new controller in, run **Tools > Detect Controllers**.
 - **To map one game's buttons:** press **TAB** on it, then **MAP BUTTONS**.
 
