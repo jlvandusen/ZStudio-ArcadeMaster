@@ -243,6 +243,10 @@ Every list launches its emulator directly. The launchers are in `frontend\Arcade
 
 ### 5.11 Adding games or a whole new system
 
+**Easiest: tray > Import a folder...** Pick the folder: an emulator, one system's games, or a folder of system folders. Press 1 to see what it found, then 2 to import it. It is linked into ArcadeMaster (or moved, if you tick that), then its lists, launchers, keys, art and lights are made. If the folder's name does not say the system, type it in the system box (snes, psx, megadrive ...).
+
+Or by hand:
+
 1. Put the games in the system's folder. For a new system, use a folder named after it (snes, megadrive, psx ...).
 2. Run **Set up this PC** again. New lists, launchers, art and lights are made; your existing settings stay.
 
