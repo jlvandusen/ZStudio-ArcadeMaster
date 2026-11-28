@@ -111,6 +111,21 @@ foreach ($r in $tpRoots) {
   }
 }
 
+# ---------------- TeknoParrot: ParrotData.xml settings (its in-app update off: one build on every cabinet)
+if ($cat.teknoparrotSettings) {
+  foreach ($r in $tpRoots) {
+    $pd = Join-Path $r 'ParrotData.xml'; if (-not (Test-Path -LiteralPath $pd)) { continue }
+    $raw = [IO.File]::ReadAllBytes($pd); $bom = $raw.Length -ge 3 -and $raw[0] -eq 0xEF -and $raw[1] -eq 0xBB -and $raw[2] -eq 0xBF
+    $text = $u8.GetString($raw, $(if ($bom) { 3 } else { 0 }), $raw.Length - $(if ($bom) { 3 } else { 0 })); $new = $text; $done = @()
+    foreach ($p in @($cat.teknoparrotSettings.PSObject.Properties | Where-Object { $_.Name -notlike '_*' })) {
+      $rx = '<' + [regex]::Escape($p.Name) + '>([^<]*)</' + [regex]::Escape($p.Name) + '>'
+      $m = [regex]::Match($new, $rx); if (-not $m.Success -or $m.Groups[1].Value -eq [string]$p.Value) { continue }
+      $new = $new.Substring(0, $m.Index) + "<$($p.Name)>$($p.Value)</$($p.Name)>" + $new.Substring($m.Index + $m.Length); $done += "$($p.Name) = $($p.Value)"
+    }
+    if ($done) { $out = $u8.GetBytes($new); if ($bom) { $out = [byte[]](0xEF, 0xBB, 0xBF) + $out }; Save-File $pd $out ("TeknoParrot settings: " + ($done -join ', ')) }
+  }
+}
+
 # ---------------- Supermodel: extra [ Global ] lines from the WheelMap template
 $tplFile = Join-Path $PSScriptRoot 'wheelmap\templates\supermodel.json'
 $extra = if (Test-Path -LiteralPath $tplFile) { (Get-Content -LiteralPath $tplFile -Raw | ConvertFrom-Json).settings } else { $null }
