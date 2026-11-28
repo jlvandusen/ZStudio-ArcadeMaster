@@ -225,7 +225,27 @@ class WiiRemotes
                     ir = false;   // Dolphin / Cemu set the camera up their own way
                     if (!owned) { StartExtension(h); Mode(h); }   // Dolphin / Cemu closed: the menus get the remote back
                 }
-                if (owned) continue;
+                if (owned)
+                {
+                    // Cemu cannot read this nunchuk's stick (its calibration block says max 0 / min 0: every push came out
+                    // as "left", James 2026-11-28). While Cemu has the screen the stick is read here, listening only, and
+                    // pressed as F17-F20, which Cemu's Controller profile takes as the nunchuk stick (Set-DolphinControllers).
+                    var stickKeys = new HashSet<byte>();
+                    if (CemuInFront())
+                    {
+                        int ext = id == 0x32 || id == 0x34 ? 3 : id == 0x35 ? 6 : id == 0x36 ? 13 : id == 0x37 ? 16 : -1;
+                        if (ext > 0 && n >= ext + 2 && !(buf[ext] == 0xFF && buf[ext + 1] == 0xFF))
+                        {
+                            int x = buf[ext], y = buf[ext + 1];
+                            if (y > 128 + Dead) stickKeys.Add(0x80); if (y < 128 - Dead) stickKeys.Add(0x81);   // F17 up, F18 down
+                            if (x < 128 - Dead) stickKeys.Add(0x82); if (x > 128 + Dead) stickKeys.Add(0x83);   // F19 left, F20 right
+                        }
+                        else if (ext < 0) { foreach (var k in down) stickKeys.Add(k); }   // a report without the nunchuk: keep what is held
+                    }
+                    foreach (var k in new List<byte>(down)) if (!stickKeys.Contains(k)) { Key(k, false); down.Remove(k); }
+                    foreach (var k in stickKeys) if (!down.Contains(k)) { Key(k, true); down.Add(k); }
+                    continue;
+                }
                 if (id == 0x20)   // a status report (the slot poll, a nunchuk plugged / pulled) ends the report mode: set it up again
                 {
                     bool ext = n > 3 && (buf[3] & 0x02) != 0;
@@ -263,7 +283,7 @@ class WiiRemotes
                 int mouseWant = 0;
                 if (where == "menus")
                 {
-                    if (ir) { if ((core & 0x0004) != 0) mouseWant |= 1; core &= ~0x0004; }   // B = click where the remote points
+                    if (ir && aimed) { if ((core & 0x0008) != 0) mouseWant |= 1; core &= ~0x0008; }   // pointing at the screen: A clicks there; B stays back (Esc, James 2026-11-28)
                     foreach (var m in Map) if ((core & m[0]) != 0) want.Add((byte)m[1]);
                     if (sx < 128 - Dead) want.Add(0x25); if (sx > 128 + Dead) want.Add(0x27);
                     if (sy > 128 + Dead) want.Add(0x26); if (sy < 128 - Dead) want.Add(0x28);
@@ -287,8 +307,9 @@ class WiiRemotes
                     bool up = (core & 0x0800) != 0 || sy > 128 + Dead, dn = (core & 0x0400) != 0 || sy < 128 - Dead;
                     bool lf = (core & 0x0100) != 0 || sx < 128 - Dead, rt = (core & 0x0200) != 0 || sx > 128 + Dead;
                     Add(want, keys, "UP", up); Add(want, keys, "DOWN", dn); Add(want, keys, "LEFT", lf); Add(want, keys, "RIGHT", rt);
-                    Add(want, keys, "B1", (core & 0x0004) != 0);      // B (trigger)
-                    Add(want, keys, "B2", (core & 0x0008) != 0);      // A
+                    bool cemu = CemuInFront();   // Wii U on the panel's GamePad: the remote's A is the GamePad's A (button 1)
+                    Add(want, keys, "B1", (core & (cemu ? 0x0008 : 0x0004)) != 0);   // B (trigger); A in Cemu
+                    Add(want, keys, "B2", (core & (cemu ? 0x0004 : 0x0008)) != 0);   // A; B in Cemu
                     Add(want, keys, "B3", nz);                        // Z (nunchuk trigger)
                     Add(want, keys, "B4", nc);                        // C
                     Add(want, keys, "B5", (core & 0x0002) != 0);      // 1
@@ -303,10 +324,36 @@ class WiiRemotes
         }
     }
 
+    static bool CemuInFront()
+    {
+        int pid; GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+        try { using (var p = Process.GetProcessById(pid)) return p.ProcessName.Equals("Cemu", StringComparison.OrdinalIgnoreCase); } catch { return false; }
+    }
+
+    // Dolphin always reads the remote itself. Cemu only when one of its controller profiles uses the real remote (api
+    // Wiimote); otherwise its GamePad is on the keyboard and the remote plays as the panel's keys (James 2026-11-28: "No
+    // A to start but the wii remote works in panel" - the old frontend's Cemu 1.26 has only the keyboard GamePad).
     static bool EmulatorOwnsRemote()
     {
-        foreach (var n in new[] { "Dolphin", "DolphinWx", "Cemu" }) { var ps = Process.GetProcessesByName(n); bool any = ps.Length > 0; foreach (var p in ps) p.Dispose(); if (any) return true; }
-        return false;
+        foreach (var n in new[] { "Dolphin", "DolphinWx" }) { var ps = Process.GetProcessesByName(n); bool any = ps.Length > 0; foreach (var p in ps) p.Dispose(); if (any) return true; }
+        return CemuReadsRemote();
+    }
+    static int cemuPid; static bool cemuReads;
+    static bool CemuReadsRemote()
+    {
+        var ps = Process.GetProcessesByName("Cemu");
+        try
+        {
+            if (ps.Length == 0) { cemuPid = 0; return false; }
+            if (ps[0].Id == cemuPid) return cemuReads;
+            cemuPid = ps[0].Id; cemuReads = false;
+            string dir = Path.Combine(Path.GetDirectoryName(ps[0].MainModule.FileName), "controllerProfiles");
+            foreach (var f in Directory.GetFiles(dir, "controller*.xml"))
+                if (File.ReadAllText(f).IndexOf("<api>Wiimote</api>", StringComparison.OrdinalIgnoreCase) >= 0) { cemuReads = true; break; }
+            return cemuReads;
+        }
+        catch { return cemuReads; }
+        finally { foreach (var p in ps) p.Dispose(); }
     }
 
     // which game is a light-gun game: set by AmPanel (the frontend's list for the running game)
@@ -429,7 +476,7 @@ class WiiRemotes
     // read the remote themselves, so nothing is pressed while either runs), or "" (anything else: nothing is pressed)
     string Where()
     {
-        if (Process.GetProcessesByName("Dolphin").Length > 0 || Process.GetProcessesByName("Cemu").Length > 0) return "";
+        if (EmulatorOwnsRemote()) return "";
         int pid; GetWindowThreadProcessId(GetForegroundWindow(), out pid);
         string name;
         try { using (var p = Process.GetProcessById(pid)) name = p.ProcessName; } catch { return ""; }
