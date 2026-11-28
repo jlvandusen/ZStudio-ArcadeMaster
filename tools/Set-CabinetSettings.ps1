@@ -62,7 +62,7 @@ $S.cabinetMode = @{ group = 'CABINET'; label = 'MODE IN USE'; kind = 'info'
   get = { try { "$((Get-Content (Join-Path $ManifestDir 'cabinet-mode.json') -Raw | ConvertFrom-Json).effective)" } catch { '?' } }
   show = { param($v) "$v".ToUpper() }
   set = { param($v) 'set at every start from the cabinet type and the controls plugged in' } }
-$S.cabinetLink = @{ group = 'CABINET'; label = 'CABINET LINK'; detail = 'While nobody is here, follow a similar cabinet: same game selected, and join its game after a 5 s countdown'; kind = 'switch'; default = $false
+$S.cabinetLink = @{ group = 'CABINET'; label = 'CABINET LINK'; detail = 'While nobody is here, follow a similar cabinet: same game selected, and join its game after a 10 s countdown (touch STAY HERE to cancel)'; kind = 'switch'; default = $false
   get = { IsYes (Conf 'linkEvents') }
   set = { param($on) SetConf 'linkEvents' $(if ($on) { 'yes' } else { 'no' }); 'from the next start of the frontend' } }
 $S.followHardware = @{ group = 'CABINET'; label = 'FOLLOW THE HARDWARE'; detail = 'Wheel unplugged and a flight stick in? The cabinet becomes a flight cab'; kind = 'switch'; default = $true

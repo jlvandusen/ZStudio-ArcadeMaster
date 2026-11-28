@@ -56,7 +56,7 @@ Racing opened on its third game. Patch 0017 makes opposite directions cancel. Ra
 
 ## Part 2-3: the helper (`tools\AmLink.ps1`)
 **Where it is on:** `catalog\cabinet-link.json` lists the cabinets (`DESKTOP-RACE1`, `DESKTOP-RACE2`), the idle time
-(30 s) and the countdown (5 s). At the next start of the frontend Start-ArcadeMaster adds `linkEvents = yes` to that
+(30 s) and the countdown (10 s). At the next start of the frontend Start-ArcadeMaster adds `linkEvents = yes` to that
 cabinet's settings.conf once and starts the helper (hidden; it ends with the launcher). **Cabinet Settings > CABINET
 LINK** switches it off or on for one cabinet; a cabinet that has its own `linkEvents` line keeps its choice.
 
