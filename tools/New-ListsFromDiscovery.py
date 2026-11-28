@@ -29,15 +29,31 @@ NAMES = {
 SKIP_EXT = {".txt", ".xml", ".jpg", ".png", ".ini", ".cfg", ".dat", ".nfo", ".srm", ".sav", ".state", ".db", ".json"}
 
 
-def has_list(cols, system):
+def has_list(cols, system, folder=None):
+    """a list for this system is there already: our launcher names it, it reads the same folder (links resolved), or -
+    for MAME - a list is tagged metadata.type = MAME (a CoinOPS build's Arcades / Fight lists, 2026-11-27)"""
     rx = re.compile(r"^(?:\s*launcher\s*=\s*AM_(?:RB|DL)_%s\b|# was AM_RB_%s )" % (re.escape(system), re.escape(system)), re.M | re.I)
+    real = os.path.normcase(os.path.realpath(folder)) if folder else None
+    root = os.path.dirname(cols)
     for c in os.listdir(cols):
         sc = os.path.join(cols, c, "settings.conf")
         try:
-            if rx.search(open(sc, encoding="latin-1").read()):
-                return c
+            t = open(sc, encoding="latin-1").read()
         except OSError:
-            pass
+            t = ""
+        if rx.search(t):
+            return c
+        if system == "mame" and re.search(r"^\s*metadata\.type\s*=\s*MAME\s*$", t, re.M | re.I):
+            return c
+        lp = re.search(r"^\s*list\.path\s*=\s*(.+?)\s*$", t, re.M)
+        if real and lp:
+            p = lp.group(1).replace("%BASE_ITEM_PATH%", os.path.join(root, "collections")).replace("%ITEM_COLLECTION_NAME%", c)
+            p = p if os.path.isabs(p) else os.path.join(root, p)
+            try:
+                if os.path.normcase(os.path.realpath(p)) == real:
+                    return c
+            except OSError:
+                pass
         mk = os.path.join(cols, c, MARK)
         if os.path.exists(mk) and open(mk, encoding="utf-8").read().strip() == "system=" + system:
             return c
@@ -60,10 +76,9 @@ def main():
     for system, v in sorted(disc.get("systems", {}).items()):
         if not v.get("emulators") or not v.get("games") or system not in NAMES:
             continue
-        have = has_list(cols, system)
-        if have:
-            continue
         folder = v["games"][0]["path"]                      # the biggest game folder (discovery sorts by count)
+        if has_list(cols, system, folder):
+            continue
         exts = sorted({os.path.splitext(f)[1].lower().lstrip(".") for f in os.listdir(folder)
                        if os.path.isfile(os.path.join(folder, f)) and os.path.splitext(f)[1] and os.path.splitext(f)[1].lower() not in SKIP_EXT})
         if not exts:

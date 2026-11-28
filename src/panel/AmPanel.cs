@@ -1042,6 +1042,13 @@ static class AmPanel
         menu.Items.Add("Status", null, delegate { MessageBox.Show(StatusText(), "ArcadeMaster Panel"); });
         if (toolsDir != null && retroFERoot != null)
             menu.Items.Add("Set up this PC...", null, delegate { new SetupWizard(toolsDir, retroFERoot, manifestDir).Show(); });   // first run (SetupWizard.cs)
+        if (toolsDir != null && retroFERoot != null)
+            menu.Items.Add("Import a folder...", null, delegate {
+                // an emulator, a system's games or a folder of systems (tools\Import-Folder.py via Invoke-FirstRun -ImportFolder)
+                using (var fb = new FolderBrowserDialog { Description = "Pick a folder to import: an emulator, a system's games, or a folder of systems", ShowNewFolderButton = false })
+                    if (fb.ShowDialog() == DialogResult.OK && !string.IsNullOrEmpty(fb.SelectedPath))
+                        new SetupWizard(toolsDir, retroFERoot, manifestDir, fb.SelectedPath).Show();
+            });
         if (toolsDir != null)
             menu.Items.Add("Check for updates...", null, delegate {
                 // a release install asks GitHub (tools\Update-Release.ps1 -Check); the update itself installs when ArcadeMaster
