@@ -1,0 +1,10 @@
+{
+  "name": "AM-Showcase",
+  "label": "Showcase",
+  "about": "a stage: light beams sweep over the game's drifting fanart, its video glows in a double neon frame with a passing glint, the logo drops in, box art fans out on a lit floor",
+  "idea": "a game reveal on a stage - spotlights, a big screen, the boxes lined up in front",
+  "keys": "UP / DOWN: previous / next box (the row is sideways, the menu is vertical)   LEFT / RIGHT: playlists",
+  "madeBy": "tools/New-ArcadeThemes.py",
+  "resolution": "1920x1080",
+  "monitors": 2
+}

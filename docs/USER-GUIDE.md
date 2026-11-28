@@ -196,8 +196,8 @@ menu:
 | Tile Wall | A wall of logo tiles left, the chosen game large on the right |
 | Cabinet | A whole cabinet: lit marquee, the preview in its screen, the controls card on the deck |
 | Spin Wheel | A curved logo wheel on the right, big preview left, story ticker at the bottom |
-| Box Art | A box-art carousel along the bottom over the game's backdrop |
-| Neon Lite | A centred text list under a huge logo: the lightest theme, for slow PCs |
+| Showcase | A stage: light beams sweep over the game's drifting art, its video glows in a double neon frame with a passing glint, the logo drops in, box art fans out on a lit floor |
+| Arcade Hall | A games room: the chosen game is a lit arcade cabinet (its marquee flickering on top, its video on the screen, its controls on the deck), the list a stack of glowing marquees |
 
 A theme you pick has to be **kept**. If you don't confirm it, ArcadeMaster goes back to the last one that worked.
 

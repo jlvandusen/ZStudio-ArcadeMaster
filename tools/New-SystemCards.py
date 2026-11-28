@@ -132,7 +132,7 @@ def main():
     cols = os.path.join(a.retrofe, "collections")
     menu = os.path.join(cols, "Main", "menu.txt")
     makers = [l.strip() for l in open(menu, encoding="utf-8", errors="replace")] if os.path.exists(menu) else []
-    done, sure, lists = 0, 0, 0
+    done, sure, lists, marquees = 0, 0, 0, 0
     for maker in makers:
         mt = os.path.join(cols, maker, "menu.txt")
         if not maker or not os.path.exists(mt):
@@ -166,6 +166,15 @@ def main():
             bdst = os.path.join(art, "am_backdrop", coll + ".jpg")
             if os.path.exists(bg) and (a.force or not os.path.exists(bdst)):
                 backdrop(bg, bdst)
+            # a system has no marquee of its own: its menu tile (the logo, "GAME BOY - 61 GAMES") is its marquee, so a
+            # theme that shows marquees (Arcade Hall's marquee stack and cabinet window, Cabinet) is never empty in a
+            # maker menu (2026-11-27). A marquee already there is kept.
+            logo, mq = os.path.join(art, "logo", coll + ".png"), os.path.join(art, "marquee", coll + ".png")
+            if os.path.exists(logo) and not os.path.exists(mq):
+                os.makedirs(os.path.dirname(mq), exist_ok=True)
+                shutil.copy2(logo, mq)
+                marquees += 1
+    print("system cards: %d system marquees from their tiles" % marquees)
     print("system cards: %d written (%d with the console's own button names), %d game lists show theirs" % (done, sure, lists))
 
 
