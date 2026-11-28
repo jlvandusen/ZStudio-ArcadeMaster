@@ -16,6 +16,13 @@ What it reads:
 
 Writes <out>/<system>__<family>.png. A pair is skipped when fewer than two of the console's buttons are on that
 controller. Only writes into --out.
+
+On a cabinet (--retrofe): the console lists show <collection>/medium_artwork/am_controls/default.png for every game
+that has no card of its own (tools/New-SystemCards.py puts the panel's card there).
+  --retrofe <frontend> --family ps4     a controller is plugged in: every console list gets that controller's card.
+                                        The panel's card is kept beside it as default.panel.png.
+  --retrofe <frontend> --panel          the controller is gone: the panel's cards go back.
+tools/Set-PadCards.ps1 does this from the controller that is plugged in. Only ever writes those two files per list.
 """
 from __future__ import annotations
 
@@ -103,15 +110,75 @@ def render(system: str, key: str, fam: dict, art_dir: Path) -> Image.Image | Non
     return im.resize((W, H), Image.LANCZOS)
 
 
+def console_lists(retrofe: Path):
+    """(collection, system) for every console list of the cabinet: the systems inside the maker menus"""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('am_system_cards', HERE.parent / 'New-SystemCards.py')
+    sc = importlib.util.module_from_spec(spec); spec.loader.exec_module(sc)
+    cols = retrofe / 'collections'
+    menu = cols / 'Main' / 'menu.txt'
+    out, seen = [], set()
+    makers = [ln.strip() for ln in menu.read_text(encoding='utf-8', errors='replace').splitlines()] if menu.is_file() else []
+    for maker in makers:
+        mt = cols / maker / 'menu.txt'
+        if not maker or not mt.is_file():
+            continue
+        for coll in [ln.strip() for ln in mt.read_text(encoding='utf-8', errors='replace').splitlines() if ln.strip()]:
+            key = sc.system_key(str(retrofe), coll)
+            if key and coll not in seen and (cols / coll).is_dir():
+                seen.add(coll); out.append((coll, key))
+    return out
+
+
+def place(retrofe: Path, family: str | None, cat: dict, art: Path) -> int:
+    """put a controller's card on every console list (family), or the panel's cards back (family None)"""
+    n = kept = 0
+    for coll, system in console_lists(retrofe):
+        d = retrofe / 'collections' / coll / 'medium_artwork' / 'am_controls'
+        cur, panel, none = d / 'default.png', d / 'default.panel.png', d / 'default.no-panel-card'
+        if family is None:
+            if panel.is_file():
+                panel.replace(cur); n += 1
+            elif none.is_file():                        # the list had no card before the controller's: none again
+                cur.unlink(missing_ok=True); none.unlink(); n += 1
+            continue
+        im = render(system, family, cat['families'][family], art)
+        if im is None:
+            kept += 1                                   # this controller has too few of the console's buttons
+            continue
+        d.mkdir(parents=True, exist_ok=True)
+        if cur.is_file() and not panel.is_file() and not none.is_file():
+            cur.replace(panel)                          # the panel's card, kept for when the controller is unplugged
+        elif not cur.is_file() and not panel.is_file():
+            none.write_text('this list had no card of its own before a controller card was shown', encoding='utf-8')
+        im.save(cur, optimize=True); n += 1
+    if family is None:
+        print(f'pad cards: the panel cards are back on {n} console list(s)')
+    else:
+        print(f'pad cards: {cat["families"][family]["label"]} shown on {n} console list(s)' + (f', {kept} left on the panel card' if kept else ''))
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument('--out', required=True, type=Path)
+    ap.add_argument('--out', type=Path)
+    ap.add_argument('--retrofe', type=Path, help='a cabinet frontend: put the cards on its console lists')
+    ap.add_argument('--family', help='with --retrofe: the controller that is plugged in')
+    ap.add_argument('--panel', action='store_true', help='with --retrofe: put the panel cards back')
     ap.add_argument('--systems', help='comma list (default: every console in tools/system_buttons.py)')
     ap.add_argument('--families', help='comma list (default: every family in pads.json)')
     ap.add_argument('--art', type=Path, default=HERE.parent.parent / 'layouts' / 'ArcadeMaster' / 'images' / 'pads')
     ap.add_argument('--sheet', type=Path, help='also write the cards on one dark picture, to look them over')
     a = ap.parse_args(argv)
     cat = json.loads((HERE / 'pads.json').read_text(encoding='utf-8'))
+    if a.retrofe:
+        if not (a.panel or a.family in cat['families']):
+            print('with --retrofe give --family <one of: ' + ', '.join(cat['families']) + '> or --panel')
+            return 1
+        return place(a.retrofe, None if a.panel else a.family, cat, a.art)
+    if not a.out:
+        print('give --out <folder>, or --retrofe <frontend>')
+        return 1
     systems = [s.strip() for s in a.systems.split(',')] if a.systems else list(sb.NATIVE)
     fams = [f.strip() for f in a.families.split(',')] if a.families else list(cat['families'])
     a.out.mkdir(parents=True, exist_ok=True)
