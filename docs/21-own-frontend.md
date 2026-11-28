@@ -51,7 +51,7 @@ the host. Here the frontend itself becomes ours.
        TeknoParrot's "Game Running" window is minimised (its dialogs are left alone).
      - Left: consoles started hidden from the start. A launcher's own child consoles (RetroBat's emulatorLauncher starting
        Supermodel) aren't ours to start, so those stay "minimised when seen".
-3. **Cabinet profile at start.**
+3. **Cabinet profile at start. Done except the touch layout (2026-11-27).**
    - The frontend reads the detected cabinet type and capabilities.
    - Controls, the touch layout and the tools follow from it.
    - One settings tree with per-type overrides.
@@ -63,10 +63,23 @@ the host. Here the frontend itself becomes ours.
        type's default. A `settings8.conf` that is not ours (a CoinOPS build's) is never overwritten.
      - `cabinetTypeEffective = <type>` is always written: the frontend and its layouts can tell what kind of cabinet
        they are on (racing, racing+flight ...).
-     - Today: `common.conf` has `textureUploadBudgetMs = 8`; the type files are empty, waiting for the first default
+     - Today: `common.conf` has `textureUploadBudgetMs = 8`; `racing.conf` / `simulation.conf` have `attractModeTime = 90`
+       (James: "90 s on both"; the cabinet link rejoins only in attract mode). The other type files are empty, waiting for the first default
        every cabinet of that type should get. `gameHandOff` stays per cabinet until the frontend's hand-off has
        AmPanel's MAME keyboard fixes (2P stand-up).
-     - Next: controls and the touch layout from the type (the frontend reads `cabinetTypeEffective`).
+   - **What follows the cabinet at every start (found 2026-11-27: most of it was already there, in tools that predate
+     this plan):**
+
+     | What | Tool | Follows |
+     |---|---|---|
+     | Menu controls | `Set-MenuControls.ps1` (every start) | `catalog/menu-controls.json` for every cabinet; pedals, control panel and `<manifest>\menu-controls-local.json` per cabinet |
+     | Tools menu | `New-CabinetToolsCollection.ps1` | no wheel: no Wheel Setup / force feedback items; a panel cabinet gets its button tester |
+     | Theme, menus shown, first menu | `Set-CabinetMode.ps1` (every start) | the type: `cabinetTheme.<type>`, modes whose controls are plugged in, the type's game list on top |
+     | Frontend settings | `Set-CabinetMode.ps1` -> `settings8.conf` | the type (above) |
+     | Emulator links between twins | `Start-ArcadeMaster.ps1` -> `Set-SupermodelLink` / `Set-Model2Link` | `model3Pairs` in `catalog/cabinet-link.json` |
+
+   - **Left: the touch layout from the type.** That is the second-screen work of phase 6 (pedestal). The frontend can
+     read `cabinetTypeEffective` for it.
 4. **Theme engine with no ceiling.**
    - Scenes made of any number of layers (video, image, text, list, shader, particles) with timelines and easing.
    - Data binding to any game or system field, and hot reload while designing.
