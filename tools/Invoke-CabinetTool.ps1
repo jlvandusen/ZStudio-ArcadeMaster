@@ -276,8 +276,11 @@ switch ($Tool) {
       # on a cabinet without RetroBat
       Step 'retrobat' 'Classic systems (RetroBat)' 'run'
       & $py (Join-Path $t 'Import-RetroBatSystems.py') --retrofe $RetroFE --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
-      # Xbox (xemu) played on the panel: keyboard -> pad map from panel.json (skips itself without xemu)
-      & $py (Join-Path $t 'Set-XemuPanelMap.py') --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") }
+      # the panel's keys in every standalone emulator (Set-EmulatorPanelKeys.py, the controls-card layout) where ArcadeMaster
+      # has its own emulators folder; otherwise Xbox (xemu) on its own, as before (skips itself without xemu)
+      $emuRoot = Join-Path (Split-Path $ManifestDir) 'emulators'
+      if (Test-Path $emuRoot) { & $py (Join-Path $t 'Set-EmulatorPanelKeys.py') --manifest $ManifestDir --emulators $emuRoot 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") } }
+      else { & $py (Join-Path $t 'Set-XemuPanelMap.py') --manifest $ManifestDir 2>&1 | ForEach-Object { [Console]::Out.WriteLine("$_") } }
       Step 'retrobat' 'Classic systems (RetroBat)' $(if ($LASTEXITCODE -eq 0) { 'ok' } else { 'fail' })
     }
     Emit-Collections

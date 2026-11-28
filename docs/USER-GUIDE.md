@@ -240,6 +240,7 @@ Every list launches its emulator directly. The launchers are in `frontend\Arcade
 - **A system ArcadeMaster has no launcher for yet:** it is reported as "left on RetroBat" or "no emulator".
 - **To pick another emulator version for one game:** TAB > EMULATOR.
 - **New emulator versions:** Tools > Emulator Updates.
+- **All emulator settings in one go** (after an emulator update, or on another cabinet): `repo\tools\Configure-Emulators.ps1 -RetroFE <frontend> -ManifestDir <manifest> -Apply`. It runs the launchers, the panel keys in every emulator, real Wii Remotes / GameCube adapters, controller ids, the controls cards and the lights; a dry run without -Apply.
 
 ### 5.11 Adding games or a whole new system
 
