@@ -1,5 +1,6 @@
 {
   "_comment": "DESKTOP-ARCADE (2P stand-up) TeknoParrot gun games with pedals (James 2026-11-27: 'ensure time crisis and other games like 2spicy use them'). Applied by tools/Set-TeknoParrotControls.ps1 to UserProfiles\\<game>.xml of every TeknoParrot copy of the frontend that has the profile. Devices by name: footswitch = the PCsensor 3-pedal unit (pedals 1-3 send F13 / F14 / F15, tools/Set-FootSwitch.ps1), panel = the Mini-PAC keyboard, gun1 / gun2 = AimTrak 1 / 2. Keys are .NET key names (D1 = the 1 key). Pedal 1 = left, pedal 3 = right; the middle pedal is free.",
+  "_autoGuns": true,
   "_devices": {
     "footswitch": "VID_1A86&PID_E026&MI_00&Col01",
     "panel": "VID_D209&PID_0440&MI_00",
