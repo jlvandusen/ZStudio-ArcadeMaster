@@ -122,8 +122,21 @@ class ExitGuard
         uint upid; GetWindowThreadProcessId(fg, out upid); int fgPid = (int)upid;
         string exe = Name(fgPid);
         var sb = new StringBuilder(256); GetClassName(fg, sb, sb.Capacity); string cls = sb.ToString();
-        if (exe == null || Never.Contains(exe)) return "not a game in front (" + exe + ")";
+        // Not the game in front, but a game IS running: an emulator's console (TeknoParrot's loader opens one in Windows
+        // Terminal), the menu itself, or a helper took the front, and the exit key went nowhere. RACE2, 2026-11-28: SWDC's
+        // loader console sat in front for 14 minutes and Esc did nothing; RACE1: a windowed Daytona behind the menu
+        // "won't quit". The game the frontend started is ended then, the same way as if it were in front.
+        bool swapped = false;
+        if (exe == null || Never.Contains(exe) || Consoles.Contains(exe))
+        {
+            int g = FrontendGame();
+            if (g == 0) return "not a game in front (" + exe + ")";
+            log("exit guard: " + (exe ?? "nothing") + " is in front, not the game - ending the game the frontend started (" + Name(g) + ")");
+            fgPid = g; exe = Name(g); cls = ""; swapped = true;
+            if (exe == null) return "not a game in front";
+        }
         var rule = Match(exe, cls);
+        if (swapped && rule.Close == "altf4") rule = new Rule { Close = "close", Grace = rule.Grace, Hold = rule.Hold };   // Alt+F4 would go to the window in front, which is not the game
         if (fromKey && rule.Hold > 0)
         {
             // a computer (C64, Amiga): Esc is a key in its games - only a long hold ends it
@@ -164,6 +177,23 @@ class ExitGuard
         return r;
     }
 
+    // windows that are never the game itself but can sit in front of one
+    static readonly HashSet<string> Consoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "WindowsTerminal", "OpenConsole", "cmd" };
+
+    // the program the frontend started for the running game: its first child that is not one of our own helpers
+    int FrontendGame()
+    {
+        var parents = ParentMap();
+        var fe = new HashSet<int>();
+        foreach (var p in Process.GetProcessesByName(frontend)) { fe.Add(p.Id); p.Dispose(); }
+        foreach (var kv in parents)
+        {
+            if (!fe.Contains(kv.Value)) continue;
+            string n = Name(kv.Key);
+            if (n != null && !Never.Contains(n) && !Consoles.Contains(n)) return kv.Key;
+        }
+        return 0;
+    }
     static string Name(int pid) { try { using (var p = Process.GetProcessById(pid)) return p.HasExited ? null : p.ProcessName; } catch { return null; } }
 
     static Dictionary<int, int> ParentMap()
