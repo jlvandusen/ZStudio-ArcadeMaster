@@ -18,6 +18,8 @@
     { "exe": "mameNEW264", "close": "self", "grace": 2500 },
     { "exe": "retroarch", "close": "close", "grace": 1000, "_why": "RetroBat's RetroArch does not quit on Esc; LEGENDS' may - 1 s covers both" },
     { "exe": "Supermodel", "close": "self", "grace": 2000 },
+    { "exe": "EMULATOR", "close": "close", "grace": 0, "_why": "Model 2 emulator (Daytona USA): Esc only drops it out of full screen into a window, it never quits on its own - close it at once (RACE1 2026-11-28)" },
+    { "exe": "emulator_multicpu", "close": "close", "grace": 0 },
     { "exe": "rpcs3", "close": "altf4", "grace": 0 },
     { "exe": "pcsx2", "close": "altf4", "grace": 0 },
     { "exe": "pcsx2-qt", "close": "altf4", "grace": 0 },

@@ -639,6 +639,24 @@ if (Test-Path $pj) {
   } else { Add-Result 'panel' $checks.panel 'OK' "$(@($pn.players).Count) players, no two buttons share a key" }
 } else { Add-Result 'panel' $checks.panel 'OK' 'not learned on this cabinet (no LEDBlinky button map)' }
 
+# game events: AmPanel ends a game on ONE press of the exit button (and shows its loading card) only when the menu tells
+# it that a game started. The menu does that through LEDBlinkyDirectory, pointed at AmPanel's stand-in. RACE1 never had
+# the line, so a press of exit only dropped Daytona USA into a small window that would not quit, while RACE2 closed it
+# (James, 2026-11-28: "Why are both rigs different!?"). A cabinet with AmPanel and no such line gets it here; a line
+# that somebody switched off (commented out in Cabinet Settings) is their choice and stays.
+$evExe = Join-Path (Split-Path $ManifestDir) 'AmPanel.exe'
+if (Test-Path -LiteralPath $evExe) {
+  $evOn = Get-Setting 'LEDBlinkyDirectory'
+  $evOff = [bool](Select-String -LiteralPath (Join-Path $RetroFE 'settings.conf') -Pattern '^\s*#\s*LEDBlinkyDirectory\s*=' -Quiet -ErrorAction SilentlyContinue)
+  if ($evOn) { Add-Result 'events' 'Game events to AmPanel' 'OK' 'the menu tells AmPanel when a game starts and ends' }
+  elseif ($evOff) { Add-Result 'events' 'Game events to AmPanel' 'OK' 'switched off in Cabinet Settings - one press of exit does not end a game' }
+  elseif ($fix) {
+    try { $evOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Set-ButtonLights.ps1') -RetroFE $RetroFE -ManifestDir $ManifestDir -Engine ArcadeMaster 2>&1 | Out-String
+      Add-Result 'events' 'Game events to AmPanel' 'FIXED' 'the menu did not tell AmPanel about games - switched on, so one press of exit ends a game (from the next start of the menu)' }
+    catch { Add-Result 'events' 'Game events to AmPanel' 'WARN' "could not be switched on: $($_.Exception.Message)" }
+  }
+  else { Add-Result 'events' 'Game events to AmPanel' 'WARN' 'the menu does not tell AmPanel about games: one press of exit will not end a game (tools\Set-ButtonLights.ps1 -Engine ArcadeMaster)' }
+}
 # summary + last-known-good snapshot
 $warn = @($results | Where-Object { $_.state -eq 'WARN' }).Count; $fixed = @($results | Where-Object { $_.state -eq 'FIXED' }).Count
 $summary = [ordered]@{ at = (Get-Date).ToString('s'); ok = @($results | Where-Object { $_.state -eq 'OK' }).Count; fixed = $fixed; warn = $warn; checks = $results; lkg = $null }
