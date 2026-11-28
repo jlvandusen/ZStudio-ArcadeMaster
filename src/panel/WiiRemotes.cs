@@ -211,6 +211,8 @@ class WiiRemotes
             bool ir = false;                  // the camera is on (pointer: menus and light-gun games)
             double px = -1, py = -1;          // the smoothed pointer, 0..1 on the main screen
             int mouseHeld = 0;                // mouse buttons this remote holds (1 = left, 2 = right)
+            byte modeNow = 0x32;              // the report mode asked for last
+            DateTime shakeUntil = DateTime.MinValue;   // a shake holds its key a little longer than the swing
             while (true)
             {
                 int n;
@@ -251,13 +253,13 @@ class WiiRemotes
                     bool ext = n > 3 && (buf[3] & 0x02) != 0;
                     if (ext && !hadExt) { StartExtension(h); log("wii: slot " + slot + " nunchuk plugged in"); }
                     hadExt = ext;
-                    if (ir) Mode(h, 0x37); else Mode(h);
+                    Mode(h, modeNow);
                 }
                 if (id < 0x20 || id > 0x37) continue;
                 int core = ((buf[1] & 0x1F) << 8) | (buf[2] & 0x9F);
                 // nunchuk (report 0x32: 8 extension bytes after the buttons): stick X, stick Y, 3 accel bytes, then Z / C bits (0 = pressed)
                 int sx = 128, sy = 128; bool nz = false, nc = false;
-                int ex = id == 0x32 ? 3 : id == 0x37 ? 16 : -1;   // where the nunchuk's 6 bytes sit in this report
+                int ex = id == 0x32 ? 3 : id == 0x35 ? 6 : id == 0x37 ? 16 : -1;   // where the nunchuk's 6 bytes sit in this report
                 if (ex > 0 && n >= ex + 6 && hadExt && !(buf[ex] == 0xFF && buf[ex + 1] == 0xFF))
                 {
                     sx = buf[ex]; sy = buf[ex + 1]; nz = (buf[ex + 5] & 0x01) == 0; nc = (buf[ex + 5] & 0x02) == 0;
@@ -267,7 +269,9 @@ class WiiRemotes
                 // the pointer (James 2026-11-28: "enable motion as well for mouse like movement for typing on the search"):
                 // the remote's camera sees the DolphinBar's lights; on in the menus and in light-gun games, off elsewhere
                 bool wantIr = where == "menus" || (where == "game" && GunGame());
-                if (wantIr != ir) { ir = wantIr; if (ir) StartCamera(h); else { StopCamera(h); Mouse(ref mouseHeld, 0); } Mode(h, ir ? (byte)0x37 : (byte)0x32); }
+                if (wantIr != ir) { ir = wantIr; if (ir) StartCamera(h); else { StopCamera(h); Mouse(ref mouseHeld, 0); } }
+                byte wantMode = ir ? (byte)0x37 : (where == "game" && CemuInFront()) ? (byte)0x35 : (byte)0x32;
+                if (wantMode != modeNow) { modeNow = wantMode; Mode(h, modeNow); }
                 bool aimed = false;
                 if (ir && id == 0x37 && n >= 16)
                 {
@@ -308,6 +312,16 @@ class WiiRemotes
                     bool lf = (core & 0x0100) != 0 || sx < 128 - Dead, rt = (core & 0x0200) != 0 || sx > 128 + Dead;
                     Add(want, keys, "UP", up); Add(want, keys, "DOWN", dn); Add(want, keys, "LEFT", lf); Add(want, keys, "RIGHT", rt);
                     bool cemu = CemuInFront();   // Wii U on the panel's GamePad: the remote's A is the GamePad's A (button 1)
+                    if (cemu && id == 0x35 && n >= 12)
+                    {
+                        // James 2026-11-28: the drum roll is shaking the remote and the nunchuk up and down. Their
+                        // accelerometers rest near 128 (about 25 per g); a swing past ~2.4 g on either one is a shake.
+                        // It presses panel button 5 (the GamePad's X: roll / pound in Tropical Freeze) for a moment.
+                        int rd = Math.Max(Math.Abs(buf[3] - 128), Math.Max(Math.Abs(buf[4] - 128), Math.Abs(buf[5] - 128)));
+                        int nd = hadExt ? Math.Max(Math.Abs(buf[8] - 128), Math.Max(Math.Abs(buf[9] - 128), Math.Abs(buf[10] - 128))) : 0;
+                        if (rd > 60 || nd > 60) shakeUntil = DateTime.Now.AddMilliseconds(180);
+                    }
+                    Add(want, keys, "B5", cemu && DateTime.Now < shakeUntil);
                     Add(want, keys, "B1", (core & (cemu ? 0x0008 : 0x0004)) != 0);   // B (trigger); A in Cemu
                     Add(want, keys, "B2", (core & (cemu ? 0x0004 : 0x0008)) != 0);   // A; B in Cemu
                     Add(want, keys, "B3", nz);                        // Z (nunchuk trigger)
@@ -486,10 +500,10 @@ class WiiRemotes
         return "game";
     }
 
-    static void Mode(SafeFileHandle h) { Mode(h, 0x32); }
+    static void Mode(SafeFileHandle h) { Mode(h, 0x32); }   // 0x35 (buttons + motion + nunchuk) reports all the time too
     static void Mode(SafeFileHandle h, byte report)
     {
-        var r = new byte[22]; r[0] = 0x12; r[1] = (byte)(report == 0x37 ? 0x04 : 0x00); r[2] = report;   // the camera reports all the time (the pointer moves), the rest only on a change
+        var r = new byte[22]; r[0] = 0x12; r[1] = (byte)(report == 0x37 || report == 0x35 ? 0x04 : 0x00); r[2] = report;   // the camera reports all the time (the pointer moves), the rest only on a change
           // 0x32 buttons + nunchuk; 0x37 buttons + accel + camera + nunchuk
         int w; WriteFile(h, r, r.Length, out w, IntPtr.Zero);
     }
