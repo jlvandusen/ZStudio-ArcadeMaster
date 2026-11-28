@@ -214,14 +214,19 @@ try {
     $userHere = ($now - $lastUser).TotalSeconds -lt $rejoinSec
 
     # 2. tell the others (on every change, and once a second so they see this cabinet is there)
-    if ($dirty -or ($now - $lastWrite).TotalSeconds -ge 1) {
+    # While a game runs here (the menu has said nothing for 8 s) the NAS is left almost alone: one look and one sign of
+    # life every 5 s, not four looks and a write every second. A linked Model 2 race stalls for good when one rig
+    # hiccups (RACE1 + RACE2, Daytona USA, 2026-11-28), and nothing here is needed until the game ends: the first word
+    # from the menu puts the normal pace back at once.
+    $quiet = ($now - $lastHello).TotalSeconds -gt 8
+    if ($dirty -or ($now - $lastWrite).TotalSeconds -ge $(if ($quiet) { 5 } else { 1 })) {
       $me.beat++; $me.idleMs = [Math]::Min(9e11, ($now - $lastUser).TotalMilliseconds)
       try { [IO.File]::WriteAllText($myFile, ($me | ConvertTo-Json -Compress)) } catch { }
       $dirty = $false; $lastWrite = $now
     }
 
     # 3. what the others say (4 times a second)
-    if (($now - $lastPeerRead).TotalMilliseconds -ge 250) {
+    if (($now - $lastPeerRead).TotalMilliseconds -ge $(if ($quiet) { 5000 } else { 250 })) {
       $lastPeerRead = $now
       foreach ($f in [IO.Directory]::GetFiles($Share, '*.json')) {
         if ([IO.Path]::GetFileNameWithoutExtension($f) -eq $HostName) { continue }
