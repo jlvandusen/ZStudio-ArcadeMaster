@@ -40,6 +40,7 @@ $meta = @{
   RestartPC          = @{ icon = 'restart'; color = 'ffb000'; what = 'Restart the whole cabinet PC. 10 seconds to change your mind: BACK cancels.' }
   ShutdownPC         = @{ icon = 'power'; color = 'ff4d4d'; what = 'Shut the cabinet PC down. 10 seconds to change your mind: BACK cancels.' }
   GpuDriver          = @{ icon = 'display'; color = '3ddc84'; what = 'Get the newest graphics driver for this card from NVIDIA or AMD, old cards included. Asks for admin; restart afterwards.' }
+  SystemHelpers      = @{ icon = 'repair'; color = '3ddc84'; what = 'Graphics driver reset and USB self-heal (touch screen, lights, pads come back by themselves). Installs them if missing - asks for admin once.' }
   FlightSetup        = @{ icon = 'joystick'; color = '2ec8ff'; what = 'Move the stick, twist it, slide the throttle and press each button once. The flight games get a mapping for this stick.' }
   PanelTest          = @{ icon = 'buttons'; color = 'ff2fa0'; what = 'Press every button, move every stick, spin the dial: each control lights up on screen with its name and the key it sends.' }
   DetectControllers  = @{ icon = 'detect'; color = '2ec8ff'; what = 'See everything plugged in: wheel, pedals, handbrake, pads, guns, trackball, screens.' }
@@ -212,6 +213,19 @@ function Draw-Now($g, [string]$tool, $acc, [Drawing.RectangleF]$r) {
         [AmDraw]::Text($g, "$($c0.card)", $small, [AmPal]::Dim, (RectF ($r.X + 86) ($r.Y + 58) ($r.Width - 86) 34), 'Near', 'Center')
       } else {
         [AmDraw]::Text($g, 'Not checked yet', $val, [AmPal]::Amber, (RectF $r.X $r.Y $r.Width 60), 'Near', 'Center')
+      }
+    }
+    'SystemHelpers' {
+      $sj = try { & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Install-SystemTasks.ps1') -ManifestDir $ManifestDir -Check | Out-String | ConvertFrom-Json } catch { $null }
+      $wait = if ($sj) { @($sj.items | Where-Object { @($sj.waiting) -contains $_.id } | ForEach-Object { $_.task -replace '^ArcadeMaster ', '' }) } else { @() }
+      if ($wait.Count) {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 0, 0)
+        [AmDraw]::Text($g, 'Not installed: ' + ($wait -join ', '), $val, [AmPal]::Amber, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+        [AmDraw]::Text($g, 'Select to install (asks for admin once)', $small, [AmPal]::Dim, (RectF ($r.X + 86) ($r.Y + 58) ($r.Width - 86) 34), 'Near', 'Center')
+      } elseif ($sj) {
+        [AmDraw]::Check($g, (RectF $r.X ($r.Y + 14) 64 64), 2, 0)
+        [AmDraw]::Text($g, 'All helpers on', $val, [AmPal]::Text, (RectF ($r.X + 84) $r.Y ($r.Width - 84) 60), 'Near', 'Center')
+        [AmDraw]::Text($g, (@($sj.items | ForEach-Object { $_.task -replace '^ArcadeMaster ', '' }) -join ', '), $small, [AmPal]::Dim, (RectF ($r.X + 86) ($r.Y + 58) ($r.Width - 86) 34), 'Near', 'Center')
       }
     }
     'FlightSetup' {
