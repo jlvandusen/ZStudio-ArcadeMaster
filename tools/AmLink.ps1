@@ -125,7 +125,11 @@ function Send-Cmd([string]$c, [double]$minGapSec = 0.6) {
 # <manifest>\search-index.json, read once). Names are compared without version / update tags: the pedestal's "Donkey
 # Kong Country - Tropical Freeze (USA) (v16)" is "Donkey Kong Country - Tropical Freeze (USA)" on the 2P stand-up.
 # Returns the name to look for here, or '' when the game is not on this cabinet. No index: the name as it came.
-$haveNames = $null; $haveLists = @{}
+$haveNames = $null; $haveLists = @{}; $listHere = @{}
+function Test-HereList([string]$l) {
+  if (-not $script:listHere.ContainsKey($l)) { $script:listHere[$l] = Test-Path -LiteralPath (Join-Path $RetroFE "collections\$l") }
+  return $script:listHere[$l]
+}
 # Punctuation is ignored too: the pedestal's "Mario & Sonic at the Rio 2016 - Olympic Games (USA) (v16)" is "Mario &
 # Sonic at the Rio 2016 Olympic Games (USA)" on the 2P stand-up (2026-11-28: the stand-up never went to it).
 function Get-LooseName([string]$n) { (($n.ToLower() -replace '\((v\s?[\d.]+|rev\s?[\w.]+|dlc|update|unl)\)', '') -replace '&', ' and ' -replace '[^\p{L}\p{N}]+', ' ').Trim() }
@@ -139,7 +143,13 @@ function Find-HereGame([string]$item, [string]$col) {
       $t0 = [IO.File]::ReadAllText($ix)
       foreach ($m in [regex]::Matches($t0, '"n":"((?:[^"\\]|\\.)*)"')) {
         $n = [regex]::Unescape($m.Groups[1].Value); $k = Get-LooseName $n
-        if (-not $script:haveNames.ContainsKey($k)) { $script:haveNames[$k] = $n; $cm = [regex]::Match($t0.Substring($m.Index, [Math]::Min(600, $t0.Length - $m.Index)), '"c":"((?:[^"\\]|\\.)*)"'); if ($cm.Success) { $script:haveLists[$k] = [regex]::Unescape($cm.Groups[1].Value) } }
+        # every list the name is in, but only lists this cabinet really has (the index also names lists that are not
+        # installed: "Atari Classics" sent the 2P stand-up to a list it does not have and it hung opening 1944, 2026-11-28)
+        $cm = [regex]::Match($t0.Substring($m.Index, [Math]::Min(600, $t0.Length - $m.Index)), '"c":"((?:[^"\\]|\\.)*)"')
+        $cl = if ($cm.Success) { [regex]::Unescape($cm.Groups[1].Value) } else { '' }
+        $real = $cl -and (Test-HereList $cl)
+        if (-not $script:haveNames.ContainsKey($k) -or ($real -and -not $script:haveLists.ContainsKey($k))) { $script:haveNames[$k] = $n }
+        if ($real -and -not $script:haveLists.ContainsKey($k)) { $script:haveLists[$k] = $cl }
       }
     } else { $script:haveNames['*'] = '*' }
   }
