@@ -11,6 +11,14 @@ rigs" can be a real two-player race.
 once; any button cancels the countdown. RetroFE itself only ever talks to 127.0.0.1, so nothing on the network can
 drive a cabinet directly: the helper decides.
 
+**The joining cabinet can always say no** (James, 2026-11-28, after the pedestal joined the stand-up's Pokken: the
+other system must be able to cancel the sync):
+- The countdown is 10 s (was 5 s). Besides any panel button, a touch on the card or on the big **STAY HERE** button
+  on the touch screen (every screen but the main one) cancels it.
+- A game the cabinet joined shows **LEAVE THIS GAME** on the touch screen for its first 2 minutes (`-LeaveSec`). A tap
+  ends the game here through AmPanel's exit guard (`{"cmd":"endgame"}` on the `ArcadeMaster.Panel` pipe) and the menu
+  comes back. The cabinet that started the game plays on.
+
 ## Parts
 | Part | Where | State |
 |---|---|---|
