@@ -824,3 +824,15 @@ A PS3 controller needs a driver on Windows before any program sees it (DsHidMini
 
 Still to do: the pad's picture and button names on the controls cards, and setting the emulators up for the pad that
 is plugged in.
+## G HUB: where the wheel's rotation lives (2026-11-27)
+
+Read from a copy of `%LOCALAPPDATA%\LGHUB\settings.db` (copy `settings.db-wal` and `settings.db-shm` with it, or the
+copy is empty: G HUB keeps everything in the journal while it runs). The newest row of table `data` is one JSON text.
+
+- `cards.cards[]` with `"attribute": "WHEEL_SETTINGS"` holds the wheel: `wheelAperture` (rotation, 180 to 900,
+  default 900), `centerSpringStrength` (20), `wheelDamping` (10), `wheelSensitivity` (50).
+- Out of the box there is one such card, read-only, and one profile (the desktop) for one application.
+- A game gets its own rotation in G HUB through an application entry, a profile for it and a wheel settings card of
+  its own. How a profile points at its wheel card is not known yet: nothing on the cabinets has ever changed it.
+  To learn it, change the operating range once in G HUB's window and compare the file before and after.
+- Nothing is written to this file by our tools so far.
